@@ -41,9 +41,11 @@ def main():
         rows = ds[split]
         if cap:
             rows = rows.select(range(min(cap, len(rows))))
-        e = tok(rows["func"], truncation=True, max_length=MAXLEN, padding="max_length")
+        funcs = [str(x) for x in list(rows["func"])]     # 최신 datasets 의 Column -> list[str]
+        targets = [int(x) for x in list(rows["target"])]
+        e = tok(funcs, truncation=True, max_length=MAXLEN, padding="max_length")
         return (torch.tensor(e["input_ids"]), torch.tensor(e["attention_mask"]),
-                torch.tensor(rows["target"], dtype=torch.long))
+                torch.tensor(targets, dtype=torch.long))
 
     Xtr, Mtr, Ytr = enc_split("train")
     Xva, Mva, Yva = enc_split("validation")
