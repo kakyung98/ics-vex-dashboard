@@ -471,4 +471,5 @@ out = (HTML.replace("__DATA__", json.dumps(DATA, ensure_ascii=False))
            .replace("__KB__", json.dumps(KB, ensure_ascii=False, separators=(",", ":")))
            .replace("__EXAMPLE__", json.dumps(EX, ensure_ascii=False)))
 open(os.path.join(R, "dashboard.html"), "w", encoding="utf-8").write(out)
-print("dashboard.html written:", round(len(out)/1024, 1), "KB")
+open(os.path.join(BASE, "index.html"), "w", encoding="utf-8").write(out)  # GitHub Pages 서빙 파일에 바로 반영
+print("written: results/dashboard.html + index.html (%.1f KB)" % (len(out) / 1024))
