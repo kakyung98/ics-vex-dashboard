@@ -1,0 +1,37 @@
+[
+  {
+    "cve": "CVE-2024-4340",
+    "package": "sqlparse",
+    "versions": [
+      {
+        "version": "0.4.4",
+        "installed": true,
+        "triggered": true,
+        "expect_trigger": true,
+        "correct": true,
+        "exit_code": 1,
+        "timeout": false,
+        "evidence": [
+          "RecursionError"
+        ],
+        "output_tail": "from token.flatten()\n  File \"C:\\Users\\Public\\Documents\\ESTsoft\\CreatorTemp\\vex_verify_2uen46b1\\sqlparse\\sql.py\", line 214, in flatten\n    yield from token.flatten()\n  File \"C:\\Users\\Public\\Documents\\ESTsoft\\CreatorTemp\\vex_verify_2uen46b1\\sqlparse\\sql.py\", line 214, in flatten\n    yield from token.flatten()\n  [Previous line repeated 983 more times]\nRecursionError: maximum recursion depth exceeded\n"
+      },
+      {
+        "version": "0.5.0",
+        "installed": true,
+        "triggered": false,
+        "expect_trigger": false,
+        "correct": true,
+        "exit_code": 1,
+        "timeout": false,
+        "evidence": [],
+        "output_tail": "Tsoft\\CreatorTemp\\vex_verify_kykgdhv6\\sqlparse\\sql.py\", line 216, in flatten\n    yield from token.flatten()\n  [Previous line repeated 981 more times]\n  File \"C:\\Users\\Public\\Documents\\ESTsoft\\CreatorTemp\\vex_verify_kykgdhv6\\sqlparse\\sql.py\", line 220, in flatten\n    raise SQLParseError('Maximum recursion depth exceeded') from err\nsqlparse.exceptions.SQLParseError: Maximum recursion depth exceeded\n"
+      }
+    ],
+    "discriminates": true,
+    "ground_truth": {
+      "0.4.4": "EXPLOITABLE (proven by execution)",
+      "0.5.0": "NOT_TRIGGERED"
+    }
+  }
+]
