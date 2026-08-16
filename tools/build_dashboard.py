@@ -10,6 +10,8 @@ EX = json.load(open(os.path.join(R, "example_sbom.json"), encoding="utf-8"))
 DASH = json.load(open(os.path.join(R, "dashboard_data.json"), encoding="utf-8"))
 TM = json.load(open(os.path.join(R, "two_model_metrics.json"), encoding="utf-8"))
 CB = json.load(open(os.path.join(R, "codebert_metrics.json"), encoding="utf-8"))
+DAPT = json.load(open(os.path.join(R, "dapt_metrics.json"), encoding="utf-8"))
+CBFT = json.load(open(os.path.join(R, "codebert_finetune_metrics.json"), encoding="utf-8"))
 
 # 대시보드 평가 데이터(요약)
 o = DASH["overall"]
@@ -39,6 +41,14 @@ DATA = {
       "code_cves": TM["A_reference_matching"]["n"] // 2,
       "unavail": TM["C_closed_code_routing"]["routed_to_under_investigation"],
       "total": TM["C_closed_code_routing"]["total_findings"],
+  },
+  "domain_adapt": {
+      "dapt_ppl_before": DAPT["perplexity_before"], "dapt_ppl_after": DAPT["perplexity_after"],
+      "dapt_drop": DAPT["perplexity_drop_pct"],
+      "dapt_term_vanilla": DAPT["ics_term_recovery_vanilla"], "dapt_term_dapt": DAPT["ics_term_recovery_dapt"],
+      "dapt_corpus": DAPT["corpus_sentences"],
+      "cb_devign_acc": CBFT["devign_test_acc"], "cb_devign_f1": CBFT["devign_test_f1"],
+      "cb_match_frozen": CBFT["vuln_patch_match_frozen"], "cb_match_ft": CBFT["vuln_patch_match_finetuned"],
   },
   "samples": [{"cve":"CVE-2012-4704","device":"CODESYS Gateway Server","status":"LIKELY_AFFECTED","conf":0.933,"oracle":"LIKELY_AFFECTED","rationale":["The weakness is driven through network messages accepted by an exposed interface.","The unit is reachable remotely, including through vendor remote-support tunnels."]},
               {"cve":"CVE-2012-4705","device":"CODESYS Gateway Server","status":"UNDER_INVESTIGATION","conf":0.946,"oracle":"UNDER_INVESTIGATION","rationale":["The prerequisites an attacker would need here are not established in the evidence.","The unit is reachable remotely, including through vendor remote-support tunnels."]},
@@ -290,6 +300,26 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   </section>
 
   <section>
+    <div class="sec-h"><h2>도메인 적응 (모델 튜닝)</h2><span class="n">frozen → ICS 적응 / 취약탐지 파인튜닝</span></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>SecureBERT ICS-DAPT (텍스트)</h3>
+        <p class="hint">CISA 어드바이저리로 continued MLM. 라벨 무관 지표로 측정.</p>
+        <div class="rmet" id="da_sb"></div>
+      </div>
+      <div class="card">
+        <h3>CodeBERT 파인튜닝 (코드)</h3>
+        <p class="hint">Devign으로 취약탐지 학습. 미세과제 전이는 제한적.</p>
+        <div class="rmet" id="da_cb"></div>
+      </div>
+    </div>
+    <div class="banner" style="margin-top:16px;background:var(--surface-2);border-color:var(--line)">
+      <span class="k" style="color:var(--accent)">해석</span>
+      <span id="da_note"></span>
+    </div>
+  </section>
+
+  <section>
     <div class="sec-h"><h2>설명가능 VEX 출력</h2><span class="n">각 판정에 근거 문장 부착</span></div>
     <div class="samples" id="samples"></div>
   </section>
@@ -451,6 +481,15 @@ $("#tm_bp").innerHTML=
 $("#tm_note").innerHTML='실제 코드는 OSS '+T.code_cves+' CVE에서만 확보됨 → 엄격한 "코드 없으면 조사필요" 규칙은 findings의 '
   +Math.round(100*T.unavail/T.total)+'%('+T.unavail.toLocaleString()+'/'+T.total.toLocaleString()+')를 조사필요로 만듦. '
   +'따라서 실제 시스템은 <b>하이브리드</b>: 코드 있으면 CodeBERT 확정(백포트 제거), 없으면 SecureBERT 맥락 판정.';
+// domain adaptation
+const A2=D.domain_adapt;
+$("#da_sb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">-'+A2.dapt_drop.toFixed(0)+'%</div><div class="l">ICS 텍스트 perplexity</div><div class="d">'+A2.dapt_ppl_before.toFixed(2)+' → '+A2.dapt_ppl_after.toFixed(2)+' ('+(A2.dapt_corpus/1000).toFixed(0)+'k 문장)</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--safe)">'+A2.dapt_term_vanilla.toFixed(2)+'→'+A2.dapt_term_dapt.toFixed(2)+'</div><div class="l">ICS 용어 복원</div><div class="d">vanilla → ICS-DAPT (Modbus·PLC·GOOSE 등)</div></div>';
+$("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+A2.cb_match_frozen.toFixed(2)+'→'+A2.cb_devign_f1.toFixed(2)+'</div><div class="l">Devign 취약탐지 F1</div><div class="d">frozen 0.50 → 파인튜닝 (실제 취약탐지 학습)</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch 미세과제</div><div class="d">파인튜닝도 전이 안 됨 → 레퍼런스 매칭(0.97)이 답</div></div>';
+$("#da_note").innerHTML='<b>SecureBERT ICS 적응은 명확히 통함</b>(perplexity −'+A2.dapt_drop.toFixed(0)+'%). '
+  +'<b>CodeBERT는 일반 취약탐지는 학습(F1 '+A2.cb_devign_f1.toFixed(2)+')하나</b>, 같은 함수의 취약/패치 미세 구분엔 파인튜닝도 전이되지 않음('+A2.cb_match_ft.toFixed(2)+'). '
+  +'백포트 탐지는 분류가 아니라 <b>레퍼런스 매칭(0.97)</b>으로 해결됨.';
 const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
 $("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
 $("#pipe").innerHTML=["CISA 크롤","악용신호(KEV·EPSS)","역방향 SBOM","Ground Truth","SecureBERT 학습·평가"].map(s=>'<span>'+s+'</span>').join('<span class="s">&rarr;</span>');
