@@ -1,0 +1,1196 @@
+{
+ "CVE-2014-1912": {
+  "cve": "CVE-2014-1912",
+  "commits_found": 0
+ },
+ "CVE-2015-7547": {
+  "cve": "CVE-2015-7547",
+  "commits_found": 0
+ },
+ "CVE-2016-10708": {
+  "cve": "CVE-2016-10708",
+  "commits_found": 0
+ },
+ "CVE-2016-2147": {
+  "cve": "CVE-2016-2147",
+  "commits_found": 0
+ },
+ "CVE-2016-7055": {
+  "cve": "CVE-2016-7055",
+  "commits_found": 0
+ },
+ "CVE-2016-7406": {
+  "cve": "CVE-2016-7406",
+  "commits_found": 0
+ },
+ "CVE-2016-7407": {
+  "cve": "CVE-2016-7407",
+  "commits_found": 0
+ },
+ "CVE-2016-7408": {
+  "cve": "CVE-2016-7408",
+  "commits_found": 0
+ },
+ "CVE-2016-8615": {
+  "cve": "CVE-2016-8615",
+  "commits_found": 0
+ },
+ "CVE-2016-9318": {
+  "cve": "CVE-2016-9318",
+  "commits_found": 0
+ },
+ "CVE-2016-9840": {
+  "cve": "CVE-2016-9840",
+  "repo": "madler/zlib",
+  "commit": "6a043145ca6e",
+  "file": "inftrees.c",
+  "vuln_code": "code FAR *next;             /* next available space in table */\n    const unsigned short FAR *base;     /* base value table to use */\n    const unsigned short FAR *extra;    /* extra bits table to use */\n    int end;                    /* use base and extra for symbol > end */\n    unsigned short count[MAXBITS+1];    /* number of codes of each length */\n    unsigned short offs[MAXBITS+1];     /* offsets in table for each length */\n    static const unsigned short lbase[31] = { /* Length codes 257..285 base */\n    switch (type) {\n    case CODES:\n        base = extra = work;    /* dummy value--not used */\n        end = 19;\n        break;\n    case LENS:\n        base = lbase;\n        base -= 257;\n        extra = lext;\n        extra -= 257;\n        end = 256;\n        break;\n    default:            /* DISTS */\n        base = dbase;\n        extra = dext;\n        end = -1;\n    }\n\n    /* initialize state for loop */\n    for (;;) {\n        /* create table entry */\n        here.bits = (unsigned char)(len - drop);\n        if ((int)(work[sym]) < end) {\n            here.op = (unsigned char)0;\n            here.val = work[sym];\n        }\n        else if ((int)(work[sym]) > end) {\n            here.op",
+  "patched_code": "code FAR *next;             /* next available space in table */\n    const unsigned short FAR *base;     /* base value table to use */\n    const unsigned short FAR *extra;    /* extra bits table to use */\n    unsigned match;             /* use base and extra for symbol >= match */\n    unsigned short count[MAXBITS+1];    /* number of codes of each length */\n    unsigned short offs[MAXBITS+1];     /* offsets in table for each length */\n    static const unsigned short lbase[31] = { /* Length codes 257..285 base */\n    switch (type) {\n    case CODES:\n        base = extra = work;    /* dummy value--not used */\n        match = 20;\n        break;\n    case LENS:\n        base = lbase;\n        extra = lext;\n        match = 257;\n        break;\n    default:            /* DISTS */\n        base = dbase;\n        extra = dext;\n        match = 0;\n    }\n\n    /* initialize state for loop */\n    for (;;) {\n        /* create table entry */\n        here.bits = (unsigned char)(len - drop);\n        if (work[sym] + 1 < match) {\n            here.op = (unsigned char)0;\n            here.val = work[sym];\n        }\n        else if (work[sym] >= match) {\n            here.op = (unsigned char)(extra[work[sym] - mat",
+  "src": "gh"
+ },
+ "CVE-2016-9841": {
+  "cve": "CVE-2016-9841",
+  "commits_found": 1,
+  "repo": "madler/zlib",
+  "commit": "9aaec95e8211",
+  "file": "inffast.c",
+  "vuln_code": "#ifndef ASMINF\n\n/* Allow machine dependent optimization for post-increment or pre-increment.\n   Based on testing to date,\n   Pre-increment preferred for:\n   - PowerPC G3 (Adler)\n   - MIPS R5000 (Randers-Pehrson)\n   Post-increment preferred for:\n   - none\n   No measurable difference:\n   - Pentium III (Anderson)\n   - M68060 (Nikl)\n */\n#ifdef POSTINC\n#  define OFF 0\n#  define PUP(a) *(a)++\n#else\n#  define OFF 1\n#  define PUP(a) *++(a)\n#endif\n\n/*\n   Decode literal, length, and distance codes and write out the resulting\n   literal and match bytes until either not enough input or output is",
+  "patched_code": "#ifndef ASMINF\n\n/*\n   Decode literal, length, and distance codes and write out the resulting\n   literal and match bytes until either not enough input or output is"
+ },
+ "CVE-2017-1000112": {
+  "cve": "CVE-2017-1000112",
+  "commits_found": 0
+ },
+ "CVE-2017-13077": {
+  "cve": "CVE-2017-13077",
+  "commits_found": 0
+ },
+ "CVE-2017-13078": {
+  "cve": "CVE-2017-13078",
+  "commits_found": 0
+ },
+ "CVE-2017-14491": {
+  "cve": "CVE-2017-14491",
+  "commits_found": 0
+ },
+ "CVE-2017-14492": {
+  "cve": "CVE-2017-14492",
+  "commits_found": 0
+ },
+ "CVE-2017-16544": {
+  "cve": "CVE-2017-16544",
+  "commits_found": 0
+ },
+ "CVE-2017-17562": {
+  "cve": "CVE-2017-17562",
+  "commits_found": 0
+ },
+ "CVE-2017-3731": {
+  "cve": "CVE-2017-3731",
+  "commits_found": 0
+ },
+ "CVE-2017-3732": {
+  "cve": "CVE-2017-3732",
+  "commits_found": 1
+ },
+ "CVE-2017-5969": {
+  "cve": "CVE-2017-5969",
+  "commits_found": 0
+ },
+ "CVE-2018-1000120": {
+  "cve": "CVE-2018-1000120",
+  "commits_found": 0
+ },
+ "CVE-2018-1000500": {
+  "cve": "CVE-2018-1000500",
+  "commits_found": 0
+ },
+ "CVE-2018-11236": {
+  "cve": "CVE-2018-11236",
+  "commits_found": 0
+ },
+ "CVE-2018-14526": {
+  "cve": "CVE-2018-14526",
+  "commits_found": 0
+ },
+ "CVE-2018-14567": {
+  "cve": "CVE-2018-14567",
+  "commits_found": 0
+ },
+ "CVE-2018-15473": {
+  "cve": "CVE-2018-15473",
+  "commits_found": 1,
+  "repo": "openbsd/src",
+  "commit": "779974d35b48",
+  "file": "usr.bin/ssh/auth2-gss.c",
+  "vuln_code": "/* $OpenBSD: auth2-gss.c,v 1.28 2018/07/10 09:13:30 djm Exp $ */\n\n/*\n * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved.",
+  "patched_code": "/* $OpenBSD: auth2-gss.c,v 1.29 2018/07/31 03:10:27 djm Exp $ */\n\n/*\n * Copyright (c) 2001-2003 Simon Wilkinson. All rights reserved."
+ },
+ "CVE-2018-15599": {
+  "cve": "CVE-2018-15599",
+  "commits_found": 0
+ },
+ "CVE-2018-16301": {
+  "cve": "CVE-2018-16301",
+  "commits_found": 1
+ },
+ "CVE-2018-18065": {
+  "cve": "CVE-2018-18065",
+  "commits_found": 0
+ },
+ "CVE-2018-19052": {
+  "cve": "CVE-2018-19052",
+  "repo": "lighttpd/lighttpd1.4",
+  "commit": "2105dae0f9d7",
+  "file": "src/mod_alias.c",
+  "vuln_code": "strncmp(uri_ptr, ds->key->ptr, alias_len))) {\n\t\t\t/* matched */\n\n\t\t\tbuffer_copy_buffer(con->physical.basedir, ds->value);\n\t\t\tbuffer_copy_buffer(srv->tmp_buf, ds->value);\n\t\t\tbuffer_append_string(srv->tmp_buf, uri_ptr + alias_len);",
+  "patched_code": "strncmp(uri_ptr, ds->key->ptr, alias_len))) {\n\t\t\t/* matched */\n\n\t\t\t/* check for path traversal in url-path following alias if key\n\t\t\t * does not end in slash, but replacement value ends in slash */\n\t\t\tif (uri_ptr[alias_len] == '.') {\n\t\t\t\tchar *s = uri_ptr + alias_len + 1;\n\t\t\t\tif (*s == '.') ++s;\n\t\t\t\tif (*s == '/' || *s == '\\0') {\n\t\t\t\t\tsize_t vlen = buffer_string_length(ds->value);\n\t\t\t\t\tif (0 != alias_len && ds->key->ptr[alias_len-1] != '/'\n\t\t\t\t\t    && 0 != vlen && ds->value->ptr[vlen-1] == '/') {\n\t\t\t\t\t\tcon->http_status = 403;\n\t\t\t\t\t\treturn HANDLER_FINISHED;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tbuffer_copy_buffer(con->physical.basedir, ds->value);\n\t\t\tbuffer_copy_buffer(srv->tmp_buf, ds->value);\n\t\t\tbuffer_append_string(srv->tmp_buf, uri_ptr + alias_len);",
+  "src": "gh"
+ },
+ "CVE-2018-20843": {
+  "cve": "CVE-2018-20843",
+  "commits_found": 0
+ },
+ "CVE-2018-25032": {
+  "cve": "CVE-2018-25032",
+  "repo": "madler/zlib",
+  "commit": "5c44459c3b28",
+  "file": "deflate.c",
+  "vuln_code": "int wrap = 1;\n    static const char my_version[] = ZLIB_VERSION;\n\n    ushf *overlay;\n    /* We overlay pending_buf and d_buf+l_buf. This works since the average\n     * output size for (length,distance) codes is <= 24 bits.\n     */\n\n    if (version == Z_NULL || version[0] != my_version[0] ||\n        stream_size != sizeof(z_stream)) {\n        return Z_VERSION_ERROR;\n\n    s->lit_bufsize = 1 << (memLevel + 6); /* 16K elements by default */\n\n    overlay = (ushf *) ZALLOC(strm, s->lit_bufsize, sizeof(ush)+2);\n    s->pending_buf = (uchf *) overlay;\n    s->pending_buf_size = (ulg)s->lit_bufsize * (sizeof(ush)+2L);\n\n    if (s->window == Z_NULL || s->prev == Z_NULL || s->head == Z_NULL ||\n        s->pending_buf == Z_NULL) {\n        deflateEnd (strm);\n        return Z_MEM_ERROR;\n    }\n    s->d_buf = overlay + s->lit_bufsize/sizeof(ush);\n    s->l_buf = s->pending_buf + (1+sizeof(ush))*s->lit_bufsize;\n\n    s->level = level;\n    s->strategy = strategy;\n\n    if (deflateStateCheck(strm)) return Z_STREAM_ERROR;\n    s = strm->state;\n    if ((Bytef *)(s->d_buf) < s->pending_out + ((Buf_size + 7) >> 3))\n        return Z_BUF_ERROR;\n    do {\n        put = Buf_size - s->bi_valid;\n#else\n    deflate_state ",
+  "patched_code": "int wrap = 1;\n    static const char my_version[] = ZLIB_VERSION;\n\n    if (version == Z_NULL || version[0] != my_version[0] ||\n        stream_size != sizeof(z_stream)) {\n        return Z_VERSION_ERROR;\n\n    s->lit_bufsize = 1 << (memLevel + 6); /* 16K elements by default */\n\n    /* We overlay pending_buf and sym_buf. This works since the average size\n     * for length/distance pairs over any compressed block is assured to be 31\n     * bits or less.\n     *\n     * Analysis: The longest fixed codes are a length code of 8 bits plus 5\n     * extra bits, for lengths 131 to 257. The longest fixed distance codes are\n     * 5 bits plus 13 extra bits, for distances 16385 to 32768. The longest\n     * possible fixed-codes length/distance pair is then 31 bits total.\n     *\n     * sym_buf starts one-fourth of the way into pending_buf. So there are\n     * three bytes in sym_buf for every four bytes in pending_buf. Each symbol\n     * in sym_buf is three bytes -- two for the distance and one for the\n     * literal/length. As each symbol is consumed, the pointer to the next\n     * sym_buf value to read moves forward three bytes. From that symbol, up to\n     * 31 bits are written to pending_buf. The c",
+  "src": "gh"
+ },
+ "CVE-2018-5333": {
+  "cve": "CVE-2018-5333",
+  "repo": "torvalds/linux",
+  "commit": "7d11f77f84b2",
+  "file": "net/rds/rdma.c",
+  "vuln_code": "err:\n\tif (page)\n\t\tput_page(page);\n\tkfree(rm->atomic.op_notifier);\n\n\treturn ret;",
+  "patched_code": "err:\n\tif (page)\n\t\tput_page(page);\n\trm->atomic.op_active = 0;\n\tkfree(rm->atomic.op_notifier);\n\n\treturn ret;",
+  "src": "gh"
+ },
+ "CVE-2018-7182": {
+  "cve": "CVE-2018-7182",
+  "commits_found": 0
+ },
+ "CVE-2018-7183": {
+  "cve": "CVE-2018-7183",
+  "commits_found": 0
+ },
+ "CVE-2018-7184": {
+  "cve": "CVE-2018-7184",
+  "commits_found": 0
+ },
+ "CVE-2018-8421": {
+  "cve": "CVE-2018-8421",
+  "commits_found": 0
+ },
+ "CVE-2018-8740": {
+  "cve": "CVE-2018-8740",
+  "commits_found": 0
+ },
+ "CVE-2019-0221": {
+  "cve": "CVE-2019-0221",
+  "commits_found": 0
+ },
+ "CVE-2019-0232": {
+  "cve": "CVE-2019-0232",
+  "commits_found": 0
+ },
+ "CVE-2019-0545": {
+  "cve": "CVE-2019-0545",
+  "commits_found": 0
+ },
+ "CVE-2019-1068": {
+  "cve": "CVE-2019-1068",
+  "commits_found": 0
+ },
+ "CVE-2019-11059": {
+  "cve": "CVE-2019-11059",
+  "commits_found": 0
+ },
+ "CVE-2019-11072": {
+  "cve": "CVE-2019-11072",
+  "repo": "lighttpd/lighttpd1.4",
+  "commit": "32120d5b8b32",
+  "file": "src/burl.c",
+  "vuln_code": "}\n    }\n    if (qs >= 0) {\n        memmove(s+j, s+qs, blen - qs);\n        j += blen - qs;\n    }\n    buffer_string_set_length(b, j);\n    return qs;",
+  "patched_code": "}\n    }\n    if (qs >= 0) {\n        const int qslen = blen - qs;\n        memmove(s+j, s+qs, (size_t)qslen);\n        qs = j;\n        j += qslen;\n    }\n    buffer_string_set_length(b, j);\n    return qs;",
+  "src": "gh"
+ },
+ "CVE-2019-11477": {
+  "cve": "CVE-2019-11477",
+  "commits_found": 0
+ },
+ "CVE-2019-11779": {
+  "cve": "CVE-2019-11779",
+  "commits_found": 0
+ },
+ "CVE-2019-12255": {
+  "cve": "CVE-2019-12255",
+  "commits_found": 0
+ },
+ "CVE-2019-12256": {
+  "cve": "CVE-2019-12256",
+  "commits_found": 0
+ },
+ "CVE-2019-12257": {
+  "cve": "CVE-2019-12257",
+  "commits_found": 0
+ },
+ "CVE-2019-12258": {
+  "cve": "CVE-2019-12258",
+  "commits_found": 0
+ },
+ "CVE-2019-12259": {
+  "cve": "CVE-2019-12259",
+  "commits_found": 0
+ },
+ "CVE-2019-12260": {
+  "cve": "CVE-2019-12260",
+  "commits_found": 0
+ },
+ "CVE-2019-12262": {
+  "cve": "CVE-2019-12262",
+  "commits_found": 0
+ },
+ "CVE-2019-13103": {
+  "cve": "CVE-2019-13103",
+  "commits_found": 0
+ },
+ "CVE-2019-13106": {
+  "cve": "CVE-2019-13106",
+  "commits_found": 0
+ },
+ "CVE-2019-14462": {
+  "cve": "CVE-2019-14462",
+  "repo": "stephane/libmodbus",
+  "commit": "5ccdf5ef79d7",
+  "file": "src/modbus.c",
+  "vuln_code": "break;\n    case MODBUS_FC_WRITE_MULTIPLE_COILS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int mapping_address = address - mb_mapping->start_bits;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_BITS < nb) {\n            /* May be the indication has been truncated on reading because of\n             * invalid address (eg. nb is 0 but the request contains values to\n             * write) so it's necessary to flush. */\n        break;\n    case MODBUS_FC_WRITE_MULTIPLE_REGISTERS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int mapping_address = address - mb_mapping->start_registers;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_REGISTERS < nb) {\n            rsp_length = response_exception(\n                ctx, &sft, MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp, TRUE,\n                \"Illegal number of values %d in write_registers (max %d)\\n\",",
+  "patched_code": "break;\n    case MODBUS_FC_WRITE_MULTIPLE_COILS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int nb_bits = req[offset + 5];\n        int mapping_address = address - mb_mapping->start_bits;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_BITS < nb || nb_bits * 8 < nb) {\n            /* May be the indication has been truncated on reading because of\n             * invalid address (eg. nb is 0 but the request contains values to\n             * write) so it's necessary to flush. */\n        break;\n    case MODBUS_FC_WRITE_MULTIPLE_REGISTERS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int nb_bytes = req[offset + 5];\n        int mapping_address = address - mb_mapping->start_registers;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_REGISTERS < nb || nb_bytes * 8 < nb) {\n            rsp_length = response_exception(\n                ctx, &sft, MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp, TRUE,\n                \"Illegal number of values %d in write_registers (max %d)\\n\",",
+  "src": "gh"
+ },
+ "CVE-2019-14463": {
+  "cve": "CVE-2019-14463",
+  "repo": "stephane/libmodbus",
+  "commit": "5ccdf5ef79d7",
+  "file": "src/modbus.c",
+  "vuln_code": "break;\n    case MODBUS_FC_WRITE_MULTIPLE_COILS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int mapping_address = address - mb_mapping->start_bits;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_BITS < nb) {\n            /* May be the indication has been truncated on reading because of\n             * invalid address (eg. nb is 0 but the request contains values to\n             * write) so it's necessary to flush. */\n        break;\n    case MODBUS_FC_WRITE_MULTIPLE_REGISTERS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int mapping_address = address - mb_mapping->start_registers;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_REGISTERS < nb) {\n            rsp_length = response_exception(\n                ctx, &sft, MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp, TRUE,\n                \"Illegal number of values %d in write_registers (max %d)\\n\",",
+  "patched_code": "break;\n    case MODBUS_FC_WRITE_MULTIPLE_COILS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int nb_bits = req[offset + 5];\n        int mapping_address = address - mb_mapping->start_bits;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_BITS < nb || nb_bits * 8 < nb) {\n            /* May be the indication has been truncated on reading because of\n             * invalid address (eg. nb is 0 but the request contains values to\n             * write) so it's necessary to flush. */\n        break;\n    case MODBUS_FC_WRITE_MULTIPLE_REGISTERS: {\n        int nb = (req[offset + 3] << 8) + req[offset + 4];\n        int nb_bytes = req[offset + 5];\n        int mapping_address = address - mb_mapping->start_registers;\n\n        if (nb < 1 || MODBUS_MAX_WRITE_REGISTERS < nb || nb_bytes * 8 < nb) {\n            rsp_length = response_exception(\n                ctx, &sft, MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE, rsp, TRUE,\n                \"Illegal number of values %d in write_registers (max %d)\\n\",",
+  "src": "gh"
+ },
+ "CVE-2019-15165": {
+  "cve": "CVE-2019-15165",
+  "repo": "the-tcpdump-group/libpcap",
+  "commit": "87d6bef03306",
+  "file": "sf-pcapng.c",
+  "vuln_code": "* Section Header Block.\n */\n#define BT_SHB\t\t\t0x0A0D0D0A\n\nstruct section_header_block {\n\tbpf_u_int32\tbyte_order_magic;\n\tu_short\t\tmajor_version;\n\t\t\tif (amt_read == 0 && !fail_on_eof)\n\t\t\t\treturn (0);\t/* EOF */\n\t\t\tpcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,\n\t\t\t    \"truncated dump file; tried to read %\" PRIsize \" bytes, only got %\" PRIsize,\n\t\t\t    bytes_to_read, amt_read);\n\t\t}\n\t\treturn (-1);\n\t/*\n\t * Check the sanity of the total length.\n\t */\n\tif (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer)) {\n\t\tpcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,\n\t\t    \"Section Header Block in pcapng dump file has a length of %u < %\" PRIsize,\n\t\t    total_length,\n\t\t    sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer));\n\t\t*err = 1;\n\t\treturn (NULL);\n\t}\n\n\t/*\n\t * Make sure it's not too big.\n\t */\n\tif (total_length > INITIAL_MAX_BLOCKSIZE) {\n\t\tpcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,\n\t\t    \"pcapng block size %u > maximum %u\",\n\t\t    total_length, INITIAL_MAX_BLOCKSIZE);\n\t\t*err = 1;\n\t\treturn (NULL);\n\t}\n\n\t/*\n\t * OK, this is a good pcapng file.\n\t * Allocate a pcap_t for it.",
+  "patched_code": "* Section Header Block.\n */\n#define BT_SHB\t\t\t0x0A0D0D0A\n#define BT_SHB_INSANE_MAX       1024*1024*1  /* 1MB should be enough */\nstruct section_header_block {\n\tbpf_u_int32\tbyte_order_magic;\n\tu_short\t\tmajor_version;\n\t\t\tif (amt_read == 0 && !fail_on_eof)\n\t\t\t\treturn (0);\t/* EOF */\n\t\t\tpcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,\n\t\t\t    \"truncated pcapng dump file; tried to read %\" PRIsize \" bytes, only got %\" PRIsize,\n\t\t\t    bytes_to_read, amt_read);\n\t\t}\n\t\treturn (-1);\n\t/*\n\t * Check the sanity of the total length.\n\t */\n\tif (total_length < sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer) ||\n            (total_length > BT_SHB_INSANE_MAX)) {\n\t\tpcap_snprintf(errbuf, PCAP_ERRBUF_SIZE,\n\t\t    \"Section Header Block in pcapng dump file has invalid length %\" PRIsize \" < _%lu_ < %lu (BT_SHB_INSANE_MAX)\",\n                              sizeof(*bhdrp) + sizeof(*shbp) + sizeof(struct block_trailer),\n                              total_length,\n                              BT_SHB_INSANE_MAX);\n\n\t\t*err = 1;\n\t\treturn (NULL);\n\t}\n\n\n\n\t/*\n\t * OK, this is a good pcapng file.\n\t * Allocate a pcap_t for it.",
+  "src": "gh"
+ },
+ "CVE-2019-15903": {
+  "cve": "CVE-2019-15903",
+  "repo": "libexpat/libexpat",
+  "commit": "c20b758c332d",
+  "file": "expat/lib/xmlparse.c",
+  "vuln_code": "static enum XML_Error doProlog(XML_Parser parser, const ENCODING *enc,\n                               const char *s, const char *end, int tok,\n                               const char *next, const char **nextPtr,\n                               XML_Bool haveMore);\nstatic enum XML_Error processInternalEntity(XML_Parser parser, ENTITY *entity,\n                                            XML_Bool betweenDecl);\nstatic enum XML_Error doContent(XML_Parser parser, int startTagLevel,\n\n  parser->m_processor = prologProcessor;\n  return doProlog(parser, parser->m_encoding, s, end, tok, next, nextPtr,\n                  (XML_Bool)! parser->m_parsingStatus.finalBuffer);\n}\n\nstatic enum XML_Error PTRCALL\n  const char *next = s;\n  int tok = XmlPrologTok(parser->m_encoding, s, end, &next);\n  return doProlog(parser, parser->m_encoding, s, end, tok, next, nextPtr,\n                  (XML_Bool)! parser->m_parsingStatus.finalBuffer);\n}\n\nstatic enum XML_Error\ndoProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,\n         int tok, const char *next, const char **nextPtr, XML_Bool haveMore) {\n#ifdef XML_DTD\n  static const XML_Char externalSubsetName[] = {ASCII_HASH, '\\0'};\n#endif /",
+  "patched_code": "static enum XML_Error doProlog(XML_Parser parser, const ENCODING *enc,\n                               const char *s, const char *end, int tok,\n                               const char *next, const char **nextPtr,\n                               XML_Bool haveMore, XML_Bool allowClosingDoctype);\nstatic enum XML_Error processInternalEntity(XML_Parser parser, ENTITY *entity,\n                                            XML_Bool betweenDecl);\nstatic enum XML_Error doContent(XML_Parser parser, int startTagLevel,\n\n  parser->m_processor = prologProcessor;\n  return doProlog(parser, parser->m_encoding, s, end, tok, next, nextPtr,\n                  (XML_Bool)! parser->m_parsingStatus.finalBuffer, XML_TRUE);\n}\n\nstatic enum XML_Error PTRCALL\n  const char *next = s;\n  int tok = XmlPrologTok(parser->m_encoding, s, end, &next);\n  return doProlog(parser, parser->m_encoding, s, end, tok, next, nextPtr,\n                  (XML_Bool)! parser->m_parsingStatus.finalBuffer, XML_TRUE);\n}\n\nstatic enum XML_Error\ndoProlog(XML_Parser parser, const ENCODING *enc, const char *s, const char *end,\n         int tok, const char *next, const char **nextPtr, XML_Bool haveMore,\n         XML_Bool allowClosingDoctype) {\n#",
+  "src": "gh"
+ },
+ "CVE-2019-17498": {
+  "cve": "CVE-2019-17498",
+  "repo": "libssh2/libssh2",
+  "commit": "dedcbd106f8e",
+  "file": "src/packet.c",
+  "vuln_code": "size_t datalen, int macstate)\n{\n    int rc = 0;\n    char *message = NULL;\n    char *language = NULL;\n    size_t message_len = 0;\n    size_t language_len = 0;\n    LIBSSH2_CHANNEL *channelp = NULL;\n\n        case SSH_MSG_DISCONNECT:\n            if(datalen >= 5) {\n                size_t reason = _libssh2_ntohu32(data + 1);\n\n                if(datalen >= 9) {\n                    message_len = _libssh2_ntohu32(data + 5);\n\n                    if(message_len < datalen-13) {\n                        /* 9 = packet_type(1) + reason(4) + message_len(4) */\n                        message = (char *) data + 9;\n\n                        language_len =\n                            _libssh2_ntohu32(data + 9 + message_len);\n                        language = (char *) data + 9 + message_len + 4;\n\n                        if(language_len > (datalen-13-message_len)) {\n                            /* bad input, clear info */\n                            language = message = NULL;\n                            language_len = message_len = 0;\n                        }\n                    }\n                    else\n                        /* bad size, clear it */\n                        message_len = 0;\n           ",
+  "patched_code": "size_t datalen, int macstate)\n{\n    int rc = 0;\n    unsigned char *message = NULL;\n    unsigned char *language = NULL;\n    size_t message_len = 0;\n    size_t language_len = 0;\n    LIBSSH2_CHANNEL *channelp = NULL;\n\n        case SSH_MSG_DISCONNECT:\n            if(datalen >= 5) {\n                uint32_t reason = 0;\n                struct string_buf buf;\n                buf.data = (unsigned char *)data;\n                buf.dataptr = buf.data;\n                buf.len = datalen;\n                buf.dataptr++; /* advance past type */\n\n                _libssh2_get_u32(&buf, &reason);\n                _libssh2_get_string(&buf, &message, &message_len);\n                _libssh2_get_string(&buf, &language, &language_len);\n\n                if(session->ssh_msg_disconnect) {\n                    LIBSSH2_DISCONNECT(session, reason, (const char *)message,\n                                       message_len, (const char *)language,\n                                       language_len);\n                }\n\n                _libssh2_debug(session, LIBSSH2_TRACE_TRANS,\n                               \"Disconnect(%d): %s(%s)\", reason,\n                               message, language);\n                int alw",
+  "src": "gh"
+ },
+ "CVE-2019-20330": {
+  "cve": "CVE-2019-20330",
+  "commits_found": 0
+ },
+ "CVE-2019-20372": {
+  "cve": "CVE-2019-20372",
+  "repo": "nginx/nginx",
+  "commit": "c1be55f97211",
+  "file": "src/http/ngx_http_special_response.c",
+  "vuln_code": "return ngx_http_named_location(r, &uri);\n    }\n\n    location = ngx_list_push(&r->headers_out.headers);\n\n    if (location == NULL) {",
+  "patched_code": "return ngx_http_named_location(r, &uri);\n    }\n\n    r->expect_tested = 1;\n\n    if (ngx_http_discard_request_body(r) != NGX_OK) {\n        r->keepalive = 0;\n    }\n\n    location = ngx_list_push(&r->headers_out.headers);\n\n    if (location == NULL) {",
+  "src": "gh"
+ },
+ "CVE-2019-20892": {
+  "cve": "CVE-2019-20892",
+  "repo": "net-snmp/net-snmp",
+  "commit": "5f881d3bf245",
+  "file": "snmplib/snmp_client.c",
+  "vuln_code": "return NULL;\n    }\n\n    if (pdu->securityStateRef &&\n        pdu->command == SNMP_MSG_TRAP2) {\n\n        netsnmp_assert(pdu->securityModel == SNMP_DEFAULT_SECMODEL);\n        ret = usm_clone_usmStateReference((struct usmStateReference *) pdu->securityStateRef,\n                (struct usmStateReference **) &newpdu->securityStateRef );\n\n        if (ret)\n        {\n            snmp_free_pdu(newpdu);\n            return NULL;\n        }\n    }\n\n    if ((sptr = find_sec_mod(newpdu->securityModel)) != NULL &&\n        sptr->pdu_clone != NULL) {\n        /*\n         * call security model if it needs to know about this \n         */\n        (*sptr->pdu_clone) (pdu, newpdu);\n    }\n\n    return newpdu;\n}",
+  "patched_code": "return NULL;\n    }\n\n    sptr = find_sec_mod(newpdu->securityModel);\n    if (sptr && sptr->pdu_clone) {\n        /* call security model if it needs to know about this */\n        ret = sptr->pdu_clone(pdu, newpdu);\n        if (ret) {\n            snmp_free_pdu(newpdu);\n            return NULL;\n        }\n    }\n\n    return newpdu;\n}",
+  "src": "gh"
+ },
+ "CVE-2019-2602": {
+  "cve": "CVE-2019-2602",
+  "commits_found": 0
+ },
+ "CVE-2019-2699": {
+  "cve": "CVE-2019-2699",
+  "commits_found": 0
+ },
+ "CVE-2019-3855": {
+  "cve": "CVE-2019-3855",
+  "commits_found": 0
+ },
+ "CVE-2019-3856": {
+  "cve": "CVE-2019-3856",
+  "commits_found": 0
+ },
+ "CVE-2019-3858": {
+  "cve": "CVE-2019-3858",
+  "commits_found": 0
+ },
+ "CVE-2019-5096": {
+  "cve": "CVE-2019-5096",
+  "commits_found": 0
+ },
+ "CVE-2019-5097": {
+  "cve": "CVE-2019-5097",
+  "commits_found": 0
+ },
+ "CVE-2019-5481": {
+  "cve": "CVE-2019-5481",
+  "commits_found": 0
+ },
+ "CVE-2019-5482": {
+  "cve": "CVE-2019-5482",
+  "commits_found": 0
+ },
+ "CVE-2019-6111": {
+  "cve": "CVE-2019-6111",
+  "commits_found": 0
+ },
+ "CVE-2019-8457": {
+  "cve": "CVE-2019-8457",
+  "commits_found": 0
+ },
+ "CVE-2019-8936": {
+  "cve": "CVE-2019-8936",
+  "commits_found": 0
+ },
+ "CVE-2019-9511": {
+  "cve": "CVE-2019-9511",
+  "commits_found": 0
+ },
+ "CVE-2019-9513": {
+  "cve": "CVE-2019-9513",
+  "commits_found": 0
+ },
+ "CVE-2020-0618": {
+  "cve": "CVE-2020-0618",
+  "commits_found": 0
+ },
+ "CVE-2020-10648": {
+  "cve": "CVE-2020-10648",
+  "commits_found": 0
+ },
+ "CVE-2020-10932": {
+  "cve": "CVE-2020-10932",
+  "commits_found": 0
+ },
+ "CVE-2020-1147": {
+  "cve": "CVE-2020-1147",
+  "commits_found": 0
+ },
+ "CVE-2020-11655": {
+  "cve": "CVE-2020-11655",
+  "commits_found": 0
+ },
+ "CVE-2020-11810": {
+  "cve": "CVE-2020-11810",
+  "repo": "OpenVPN/openvpn",
+  "commit": "37bc691e7d26",
+  "file": "src/openvpn/multi.c",
+  "vuln_code": "orig_buf = c->c2.buf.data;\n            if (process_incoming_link_part1(c, lsi, floated))\n            {\n                if (floated)\n                {\n                    multi_process_float(m, m->pending);\n                }",
+  "patched_code": "orig_buf = c->c2.buf.data;\n            if (process_incoming_link_part1(c, lsi, floated))\n            {\n                /* nonzero length means that we have a valid, decrypted packed */\n                if (floated && c->c2.buf.len > 0)\n                {\n                    multi_process_float(m, m->pending);\n                }",
+  "src": "gh"
+ },
+ "CVE-2020-11868": {
+  "cve": "CVE-2020-11868",
+  "commits_found": 0
+ },
+ "CVE-2020-11896": {
+  "cve": "CVE-2020-11896",
+  "commits_found": 0
+ },
+ "CVE-2020-11897": {
+  "cve": "CVE-2020-11897",
+  "commits_found": 0
+ },
+ "CVE-2020-11898": {
+  "cve": "CVE-2020-11898",
+  "commits_found": 0
+ },
+ "CVE-2020-11900": {
+  "cve": "CVE-2020-11900",
+  "commits_found": 0
+ },
+ "CVE-2020-11901": {
+  "cve": "CVE-2020-11901",
+  "commits_found": 0
+ },
+ "CVE-2020-13434": {
+  "cve": "CVE-2020-13434",
+  "commits_found": 0
+ },
+ "CVE-2020-13630": {
+  "cve": "CVE-2020-13630",
+  "commits_found": 0
+ },
+ "CVE-2020-15078": {
+  "cve": "CVE-2020-15078",
+  "commits_found": 0
+ },
+ "CVE-2020-15778": {
+  "cve": "CVE-2020-15778",
+  "commits_found": 0
+ },
+ "CVE-2020-15861": {
+  "cve": "CVE-2020-15861",
+  "repo": "net-snmp/net-snmp",
+  "commit": "4fd9a450444a",
+  "file": "include/net-snmp/library/mib.h",
+  "vuln_code": "NETSNMP_IMPORT\n    char            *netsnmp_get_mib_directory(void);\n    void            netsnmp_fixup_mib_directory(void);\n    void            netsnmp_mibindex_load( void );\n    char *          netsnmp_mibindex_lookup( const char * );\n    FILE *          netsnmp_mibindex_new( const char * );\n    int             sprint_realloc_description(u_char ** buf, size_t * buf_len,\n                                size_t * out_len, int allow_realloc,\n                                oid * objid, size_t objidlen, int width);",
+  "patched_code": "NETSNMP_IMPORT\n    char            *netsnmp_get_mib_directory(void);\n    void            netsnmp_fixup_mib_directory(void);\n    int             sprint_realloc_description(u_char ** buf, size_t * buf_len,\n                                size_t * out_len, int allow_realloc,\n                                oid * objid, size_t objidlen, int width);",
+  "src": "gh"
+ },
+ "CVE-2020-15862": {
+  "cve": "CVE-2020-15862",
+  "commits_found": 1,
+  "repo": "net-snmp/net-snmp",
+  "commit": "77f6c60f57db",
+  "file": "agent/mibgroup/agent/extend.c",
+  "vuln_code": "#define SHELLCOMMAND 3\n#endif\n\nnetsnmp_feature_require(extract_table_row_data);\nnetsnmp_feature_require(table_data_delete_table);\n#ifndef NETSNMP_NO_WRITE_SUPPORT",
+  "patched_code": "#define SHELLCOMMAND 3\n#endif\n\n/*  This mib is potentially dangerous to turn on by default, since it\n *  allows arbitrary commands to be set by anyone with SNMP WRITE\n *  access to the MIB table.  If all of your users are \"root\" level\n *  users, then it may be safe to turn on. */\n#define ENABLE_EXTEND_WRITE_ACCESS 0\n\nnetsnmp_feature_require(extract_table_row_data);\nnetsnmp_feature_require(table_data_delete_table);\n#ifndef NETSNMP_NO_WRITE_SUPPORT"
+ },
+ "CVE-2020-16150": {
+  "cve": "CVE-2020-16150",
+  "commits_found": 0
+ },
+ "CVE-2020-1938": {
+  "cve": "CVE-2020-1938",
+  "commits_found": 0
+ },
+ "CVE-2020-1971": {
+  "cve": "CVE-2020-1971",
+  "commits_found": 0
+ },
+ "CVE-2020-22218": {
+  "cve": "CVE-2020-22218",
+  "commits_found": 0
+ },
+ "CVE-2020-22283": {
+  "cve": "CVE-2020-22283",
+  "commits_found": 0
+ },
+ "CVE-2020-22284": {
+  "cve": "CVE-2020-22284",
+  "commits_found": 0
+ },
+ "CVE-2020-22285": {
+  "cve": "CVE-2020-22285",
+  "commits_found": 0
+ },
+ "CVE-2020-22286": {
+  "cve": "CVE-2020-22286",
+  "commits_found": 0
+ },
+ "CVE-2020-22288": {
+  "cve": "CVE-2020-22288",
+  "commits_found": 0
+ },
+ "CVE-2020-25681": {
+  "cve": "CVE-2020-25681",
+  "commits_found": 0
+ },
+ "CVE-2020-25684": {
+  "cve": "CVE-2020-25684",
+  "commits_found": 0
+ },
+ "CVE-2020-2803": {
+  "cve": "CVE-2020-2803",
+  "commits_found": 0
+ },
+ "CVE-2020-28928": {
+  "cve": "CVE-2020-28928",
+  "commits_found": 0
+ },
+ "CVE-2020-36254": {
+  "cve": "CVE-2020-36254",
+  "repo": "mkj/dropbear",
+  "commit": "8f8a3dff705f",
+  "file": "scp.c",
+  "vuln_code": "size = size * 10 + (*cp++ - '0');\n\t\tif (*cp++ != ' ')\n\t\t\tSCREWUP(\"size not delimited\");\n\t\tif ((strchr(cp, '/') != NULL) || (strcmp(cp, \"..\") == 0)) {\n\t\t\trun_err(\"error: unexpected filename: %s\", cp);\n\t\t\texit(1);\n\t\t}",
+  "patched_code": "size = size * 10 + (*cp++ - '0');\n\t\tif (*cp++ != ' ')\n\t\t\tSCREWUP(\"size not delimited\");\n\t\tif (*cp == '\\0' || strchr(cp, '/') != NULL ||\n\t\t    strcmp(cp, \".\") == 0 || strcmp(cp, \"..\") == 0) {\n\t\t\trun_err(\"error: unexpected filename: %s\", cp);\n\t\t\texit(1);\n\t\t}",
+  "src": "gh"
+ },
+ "CVE-2020-36518": {
+  "cve": "CVE-2020-36518",
+  "commits_found": 0
+ },
+ "CVE-2020-8177": {
+  "cve": "CVE-2020-8177",
+  "commits_found": 0
+ },
+ "CVE-2020-8840": {
+  "cve": "CVE-2020-8840",
+  "commits_found": 0
+ },
+ "CVE-2021-20227": {
+  "cve": "CVE-2021-20227",
+  "commits_found": 0
+ },
+ "CVE-2021-23017": {
+  "cve": "CVE-2021-23017",
+  "commits_found": 0
+ },
+ "CVE-2021-23840": {
+  "cve": "CVE-2021-23840",
+  "commits_found": 0
+ },
+ "CVE-2021-24112": {
+  "cve": "CVE-2021-24112",
+  "commits_found": 0
+ },
+ "CVE-2021-24116": {
+  "cve": "CVE-2021-24116",
+  "commits_found": 0
+ },
+ "CVE-2021-24119": {
+  "cve": "CVE-2021-24119",
+  "commits_found": 0
+ },
+ "CVE-2021-25122": {
+  "cve": "CVE-2021-25122",
+  "commits_found": 0
+ },
+ "CVE-2021-26701": {
+  "cve": "CVE-2021-26701",
+  "commits_found": 0
+ },
+ "CVE-2021-27097": {
+  "cve": "CVE-2021-27097",
+  "commits_found": 3,
+  "repo": "u-boot/u-boot",
+  "commit": "b6f4c757959f",
+  "file": "common/image-fit.c",
+  "vuln_code": "* Wolfgang Denk, DENX Software Engineering, wd@denx.de.\n */\n\n#ifdef USE_HOSTCC\n#include \"mkimage.h\"\n#include <time.h>",
+  "patched_code": "* Wolfgang Denk, DENX Software Engineering, wd@denx.de.\n */\n\n#define LOG_CATEGORY LOGC_BOOT\n\n#ifdef USE_HOSTCC\n#include \"mkimage.h\"\n#include <time.h>"
+ },
+ "CVE-2021-27803": {
+  "cve": "CVE-2021-27803",
+  "commits_found": 0
+ },
+ "CVE-2021-28166": {
+  "cve": "CVE-2021-28166",
+  "commits_found": 0
+ },
+ "CVE-2021-30004": {
+  "cve": "CVE-2021-30004",
+  "commits_found": 0
+ },
+ "CVE-2021-30186": {
+  "cve": "CVE-2021-30186",
+  "commits_found": 0
+ },
+ "CVE-2021-30188": {
+  "cve": "CVE-2021-30188",
+  "commits_found": 0
+ },
+ "CVE-2021-30189": {
+  "cve": "CVE-2021-30189",
+  "commits_found": 0
+ },
+ "CVE-2021-30640": {
+  "cve": "CVE-2021-30640",
+  "commits_found": 0
+ },
+ "CVE-2021-31571": {
+  "cve": "CVE-2021-31571",
+  "repo": "FreeRTOS/FreeRTOS-Kernel",
+  "commit": "47338393f1f7",
+  "file": "queue.c",
+  "vuln_code": "/* Check for multiplication overflow. */\n        configASSERT( ( uxItemSize == 0 ) || ( uxQueueLength == ( xQueueSizeInBytes / uxItemSize ) ) );\n\n        /* Allocate the queue and storage area.  Justification for MISRA\n         * deviation as follows:  pvPortMalloc() always ensures returned memory\n         * blocks are aligned per the requirements of the MCU stack.  In this case",
+  "patched_code": "/* Check for multiplication overflow. */\n        configASSERT( ( uxItemSize == 0 ) || ( uxQueueLength == ( xQueueSizeInBytes / uxItemSize ) ) );\n\n        /* Check for addition overflow. */\n        configASSERT( ( sizeof( Queue_t ) + xQueueSizeInBytes ) >  xQueueSizeInBytes );\n\n        /* Allocate the queue and storage area.  Justification for MISRA\n         * deviation as follows:  pvPortMalloc() always ensures returned memory\n         * blocks are aligned per the requirements of the MCU stack.  In this case",
+  "src": "gh"
+ },
+ "CVE-2021-31572": {
+  "cve": "CVE-2021-31572",
+  "repo": "FreeRTOS/FreeRTOS-Kernel",
+  "commit": "d05b9c123f2b",
+  "file": "stream_buffer.c",
+  "vuln_code": "* this is a quirk of the implementation that means otherwise the free\n         * space would be reported as one byte smaller than would be logically\n         * expected. */\n        xBufferSizeBytes++;\n        pucAllocatedMemory = ( uint8_t * ) pvPortMalloc( xBufferSizeBytes + sizeof( StreamBuffer_t ) ); /*lint !e9079 malloc() only returns void*. */\n\n        if( pucAllocatedMemory != NULL )\n        {",
+  "patched_code": "* this is a quirk of the implementation that means otherwise the free\n         * space would be reported as one byte smaller than would be logically\n         * expected. */\n        if( xBufferSizeBytes < ( xBufferSizeBytes + 1 + sizeof( StreamBuffer_t ) ) )\n        {\n            xBufferSizeBytes++;\n            pucAllocatedMemory = ( uint8_t * ) pvPortMalloc( xBufferSizeBytes + sizeof( StreamBuffer_t ) ); /*lint !e9079 malloc() only returns void*. */\n        }\n        else\n        {\n            pucAllocatedMemory = NULL;\n        }\n        \n\n        if( pucAllocatedMemory != NULL )\n        {",
+  "src": "gh"
+ },
+ "CVE-2021-32020": {
+  "cve": "CVE-2021-32020",
+  "repo": "FreeRTOS/FreeRTOS-Kernel",
+  "commit": "c7a9a01c9498",
+  "file": "portable/MemMang/heap_1.c",
+  "vuln_code": "* https://www.FreeRTOS.org\n * https://github.com/FreeRTOS\n *\n * 1 tab == 4 spaces!\n */",
+  "patched_code": "* https://www.FreeRTOS.org\n * https://github.com/FreeRTOS\n *\n */",
+  "src": "nvd"
+ },
+ "CVE-2021-3319": {
+  "cve": "CVE-2021-3319",
+  "commits_found": 0
+ },
+ "CVE-2021-3323": {
+  "cve": "CVE-2021-3323",
+  "commits_found": 0
+ },
+ "CVE-2021-3336": {
+  "cve": "CVE-2021-3336",
+  "commits_found": 0
+ },
+ "CVE-2021-33574": {
+  "cve": "CVE-2021-33574",
+  "commits_found": 0
+ },
+ "CVE-2021-33909": {
+  "cve": "CVE-2021-33909",
+  "repo": "torvalds/linux",
+  "commit": "8cae8cd89f05",
+  "file": "fs/seq_file.c",
+  "vuln_code": "static void *seq_buf_alloc(unsigned long size)\n{\n\treturn kvmalloc(size, GFP_KERNEL_ACCOUNT);\n}",
+  "patched_code": "static void *seq_buf_alloc(unsigned long size)\n{\n\tif (unlikely(size > MAX_RW_COUNT))\n\t\treturn NULL;\n\n\treturn kvmalloc(size, GFP_KERNEL_ACCOUNT);\n}",
+  "src": "gh"
+ },
+ "CVE-2021-34431": {
+  "cve": "CVE-2021-34431",
+  "commits_found": 0
+ },
+ "CVE-2021-3448": {
+  "cve": "CVE-2021-3448",
+  "commits_found": 0
+ },
+ "CVE-2021-3450": {
+  "cve": "CVE-2021-3450",
+  "commits_found": 0
+ },
+ "CVE-2021-3517": {
+  "cve": "CVE-2021-3517",
+  "commits_found": 0
+ },
+ "CVE-2021-3518": {
+  "cve": "CVE-2021-3518",
+  "commits_found": 0
+ },
+ "CVE-2021-3581": {
+  "cve": "CVE-2021-3581",
+  "commits_found": 0
+ },
+ "CVE-2021-35942": {
+  "cve": "CVE-2021-35942",
+  "commits_found": 0
+ },
+ "CVE-2021-36369": {
+  "cve": "CVE-2021-36369",
+  "commits_found": 0
+ },
+ "CVE-2021-3711": {
+  "cve": "CVE-2021-3711",
+  "commits_found": 0
+ },
+ "CVE-2021-3712": {
+  "cve": "CVE-2021-3712",
+  "commits_found": 0
+ },
+ "CVE-2021-3999": {
+  "cve": "CVE-2021-3999",
+  "commits_found": 0
+ },
+ "CVE-2021-40206": {
+  "cve": "CVE-2021-40206",
+  "commits_found": 0
+ },
+ "CVE-2021-41039": {
+  "cve": "CVE-2021-41039",
+  "commits_found": 0
+ },
+ "CVE-2021-41079": {
+  "cve": "CVE-2021-41079",
+  "commits_found": 0
+ },
+ "CVE-2021-41617": {
+  "cve": "CVE-2021-41617",
+  "commits_found": 0
+ },
+ "CVE-2021-42342": {
+  "cve": "CVE-2021-42342",
+  "commits_found": 0
+ },
+ "CVE-2021-42374": {
+  "cve": "CVE-2021-42374",
+  "commits_found": 0
+ },
+ "CVE-2021-42375": {
+  "cve": "CVE-2021-42375",
+  "commits_found": 0
+ },
+ "CVE-2021-42376": {
+  "cve": "CVE-2021-42376",
+  "commits_found": 0
+ },
+ "CVE-2021-42378": {
+  "cve": "CVE-2021-42378",
+  "commits_found": 0
+ },
+ "CVE-2021-42379": {
+  "cve": "CVE-2021-42379",
+  "commits_found": 0
+ },
+ "CVE-2021-42380": {
+  "cve": "CVE-2021-42380",
+  "commits_found": 0
+ },
+ "CVE-2021-42386": {
+  "cve": "CVE-2021-42386",
+  "commits_found": 0
+ },
+ "CVE-2021-43997": {
+  "cve": "CVE-2021-43997",
+  "commits_found": 0
+ },
+ "CVE-2021-44228": {
+  "cve": "CVE-2021-44228",
+  "commits_found": 0
+ },
+ "CVE-2021-44832": {
+  "cve": "CVE-2021-44832",
+  "commits_found": 0
+ },
+ "CVE-2021-45046": {
+  "cve": "CVE-2021-45046",
+  "commits_found": 0
+ },
+ "CVE-2021-45105": {
+  "cve": "CVE-2021-45105",
+  "commits_found": 0
+ },
+ "CVE-2022-0547": {
+  "cve": "CVE-2022-0547",
+  "commits_found": 0
+ },
+ "CVE-2022-0778": {
+  "cve": "CVE-2022-0778",
+  "commits_found": 0
+ },
+ "CVE-2022-0847": {
+  "cve": "CVE-2022-0847",
+  "commits_found": 0
+ },
+ "CVE-2022-0934": {
+  "cve": "CVE-2022-0934",
+  "commits_found": 0
+ },
+ "CVE-2022-1292": {
+  "cve": "CVE-2022-1292",
+  "commits_found": 0
+ },
+ "CVE-2022-2068": {
+  "cve": "CVE-2022-2068",
+  "commits_found": 0
+ },
+ "CVE-2022-21426": {
+  "cve": "CVE-2022-21426",
+  "commits_found": 0
+ },
+ "CVE-2022-21449": {
+  "cve": "CVE-2022-21449",
+  "commits_found": 0
+ },
+ "CVE-2022-21496": {
+  "cve": "CVE-2022-21496",
+  "commits_found": 0
+ },
+ "CVE-2022-22515": {
+  "cve": "CVE-2022-22515",
+  "commits_found": 0
+ },
+ "CVE-2022-22517": {
+  "cve": "CVE-2022-22517",
+  "commits_found": 0
+ },
+ "CVE-2022-22576": {
+  "cve": "CVE-2022-22576",
+  "commits_found": 0
+ },
+ "CVE-2022-22707": {
+  "cve": "CVE-2022-22707",
+  "commits_found": 0
+ },
+ "CVE-2022-22822": {
+  "cve": "CVE-2022-22822",
+  "commits_found": 0
+ },
+ "CVE-2022-22965": {
+  "cve": "CVE-2022-22965",
+  "commits_found": 0
+ },
+ "CVE-2022-22968": {
+  "cve": "CVE-2022-22968",
+  "commits_found": 0
+ },
+ "CVE-2022-22970": {
+  "cve": "CVE-2022-22970",
+  "commits_found": 0
+ },
+ "CVE-2022-23303": {
+  "cve": "CVE-2022-23303",
+  "commits_found": 0
+ },
+ "CVE-2022-23852": {
+  "cve": "CVE-2022-23852",
+  "commits_found": 0
+ },
+ "CVE-2022-24805": {
+  "cve": "CVE-2022-24805",
+  "repo": "net-snmp/net-snmp",
+  "commit": "67ebb43e9038",
+  "file": "agent/mibgroup/agent/nsLogging.c",
+  "vuln_code": "continue;\n            logh = (netsnmp_log_handler*)netsnmp_extract_iterator_context(request);\n            table_info  =                netsnmp_extract_table_info(request);\n\n            switch (table_info->colnum) {\n            case NSLOGGING_TYPE:\n            }\n            logh = (netsnmp_log_handler*)netsnmp_extract_iterator_context(request);\n            table_info  =                 netsnmp_extract_table_info(request);\n\n            switch (table_info->colnum) {\n            case NSLOGGING_TYPE:\n                continue;\n            logh = (netsnmp_log_handler*)netsnmp_extract_iterator_context(request);\n            table_info  =                 netsnmp_extract_table_info(request);\n\n            switch (table_info->colnum) {\n            case NSLOGGING_TYPE:",
+  "patched_code": "continue;\n            logh = (netsnmp_log_handler*)netsnmp_extract_iterator_context(request);\n            table_info  =                netsnmp_extract_table_info(request);\n            if (!table_info || !table_info->indexes)\n                continue;\n\n            switch (table_info->colnum) {\n            case NSLOGGING_TYPE:\n            }\n            logh = (netsnmp_log_handler*)netsnmp_extract_iterator_context(request);\n            table_info  =                 netsnmp_extract_table_info(request);\n            if (!table_info || !table_info->indexes)\n                continue;\n\n            switch (table_info->colnum) {\n            case NSLOGGING_TYPE:\n                continue;\n            logh = (netsnmp_log_handler*)netsnmp_extract_iterator_context(request);\n            table_info  =                 netsnmp_extract_table_info(request);\n            if (!table_info || !table_info->indexes)\n                continue;\n\n            switch (table_info->colnum) {\n            case NSLOGGING_TYPE:",
+  "src": "gh"
+ },
+ "CVE-2022-24809": {
+  "cve": "CVE-2022-24809",
+  "commits_found": 1
+ },
+ "CVE-2022-25235": {
+  "cve": "CVE-2022-25235",
+  "commits_found": 0
+ },
+ "CVE-2022-25236": {
+  "cve": "CVE-2022-25236",
+  "commits_found": 0
+ },
+ "CVE-2022-25315": {
+  "cve": "CVE-2022-25315",
+  "commits_found": 0
+ },
+ "CVE-2022-25761": {
+  "cve": "CVE-2022-25761",
+  "repo": "open62541/open62541",
+  "commit": "b79db1ac7814",
+  "file": "plugins/ua_config_default.c",
+  "vuln_code": "/*******************************/\n\nconst UA_ConnectionConfig UA_ConnectionConfig_default = {\n    0,     /* .protocolVersion */\n    65535, /* .sendBufferSize, 64k per chunk */\n    65535, /* .recvBufferSize, 64k per chunk */\n    0,     /* .localMaxMessageSize, 0 -> unlimited */\n    0,     /* .remoteMaxMessageSize, 0 -> unlimited */\n    0,     /* .localMaxChunkCount, 0 -> unlimited */\n    0      /* .remoteMaxChunkCount, 0 -> unlimited */\n};\n\n/***************************/",
+  "patched_code": "/*******************************/\n\nconst UA_ConnectionConfig UA_ConnectionConfig_default = {\n    0,       /* .protocolVersion */\n    2 << 16, /* .sendBufferSize, 64k per chunk */\n    2 << 16, /* .recvBufferSize, 64k per chunk */\n    2 << 29, /* .localMaxMessageSize, 512 MB */\n    2 << 29, /* .remoteMaxMessageSize, 512 MB */\n    2 << 14, /* .localMaxChunkCount, 16k */\n    2 << 14  /* .remoteMaxChunkCount, 16k */\n};\n\n/***************************/",
+  "src": "gh"
+ },
+ "CVE-2022-27774": {
+  "cve": "CVE-2022-27774",
+  "commits_found": 0
+ },
+ "CVE-2022-28391": {
+  "cve": "CVE-2022-28391",
+  "commits_found": 0
+ },
+ "CVE-2022-29143": {
+  "cve": "CVE-2022-29143",
+  "commits_found": 0
+ },
+ "CVE-2022-29824": {
+  "cve": "CVE-2022-29824",
+  "commits_found": 0
+ },
+ "CVE-2022-30767": {
+  "cve": "CVE-2022-30767",
+  "repo": "u-boot/u-boot",
+  "commit": "5d14ee4e53a8",
+  "file": "net/nfs.c",
+  "vuln_code": "}\n\n\tif (supported_nfs_versions & NFSV2_FLAG) {\n\t\tmemcpy(filefh, rpc_pkt.u.reply.data + 1, NFS_FHSIZE);\n\t} else {  /* NFSV3_FLAG */\n\t\tfilefh3_length = ntohl(rpc_pkt.u.reply.data[1]);\n\t\tif (filefh3_length > NFS3_FHSIZE)\n\t\t\tfilefh3_length  = NFS3_FHSIZE;\n\t\tmemcpy(filefh, rpc_pkt.u.reply.data + 2, filefh3_length);\n\t}",
+  "patched_code": "}\n\n\tif (supported_nfs_versions & NFSV2_FLAG) {\n\t\tif (((uchar *)&(rpc_pkt.u.reply.data[0]) - (uchar *)(&rpc_pkt) + NFS_FHSIZE) > len)\n\t\t\treturn -NFS_RPC_DROP;\n\t\tmemcpy(filefh, rpc_pkt.u.reply.data + 1, NFS_FHSIZE);\n\t} else {  /* NFSV3_FLAG */\n\t\tfilefh3_length = ntohl(rpc_pkt.u.reply.data[1]);\n\t\tif (filefh3_length > NFS3_FHSIZE)\n\t\t\tfilefh3_length  = NFS3_FHSIZE;\n\t\tif (((uchar *)&(rpc_pkt.u.reply.data[0]) - (uchar *)(&rpc_pkt) + filefh3_length) > len)\n\t\t\treturn -NFS_RPC_DROP;\n\t\tmemcpy(filefh, rpc_pkt.u.reply.data + 2, filefh3_length);\n\t}",
+  "src": "gh"
+ },
+ "CVE-2022-31802": {
+  "cve": "CVE-2022-31802",
+  "commits_found": 0
+ },
+ "CVE-2022-32221": {
+  "cve": "CVE-2022-32221",
+  "commits_found": 0
+ },
+ "CVE-2022-33967": {
+  "cve": "CVE-2022-33967",
+  "commits_found": 0
+ },
+ "CVE-2022-35409": {
+  "cve": "CVE-2022-35409",
+  "commits_found": 0
+ },
+ "CVE-2022-37434": {
+  "cve": "CVE-2022-37434",
+  "repo": "madler/zlib",
+  "commit": "1eb7682f845a",
+  "file": "inflate.c",
+  "vuln_code": "copy = state->length;\n                if (copy > have) copy = have;\n                if (copy) {\n                    len = state->head->extra_len - state->length;\n                    if (state->head != Z_NULL &&\n                        state->head->extra != Z_NULL &&\n                        len < state->head->extra_max) {\n                        zmemcpy(state->head->extra + len, next,\n                                len + copy > state->head->extra_max ?\n                                state->head->extra_max - len : copy);",
+  "patched_code": "copy = state->length;\n                if (copy > have) copy = have;\n                if (copy) {\n                    if (state->head != Z_NULL &&\n                        state->head->extra != Z_NULL &&\n                        (len = state->head->extra_len - state->length) <\n                            state->head->extra_max) {\n                        zmemcpy(state->head->extra + len, next,\n                                len + copy > state->head->extra_max ?\n                                state->head->extra_max - len : copy);",
+  "src": "gh"
+ },
+ "CVE-2022-40303": {
+  "cve": "CVE-2022-40303",
+  "commits_found": 0
+ },
+ "CVE-2022-40304": {
+  "cve": "CVE-2022-40304",
+  "commits_found": 0
+ },
+ "CVE-2022-41741": {
+  "cve": "CVE-2022-41741",
+  "commits_found": 0
+ },
+ "CVE-2022-41742": {
+  "cve": "CVE-2022-41742",
+  "commits_found": 0
+ },
+ "CVE-2022-42003": {
+  "cve": "CVE-2022-42003",
+  "repo": "FasterXML/jackson-databind",
+  "commit": "d78d00ee7b52",
+  "file": "src/main/java/com/fasterxml/jackson/databind/deser/std/StdDeserializer.java",
+  "vuln_code": "// 23-Mar-2017, tatu: Let's specifically block recursive resolution to avoid\n        //   either supporting nested arrays, or to cause infinite looping.\n        if (p.hasToken(JsonToken.START_ARRAY)) {\n            String msg = String.format(\n\"Cannot deserialize instance of %s out of %s token: nested Arrays not allowed with %s\",\n                    ClassUtil.nameOf(_valueClass), JsonToken.START_ARRAY,\n                    \"DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS\");\n            @SuppressWarnings(\"unchecked\")\n            T result = (T) ctxt.handleUnexpectedToken(getValueType(ctxt), p.currentToken(), p, msg);\n            return result;\n        }\n        return (T) deserialize(p, ctxt);\n        case JsonTokenId.ID_START_ARRAY:\n            // 12-Jun-2020, tatu: For some reason calling `_deserializeFromArray()` won't work so:\n            if (ctxt.isEnabled(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS)) {\n                p.nextToken();\n                final boolean parsed = _parseBooleanPrimitive(p, ctxt);\n                _verifyEndArrayForSingle(p, ctxt);\n                return parsed;\n        case JsonTokenId.ID_START_ARRAY: // unwrapping / from-empty-array coercion?\n      ",
+  "patched_code": "// 23-Mar-2017, tatu: Let's specifically block recursive resolution to avoid\n        //   either supporting nested arrays, or to cause infinite looping.\n        if (p.hasToken(JsonToken.START_ARRAY)) {\n            @SuppressWarnings(\"unchecked\")\n            T result = (T) handleNestedArrayForSingle(p, ctxt);\n            return result;\n        }\n        return (T) deserialize(p, ctxt);\n        case JsonTokenId.ID_START_ARRAY:\n            // 12-Jun-2020, tatu: For some reason calling `_deserializeFromArray()` won't work so:\n            if (ctxt.isEnabled(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS)) {\n                if (p.nextToken() == JsonToken.START_ARRAY) {\n                    return (boolean) handleNestedArrayForSingle(p, ctxt);\n                }\n                final boolean parsed = _parseBooleanPrimitive(p, ctxt);\n                _verifyEndArrayForSingle(p, ctxt);\n                return parsed;\n        case JsonTokenId.ID_START_ARRAY: // unwrapping / from-empty-array coercion?\n            // 12-Jun-2020, tatu: For some reason calling `_deserializeFromArray()` won't work so:\n            if (ctxt.isEnabled(DeserializationFeature.UNWRAP_SINGLE_VALUE_ARRAYS)) {\n            ",
+  "src": "gh"
+ },
+ "CVE-2022-42004": {
+  "cve": "CVE-2022-42004",
+  "commits_found": 1,
+  "repo": "FasterXML/jackson-databind",
+  "commit": "063183589218",
+  "file": "src/main/java/com/fasterxml/jackson/databind/deser/BeanDeserializer.java",
+  "vuln_code": "import com.fasterxml.jackson.databind.cfg.CoercionAction;\nimport com.fasterxml.jackson.databind.deser.impl.*;\nimport com.fasterxml.jackson.databind.deser.impl.ReadableObjectId.Referring;\nimport com.fasterxml.jackson.databind.util.IgnorePropertiesUtil;\nimport com.fasterxml.jackson.databind.util.NameTransformer;\nimport com.fasterxml.jackson.databind.util.TokenBuffer;",
+  "patched_code": "import com.fasterxml.jackson.databind.cfg.CoercionAction;\nimport com.fasterxml.jackson.databind.deser.impl.*;\nimport com.fasterxml.jackson.databind.deser.impl.ReadableObjectId.Referring;\nimport com.fasterxml.jackson.databind.util.ClassUtil;\nimport com.fasterxml.jackson.databind.util.IgnorePropertiesUtil;\nimport com.fasterxml.jackson.databind.util.NameTransformer;\nimport com.fasterxml.jackson.databind.util.TokenBuffer;"
+ },
+ "CVE-2022-42252": {
+  "cve": "CVE-2022-42252",
+  "commits_found": 0
+ },
+ "CVE-2022-42905": {
+  "cve": "CVE-2022-42905",
+  "commits_found": 0
+ },
+ "CVE-2022-4304": {
+  "cve": "CVE-2022-4304",
+  "commits_found": 0
+ },
+ "CVE-2022-46908": {
+  "cve": "CVE-2022-46908",
+  "commits_found": 0
+ },
+ "CVE-2023-0215": {
+  "cve": "CVE-2023-0215",
+  "commits_found": 0
+ },
+ "CVE-2023-0286": {
+  "cve": "CVE-2023-0286",
+  "commits_found": 0
+ },
+ "CVE-2023-0809": {
+  "cve": "CVE-2023-0809",
+  "commits_found": 0
+ },
+ "CVE-2023-20860": {
+  "cve": "CVE-2023-20860",
+  "commits_found": 0
+ },
+ "CVE-2023-20861": {
+  "cve": "CVE-2023-20861",
+  "commits_found": 0
+ },
+ "CVE-2023-21528": {
+  "cve": "CVE-2023-21528",
+  "commits_found": 0
+ },
+ "CVE-2023-21808": {
+  "cve": "CVE-2023-21808",
+  "commits_found": 0
+ },
+ "CVE-2023-21930": {
+  "cve": "CVE-2023-21930",
+  "commits_found": 0
+ },
+ "CVE-2023-21937": {
+  "cve": "CVE-2023-21937",
+  "commits_found": 0
+ },
+ "CVE-2023-26551": {
+  "cve": "CVE-2023-26551",
+  "commits_found": 0
+ },
+ "CVE-2023-27533": {
+  "cve": "CVE-2023-27533",
+  "commits_found": 0
+ },
+ "CVE-2023-27536": {
+  "cve": "CVE-2023-27536",
+  "commits_found": 0
+ },
+ "CVE-2023-28450": {
+  "cve": "CVE-2023-28450",
+  "commits_found": 0
+ },
+ "CVE-2023-28484": {
+  "cve": "CVE-2023-28484",
+  "commits_found": 0
+ },
+ "CVE-2023-28708": {
+  "cve": "CVE-2023-28708",
+  "commits_found": 0
+ },
+ "CVE-2023-31048": {
+  "cve": "CVE-2023-31048",
+  "commits_found": 0
+ },
+ "CVE-2023-32233": {
+  "cve": "CVE-2023-32233",
+  "repo": "torvalds/linux",
+  "commit": "c1592a89942e",
+  "file": "include/net/netfilter/nf_tables.h",
+  "vuln_code": "};\n\nenum nft_trans_phase;\nvoid nf_tables_deactivate_set(const struct nft_ctx *ctx, struct nft_set *set,\n\t\t\t      struct nft_set_binding *binding,\n\t\t\t      enum nft_trans_phase phase);",
+  "patched_code": "};\n\nenum nft_trans_phase;\nvoid nf_tables_activate_set(const struct nft_ctx *ctx, struct nft_set *set);\nvoid nf_tables_deactivate_set(const struct nft_ctx *ctx, struct nft_set *set,\n\t\t\t      struct nft_set_binding *binding,\n\t\t\t      enum nft_trans_phase phase);",
+  "src": "gh"
+ },
+ "CVE-2023-34035": {
+  "cve": "CVE-2023-34035",
+  "commits_found": 0
+ },
+ "CVE-2023-3592": {
+  "cve": "CVE-2023-3592",
+  "commits_found": 0
+ },
+ "CVE-2023-3663": {
+  "cve": "CVE-2023-3663",
+  "commits_found": 0
+ },
+ "CVE-2023-3665": {
+  "cve": "CVE-2023-3665",
+  "commits_found": 0
+ },
+ "CVE-2023-3724": {
+  "cve": "CVE-2023-3724",
+  "commits_found": 0
+ },
+ "CVE-2023-3725": {
+  "cve": "CVE-2023-3725",
+  "commits_found": 0
+ },
+ "CVE-2023-37559": {
+  "cve": "CVE-2023-37559",
+  "commits_found": 0
+ },
+ "CVE-2023-37560": {
+  "cve": "CVE-2023-37560",
+  "commits_found": 0
+ },
+ "CVE-2023-38408": {
+  "cve": "CVE-2023-38408",
+  "commits_found": 3,
+  "repo": "openbsd/src",
+  "commit": "7bc29a9d5cd6",
+  "file": "usr.bin/ssh/ssh-agent.c",
+  "vuln_code": "/* $OpenBSD: ssh-agent.c,v 1.299 2023/07/10 04:51:26 djm Exp $ */\n/*\n * Author: Tatu Ylonen <ylo@cs.hut.fi>\n * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland",
+  "patched_code": "/* $OpenBSD: ssh-agent.c,v 1.300 2023/07/19 13:56:33 djm Exp $ */\n/*\n * Author: Tatu Ylonen <ylo@cs.hut.fi>\n * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland"
+ },
+ "CVE-2023-38545": {
+  "cve": "CVE-2023-38545",
+  "commits_found": 0
+ },
+ "CVE-2023-4257": {
+  "cve": "CVE-2023-4257",
+  "commits_found": 0
+ },
+ "CVE-2023-43615": {
+  "cve": "CVE-2023-43615",
+  "commits_found": 0
+ },
+ "CVE-2023-44487": {
+  "cve": "CVE-2023-44487",
+  "commits_found": 2,
+  "repo": "netty/netty",
+  "commit": "58f75f665aa8",
+  "file": "codec-http2/src/test/java/io/netty/handler/codec/http2/Http2EmptyDataFrameConnectionDecoderTest.java",
+  "vuln_code": "*/\npackage io.netty.handler.codec.http2;\n\nimport org.hamcrest.CoreMatchers;\nimport org.junit.jupiter.api.Test;\nimport org.mockito.ArgumentCaptor;\nimport org.mockito.invocation.InvocationOnMock;\nimport org.mockito.stubbing.Answer;\n\nimport static org.hamcrest.MatcherAssert.assertThat;\nimport static org.junit.jupiter.api.Assertions.assertNull;\nimport static org.mockito.Mockito.mock;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\npublic class Http2EmptyDataFrameConnectionDecoderTest {\n\n    @Test\n    public void testDecoration() {\n        Http2ConnectionDecoder delegate = mock(Http2ConnectionDecoder.class);\n        final ArgumentCaptor<Http2FrameListener> listenerArgumentCaptor =\n                ArgumentCaptor.forClass(Http2FrameListener.class);\n        when(delegate.frameListener()).then(new Answer<Http2FrameListener>() {\n            @Override\n            public Http2FrameListener answer(InvocationOnMock invocationOnMock) {\n                return listenerArgumentCaptor.getValue();\n            }\n        });\n        Http2FrameListener listener = mock(Http2FrameListener.class);\n        Http2EmptyDataFrameConnectionDecoder decoder = new Http2EmptyDataFra",
+  "patched_code": "*/\npackage io.netty.handler.codec.http2;\n\npublic class Http2EmptyDataFrameConnectionDecoderTest extends AbstractDecoratingHttp2ConnectionDecoderTest {\n\n    @Override\n    protected DecoratingHttp2ConnectionDecoder newDecoder(Http2ConnectionDecoder decoder) {\n        return new Http2EmptyDataFrameConnectionDecoder(decoder, 2);\n    }\n\n    @Override\n    protected Class<? extends Http2FrameListener> delegatingFrameListenerType() {\n        return Http2EmptyDataFrameListener.class;\n    }\n}"
+ },
+ "CVE-2023-45322": {
+  "cve": "CVE-2023-45322",
+  "commits_found": 0
+ },
+ "CVE-2023-46218": {
+  "cve": "CVE-2023-46218",
+  "commits_found": 0
+ },
+ "CVE-2023-46849": {
+  "cve": "CVE-2023-46849",
+  "commits_found": 0
+ },
+ "CVE-2023-46850": {
+  "cve": "CVE-2023-46850",
+  "commits_found": 0
+ },
+ "CVE-2023-48795": {
+  "cve": "CVE-2023-48795",
+  "repo": "TeraTermProject/teraterm",
+  "commit": "7279fbd6ef4d",
+  "file": "ttssh2/ttxssh/kex.c",
+  "vuln_code": "// �L�[�č쐬�̏ꍇ�ɂ́A�ڑ����� pvar->settings ����g�ݗ��Ă�ꂽ myproposal ������������B\n\t\t\t//   pvar->settings �� �ڑ����� myproposal ���쐬�����Ƃ��̒l����ς���Ă��Ȃ��ۏ؂��Ȃ��B\n\t\t\t//   �ēx�g�ݗ��Ă�̂ł͂Ȃ������� myproposal �����������邱�Ƃɂ����B\n\t\t\tint pos = strlen(myproposal[PROPOSAL_KEX_ALGS]) - strlen(\",ext-info-c\");\n\t\t\tif (strcmp(myproposal[PROPOSAL_KEX_ALGS] + pos, \",ext-info-c\") == 0) {\n\t\t\t\tmyproposal[PROPOSAL_KEX_ALGS][pos] = '\\0';\n\t\t\t}\n\t\t}\n\t\tstrncat_s(buf, sizeof(buf), \",\", _TRUNCATE);\n\t}\n\n\t// RFC 8308 Extension Negotiation\n\tstrncat_s(buf, sizeof(buf), \"ext-info-c\", _TRUNCATE);\n\n\tmyproposal[PROPOSAL_KEX_ALGS] = buf; \n}",
+  "patched_code": "// �L�[�č쐬�̏ꍇ�ɂ́A�ڑ����� pvar->settings ����g�ݗ��Ă�ꂽ myproposal ������������B\n\t\t\t//   pvar->settings �� �ڑ����� myproposal ���쐬�����Ƃ��̒l����ς���Ă��Ȃ��ۏ؂��Ȃ��B\n\t\t\t//   �ēx�g�ݗ��Ă�̂ł͂Ȃ������� myproposal �����������邱�Ƃɂ����B\n\t\t\tint pos = strlen(myproposal[PROPOSAL_KEX_ALGS]) - strlen(\",ext-info-c,kex-strict-c-v00@openssh.com\");\n\t\t\tif (strcmp(myproposal[PROPOSAL_KEX_ALGS] + pos, \",ext-info-c,kex-strict-c-v00@openssh.com\") == 0) {\n\t\t\t\tmyproposal[PROPOSAL_KEX_ALGS][pos] = '\\0';\n\t\t\t}\n\t\t}\n\t\tstrncat_s(buf, sizeof(buf), \",\", _TRUNCATE);\n\t}\n\n\t// Enables RFC 8308 Extension Negotiation & Strict KEX mode (for CVE-2023-48795)\n\tstrncat_s(buf, sizeof(buf), \"ext-info-c,kex-strict-c-v00@openssh.com\", _TRUNCATE);\n\n\tmyproposal[PROPOSAL_KEX_ALGS] = buf; \n}",
+  "src": "gh"
+ },
+ "CVE-2023-4911": {
+  "cve": "CVE-2023-4911",
+  "commits_found": 0
+ },
+ "CVE-2023-5188": {
+  "cve": "CVE-2023-5188",
+  "commits_found": 0
+ },
+ "CVE-2023-52160": {
+  "cve": "CVE-2023-52160",
+  "commits_found": 0
+ },
+ "CVE-2023-52425": {
+  "cve": "CVE-2023-52425",
+  "commits_found": 0
+ },
+ "CVE-2023-7104": {
+  "cve": "CVE-2023-7104",
+  "commits_found": 0
+ },
+ "CVE-2023-7256": {
+  "cve": "CVE-2023-7256",
+  "repo": "the-tcpdump-group/libpcap",
+  "commit": "262e4f349798",
+  "file": "pcap-rpcap.c",
+  "vuln_code": "{\n\tstruct activehosts *temp;\t\t\t/* temp var needed to scan the host list chain */\n\tstruct addrinfo hints, *addrinfo, *ai_next;\t/* temp var needed to translate between hostname to its address */\n\tint retval;\n\n\t/* retrieve the network address corresponding to 'host' */\n\taddrinfo = NULL;\n\tmemset(&hints, 0, sizeof(struct addrinfo));\n\thints.ai_family = PF_UNSPEC;\n\thints.ai_socktype = SOCK_STREAM;\n\n\tretval = sock_initaddress(host, NULL, &hints, &addrinfo, errbuf,\n\t    PCAP_ERRBUF_SIZE);\n\tif (retval != 0)\n\t{\n\t\t*error = 1;\n\t\treturn NULL;\n\t\thints.ai_flags = AI_PASSIVE;\t/* Data connection is opened by the server toward the client */\n\n\t\t/* Let's the server pick up a free network port for us */\n\t\tif (sock_initaddress(NULL, NULL, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)\n\t\t\tgoto error_nodiscard;\n\n\t\tif ((sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER,\n\t\t\tsnprintf(portstring, PCAP_BUF_SIZE, \"%d\", ntohs(startcapreply.portdata));\n\n\t\t\t/* Let's the server pick up a free network port for us */\n\t\t\tif (sock_initaddress(host, portstring, &hints, &addrinfo, fp->errbuf, PCAP_ERRBUF_SIZE) == -1)\n\t\t\t\tgoto error;\n\n\t\t\tif ((sockdata = sock_open(host, addrinfo, SOCKOPEN_CLIENT, 0, fp->errbuf, ",
+  "patched_code": "{\n\tstruct activehosts *temp;\t\t\t/* temp var needed to scan the host list chain */\n\tstruct addrinfo hints, *addrinfo, *ai_next;\t/* temp var needed to translate between hostname to its address */\n\n\t/* retrieve the network address corresponding to 'host' */\n\taddrinfo = NULL;\n\tmemset(&hints, 0, sizeof(struct addrinfo));\n\thints.ai_family = PF_UNSPEC;\n\thints.ai_socktype = SOCK_STREAM;\n\n\taddrinfo = sock_initaddress(host, NULL, &hints, errbuf,\n\t    PCAP_ERRBUF_SIZE);\n\tif (addrinfo == NULL)\n\t{\n\t\t*error = 1;\n\t\treturn NULL;\n\t\thints.ai_flags = AI_PASSIVE;\t/* Data connection is opened by the server toward the client */\n\n\t\t/* Let's the server pick up a free network port for us */\n\t\taddrinfo = sock_initaddress(NULL, NULL, &hints, fp->errbuf,\n\t\t    PCAP_ERRBUF_SIZE);\n\t\tif (addrinfo == NULL)\n\t\t\tgoto error_nodiscard;\n\n\t\tif ((sockdata = sock_open(NULL, addrinfo, SOCKOPEN_SERVER,\n\t\t\tsnprintf(portstring, PCAP_BUF_SIZE, \"%d\", ntohs(startcapreply.portdata));\n\n\t\t\t/* Let's the server pick up a free network port for us */\n\t\t\taddrinfo = sock_initaddress(host, portstring, &hints,\n\t\t\t    fp->errbuf, PCAP_ERRBUF_SIZE);\n\t\t\tif (addrinfo == NULL)\n\t\t\t\tgoto error;\n\n\t\t\tif ((sockdata = sock_open(host, addrinfo, SOCKOPE",
+  "src": "gh"
+ },
+ "CVE-2024-1086": {
+  "cve": "CVE-2024-1086",
+  "commits_found": 0
+ },
+ "CVE-2024-2379": {
+  "cve": "CVE-2024-2379",
+  "commits_found": 0
+ },
+ "CVE-2024-2961": {
+  "cve": "CVE-2024-2961",
+  "commits_found": 0
+ },
+ "CVE-2024-6387": {
+  "cve": "CVE-2024-6387",
+  "commits_found": 1
+ }
+}

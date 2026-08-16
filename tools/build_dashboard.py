@@ -8,6 +8,8 @@ R = os.path.join(BASE, "results")
 KB = json.load(open(os.path.join(R, "cve_kb.json"), encoding="utf-8"))
 EX = json.load(open(os.path.join(R, "example_sbom.json"), encoding="utf-8"))
 DASH = json.load(open(os.path.join(R, "dashboard_data.json"), encoding="utf-8"))
+TM = json.load(open(os.path.join(R, "two_model_metrics.json"), encoding="utf-8"))
+CB = json.load(open(os.path.join(R, "codebert_metrics.json"), encoding="utf-8"))
 
 # 대시보드 평가 데이터(요약)
 o = DASH["overall"]
@@ -24,6 +26,20 @@ DATA = {
   "baseline": round(DASH["baseline"],4),
   "perarm": DASH["perarm"], "labels": DASH["labels"],
   "runtime": DASH["runtime"], "device": DASH["device"],
+  "two_model": {
+      "codebert_standalone_acc": round(CB["accuracy_mean"], 3),
+      "ref_match_perturbed": TM["A_reference_matching"]["perturbed_match_acc"],
+      "ref_match_n": TM["A_reference_matching"]["n"],
+      "bp_injected": TM["B_backport_detection"]["backport_injected"],
+      "bp_caught": TM["B_backport_detection"]["backport_caught_by_codebert"],
+      "ctx_acc": TM["B_backport_detection"]["context_only_acc"],
+      "two_acc": TM["B_backport_detection"]["two_model_acc"],
+      "ctx_fp": TM["B_backport_detection"]["context_only_backport_falsepos"],
+      "two_fp": TM["B_backport_detection"]["two_model_backport_falsepos"],
+      "code_cves": TM["A_reference_matching"]["n"] // 2,
+      "unavail": TM["C_closed_code_routing"]["routed_to_under_investigation"],
+      "total": TM["C_closed_code_routing"]["total_findings"],
+  },
   "samples": [{"cve":"CVE-2012-4704","device":"CODESYS Gateway Server","status":"LIKELY_AFFECTED","conf":0.933,"oracle":"LIKELY_AFFECTED","rationale":["The weakness is driven through network messages accepted by an exposed interface.","The unit is reachable remotely, including through vendor remote-support tunnels."]},
               {"cve":"CVE-2012-4705","device":"CODESYS Gateway Server","status":"UNDER_INVESTIGATION","conf":0.946,"oracle":"UNDER_INVESTIGATION","rationale":["The prerequisites an attacker would need here are not established in the evidence.","The unit is reachable remotely, including through vendor remote-support tunnels."]},
               {"cve":"CVE-2019-9013","device":"CODESYS V3 Runtime","status":"LIKELY_NOT_AFFECTED","conf":0.944,"oracle":"LIKELY_NOT_AFFECTED","rationale":["The path opens only to an adjacent station on the same physical network.","The unit operates islanded, with no IP path in from plant or enterprise networks."]},
@@ -254,6 +270,26 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   </section>
 
   <section>
+    <div class="sec-h"><h2>2-모델 결합 (SecureBERT + CodeBERT)</h2><span class="n">맥락 leg + 코드 leg</span></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>CodeBERT 코드 leg — 정직한 두 얼굴</h3>
+        <p class="hint">추상적 취약성 판단은 실패, 레퍼런스 매칭은 작동.</p>
+        <div class="rmet" id="tm_code"></div>
+      </div>
+      <div class="card">
+        <h3>백포트 오탐 탐지</h3>
+        <p class="hint">버전은 취약하나 코드가 패치된 케이스를 CodeBERT가 바로잡음.</p>
+        <div id="tm_bp"></div>
+      </div>
+    </div>
+    <div class="banner" style="margin-top:16px;background:var(--surface-2);border-color:var(--line)">
+      <span class="k" style="color:var(--accent)">한계</span>
+      <span id="tm_note"></span>
+    </div>
+  </section>
+
+  <section>
     <div class="sec-h"><h2>설명가능 VEX 출력</h2><span class="n">각 판정에 근거 문장 부착</span></div>
     <div class="samples" id="samples"></div>
   </section>
@@ -402,6 +438,19 @@ $("#samples").innerHTML=D.samples.map(s=>{const m=s.status===s.oracle;
   return '<div class="svex"><div class="top"><span class="cve">'+s.cve+'</span><span class="pill '+s.status+'">'+LAB[s.status]+'</span></div><div class="dev">'+s.device+'</div>'
     +'<div class="rats">'+s.rationale.map((t,i)=>'<div class="rat"><span class="eid">CVE-'+(i+2)+'</span><span>'+esc(t)+'</span></div>').join("")+'</div>'
     +'<div class="meta"><span>confidence <b>'+s.conf.toFixed(2)+'</b></span><span class="'+(m?"match":"miss")+'">oracle '+(m?"&#10003; 일치":"&#8800; 불일치")+' · '+LAB[s.oracle]+'</span></div></div>';}).join("");
+// two-model
+const T=D.two_model;
+$("#tm_code").innerHTML='<div class="box"><div class="v" style="color:var(--affected)">'+T.codebert_standalone_acc.toFixed(2)+'</div><div class="l">추상적 취약성 분류</div><div class="d">미학습 CVE, 무작위 0.50 = 실패 (정직히 보고)</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--safe)">'+T.ref_match_perturbed.toFixed(2)+'</div><div class="l">레퍼런스 매칭 (변형)</div><div class="d">변형된 배포코드→올바른 레퍼런스. n='+T.ref_match_n+'</div></div>';
+$("#tm_bp").innerHTML=
+  '<div class="an-summary" style="grid-template-columns:1fr 1fr">'
+  +'<div class="stile"><div class="v">'+T.bp_caught+'/'+T.bp_injected+'</div><div class="l">CodeBERT가 잡은 백포트</div></div>'
+  +'<div class="stile"><div class="v" style="color:var(--safe)">'+T.ctx_fp+'&rarr;'+T.two_fp+'</div><div class="l">백포트 오탐 감소</div></div></div>'
+  +'<div class="bars"><div class="bar-row"><div class="nm">맥락 단독</div><div class="track"><div class="fill" style="width:'+(T.ctx_acc*100)+'%;background:var(--under)">'+T.ctx_acc.toFixed(3)+'</div></div></div>'
+  +'<div class="bar-row"><div class="nm">+CodeBERT</div><div class="track"><div class="fill" style="width:'+(T.two_acc*100)+'%;background:var(--safe)">'+T.two_acc.toFixed(3)+'</div></div></div></div>';
+$("#tm_note").innerHTML='실제 코드는 OSS '+T.code_cves+' CVE에서만 확보됨 → 엄격한 "코드 없으면 조사필요" 규칙은 findings의 '
+  +Math.round(100*T.unavail/T.total)+'%('+T.unavail.toLocaleString()+'/'+T.total.toLocaleString()+')를 조사필요로 만듦. '
+  +'따라서 실제 시스템은 <b>하이브리드</b>: 코드 있으면 CodeBERT 확정(백포트 제거), 없으면 SecureBERT 맥락 판정.';
 const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
 $("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
 $("#pipe").innerHTML=["CISA 크롤","악용신호(KEV·EPSS)","역방향 SBOM","Ground Truth","SecureBERT 학습·평가"].map(s=>'<span>'+s+'</span>').join('<span class="s">&rarr;</span>');
