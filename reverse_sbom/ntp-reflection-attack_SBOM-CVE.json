@@ -1,0 +1,146 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:c39c1344-ff7b-5255-8f71-6f1eb83c2cd3",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "component": {
+      "type": "device",
+      "bom-ref": "device:ntp-reflection-attack",
+      "name": "NTP Reflection Attack",
+      "version": "NOASSERTION",
+      "publisher": "NTP",
+      "cpe": "cpe:2.3:o:ntp:reflection-attack:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "NTP"
+      },
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "NTP"
+        },
+        {
+          "name": "ics:product",
+          "value": "Reflection Attack"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-14-051-04"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:ntp",
+      "name": "NTP Daemon",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "publisher": "Network Time Foundation",
+      "cpe": "cpe:2.3:a:ntp:ntp:*:*:*:*:*:*:*:*",
+      "purl": "pkg:generic/ntp",
+      "licenses": [
+        {
+          "license": {
+            "id": "NTP"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:ntp-reflection-attack:CVE-2013-5211",
+      "id": "CVE-2013-5211",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-14-051-04"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:ntp",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-14-051-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.97549"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}
