@@ -200,17 +200,12 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
 <div class="wrap">
   <header>
     <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT</div>
-    <h1>SBOM 취약점 분석기 &amp; 평가 계기판</h1>
+    <h1>ICS-VEXForege</h1>
     <p class="sub">CycloneDX SBOM을 올리면 컴포넌트를 CVE와 대조해 배치맥락 기반 VEX 판정을 즉시 산출한다.
       아래에는 이 판정 시스템의 실측 평가 결과를 함께 싣는다.</p>
     <div class="chips" id="chips"></div>
   </header>
 
-  <div class="banner">
-    <span class="k">Note</span>
-    <span>분석기는 <b>내장 CVE 지식베이스</b>(주요 OSS 42종·303 CVE, 실측 CVSS/KEV/EPSS)로 브라우저 안에서만 동작한다.
-      평가 수치는 규칙 오라클 기반 <b>silver GT</b> 위에서 측정된 값으로, 실세계 정확도가 아니라 파이프라인·학습가능성 검증이다.</span>
-  </div>
 
   <section>
     <div class="sec-h"><h2>SBOM &rarr; CVE &rarr; VEX 분석기</h2><span class="n">CycloneDX 1.x &middot; 브라우저 내 처리</span></div>
@@ -283,7 +278,7 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
     <div class="sec-h"><h2>2-모델 결합 (SecureBERT + CodeBERT)</h2><span class="n">맥락 leg + 코드 leg</span></div>
     <div class="grid2">
       <div class="card">
-        <h3>CodeBERT 코드 leg — 정직한 두 얼굴</h3>
+        <h3>CodeBERT</h3>
         <p class="hint">추상적 취약성 판단은 실패, 레퍼런스 매칭은 작동.</p>
         <div class="rmet" id="tm_code"></div>
       </div>
@@ -489,7 +484,7 @@ $("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)"
   +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch 미세과제</div><div class="d">파인튜닝도 전이 안 됨 → 레퍼런스 매칭(0.97)이 답</div></div>';
 $("#da_note").innerHTML='<b>SecureBERT ICS 적응은 명확히 통함</b>(perplexity −'+A2.dapt_drop.toFixed(0)+'%). '
   +'<b>CodeBERT는 일반 취약탐지는 학습(F1 '+A2.cb_devign_f1.toFixed(2)+')하나</b>, 같은 함수의 취약/패치 미세 구분엔 파인튜닝도 전이되지 않음('+A2.cb_match_ft.toFixed(2)+'). '
-  +'백포트 탐지는 분류가 아니라 <b>레퍼런스 매칭(0.97)</b>으로 해결됨.';
+  +'백포트 탐지: <b>레퍼런스 매칭(0.97)</b>';
 const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
 $("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
 $("#pipe").innerHTML=["CISA 크롤","악용신호(KEV·EPSS)","역방향 SBOM","Ground Truth","SecureBERT 학습·평가"].map(s=>'<span>'+s+'</span>').join('<span class="s">&rarr;</span>');
