@@ -201,8 +201,6 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   <header>
     <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT</div>
     <h1>ICS-VEXForege</h1>
-    <p class="sub">CycloneDX SBOM을 올리면 컴포넌트를 CVE와 대조해 배치맥락 기반 VEX 판정을 즉시 산출한다.
-      아래에는 이 판정 시스템의 실측 평가 결과를 함께 싣는다.</p>
     <div class="chips" id="chips"></div>
   </header>
 
@@ -275,18 +273,21 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   </section>
 
   <section>
-    <div class="sec-h"><h2>2-모델 결합 (SecureBERT + CodeBERT)</h2><span class="n">맥락 leg + 코드 leg</span></div>
+    <div class="sec-h"><h2>2-모델 결합 </h2><span class="n">맥락 leg + 코드 leg</span></div>
     <div class="grid2">
       <div class="card">
         <h3>CodeBERT</h3>
-        <p class="hint">추상적 취약성 판단은 실패, 레퍼런스 매칭은 작동.</p>
         <div class="rmet" id="tm_code"></div>
       </div>
       <div class="card">
         <h3>백포트 탐지</h3>
-        <p class="hint">버전은 취약하나 코드가 패치된 케이스를 CodeBERT가 바로잡음.</p>
+        <p class="hint">버전은 취약하나, 코드가 패치된 케이스를 CodeBERT가 탐지.</p>
         <div id="tm_bp"></div>
       </div>
+    </div>
+    <div class="banner" style="margin-top:16px;background:var(--surface-2);border-color:var(--line)">
+      <span class="k" style="color:var(--accent)">한계</span>
+      <span id="tm_note"></span>
     </div>
   </section>
 
@@ -304,6 +305,10 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
         <div class="rmet" id="da_cb"></div>
       </div>
     </div>
+    <div class="banner" style="margin-top:16px;background:var(--surface-2);border-color:var(--line)">
+      <span class="k" style="color:var(--accent)">해석</span>
+      <span id="da_note"></span>
+    </div>
   </section>
 
   <section>
@@ -318,12 +323,6 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
       <div class="ychart" id="ychart"></div>
     </div>
   </section>
-
-  <footer>
-    <div class="pipe" id="pipe"></div>
-    <p style="margin-top:12px">모델: SecureBERT 문장-어텐션 멀티태스크 + 보수적 Decision Engine.
-      학습·평가 <span id="rt"></span> on <span id="dev"></span>.</p>
-  </footer>
 </div>
 
 <script>
@@ -432,7 +431,6 @@ $("#kpis").innerHTML=
   '<div class="kpi"><div class="lab">Macro F1</div><div class="val">'+o.macro_f1.toFixed(3)+'</div>'
   +'<div class="cap">baseline 대비 <span class="delta">+'+(o.macro_f1-D.baseline).toFixed(3)+'</span> (TF-IDF '+D.baseline.toFixed(3)+')</div></div>'
   +'<div class="kpi safety"><div class="lab">영향&rarr;비영향 오판</div><div class="val">'+o.wrong_na+'</div>'
-  +'<div class="cap">ICS 안전 핵심 지표 · 가장 위험한 오류 0건</div></div>'
   +'<div class="kpi"><div class="lab">Calibration ECE</div><div class="val">'+o.ece.toFixed(3)+'</div><div class="cap">낮을수록 보정 우수</div></div>'
   +'<div class="kpi"><div class="lab">조사 필요 전환율</div><div class="val">'+(o.under_rate*100).toFixed(0)+'<span style="font-size:18px">%</span></div><div class="cap">불확실 시 보수적 보류</div></div>';
 const cm=o.confusion_matrix,L=D.labels,mx=Math.max(...cm.flat());
@@ -465,16 +463,7 @@ $("#tm_bp").innerHTML=
   +'<div class="stile"><div class="v" style="color:var(--safe)">'+T.ctx_fp+'&rarr;'+T.two_fp+'</div><div class="l">백포트 오탐 감소</div></div></div>'
   +'<div class="bars"><div class="bar-row"><div class="nm">맥락 단독</div><div class="track"><div class="fill" style="width:'+(T.ctx_acc*100)+'%;background:var(--under)">'+T.ctx_acc.toFixed(3)+'</div></div></div>'
   +'<div class="bar-row"><div class="nm">+CodeBERT</div><div class="track"><div class="fill" style="width:'+(T.two_acc*100)+'%;background:var(--safe)">'+T.two_acc.toFixed(3)+'</div></div></div></div>';
-// domain adaptation
-const A2=D.domain_adapt;
-$("#da_sb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">-'+A2.dapt_drop.toFixed(0)+'%</div><div class="l">ICS 텍스트 perplexity</div><div class="d">'+A2.dapt_ppl_before.toFixed(2)+' → '+A2.dapt_ppl_after.toFixed(2)+' ('+(A2.dapt_corpus/1000).toFixed(0)+'k 문장)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--safe)">'+A2.dapt_term_vanilla.toFixed(2)+'→'+A2.dapt_term_dapt.toFixed(2)+'</div><div class="l">ICS 용어 복원</div><div class="d">vanilla → ICS-DAPT (Modbus·PLC·GOOSE 등)</div></div>';
-$("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+A2.cb_match_frozen.toFixed(2)+'→'+A2.cb_devign_f1.toFixed(2)+'</div><div class="l">Devign 취약탐지 F1</div><div class="d">frozen 0.50 → 파인튜닝 (실제 취약탐지 학습)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch 미세과제</div><div class="d">파인튜닝도 전이 안 됨 → 레퍼런스 매칭(0.97)이 답</div></div>';
-const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
-$("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
-$("#pipe").innerHTML=["CISA 크롤","악용신호(KEV·EPSS)","역방향 SBOM","Ground Truth","SecureBERT 학습·평가"].map(s=>'<span>'+s+'</span>').join('<span class="s">&rarr;</span>');
-$("#rt").textContent=D.runtime+"s";$("#dev").textContent=D.device.toUpperCase();
+
 </script>
 """
 
