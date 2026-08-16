@@ -426,7 +426,7 @@ $("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)"
   +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch 미세과제</div><div class="d">파인튜닝도 전이 안 됨 → 레퍼런스 매칭(0.97)이 답</div></div>';
 $("#da_note").innerHTML='<b>SecureBERT ICS 적응은 명확히 통함</b>(perplexity −'+A2.dapt_drop.toFixed(0)+'%). '
   +'<b>CodeBERT는 일반 취약탐지는 학습(F1 '+A2.cb_devign_f1.toFixed(2)+')하나</b>, 같은 함수의 취약/패치 미세 구분엔 파인튜닝도 전이되지 않음('+A2.cb_match_ft.toFixed(2)+'). '
-  +'백포트 탐지는 분류가 아니라 <b>레퍼런스 매칭(0.97)</b>으로 해결됨.';
+  +'백포트 탐지: <b>레퍼런스 매칭(0.97)</b>';
 const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
 $("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
 $("#pipe").innerHTML=["CISA 크롤","악용신호(KEV·EPSS)","역방향 SBOM","Ground Truth","SecureBERT 학습·평가"].map(s=>'<span>'+s+'</span>').join('<span class="s">&rarr;</span>');
