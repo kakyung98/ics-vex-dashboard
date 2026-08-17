@@ -100,8 +100,12 @@ def main():
 
     # ---------- (B) 백포트 탐지 (end-to-end) ----------
     import csv
+    # 라우팅: vuln/patched 코드 쌍을 실제로 확보한 건만 코드 leg 로 들어온다.
+    # 주의 — findings.csv 의 tier 는 SBOM 속성명이 component:source-availability 이지만
+    # 실제로는 OSS 카탈로그 귀속 여부일 뿐이다(tier A 132 CVE 중 코드 보유는 15 CVE).
+    # 따라서 게이트는 tier 가 아니라 code_evidence.json 실보유(`cve in pairs`)다.
     rows = [r for r in csv.DictReader(open(FIND, encoding="utf-8-sig"))
-            if r["arm"] == "oss" and r["cve"] in pairs]
+            if r["cve"] in pairs]
     # 각 finding: 맥락 판정 + 코드 상태(취약/백포트) 배정
     ctx_only_pred, two_model_pred, truth = [], [], []
     backport_caught = backport_total = 0
@@ -146,12 +150,19 @@ def main():
 
     # ---------- (C) 폐쇄코드 -> UNDER 카운트 ----------
     all_rows = list(csv.DictReader(open(FIND, encoding="utf-8-sig")))
-    n_closed = sum(1 for r in all_rows if r["arm"] == "vendor")
-    n_oss_nocode = sum(1 for r in all_rows if r["arm"] == "oss" and r["cve"] not in pairs)
+    n_closed = sum(1 for r in all_rows if r["tier"] == "E")                             # 벤더 폐쇄 펌웨어
+    n_oss_nocode = sum(1 for r in all_rows if r["tier"] in ("A", "C")
+                       and r["cve"] not in pairs)                                       # OSS 귀속이나 코드 미확보
+    n_routed_code = sum(1 for r in all_rows if r["cve"] in pairs)                       # 코드 leg 진입
+    n_oss_attributed = sum(1 for r in all_rows if r["tier"] == "A")                     # 코드 leg 확장 후보군
     C = {"vendor_closed_findings": n_closed, "oss_without_code": n_oss_nocode,
          "routed_to_under_investigation": n_closed + n_oss_nocode,
+         "routed_to_code_leg": n_routed_code,
+         "oss_attributed_expansion_pool": n_oss_attributed,
          "total_findings": len(all_rows),
-         "note": "코드 확인 불가(폐쇄 벤더코드 + 코드 미확보 OSS)는 README §7 규칙에 따라 UNDER_INVESTIGATION"}
+         "note": "코드 미확보 건은 SecureBERT 맥락 leg 에서 종결하며 UNDER_INVESTIGATION 으로 남는다. "
+                 "CodeBERT/sLLM 은 vuln/patched 코드 쌍을 실제 보유한 건에만 적용된다. "
+                 "tier A(OSS 귀속)는 코드를 수집하면 코드 leg 로 승격 가능한 확장 후보군이다."}
     print("(C) code-unavailable -> UNDER_INVESTIGATION: %d/%d findings (%.0f%%)" %
           (C["routed_to_under_investigation"], C["total_findings"],
            100 * C["routed_to_under_investigation"] / C["total_findings"]))
