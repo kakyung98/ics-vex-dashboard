@@ -37,6 +37,14 @@ SAMPLE_DIR = os.path.join(RESULTS, "sample_vex")
 
 LABELS = ["LIKELY_AFFECTED", "LIKELY_NOT_AFFECTED", "UNDER_INVESTIGATION"]
 L2I = {l: i for i, l in enumerate(LABELS)}
+
+# 라우팅 (build_ground_truth.py 와 동일한 값)
+ROUTE_CODE = "securebert->codebert->sllm"      # 소스 확보 -> 코드 leg 진입
+ROUTE_CONTEXT_ONLY = "securebert-only"          # 소스 미확보 -> 맥락 leg 에서 종결
+
+# 반증 근거로 인정하는 문장 종류 (v3 어휘).
+# NOT_AFFECTED 는 이 중 하나가 근거로 선택되어야 확정된다.
+COUNTER_KINDS = {"exec_not_affected", "exposure"}
 SEED = 20260416
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -109,7 +117,12 @@ def encode_sentences(recs):
 
 
 def codebert_signal(recs):
-    """oss-arm findings: CVE 설명 <-> CWE 취약코드 템플릿 CodeBERT 유사도."""
+    """소스 확보된 findings 만: CVE 설명 <-> CWE 취약코드 템플릿 CodeBERT 유사도.
+
+    라우팅 규칙 — 코드 leg 는 대조할 실제 코드가 있을 때만 의미가 있다.
+    route == "securebert->codebert->sllm" (tier A) 인 건만 통과시키고,
+    소스가 없는 건은 여기서 아예 다루지 않는다(SecureBERT 에서 종결).
+    """
     from transformers import AutoTokenizer, AutoModel
     tok = AutoTokenizer.from_pretrained("microsoft/codebert-base")
     model = AutoModel.from_pretrained("microsoft/codebert-base").to(DEVICE).eval()
@@ -126,17 +139,17 @@ def codebert_signal(recs):
     tmpl_emb /= (np.linalg.norm(tmpl_emb, axis=1, keepdims=True) + 1e-9)
 
     sig = {}
-    oss = [r for r in recs if r["arm"] == "oss"]
-    for i in range(0, len(oss), 128):
-        batch = oss[i:i + 128]
+    routed = [r for r in recs if r.get("route") == ROUTE_CODE]
+    print("    코드 leg 대상: %d / %d (소스 확보된 건만)" % (len(routed), len(recs)), flush=True)
+    for i in range(0, len(routed), 128):
+        batch = routed[i:i + 128]
         descs = [next(s["text"] for s in r["sentences"] if s["id"] == "CVE-1") for r in batch]
         de = embed(descs); de /= (np.linalg.norm(de, axis=1, keepdims=True) + 1e-9)
         sims = de @ tmpl_emb.T
         for r, srow in zip(batch, sims):
-            cwe = r["structured"].get("av") and r  # placeholder
             best = float(srow.max())
             sig[r["sampleId"]] = "present" if best >= 0.92 else "weak"
-    return sig   # 그 외(context-arm) 는 abstain
+    return sig   # 소스 미확보 건은 키 자체가 없다 -> decision_engine 에서 abstain
 
 
 # ---------------------------------------------------------------------------
@@ -212,29 +225,46 @@ def predict(model, X, M):
 # Evidence Verifier + 보수적 Decision Engine
 # ---------------------------------------------------------------------------
 def decision_engine(rec, probs, rat_p, ids, code_sig, conf_thresh=0.55):
-    """모델 출력 -> 보수적 최종 VEX. NOT_AFFECTED 는 적극적 반증 rationale 필요."""
+    """모델 출력 -> 보수적 최종 VEX.
+
+    라우팅을 존중한다:
+      route == securebert-only (소스 미확보)
+          SecureBERT 출력이 최종이다. 코드 신호를 참조하지 않는다.
+          확정 상태를 내려면 반증 근거(exposure)가 선택되어야 한다.
+      route == securebert->codebert->sllm (소스 확보)
+          CodeBERT 신호를 함께 본다. 코드가 있는데 신호가 weak 이면
+          섣불리 확정하지 않고 실행 검증으로 넘긴다.
+    """
     pred_i = int(np.argmax(probs))
     pred = LABELS[pred_i]; conf = float(probs[pred_i])
     # 선택된 rationale 문장(상위, 임계 0.5)
     sel = [ids[j] for j in range(len(ids)) if rat_p[j] >= 0.5]
-    # 문장 kind 조회
     kind = {s["id"]: s["kind"] for s in rec["sentences"]}
-    has_counter = any(kind.get(e) in ("neg_absent", "neg_version", "neg_patched", "neg_disabled", "exposure")
-                      and kind.get(e) is not None for e in sel)
-    # exposure 문장이 반증이 되려면 isolated/physical 맥락이어야 하지만
-    # 여기서는 '노출 관련 근거가 선택되었는가'를 완화 조건으로 사용
-    neg_selected = any(kind.get(e, "").startswith("neg_") for e in sel)
+    route = rec.get("route", ROUTE_CONTEXT_ONLY)
+    has_counter = any(kind.get(e) in COUNTER_KINDS for e in sel)
+    exec_confirmed = any(kind.get(e) == "exec_affected" for e in sel)
 
-    # 규칙
     if conf < conf_thresh:
         return "UNDER_INVESTIGATION", conf, sel, "model confidence below threshold"
+
     if pred == "LIKELY_NOT_AFFECTED":
-        if neg_selected or any(kind.get(e) == "exposure" for e in sel):
-            return "LIKELY_NOT_AFFECTED", conf, sel, "positive counter-evidence present"
-        return "UNDER_INVESTIGATION", conf, sel, "not-affected lacks positive counter-evidence"
+        if not has_counter:
+            return "UNDER_INVESTIGATION", conf, sel, "not-affected lacks positive counter-evidence"
+        if route == ROUTE_CODE and code_sig == "present":
+            # 코드가 있고 취약 코드 신호가 살아있으면 비영향 확정을 보류한다
+            return "UNDER_INVESTIGATION", conf, sel, "code signal contradicts not-affected; execution check required"
+        return "LIKELY_NOT_AFFECTED", conf, sel, "positive counter-evidence present"
+
     if pred == "LIKELY_AFFECTED":
-        # oss-arm 이고 코드 신호가 weak/none 이면 코드확인 필요 -> 유지하되 표시
-        return "LIKELY_AFFECTED", conf, sel, "affected conditions supported by evidence"
+        if exec_confirmed:
+            return "LIKELY_AFFECTED", conf, sel, "exploitability confirmed by execution"
+        if route == ROUTE_CODE and code_sig != "present":
+            # 소스가 있는데 코드 신호가 약함 -> 실행 검증 대기
+            return "UNDER_INVESTIGATION", conf, sel, "source available but code signal weak; pending execution check"
+        if route == ROUTE_CONTEXT_ONLY:
+            return "LIKELY_AFFECTED", conf, sel, "affected estimated from attack vector and deployment context"
+        return "LIKELY_AFFECTED", conf, sel, "affected conditions supported by context and code signal"
+
     return "UNDER_INVESTIGATION", conf, sel, "insufficient or conflicting evidence"
 
 
@@ -384,7 +414,20 @@ def main():
         out = {
             "sampleId": r["sampleId"], "device": r["device"], "cve": r["cve"],
             "vex_status": fp_label, "confidence": round(conf, 3),
-            "oracle_label": r["label"], "decision_reason": reason,
+            # 학습 타깃(노이즈 적용 후). 오라클 원본은 clean_label 이다.
+            "target_label": r["label"], "clean_label": r.get("clean_label"),
+            "label_source": r.get("label_source"),
+            "decision_reason": reason,
+            # 라우팅 및 증거 계층 — 이 판정이 어디까지 확인된 것인지
+            "route": r.get("route"), "evidence_tier": r.get("evidence_tier"),
+            "source_availability": r.get("source_availability"),
+            "code_signal": code_sig.get(r["sampleId"]),
+            # 데이터셋의 증거 기반 1차 진술 (표준 VEX)
+            "dataset_vex_status": r.get("vex_status"),
+            "dataset_justification": r.get("justification"),
+            "dataset_justification_vocabulary": r.get("justification_vocabulary"),
+            "estimated_status": r.get("estimated_status"),
+            "estimate_confidence": r.get("estimate_confidence"),
             "selected_rationale": [{"evidenceId": e, "text": kind_te[i][e]["text"]} for e in sel],
             "model_probs": {LABELS[k]: round(float(probs[i][k]), 3) for k in range(3)},
         }
@@ -402,6 +445,7 @@ def main():
             "probs": [round(float(x), 4) for x in probs[i]],
             "av": r["structured"]["av"], "exposure": r["structured"]["exposure"],
             "kev": bool(r["structured"]["kev"]),
+            "route": r.get("route"), "evidence_tier": r.get("evidence_tier"),
         })
     json.dump(preds, open(os.path.join(RESULTS, "predictions.json"), "w", encoding="utf-8"),
               ensure_ascii=False)
