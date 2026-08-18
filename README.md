@@ -15,16 +15,16 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 - **출력**: 컴포넌트별 CVE 식별 + VEX 판정(`영향 가능`/`비영향`/`조사 필요`) + 표준 justification + 판정 근거 문장
 - **코드 확보 여부가 경로를 가른다**:
 
-| 상태 | findings | 경로 | 1차 VEX |
+| 상태 | CVE | 경로 | 1차 VEX |
 |---|---|---|---|
-| **취약/패치 코드 쌍 실보유** | 36 (0.28%) | SecureBERT → CodeBERT → sLLM/실행 검증 | 실행 검증 성공 시 **확정** |
-| 코드 미확보 | 12,969 (99.72%) | SecureBERT 에서 **종결** | `UNDER_INVESTIGATION` |
+| **취약/패치 코드 쌍 실보유** | 15 (0.13%) | SecureBERT → CodeBERT → sLLM/실행 검증 | 실행 검증 성공 시 **확정** |
+| 코드 미확보 | 11,321 (99.87%) | SecureBERT 에서 **종결** | `UNDER_INVESTIGATION` |
 
 > ⚠️ **`tier` 컬럼 주의**: SBOM 속성명이 `component:source-availability` 라서 소스 확보로 읽히지만,
 > 실제로는 **OSS 카탈로그 귀속 여부**일 뿐이다([build_reverse_sbom.py:202](src/build_reverse_sbom.py:202)).
-> `tier=="A"` 132 CVE / 356 findings 중 실제로 코드를 확보한 것은 **15 CVE / 36 findings**.
+> `tier=="A"` 132 CVE 중 실제로 코드를 확보한 것은 **15 CVE**.
 > 따라서 코드 leg 게이트는 `tier` 가 아니라 `code_evidence_available` 이다.
-> tier A 356건은 코드를 수집하면 승격 가능한 **확장 후보군**으로만 의미가 있다
+> tier A 132 CVE 는 코드를 수집하면 승격 가능한 **확장 후보군**으로만 의미가 있다
 > (`data/vex_dataset_code.jsonl` 로 별도 export).
 
   - **SecureBERT** — 보안/자산 텍스트(맥락·노출) 분석. 전 건의 1차 처리 + 소스 미확보 건의 최종 판정
@@ -67,7 +67,7 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 
 > **실행 순서 주의**: `build_ground_truth.py` 는 `results/exec_verification*.json` 과
 > `data/code_evidence.json` 을 읽어 증거 계층을 정한다. **코드 수집·실행 검증이 먼저** 돌아야 한다.
-> 검증된 CVE 를 추가하면 해당 findings 가 자동으로 확정 계층으로 승격된다(코드 수정 불필요).
+> 검증된 CVE 를 추가하면 해당 CVE 가 자동으로 확정 계층으로 승격된다(코드 수정 불필요).
 
 ## 주요 결과
 
@@ -92,15 +92,15 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 전량 검증을 목표로 [tools/build_verify_specs.py](tools/build_verify_specs.py)가 tier A 132 CVE 전부에
 스펙을 생성하고 검증 가능성을 분류한다:
 
-| 분류 | CVE | findings |
-|---|---|---|
-| `verifiable-c` (WSL + ASan 대조 가능) | 101 | 290 |
-| `blocked-proprietary` (CODESYS·IPnet·Treck·SQL Server) | 21 | 46 |
-| `blocked-scope` (커널·JVM·.NET) | 10 | 20 |
+| 분류 | CVE |
+|---|---|
+| `verifiable-c` (WSL + ASan 대조 가능) | 101 |
+| `blocked-proprietary` (CODESYS·IPnet·Treck·SQL Server) | 21 |
+| `blocked-scope` (커널·JVM·.NET) | 10 |
 
-**356건 전량 검증은 원리상 불가능하다.** 상한은 290 findings(81.5%)이고,
-66 findings(18.5%)는 폐쇄 소스거나 단위 실행 검증 범위를 벗어난다.
-현재 트리거가 확보된 것은 1 CVE(zlib CVE-2018-25032, 5 findings)뿐이며,
+**132 CVE 전량 검증은 원리상 불가능하다.** 상한은 101 CVE(76.5%)이고,
+31 CVE(23.5%)는 폐쇄 소스거나 단위 실행 검증 범위를 벗어난다.
+현재 트리거가 확보된 것은 1 CVE(zlib CVE-2018-25032)뿐이며,
 나머지 100 CVE는 CVE별 트리거 작성이 남은 유일한 수작업이다.
 
 학습 타깃(`label`) 분포 — 확정 5건 + 2차 추정 13,000건:
