@@ -186,7 +186,8 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   .rat{display:flex;gap:8px;font-size:12.5px;color:var(--ink-2);line-height:1.4}
   .rat .eid{font-family:var(--mono);font-size:10px;color:var(--accent);padding-top:2px;flex-shrink:0}
   .svex .meta{display:flex;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-  .svex .meta b{color:var(--ink-2)}.match{color:var(--safe)}.miss{color:var(--under)}
+  .svex .meta b{color:var(--ink-2)}
+  .svex .meta .tier{font-family:var(--mono);color:var(--ink-3,var(--ink-2));opacity:.75}
   .ychart{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px}
   .ycol{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-width:0}
   .ycol .b{width:100%;background:var(--accent);border-radius:3px 3px 0 0;opacity:.85}
@@ -205,10 +206,11 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
     <div style="margin-top:12px;font-family:var(--mono);font-size:12px;line-height:1.5;
         padding:10px 14px;border-radius:9px;border:1px solid color-mix(in srgb,var(--safe) 45%,transparent);
         background:color-mix(in srgb,var(--safe) 10%,transparent);max-width:760px">
-      🛡️ <b>Static-analysis VEX.</b> Verdicts come from static evidence &mdash; component
-      presence, Attack&nbsp;Vector&nbsp;&times;&nbsp;exposure reachability, patch-diff similarity,
-      and an sLLM analyst&rarr;critic loop. <b>No proof-of-concept is generated or executed.</b>
-      The confirmed tier is <span style="font-family:var(--mono)">static-analysis-verified</span>.
+      🛡️ <b>Static-analysis VEX.</b> The full pipeline decides VEX from static evidence &mdash;
+      SecureBERT context, CodeBERT patch-diff, and an sLLM analyst&rarr;critic loop over
+      Attack&nbsp;Vector&nbsp;&times;&nbsp;exposure reachability. <b>No proof-of-concept is generated or executed.</b>
+      The model pipeline runs in the <b>ICS-VEXForge webapp</b> / <span style="font-family:var(--mono)">vex_pipeline.py</span>
+      (needs a Python backend); the in-page tool below is a fast reachability preview only.
     </div>
     <div style="margin-top:14px">
       <a href="cve_analysis.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
@@ -219,7 +221,7 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   </header>
 
   <section>
-    <div class="sec-h"><h2>SBOM &rarr; CVE &rarr; VEX Analyzer</h2><span class="n">CycloneDX 1.x &middot; in-browser processing</span></div>
+    <div class="sec-h"><h2>SBOM &rarr; CVE &rarr; VEX Analyzer</h2><span class="n">CycloneDX 1.x &middot; in-browser reachability preview</span></div>
     <div class="card analyzer">
       <div class="an-io">
         <div class="drop" id="drop">
@@ -242,10 +244,12 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
         </div>
       </div>
       <div class="an-result" id="anres"><div class="empty">Enter an SBOM to see per-component CVEs and VEX status here.</div></div>
-      <div class="an-note">VEX status is decided by <b>static analysis only</b> &mdash; nothing is executed.
-        Reachability is computed from the CVE's Attack Vector and the chosen deployment exposure &rarr;
-        reachable + vulnerable version = <b>Affected</b>, unreachable = <b>Not affected</b>, conditional = <b>Under investigation</b>.
-        If the version is outside the vulnerable range the CVE is not flagged (e.g., zlib 1.2.13).</div>
+      <div class="an-note"><b>Preview only.</b> This in-page tool computes reachability from the CVE's
+        Attack Vector &times; the chosen deployment exposure &rarr; reachable + vulnerable version = <b>Affected</b>,
+        unreachable = <b>Not affected</b>, conditional = <b>Under investigation</b> (version outside the vulnerable
+        range is not flagged, e.g. zlib 1.2.13). It does <b>not</b> run SecureBERT/CodeBERT/sLLM &mdash; the full
+        model-based static VEX (with rationale, patch-diff and analyst&rarr;critic adjudication) runs server-side in
+        the ICS-VEXForge webapp via <span style="font-family:var(--mono)">vex_pipeline.py</span>. Nothing is ever executed.</div>
     </div>
   </section>
 
@@ -363,7 +367,7 @@ function lookup(comp){
   if(comp.name){const h=IDX.get(key("name",comp.name,v));if(h)return h;}
   return null;
 }
-/* reachability + VEX (same rule as oracle) */
+/* reachability + VEX (AV x exposure rule, static) */
 const EXPT={"isolated-cell":0,"control-network":1,"dmz-routable":2,"remote-accessible":3};
 function reach(av,exp){const t=EXPT[exp];
   if(av==="N")return t===0?"no":(t===1?"cond":"yes");
@@ -461,10 +465,11 @@ $("#perarm").innerHTML=arms.map(a=>'<div class="bar-row"><div class="nm">'+a[0]+
 const r=D.rationale;
 $("#rmet").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+r.comp.toFixed(3)+'</div><div class="l">Comprehensiveness &uarr;</div><div class="d">Confidence drops sharply when rationale removed &rarr; causal</div></div>'
   +'<div class="box"><div class="v" style="color:var(--accent)">'+r.suff.toFixed(3)+'</div><div class="l">Sufficiency drop &darr;</div><div class="d">Prediction holds on rationale alone &rarr; sufficient</div></div>';
-$("#samples").innerHTML=D.samples.map(s=>{const m=s.status===s.oracle;
+$("#samples").innerHTML=D.samples.map(s=>{
+  const tier=s.status==="UNDER_INVESTIGATION"?"under-investigation":"static-reasoned";
   return '<div class="svex"><div class="top"><span class="cve">'+s.cve+'</span><span class="pill '+s.status+'">'+LAB[s.status]+'</span></div><div class="dev">'+s.device+'</div>'
     +'<div class="rats">'+s.rationale.map((t,i)=>'<div class="rat"><span class="eid">CVE-'+(i+2)+'</span><span>'+esc(t)+'</span></div>').join("")+'</div>'
-    +'<div class="meta"><span>confidence <b>'+s.conf.toFixed(2)+'</b></span><span class="'+(m?"match":"miss")+'">oracle '+(m?"&#10003; match":"&#8800; mismatch")+' · '+LAB[s.oracle]+'</span></div></div>';}).join("");
+    +'<div class="meta"><span>confidence <b>'+s.conf.toFixed(2)+'</b></span><span class="tier">'+tier+'</span></div></div>';}).join("");
 // two-model
 const T=D.two_model;
 $("#tm_code").innerHTML='<div class="box"><div class="v" style="color:var(--affected)">'+T.codebert_standalone_acc.toFixed(2)+'</div><div class="l">Abstract vulnerability classification</div><div class="d">Unseen CVEs, random 0.50 = failure (reported honestly)</div></div>'
