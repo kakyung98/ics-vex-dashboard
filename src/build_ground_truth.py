@@ -90,8 +90,12 @@ TIER_DESC = {"A": "oss-attributed", "C": "oss-inferred", "E": "vendor-proprietar
 #                        (대조할 코드가 없어 CodeBERT 는 근거 없는 출력을 낼 뿐)
 ROUTE_CODE = "securebert->codebert->sllm"
 ROUTE_CONTEXT_ONLY = "securebert-only"
+# 2026-08 정적 개편: 라이브 판정 파이프라인(src/vex_pipeline.py)은 PoC 생성·실행을
+# 전혀 하지 않고 정적분석(sLLM static analyst + grounding critic)으로만 VEX 를 확정한다.
+# 아래 sllm-static-analyst 라벨이 그 경로다. 과거 execution-verified 5건은
+# results/exec_verification*.json 실측을 근거로 역사적 확정 계층으로만 유지된다.
 ROUTE_STAGES = {
-    ROUTE_CODE: ["securebert", "codebert", "sllm-exec-verify"],
+    ROUTE_CODE: ["securebert", "codebert", "sllm-static-analyst"],
     ROUTE_CONTEXT_ONLY: ["securebert"],
 }
 
