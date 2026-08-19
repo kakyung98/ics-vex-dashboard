@@ -197,7 +197,7 @@ def run(sbom_path, exposure=None, use_sllm=True, max_critic_iters=2):
                           adjudication={"status": terminal, "justification": pr["basis"]})
             emit(event="finding", i=i, total=len(findings), cve=cve, component=comp,
                  final_vex=terminal, route="presence-reachability",
-                 justification=pr["justification"])
+                 evidence_tier="static-reasoned", justification=pr["justification"])
             results.append(rec)
             continue
 
