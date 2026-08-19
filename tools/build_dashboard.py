@@ -206,42 +206,42 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
       <a href="cve_analysis.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
         font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;
         background:var(--accent,#12b886);color:#04120c;letter-spacing:.02em">
-        📊 전체 CVE 분석 (11,336) &rarr;</a>
+        📊 Full CVE analysis (11,336) &rarr;</a>
     </div>
   </header>
 
   <section>
-    <div class="sec-h"><h2>SBOM &rarr; CVE &rarr; VEX 분석기</h2><span class="n">CycloneDX 1.x &middot; 브라우저 내 처리</span></div>
+    <div class="sec-h"><h2>SBOM &rarr; CVE &rarr; VEX Analyzer</h2><span class="n">CycloneDX 1.x &middot; in-browser processing</span></div>
     <div class="card analyzer">
       <div class="an-io">
         <div class="drop" id="drop">
-          <div class="big">SBOM 파일을 여기에 드롭하거나 클릭해 선택</div>
-          <div class="small">CycloneDX JSON (.json) &middot; 파일은 업로드되지 않고 브라우저에서만 처리됩니다</div>
+          <div class="big">Drop an SBOM file here or click to select</div>
+          <div class="small">CycloneDX JSON (.json) &middot; files are never uploaded, processed in your browser only</div>
           <input type="file" id="file" accept=".json,application/json" hidden>
         </div>
-        <textarea id="paste" placeholder="또는 CycloneDX JSON을 여기에 붙여넣기…"></textarea>
+        <textarea id="paste" placeholder="Or paste CycloneDX JSON here…"></textarea>
         <div class="controls">
-          <button class="btn-primary" id="analyze">분석</button>
-          <button class="btn-ghost" id="loadex">예시 SBOM 불러오기</button>
-          <div class="grp">배치 노출도
+          <button class="btn-primary" id="analyze">Analyze</button>
+          <button class="btn-ghost" id="loadex">Load example SBOM</button>
+          <div class="grp">Deployment exposure
             <select id="exposure">
-              <option value="isolated-cell">격리 셀 (air-gap)</option>
-              <option value="control-network" selected>제어망</option>
-              <option value="dmz-routable">DMZ 라우팅</option>
-              <option value="remote-accessible">원격 접근</option>
+              <option value="isolated-cell">Isolated cell (air-gap)</option>
+              <option value="control-network" selected>Control network</option>
+              <option value="dmz-routable">DMZ routable</option>
+              <option value="remote-accessible">Remote accessible</option>
             </select>
           </div>
         </div>
       </div>
-      <div class="an-result" id="anres"><div class="empty">SBOM을 입력하면 컴포넌트별 CVE와 VEX 판정이 여기에 표시됩니다.</div></div>
-      <div class="an-note">VEX 판정: CVE의 Attack Vector와 선택한 배치 노출도로 도달성을 계산 →
-        도달 가능+취약버전 = <b>영향 가능</b>, 도달 불가 = <b>비영향</b>, 조건부 = <b>조사 필요</b>.
-        버전이 취약 범위 밖이면 CVE 미탐(예: zlib 1.2.13).</div>
+      <div class="an-result" id="anres"><div class="empty">Enter an SBOM to see per-component CVEs and VEX status here.</div></div>
+      <div class="an-note">VEX status: reachability is computed from the CVE's Attack Vector and the chosen deployment exposure &rarr;
+        reachable + vulnerable version = <b>Affected</b>, unreachable = <b>Not affected</b>, conditional = <b>Under investigation</b>.
+        If the version is outside the vulnerable range the CVE is not flagged (e.g., zlib 1.2.13).</div>
     </div>
   </section>
 
   <section>
-    <div class="sec-h"><h2>시스템 평가 결과</h2><span class="n">SecureBERT &middot; test n=2,117 &middot; device-disjoint</span></div>
+    <div class="sec-h"><h2>System evaluation</h2><span class="n">SecureBERT &middot; test n=2,117 &middot; device-disjoint</span></div>
     <div class="kpis" id="kpis"></div>
   </section>
 
@@ -249,15 +249,15 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
     <div class="grid2">
       <div class="card">
         <h3>Confusion Matrix</h3>
-        <p class="hint">행 = 정답, 열 = 예측. 대각선(정답) 강조, 안전 임계 셀(영향→비영향) 초록.</p>
+        <p class="hint">Rows = truth, columns = prediction. Diagonal (correct) highlighted; the safety-critical cell (Affected&rarr;Not affected) in green.</p>
         <div class="cm" id="cm"></div>
         <div class="legend">
-          <span><i class="sw" style="background:var(--safe)"></i>영향→비영향 오판 = 0</span>
-          <span><i class="sw" style="background:color-mix(in srgb,var(--accent) 30%,transparent)"></i>대각선</span>
+          <span><i class="sw" style="background:var(--safe)"></i>Affected&rarr;Not affected errors = 0</span>
+          <span><i class="sw" style="background:color-mix(in srgb,var(--accent) 30%,transparent)"></i>Diagonal</span>
         </div>
       </div>
       <div class="card">
-        <h3>클래스별 P / R / F1</h3><p class="hint">각 VEX 상태의 정밀도·재현율·F1.</p>
+        <h3>Per-class P / R / F1</h3><p class="hint">Precision, recall, F1 per VEX status.</p>
         <div class="bars" id="perclass"></div>
       </div>
     </div>
@@ -266,65 +266,63 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
   <section>
     <div class="grid2">
       <div class="card">
-        <h3>Arm별 성능</h3><p class="hint">OSS-arm(동적 재현) vs 벤더맥락-arm(폐쇄). Macro F1.</p>
+        <h3>Per-arm performance</h3><p class="hint">OSS-arm (dynamic reproduction) vs vendor-context-arm (closed). Macro F1.</p>
         <div class="bars" id="perarm"></div>
-        <div class="legend"><span>두 arm 모두 영향→비영향 오판 0건</span></div>
+        <div class="legend"><span>Both arms: zero Affected&rarr;Not affected errors</span></div>
       </div>
       <div class="card">
-        <h3>근거(Rationale) 충실도</h3><p class="hint">선택 근거가 실제 예측 원인인지 입력 제거로 검증.</p>
+        <h3>Rationale faithfulness</h3><p class="hint">Verifies the selected rationale actually drives the prediction, via input ablation.</p>
         <div class="rmet" id="rmet"></div>
       </div>
     </div>
   </section>
 
   <section>
-    <div class="sec-h"><h2>2-모델 결합</h2><span class="n">맥락 leg + 코드 leg</span></div>
+    <div class="sec-h"><h2>Two-model combination</h2><span class="n">context leg + code leg</span></div>
     <div class="grid2">
       <div class="card">
         <h3>CodeBERT</h3>
         <div class="rmet" id="tm_code"></div>
       </div>
       <div class="card">
-        <h3>백포트 탐지</h3>
-        <p class="hint">버전은 취약하나, 코드가 패치된 케이스를 CodeBERT가 탐지.</p>
+        <h3>Backport detection</h3>
+        <p class="hint">CodeBERT detects cases where the version looks vulnerable but the code is already patched.</p>
         <div id="tm_bp"></div>
       </div>
     </div>
   </section>
 
   <section>
-    <div class="sec-h"><h2>도메인 적응 (모델 튜닝)</h2><span class="n">frozen → ICS 적응 / 취약탐지 파인튜닝</span></div>
+    <div class="sec-h"><h2>Domain adaptation (model tuning)</h2><span class="n">frozen &rarr; ICS adaptation / vulnerability-detection fine-tuning</span></div>
     <div class="grid2">
       <div class="card">
-        <h3>SecureBERT ICS-DAPT (텍스트)</h3>
-        <p class="hint">CISA 어드바이저리로 continued MLM. 라벨 무관 지표로 측정.</p>
+        <h3>SecureBERT ICS-DAPT (text)</h3>
+        <p class="hint">Continued MLM on CISA advisories. Measured with label-free metrics.</p>
         <div class="rmet" id="da_sb"></div>
       </div>
       <div class="card">
-        <h3>CodeBERT 파인튜닝 (코드)</h3>
-        <p class="hint">Devign으로 취약탐지 학습. 미세과제 전이는 제한적.</p>
+        <h3>CodeBERT fine-tuning (code)</h3>
+        <p class="hint">Vulnerability detection trained on Devign. Transfer to the fine-grained task is limited.</p>
         <div class="rmet" id="da_cb"></div>
       </div>
     </div>
   </section>
 
   <section>
-    <div class="sec-h"><h2>설명가능 VEX 출력</h2><span class="n">각 판정에 근거 문장 부착</span></div>
+    <div class="sec-h"><h2>Explainable VEX output</h2><span class="n">each verdict carries rationale sentences</span></div>
     <div class="samples" id="samples"></div>
   </section>
 
   <section>
     <div class="card">
-      <h3>데이터 출처 &middot; CISA ICS 어드바이저리 (2010–2026)</h3>
-      <p class="hint">연도별 CVE 보유 어드바이저리 수. 전량 실데이터 크롤.</p>
+      <h3>Data source &middot; CISA ICS advisories (2010–2026)</h3>
+      <p class="hint">Advisories with CVEs per year. Fully crawled real data.</p>
       <div class="ychart" id="ychart"></div>
     </div>
   </section>
 
   <footer>
     <div class="pipe" id="pipe"></div>
-    <p style="margin-top:12px">모델: SecureBERT 문장-어텐션 멀티태스크 + 보수적 Decision Engine.
-      학습·평가 <span id="rt"></span> on <span id="dev"></span>.</p>
     <p style="margin-top:10px">&copy; 2026 System Security Research Center, Chonnam National University. All rights reserved.</p>
   </footer>
 </div>
@@ -333,11 +331,11 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
 const D = __DATA__;
 const KB = __KB__;
 const EXAMPLE = __EXAMPLE__;
-const LAB={LIKELY_AFFECTED:"영향 가능",LIKELY_NOT_AFFECTED:"비영향",UNDER_INVESTIGATION:"조사 필요"};
+const LAB={LIKELY_AFFECTED:"Affected",LIKELY_NOT_AFFECTED:"Not affected",UNDER_INVESTIGATION:"Under investigation"};
 const SC={LIKELY_AFFECTED:"var(--affected)",LIKELY_NOT_AFFECTED:"var(--safe)",UNDER_INVESTIGATION:"var(--under)"};
 const $=(s)=>document.querySelector(s);
 
-/* ---------- 분석기: KB 인덱스 ---------- */
+/* ---------- analyzer: KB index ---------- */
 const IDX=new Map();
 function key(){return Array.from(arguments).join("||").toLowerCase();}
 for(const c of KB.components){
@@ -356,18 +354,18 @@ function lookup(comp){
   if(comp.name){const h=IDX.get(key("name",comp.name,v));if(h)return h;}
   return null;
 }
-/* 도달성 + VEX (오라클과 동일 규칙) */
+/* reachability + VEX (same rule as oracle) */
 const EXPT={"isolated-cell":0,"control-network":1,"dmz-routable":2,"remote-accessible":3};
 function reach(av,exp){const t=EXPT[exp];
   if(av==="N")return t===0?"no":(t===1?"cond":"yes");
   if(av==="A")return t===0?"no":(t<=2?"cond":"yes");
   if(av==="L")return "cond"; if(av==="P")return "no"; return "cond";}
-const AVW={N:"네트워크",A:"인접망",L:"로컬",P:"물리"};
+const AVW={N:"Network",A:"Adjacent",L:"Local",P:"Physical"};
 function vex(cve,exp){
   const r=reach(cve.av,exp);
-  if(r==="no")return {s:"LIKELY_NOT_AFFECTED",why:(cve.av==="P"?"물리 접근 필요":"도달 경로 없음")+" · "+exp};
-  if(r==="yes")return {s:"LIKELY_AFFECTED",why:AVW[cve.av]+" 공격면 · "+exp+(cve.kev?" · 야생 악용":"")};
-  return {s:"UNDER_INVESTIGATION",why:"도달성 조건부("+(AVW[cve.av]||"?")+") · "+exp};
+  if(r==="no")return {s:"LIKELY_NOT_AFFECTED",why:(cve.av==="P"?"Physical access required":"No reachable path")+" · "+exp};
+  if(r==="yes")return {s:"LIKELY_AFFECTED",why:AVW[cve.av]+" attack surface · "+exp+(cve.kev?" · exploited in the wild":"")};
+  return {s:"UNDER_INVESTIGATION",why:"Reachability conditional("+(AVW[cve.av]||"?")+") · "+exp};
 }
 function analyze(sbom,exp){
   let comps=[];
@@ -385,11 +383,11 @@ function analyze(sbom,exp){
 function sevRank(s){return {critical:0,high:1,medium:2,low:3,unknown:4}[s]||4;}
 function render(res,exp){
   const el=$("#anres");
-  if(!res.rows.length){el.innerHTML='<div class="empty">스캔한 '+res.scanned+'개 컴포넌트에서 알려진 CVE를 찾지 못했습니다. (내장 KB는 주요 OSS 42종 대상)</div>';return;}
+  if(!res.rows.length){el.innerHTML='<div class="empty">No known CVEs found in the '+res.scanned+' scanned components. (Built-in KB covers 42 major OSS.)</div>';return;}
   let h='<div class="an-summary">'
-    +tile(res.total,"매칭 CVE")+tile(res.aff,"영향 가능",res.aff?"var(--affected)":"")
-    +tile(res.crit,"Critical",res.crit?"var(--affected)":"")+tile(res.kev,"KEV 악용",res.kev?"var(--affected)":"")
-    +tile(res.rows.length,"취약 컴포넌트")+'</div>';
+    +tile(res.total,"Matched CVEs")+tile(res.aff,"Affected",res.aff?"var(--affected)":"")
+    +tile(res.crit,"Critical",res.crit?"var(--affected)":"")+tile(res.kev,"KEV exploited",res.kev?"var(--affected)":"")
+    +tile(res.rows.length,"Vulnerable components")+'</div>';
   for(const r of res.rows.sort((a,b)=>Math.min(...a.cves.map(x=>sevRank(x.sev)))-Math.min(...b.cves.map(x=>sevRank(x.sev))))){
     const worst=r.cves.some(x=>x.vex.s==="LIKELY_AFFECTED");
     h+='<div class="comp"><div class="ch"><div><span class="cn">'+esc(r.name)+'</span> <span class="cv">'+esc(r.version)+'</span></div>'
@@ -410,8 +408,8 @@ function render(res,exp){
 function tile(v,l,col){return '<div class="stile"><div class="v"'+(col?' style="color:'+col+'"':'')+'>'+v+'</div><div class="l">'+l+'</div></div>';}
 function esc(s){return String(s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
 function run(){
-  const raw=$("#paste").value.trim(); if(!raw){$("#anres").innerHTML='<div class="empty">SBOM JSON을 붙여넣거나 파일을 선택하세요.</div>';return;}
-  let sbom; try{sbom=JSON.parse(raw);}catch(e){$("#anres").innerHTML='<div class="empty">JSON 파싱 오류: '+esc(e.message)+'</div>';return;}
+  const raw=$("#paste").value.trim(); if(!raw){$("#anres").innerHTML='<div class="empty">Paste SBOM JSON or select a file.</div>';return;}
+  let sbom; try{sbom=JSON.parse(raw);}catch(e){$("#anres").innerHTML='<div class="empty">JSON parse error: '+esc(e.message)+'</div>';return;}
   render(analyze(sbom,$("#exposure").value),$("#exposure").value);
 }
 $("#analyze").addEventListener("click",run);
@@ -424,59 +422,59 @@ file.addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const 
 ["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
 drop.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$("#paste").value=rd.result;run();};rd.readAsText(f);});
 
-/* ---------- 평가 결과 렌더 ---------- */
+/* ---------- evaluation render ---------- */
 const p=D.provenance;
-$("#chips").innerHTML=[["CISA 어드바이저리",p.advisories.toLocaleString()],["고유 CVE",p.cves.toLocaleString()],
-  ["장비 SBOM",p.devices.toLocaleString()],["Findings",p.findings.toLocaleString()],
-  ["OSS-arm",p.oss.toLocaleString()],["벤더맥락-arm",p.vendor.toLocaleString()],["KEV 실악용",p.kev]]
+$("#chips").innerHTML=[["CISA advisories",p.advisories.toLocaleString()],["Unique CVEs",p.cves.toLocaleString()],
+  ["Device SBOMs",p.devices.toLocaleString()],["Findings",p.findings.toLocaleString()],
+  ["OSS-arm",p.oss.toLocaleString()],["Vendor-context-arm",p.vendor.toLocaleString()],["KEV exploited",p.kev]]
   .map(([k,v])=>'<span class="chip"><span class="dot">&#9679;</span> '+k+' <b>'+v+'</b></span>').join("");
 const o=D.overall;
 $("#kpis").innerHTML=
   '<div class="kpi"><div class="lab">Macro F1</div><div class="val">'+o.macro_f1.toFixed(3)+'</div>'
-  +'<div class="cap">baseline 대비 <span class="delta">+'+(o.macro_f1-D.baseline).toFixed(3)+'</span> (TF-IDF '+D.baseline.toFixed(3)+')</div></div>'
-  +'<div class="kpi safety"><div class="lab">영향&rarr;비영향 오판</div><div class="val">'+o.wrong_na+'</div>'
-  +'<div class="cap">ICS 안전 핵심 지표 · 가장 위험한 오류 0건</div></div>'
-  +'<div class="kpi"><div class="lab">Calibration ECE</div><div class="val">'+o.ece.toFixed(3)+'</div><div class="cap">낮을수록 보정 우수</div></div>'
-  +'<div class="kpi"><div class="lab">조사 필요 전환율</div><div class="val">'+(o.under_rate*100).toFixed(0)+'<span style="font-size:18px">%</span></div><div class="cap">불확실 시 보수적 보류</div></div>';
+  +'<div class="cap">vs baseline <span class="delta">+'+(o.macro_f1-D.baseline).toFixed(3)+'</span> (TF-IDF '+D.baseline.toFixed(3)+')</div></div>'
+  +'<div class="kpi safety"><div class="lab">Affected&rarr;Not affected errors</div><div class="val">'+o.wrong_na+'</div>'
+  +'<div class="cap">Key ICS safety metric · zero of the most dangerous errors</div></div>'
+  +'<div class="kpi"><div class="lab">Calibration ECE</div><div class="val">'+o.ece.toFixed(3)+'</div><div class="cap">Lower is better-calibrated</div></div>'
+  +'<div class="kpi"><div class="lab">Under-investigation rate</div><div class="val">'+(o.under_rate*100).toFixed(0)+'<span style="font-size:18px">%</span></div><div class="cap">Conservative hold when uncertain</div></div>';
 const cm=o.confusion_matrix,L=D.labels,mx=Math.max(...cm.flat());
-let cmh='<div class="h"></div>'+L.map(l=>'<div class="h">'+LAB[l]+'<br>예측</div>').join("");
-cm.forEach((row,i)=>{cmh+='<div class="rh">'+LAB[L[i]]+' · 정답</div>';
+let cmh='<div class="h"></div>'+L.map(l=>'<div class="h">'+LAB[l]+'<br>pred</div>').join("");
+cm.forEach((row,i)=>{cmh+='<div class="rh">'+LAB[L[i]]+' · truth</div>';
   row.forEach((v,j)=>{const diag=i===j,zs=(i===0&&j===1),inten=v/mx;
     const bg=diag?'color-mix(in srgb,var(--accent) '+(8+inten*30)+'%,var(--surface))':'color-mix(in srgb,var(--ink-3) '+(inten*22)+'%,var(--surface))';
-    cmh+='<div class="cell'+(diag?' diag':'')+(zs?' zero-safe':'')+'" style="background:'+(zs?'':bg)+'">'+v+(zs?'<small>안전</small>':'')+'</div>';});});
+    cmh+='<div class="cell'+(diag?' diag':'')+(zs?' zero-safe':'')+'" style="background:'+(zs?'':bg)+'">'+v+(zs?'<small>safe</small>':'')+'</div>';});});
 $("#cm").innerHTML=cmh;
 $("#perclass").innerHTML=L.map(l=>{const c=o.per_class[l];
   return '<div><div class="bar-row" style="grid-template-columns:1fr"><div class="nm"><i class="sw" style="background:'+SC[l]+'"></i> <b style="color:var(--ink)">'+LAB[l]+'</b> <span style="color:var(--ink-3);font-family:var(--mono);font-size:11px">n='+c.support+'</span></div></div>'
     +'<div class="stat-line"><div class="m"><b>'+c.precision.toFixed(3)+'</b>Precision</div><div class="m"><b>'+c.recall.toFixed(3)+'</b>Recall</div><div class="m"><b>'+c.f1.toFixed(3)+'</b>F1</div></div></div>';}).join("");
-const arms=[["OSS-arm (동적)",D.perarm.oss,"var(--accent)"],["벤더맥락-arm (폐쇄)",D.perarm.vendor,"var(--accent-2)"]];
+const arms=[["OSS-arm (dynamic)",D.perarm.oss,"var(--accent)"],["Vendor-context-arm (closed)",D.perarm.vendor,"var(--accent-2)"]];
 $("#perarm").innerHTML=arms.map(a=>'<div class="bar-row"><div class="nm">'+a[0]+'<br><span style="color:var(--ink-3);font-family:var(--mono);font-size:10px">n='+a[1][1]+'</span></div>'
   +'<div class="track"><div class="fill" style="width:'+(a[1][0]*100)+'%;background:'+a[2]+'">'+a[1][0].toFixed(3)+'</div></div></div>').join("");
 const r=D.rationale;
-$("#rmet").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+r.comp.toFixed(3)+'</div><div class="l">Comprehensiveness &uarr;</div><div class="d">근거 제거 시 확신 급락 → 인과적</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--accent)">'+r.suff.toFixed(3)+'</div><div class="l">Sufficiency drop &darr;</div><div class="d">근거만으로 예측 유지 → 충분</div></div>';
+$("#rmet").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+r.comp.toFixed(3)+'</div><div class="l">Comprehensiveness &uarr;</div><div class="d">Confidence drops sharply when rationale removed &rarr; causal</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--accent)">'+r.suff.toFixed(3)+'</div><div class="l">Sufficiency drop &darr;</div><div class="d">Prediction holds on rationale alone &rarr; sufficient</div></div>';
 $("#samples").innerHTML=D.samples.map(s=>{const m=s.status===s.oracle;
   return '<div class="svex"><div class="top"><span class="cve">'+s.cve+'</span><span class="pill '+s.status+'">'+LAB[s.status]+'</span></div><div class="dev">'+s.device+'</div>'
     +'<div class="rats">'+s.rationale.map((t,i)=>'<div class="rat"><span class="eid">CVE-'+(i+2)+'</span><span>'+esc(t)+'</span></div>').join("")+'</div>'
-    +'<div class="meta"><span>confidence <b>'+s.conf.toFixed(2)+'</b></span><span class="'+(m?"match":"miss")+'">oracle '+(m?"&#10003; 일치":"&#8800; 불일치")+' · '+LAB[s.oracle]+'</span></div></div>';}).join("");
+    +'<div class="meta"><span>confidence <b>'+s.conf.toFixed(2)+'</b></span><span class="'+(m?"match":"miss")+'">oracle '+(m?"&#10003; match":"&#8800; mismatch")+' · '+LAB[s.oracle]+'</span></div></div>';}).join("");
 // two-model
 const T=D.two_model;
-$("#tm_code").innerHTML='<div class="box"><div class="v" style="color:var(--affected)">'+T.codebert_standalone_acc.toFixed(2)+'</div><div class="l">추상적 취약성 분류</div><div class="d">미학습 CVE, 무작위 0.50 = 실패 (정직히 보고)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--safe)">'+T.ref_match_perturbed.toFixed(2)+'</div><div class="l">레퍼런스 매칭 (변형)</div><div class="d">변형된 배포코드→올바른 레퍼런스. n='+T.ref_match_n+'</div></div>';
+$("#tm_code").innerHTML='<div class="box"><div class="v" style="color:var(--affected)">'+T.codebert_standalone_acc.toFixed(2)+'</div><div class="l">Abstract vulnerability classification</div><div class="d">Unseen CVEs, random 0.50 = failure (reported honestly)</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--safe)">'+T.ref_match_perturbed.toFixed(2)+'</div><div class="l">Reference matching (perturbed)</div><div class="d">Perturbed shipped code &rarr; correct reference. n='+T.ref_match_n+'</div></div>';
 $("#tm_bp").innerHTML=
   '<div class="an-summary" style="grid-template-columns:1fr 1fr">'
-  +'<div class="stile"><div class="v">'+T.bp_caught+'/'+T.bp_injected+'</div><div class="l">CodeBERT가 잡은 백포트</div></div>'
-  +'<div class="stile"><div class="v" style="color:var(--safe)">'+T.ctx_fp+'&rarr;'+T.two_fp+'</div><div class="l">백포트 오탐 감소</div></div></div>'
-  +'<div class="bars"><div class="bar-row"><div class="nm">맥락 단독</div><div class="track"><div class="fill" style="width:'+(T.ctx_acc*100)+'%;background:var(--under)">'+T.ctx_acc.toFixed(3)+'</div></div></div>'
+  +'<div class="stile"><div class="v">'+T.bp_caught+'/'+T.bp_injected+'</div><div class="l">Backports caught by CodeBERT</div></div>'
+  +'<div class="stile"><div class="v" style="color:var(--safe)">'+T.ctx_fp+'&rarr;'+T.two_fp+'</div><div class="l">Backport false-positive reduction</div></div></div>'
+  +'<div class="bars"><div class="bar-row"><div class="nm">Context alone</div><div class="track"><div class="fill" style="width:'+(T.ctx_acc*100)+'%;background:var(--under)">'+T.ctx_acc.toFixed(3)+'</div></div></div>'
   +'<div class="bar-row"><div class="nm">+CodeBERT</div><div class="track"><div class="fill" style="width:'+(T.two_acc*100)+'%;background:var(--safe)">'+T.two_acc.toFixed(3)+'</div></div></div></div>';
 // domain adaptation
 const A2=D.domain_adapt;
-$("#da_sb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">-'+A2.dapt_drop.toFixed(0)+'%</div><div class="l">ICS 텍스트 perplexity</div><div class="d">'+A2.dapt_ppl_before.toFixed(2)+' → '+A2.dapt_ppl_after.toFixed(2)+' ('+(A2.dapt_corpus/1000).toFixed(0)+'k 문장)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--safe)">'+A2.dapt_term_vanilla.toFixed(2)+'→'+A2.dapt_term_dapt.toFixed(2)+'</div><div class="l">ICS 용어 복원</div><div class="d">vanilla → ICS-DAPT (Modbus·PLC·GOOSE 등)</div></div>';
-$("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+A2.cb_match_frozen.toFixed(2)+'→'+A2.cb_devign_f1.toFixed(2)+'</div><div class="l">Devign 취약탐지 F1</div><div class="d">frozen 0.50 → 파인튜닝 (실제 취약탐지 학습)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch 미세과제</div><div class="d">파인튜닝도 전이 안 됨 → 레퍼런스 매칭(0.97)이 답</div></div>';
+$("#da_sb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">-'+A2.dapt_drop.toFixed(0)+'%</div><div class="l">ICS-text perplexity</div><div class="d">'+A2.dapt_ppl_before.toFixed(2)+' → '+A2.dapt_ppl_after.toFixed(2)+' ('+(A2.dapt_corpus/1000).toFixed(0)+'k sentences)</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--safe)">'+A2.dapt_term_vanilla.toFixed(2)+'→'+A2.dapt_term_dapt.toFixed(2)+'</div><div class="l">ICS term recovery</div><div class="d">vanilla → ICS-DAPT (Modbus·PLC·GOOSE, etc.)</div></div>';
+$("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+A2.cb_match_frozen.toFixed(2)+'→'+A2.cb_devign_f1.toFixed(2)+'</div><div class="l">Devign vuln-detection F1</div><div class="d">frozen 0.50 &rarr; fine-tuned (real vuln-detection training)</div></div>'
+  +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch fine-grained task</div><div class="d">Fine-tuning does not transfer either &rarr; reference matching (0.97) is the answer</div></div>';
 const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
 $("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
-$("#pipe").innerHTML=["CISA 크롤","악용신호(KEV·EPSS)","역방향 SBOM","Ground Truth","SecureBERT 학습·평가"].map(s=>'<span>'+s+'</span>').join('<span class="s">&rarr;</span>');
+
 $("#rt").textContent=D.runtime+"s";$("#dev").textContent=D.device.toUpperCase();
 </script>
 """
