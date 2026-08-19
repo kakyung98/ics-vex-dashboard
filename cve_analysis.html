@@ -33,12 +33,12 @@
 <div class="wrap">
   <h1><span class="bar-accent"></span>ICS-VEX &middot; CVE Ground Truth Dataset</h1>
 
-  <div class="kpis"><div class="kpi"><div class="kv">11,336</div><div class="kl">Unique CVEs</div><div class="ks">after dedup</div></div><div class="kpi"><div class="kv">3,691</div><div class="kl">CISA advisories</div><div class="ks"></div></div><div class="kpi"><div class="kv">3,053</div><div class="kl">ICS assets</div><div class="ks">781 vendors</div></div><div class="kpi"><div class="kv">132</div><div class="kl">Source available</div><div class="ks">PoC-triggerable</div></div><div class="kpi"><div class="kv">5</div><div class="kl">Execution-verified</div><div class="ks">true ground truth</div></div><div class="kpi"><div class="kv">149</div><div class="kl">KEV-listed</div><div class="ks">known exploited</div></div></div>
+  <div class="kpis"><div class="kpi"><div class="kv">11,336</div><div class="kl">Unique CVEs</div><div class="ks">after dedup</div></div><div class="kpi"><div class="kv">3,691</div><div class="kl">CISA advisories</div><div class="ks"></div></div><div class="kpi"><div class="kv">3,053</div><div class="kl">ICS assets</div><div class="ks">781 vendors</div></div><div class="kpi"><div class="kv">132</div><div class="kl">Source available</div><div class="ks">static code-diff signal</div></div><div class="kpi"><div class="kv">5</div><div class="kl">Execution-verified</div><div class="ks">historical · archived path</div></div><div class="kpi"><div class="kv">149</div><div class="kl">KEV-listed</div><div class="ks">known exploited</div></div></div>
 
   <div class="grid2">
     <div class="card">
       <h2>Asset VEX type &mdash; source availability</h2>
-      <p class="sub">All 11,336 CVEs &middot; source is required for execution verification</p>
+      <p class="sub">All 11,336 CVEs &middot; source enables the static CodeBERT patch-diff signal</p>
       <div class="donut-wrap"><svg viewBox="0 0 200 200" width="200" height="200" role="img"><path d="M 100.00 17.00 A 83.00 83.00 0 1 1 35.12 48.23" fill="none" stroke="#8b8a80" stroke-width="34"><title>Closed vendor firmware: 9,717 (85.7%)</title></path><path d="M 35.12 48.23 A 83.00 83.00 0 0 1 93.93 17.22" fill="none" stroke="#3987e5" stroke-width="34"><title>OSS, no source: 1,487 (13.1%)</title></path><path d="M 93.93 17.22 A 83.00 83.00 0 0 1 100.00 17.00" fill="none" stroke="#199e70" stroke-width="34"><title>OSS, source available: 132 (1.2%)</title></path><text x="100.0" y="96.0" text-anchor="middle" font-size="22" font-weight="700" fill="#ffffff" font-family="monospace">11,336</text><text x="100.0" y="115.0" text-anchor="middle" font-size="11" fill="#8b8a80">CVE</text></svg><div><div class="legend"><div class="lg"><span class="sw" style="background:#8b8a80"></span><span>Closed vendor firmware</span><b>9,717</b><span class="pct">85.7%</span></div><div class="lg"><span class="sw" style="background:#3987e5"></span><span>OSS, no source</span><b>1,487</b><span class="pct">13.1%</span></div><div class="lg"><span class="sw" style="background:#199e70"></span><span>OSS, source available</span><b>132</b><span class="pct">1.2%</span></div></div></div></div>
     </div>
     <div class="card">
@@ -69,11 +69,13 @@
 
   <div class="card">
     <h2>Evidence tiers &mdash; pipeline adjudication</h2>
-    <p class="sub">By device&middot;CVE pair (13,005) &middot; only execution-verified is true ground truth</p>
+    <p class="sub">By device&middot;CVE pair (13,005) &middot; execution-verified is a historical (archived) tier</p>
     <div class="evbar"><div class="evseg" style="width:0.038%;background:#199e70" title="execution-verified: 5"></div><div class="evseg" style="width:0.238%;background:#3987e5" title="source-available-unverified: 31"></div><div class="evseg" style="width:16.263%;background:#9085e9" title="source-pending: 2,115"></div><div class="evseg" style="width:83.460%;background:#8b8a80" title="source-unavailable: 10,854"></div></div>
     <div class="evleg"><div class="lg"><span class="sw" style="background:#199e70"></span><span>execution-verified</span><b>5</b></div><div class="lg"><span class="sw" style="background:#3987e5"></span><span>source-available-unverified</span><b>31</b></div><div class="lg"><span class="sw" style="background:#9085e9"></span><span>source-pending</span><b>2,115</b></div><div class="lg"><span class="sw" style="background:#8b8a80"></span><span>source-unavailable</span><b>10,854</b></div></div>
-    <p class="note">Execution-verified: 5 (0.04%).
-       The rest are CVSS-AV-based secondary estimates, being expanded via CVE-Genie reproduction.</p>
+    <p class="note">Live judgments are now decided by <b>static analysis</b> (SecureBERT context, CodeBERT
+       patch-diff, sLLM analyst&rarr;critic) &mdash; no PoC is generated or executed. The 5
+       execution-verified pairs (0.04%) are a historical tier from the
+       now-archived execution path; every other pair is settled by the static reachability + evidence legs.</p>
   </div>
 
   <footer>&copy; 2026 System Security Research Center, Chonnam National University. All rights reserved.</footer>
