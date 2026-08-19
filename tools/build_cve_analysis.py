@@ -183,8 +183,8 @@ kpis = [
     (f"{n_cve:,}", "Unique CVEs", "after dedup"),
     (f"{n_adv:,}", "CISA advisories", ""),
     (f"{n_dev:,}", "ICS assets", f"{n_vendor} vendors"),
-    (f"{SRC_AVAIL[2][1]:,}", "Source available", "PoC-triggerable"),
-    (f"{ev.get('execution-verified',0):,}", "Execution-verified", "true ground truth"),
+    (f"{SRC_AVAIL[2][1]:,}", "Source available", "static code-diff signal"),
+    (f"{ev.get('execution-verified',0):,}", "Execution-verified", "historical · archived path"),
     (f"{KEV_LISTED:,}", "KEV-listed", "known exploited"),
 ]
 kpi_html = "".join(
@@ -234,7 +234,7 @@ HTML = f"""<!DOCTYPE html>
   <div class="grid2">
     <div class="card">
       <h2>Asset VEX type &mdash; source availability</h2>
-      <p class="sub">All {n_cve:,} CVEs &middot; source is required for execution verification</p>
+      <p class="sub">All {n_cve:,} CVEs &middot; source enables the static CodeBERT patch-diff signal</p>
       <div class="donut-wrap">{src_svg}<div>{src_leg}</div></div>
     </div>
     <div class="card">
@@ -265,11 +265,13 @@ HTML = f"""<!DOCTYPE html>
 
   <div class="card">
     <h2>Evidence tiers &mdash; pipeline adjudication</h2>
-    <p class="sub">By device&middot;CVE pair ({ev_total:,}) &middot; only execution-verified is true ground truth</p>
+    <p class="sub">By device&middot;CVE pair ({ev_total:,}) &middot; execution-verified is a historical (archived) tier</p>
     <div class="evbar">{''.join(ev_seg)}</div>
     <div class="evleg">{ev_leg}</div>
-    <p class="note">Execution-verified: {ev.get('execution-verified',0)} ({ev.get('execution-verified',0)/ev_total*100:.2f}%).
-       The rest are CVSS-AV-based secondary estimates, being expanded via CVE-Genie reproduction.</p>
+    <p class="note">Live judgments are now decided by <b>static analysis</b> (SecureBERT context, CodeBERT
+       patch-diff, sLLM analyst&rarr;critic) &mdash; no PoC is generated or executed. The {ev.get('execution-verified',0)}
+       execution-verified pairs ({ev.get('execution-verified',0)/ev_total*100:.2f}%) are a historical tier from the
+       now-archived execution path; every other pair is settled by the static reachability + evidence legs.</p>
   </div>
 
   <footer>&copy; 2026 System Security Research Center, Chonnam National University. All rights reserved.</footer>
