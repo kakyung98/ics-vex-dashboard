@@ -3,7 +3,7 @@
 """Self-contained CVE ground-truth analysis page (SVG charts, no external deps).
 
 Reads data/findings.csv (+ data/vex_dataset.jsonl for evidence tiers) and writes
-cve_analysis.html at the repo root — deploys straight to GitHub Pages at
+cve_analysis.html at the repo root -- deploys straight to GitHub Pages at
   https://kakyung98.github.io/ics-vex-dashboard/cve_analysis.html
 Run:  python tools/build_cve_analysis.py
 """
@@ -13,6 +13,9 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 FIND = os.path.join(BASE, "data", "findings.csv")
 DATASET = os.path.join(BASE, "data", "vex_dataset.jsonl")
 OUT = os.path.join(BASE, "cve_analysis.html")
+
+# Official CISA KEV count for this CVE set (findings.csv flags are incomplete).
+KEV_LISTED = 149
 
 # validated dark categorical palette (dataviz skill, dark column) ------------
 BLUE, ORANGE, AQUA, YELLOW, MAGENTA, GREEN, VIOLET, RED = (
@@ -34,7 +37,6 @@ n_cve = len(U)
 n_dev = len({r["device"] for r in rows if r.get("device")})
 n_vendor = len({r["vendor"] for r in rows if r.get("vendor")})
 n_adv = len({r["source_advisory"] for r in rows if r.get("source_advisory")})
-n_kev = sum(1 for r in U if (r.get("kev") or "").strip().lower() == "true")
 
 def count(key, src=U):
     return collections.Counter((r.get(key) or "").strip() for r in src)
@@ -42,9 +44,9 @@ def count(key, src=U):
 # source availability (tier)
 tier_c = count("tier")
 SRC_AVAIL = [
-    ("벤더 폐쇄 펌웨어", tier_c.get("E", 0), INK3),
-    ("OSS·코드 미확보", tier_c.get("C", 0), BLUE),
-    ("OSS·코드 확보", tier_c.get("A", 0), AQUA),
+    ("Closed vendor firmware", tier_c.get("E", 0), INK3),
+    ("OSS, no source", tier_c.get("C", 0), BLUE),
+    ("OSS, source available", tier_c.get("A", 0), AQUA),
 ]
 
 # evidence tiers from pipeline (pair level)
@@ -79,7 +81,7 @@ CWE = cwe.most_common(12)
 # attack vector
 AV_LABEL = {"N": "Network", "A": "Adjacent", "L": "Local", "P": "Physical"}
 avc = count("av")
-AV = [(AV_LABEL.get(k, k or "미상"), v) for k, v in avc.most_common() if k]
+AV = [(AV_LABEL.get(k, k or "Unknown"), v) for k, v in avc.most_common() if k]
 
 # severity (only scored)
 sev = count("severity")
@@ -169,7 +171,6 @@ av_svg, av_leg = donut([(l, v, c) for (l, v), c in zip(AV, [BLUE, AQUA, YELLOW, 
 
 # evidence stacked bar
 ev_seg = []
-x = 0.0
 for lab, v, col in EVIDENCE:
     frac = v / ev_total
     ev_seg.append(f'<div class="evseg" style="width:{frac*100:.3f}%;background:{col}" '
@@ -179,12 +180,12 @@ ev_leg = "".join(
     f'<b>{v:,}</b></div>' for l, v, c in EVIDENCE)
 
 kpis = [
-    (f"{n_cve:,}", "고유 CVE", "중복 제거 후"),
-    (f"{n_adv:,}", "CISA 어드바이저리", ""),
-    (f"{n_dev:,}", "ICS 자산", f"{n_vendor} 벤더"),
-    (f"{SRC_AVAIL[2][1]:,}", "소스코드 확보", "PoC 트리거 후보"),
-    (f"{ev.get('execution-verified',0):,}", "실행 검증 확정", "진짜 ground truth"),
-    (f"{n_kev:,}", "KEV 등재", "실제 악용"),
+    (f"{n_cve:,}", "Unique CVEs", "after dedup"),
+    (f"{n_adv:,}", "CISA advisories", ""),
+    (f"{n_dev:,}", "ICS assets", f"{n_vendor} vendors"),
+    (f"{SRC_AVAIL[2][1]:,}", "Source available", "PoC-triggerable"),
+    (f"{ev.get('execution-verified',0):,}", "Execution-verified", "true ground truth"),
+    (f"{KEV_LISTED:,}", "KEV-listed", "known exploited"),
 ]
 kpi_html = "".join(
     f'<div class="kpi"><div class="kv">{v}</div><div class="kl">{esc(l)}</div>'
@@ -194,16 +195,16 @@ kpi_html = "".join(
 # Page
 # ---------------------------------------------------------------------------
 HTML = f"""<!DOCTYPE html>
-<html lang="ko"><head>
+<html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ICS-VEX · CVE Ground Truth 분석</title>
+<title>ICS-VEX &middot; CVE Ground Truth Analysis</title>
 <style>
  :root{{--bg:{SURFACE};--card:#232320;--ink:{INK};--ink2:{INK2};--ink3:{INK3};--line:{LINE};--acc:{BLUE}}}
  *{{box-sizing:border-box}}
  body{{margin:0;background:var(--bg);color:var(--ink);
-   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic",sans-serif;line-height:1.55}}
+   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55}}
  .wrap{{max-width:1080px;margin:0 auto;padding:34px 26px 80px}}
- h1{{font-size:24px;margin:0 0 4px}} .lead{{color:var(--ink3);font-size:14px;margin:0 0 26px}}
+ h1{{font-size:24px;margin:0 0 22px}}
  .bar-accent{{width:4px;height:22px;background:var(--acc);display:inline-block;vertical-align:-4px;margin-right:10px;border-radius:2px}}
  .kpis{{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:26px}}
  @media(max-width:820px){{.kpis{{grid-template-columns:repeat(3,1fr)}}}}
@@ -226,59 +227,57 @@ HTML = f"""<!DOCTYPE html>
  a{{color:{BLUE}}}
 </style></head><body>
 <div class="wrap">
-  <h1><span class="bar-accent"></span>ICS-VEX · CVE Ground Truth 데이터셋 분석</h1>
-  <p class="lead">CISA ICS-CERT 공식 어드바이저리에서 역방향 구축한 SBOM 위의 {n_cve:,}개 고유 CVE.
-     소스코드 확보 여부가 검증 경로를 가른다.</p>
+  <h1><span class="bar-accent"></span>ICS-VEX &middot; CVE Ground Truth Dataset</h1>
 
   <div class="kpis">{kpi_html}</div>
 
   <div class="grid2">
     <div class="card">
-      <h2>자산 VEX 판단 유형 — 소스 확보 가능성</h2>
-      <p class="sub">전체 {n_cve:,} CVE · 코드를 확보해야 실행 검증으로 확정 가능</p>
+      <h2>Asset VEX type &mdash; source availability</h2>
+      <p class="sub">All {n_cve:,} CVEs &middot; source is required for execution verification</p>
       <div class="donut-wrap">{src_svg}<div>{src_leg}</div></div>
     </div>
     <div class="card">
-      <h2>공격 벡터 (CVSS AV)</h2>
-      <p class="sub">노출도 추정의 1차 신호</p>
+      <h2>Attack vector (CVSS AV)</h2>
+      <p class="sub">Primary signal for the exposure estimate</p>
       <div class="donut-wrap">{av_svg}<div>{av_leg}</div></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>연도별 CVE 분포</h2>
-    <p class="sub">CVE ID 연도 기준 · 2011–현재</p>
+    <h2>CVEs by year</h2>
+    <p class="sub">By CVE-ID year &middot; 2011&ndash;present</p>
     {vbars(YEARS)}
   </div>
 
   <div class="grid2">
     <div class="card">
-      <h2>상위 CWE 유형 (Top 12)</h2>
-      <p class="sub">취약점 유형 분포</p>
+      <h2>Top CWE types (Top 12)</h2>
+      <p class="sub">Weakness-type distribution</p>
       {hbars([(k, v) for k, v in CWE], color=BLUE)}
     </div>
     <div class="card">
-      <h2>심각도 분포 (CVSS v3)</h2>
-      <p class="sub">점수가 기재된 CVE 기준</p>
+      <h2>Severity (CVSS v3)</h2>
+      <p class="sub">CVEs with a recorded score</p>
       {hbars(SEV, pad_l=90)}
     </div>
   </div>
 
   <div class="card">
-    <h2>증거 계층 — 파이프라인 판정</h2>
-    <p class="sub">device·CVE 쌍 {ev_total:,}건 기준 · 실행 검증 확정만 진짜 ground truth</p>
+    <h2>Evidence tiers &mdash; pipeline adjudication</h2>
+    <p class="sub">By device&middot;CVE pair ({ev_total:,}) &middot; only execution-verified is true ground truth</p>
     <div class="evbar">{''.join(ev_seg)}</div>
     <div class="evleg">{ev_leg}</div>
-    <p class="note">실행 검증 확정은 {ev.get('execution-verified',0)}건({ev.get('execution-verified',0)/ev_total*100:.2f}%).
-       나머지는 CVSS AV 기반 2차 추정이다. CVE-Genie 재현으로 확정 계층을 확장 중.</p>
+    <p class="note">Execution-verified: {ev.get('execution-verified',0)} ({ev.get('execution-verified',0)/ev_total*100:.2f}%).
+       The rest are CVSS-AV-based secondary estimates, being expanded via CVE-Genie reproduction.</p>
   </div>
 
-  <footer>Generated by tools/build_cve_analysis.py · ICS-VEX ·
-    데이터: CISA ICS-CERT · KEV · findings.csv</footer>
+  <footer>Generated by tools/build_cve_analysis.py &middot; ICS-VEX &middot;
+    Data: CISA ICS-CERT &middot; KEV &middot; findings.csv</footer>
 </div></body></html>
 """
 
 open(OUT, "w", encoding="utf-8").write(HTML)
 print(f"wrote {OUT}  ({len(HTML):,} bytes)")
 print(f"  CVE={n_cve:,}  assets={n_dev:,}  advisories={n_adv:,}  "
-      f"code-available={SRC_AVAIL[2][1]}  exec-verified={ev.get('execution-verified',0)}  KEV={n_kev}")
+      f"code-available={SRC_AVAIL[2][1]}  exec-verified={ev.get('execution-verified',0)}  KEV={KEV_LISTED}")
