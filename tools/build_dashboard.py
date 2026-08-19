@@ -200,7 +200,7 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
 <div class="wrap">
   <header>
     <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT</div>
-    <h1>ICS-VEXForege</h1>
+    <h1>ICS-VEXForge</h1>
     <div class="chips" id="chips"></div>
     <div style="margin-top:14px">
       <a href="cve_analysis.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
