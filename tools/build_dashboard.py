@@ -202,6 +202,12 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
     <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT</div>
     <h1>ICS-VEXForege</h1>
     <div class="chips" id="chips"></div>
+    <div style="margin-top:14px">
+      <a href="cve_analysis.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
+        font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;
+        background:var(--accent,#12b886);color:#04120c;letter-spacing:.02em">
+        📊 전체 CVE 분석 (11,336) &rarr;</a>
+    </div>
   </header>
 
   <section>
