@@ -141,9 +141,17 @@
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT</div>
+    <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT / sLLM</div>
     <h1>ICS-VEXForge</h1>
     <div class="chips" id="chips"></div>
+    <div style="margin-top:12px;font-family:var(--mono);font-size:12px;line-height:1.5;
+        padding:10px 14px;border-radius:9px;border:1px solid color-mix(in srgb,var(--safe) 45%,transparent);
+        background:color-mix(in srgb,var(--safe) 10%,transparent);max-width:760px">
+      🛡️ <b>Static-analysis VEX.</b> Verdicts come from static evidence &mdash; component
+      presence, Attack&nbsp;Vector&nbsp;&times;&nbsp;exposure reachability, patch-diff similarity,
+      and an sLLM analyst&rarr;critic loop. <b>No proof-of-concept is generated or executed.</b>
+      The confirmed tier is <span style="font-family:var(--mono)">static-analysis-verified</span>.
+    </div>
     <div style="margin-top:14px">
       <a href="cve_analysis.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
         font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;
@@ -176,7 +184,8 @@
         </div>
       </div>
       <div class="an-result" id="anres"><div class="empty">Enter an SBOM to see per-component CVEs and VEX status here.</div></div>
-      <div class="an-note">VEX status: reachability is computed from the CVE's Attack Vector and the chosen deployment exposure &rarr;
+      <div class="an-note">VEX status is decided by <b>static analysis only</b> &mdash; nothing is executed.
+        Reachability is computed from the CVE's Attack Vector and the chosen deployment exposure &rarr;
         reachable + vulnerable version = <b>Affected</b>, unreachable = <b>Not affected</b>, conditional = <b>Under investigation</b>.
         If the version is outside the vulnerable range the CVE is not flagged (e.g., zlib 1.2.13).</div>
     </div>
