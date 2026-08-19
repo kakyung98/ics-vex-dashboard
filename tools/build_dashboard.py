@@ -325,6 +325,7 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
     <div class="pipe" id="pipe"></div>
     <p style="margin-top:12px">모델: SecureBERT 문장-어텐션 멀티태스크 + 보수적 Decision Engine.
       학습·평가 <span id="rt"></span> on <span id="dev"></span>.</p>
+    <p style="margin-top:10px">&copy; 2026 System Security Research Center, Chonnam National University. All rights reserved.</p>
   </footer>
 </div>
 
