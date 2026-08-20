@@ -449,7 +449,8 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .mb{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-size:14px}
 .legend .lg{display:flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
-.cwe{display:grid;gap:7px}.cwerow{display:grid;grid-template-columns:minmax(150px,230px) 1fr 40px;align-items:center;gap:10px;font-size:14px}
+.cwe{display:grid;gap:7px}.cwerow{display:grid;grid-template-columns:minmax(260px,440px) 1fr 44px;align-items:center;gap:12px;font-size:14px}
+.cwerow>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .foot{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);text-align:center;font-size:14px;color:var(--ink3)}
 .brand{display:flex;align-items:center;gap:16px;margin-bottom:8px}
 .ssrc{width:70px;height:70px;flex:none}
@@ -624,7 +625,7 @@ async function sourceAvail(){
       '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
     let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · 132 collectable CVEs total</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
-    for(const x of s.top_cwe)cwe+='<div class="cwerow clk" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
+    for(const x of s.top_cwe)cwe+='<div class="cwerow clk" title="'+x.cwe+' '+esc(x.name||'')+'" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
       '<span><span class="mono">'+x.cwe+'</span><span class="cwename">'+esc(x.name||'')+'</span></span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
     if(s.cwe_other&&s.cwe_other.count)cwe+='<div class="cwerow"><span class="hint">Other ('+s.cwe_other.types+' more types)</span>'+
