@@ -22,7 +22,7 @@ The VEX computation here is the deterministic static leg (component match ->
 CVSS AV x exposure reachability); it needs no GPU/models, so the service starts
 instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
 """
-import os, sys, json, argparse, difflib
+import os, sys, json, argparse, difflib, csv
 from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -172,6 +172,24 @@ class Store:
         self.kb_match = [(c, [s.lower() for s in
                               {c.get("name", ""), c.get("cpe_product", ""), c.get("key", "")} if s])
                          for c in self.kb_comps]
+        # CVE -> max CVSS v3 base score (from findings.csv); enrich KB versions
+        self.cvss = {}
+        fp = os.path.join(DATA, "findings.csv")
+        if os.path.exists(fp):
+            for r in csv.DictReader(open(fp, encoding="utf-8-sig")):
+                sc = r.get("cvss_v3_score")
+                if not sc:
+                    continue
+                try:
+                    sc = float(sc)
+                except ValueError:
+                    continue
+                if sc > self.cvss.get(r["cve"], -1):
+                    self.cvss[r["cve"]] = sc
+        for comp in self.kb_comps:
+            for lst in comp.get("versions", {}).values():
+                for cv in lst:
+                    cv["cvss"] = self.cvss.get(cv["id"])
         # per-CVE index for the clickable "related CVEs" drill-down
         srank = {"critical": 4, "high": 3, "medium": 2, "low": 1}
         vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
@@ -185,6 +203,7 @@ class Store:
             self.cve_index[cve] = {
                 "cve": cve, "vex": w["final_vex"], "reachability": w.get("reachability"),
                 "severity": sev if sev in srank else "unrated",
+                "cvss": self.cvss.get(cve),
                 "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
                 "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
                 "source_available": any(r.get("tier") == "A" for r in rows),
@@ -349,6 +368,7 @@ def vex_for_sbom(sbom, exposure=None):
             row = {
                 "cve": cv["id"], "component": comp["name"], "version": ver or "(unpinned)",
                 "version_pinned": pinned, "severity": cv.get("sev", ""),
+                "cvss": cv.get("cvss"),
                 "av": av, "kev": bool(cv.get("kev")), "epss": cv.get("epss"),
                 "exposure": exp, "reachability": reach, "has_code_pair": has_pair,
                 "final_vex": status, "justification": just, "basis": basis,
@@ -418,6 +438,7 @@ def build_app():
                                  -srank.get(r["severity"], 0), r["cve"]))
         return {"dim": dim, "value": value, "scope": scope, "count": len(hits),
                 "cves": [{"cve": r["cve"], "vex": r["vex"], "severity": r["severity"],
+                          "cvss": r.get("cvss"),
                           "kev": r["kev"], "reachability": r["reachability"],
                           "vendor": ", ".join(r["vendors"][:2]), "component": r["component"],
                           "cwe": r["cwe"], "has_code_pair": r["has_code_pair"],
@@ -621,11 +642,11 @@ async function run(){
   const bv=d.summary.by_vex||{};
   let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
-  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>Sev</th><th>KEV</th><th>AV</th><th>Reach</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
-      +'<td>'+f.component+' '+f.version+'</td><td>'+(f.severity||'—')+'</td>'
+      +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity||'—'))+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
@@ -708,11 +729,11 @@ async function openCves(dim,value,scope,label){
   try{const d=await(await fetch('/api/cves?dim='+encodeURIComponent(dim)+'&value='+encodeURIComponent(value)+'&scope='+scope)).json();
     if(!d.count){document.getElementById('mbody').innerHTML='<span class="hint">no CVEs.</span>';return;}
     let h='<div class="hint" style="margin-bottom:8px"><b>'+d.count+'</b> CVEs</div>'+
-      '<div style="overflow:auto"><table><thead><tr><th>CVE</th><th>VEX</th><th>Sev</th><th>KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
+      '<div style="overflow:auto"><table><thead><tr><th>CVE</th><th>VEX</th><th>CVSS</th><th>KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
     for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
       h+='<tr><td class="mono"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
         +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
-        +'<td>'+esc(f.severity)+'</td><td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
+        +'<td class="mono" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity?esc(f.severity):'—'))+'</td><td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
         +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
         +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener">repo</a>':'')+'</td></tr>';}
     document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
@@ -739,7 +760,7 @@ async function sourceAvail(){
       '<div class="kpi"><b style="color:var(--aff)">'+s.kev+'</b><span>KEV</span></div>';
     document.getElementById('sa-charts').innerHTML=
       '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t,'vex','source_available',{LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under inv'})+'</div>'+
-      '<div class="chart"><div class="ct">Severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
+      '<div class="chart"><div class="ct">CVSS severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
       '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
     let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · 132 collectable CVEs total</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
