@@ -28,6 +28,7 @@ from collections import defaultdict, Counter
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(BASE, "src"))
 import build_ground_truth as G  # reachability(), exposure_for(), CWE_NAME
+import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 
 # Official MITRE CWE names (Title Case). Covers every CWE shown in the
 # collectable-CVE pool + common corpus weaknesses. Overrides the informal
@@ -501,6 +502,20 @@ def build_app():
         """CPE normalization (Ratcliff-Obershelp) + CVE re-identification vs exact."""
         return vex_compare_sbom(req.sbom, req.exposure, req.threshold)
 
+    class TreeReq(BaseModel):
+        av: str | None = None
+        answers: dict = {}
+
+    @app.get("/api/vex_tree")
+    def vex_tree_def():
+        """The source-uncollectable-CVE decision tree definition (for the walker)."""
+        return VT.TREE
+
+    @app.post("/api/vex_tree")
+    def vex_tree(req: TreeReq):
+        """Walk the source-uncollectable decision tree with the given answers."""
+        return VT.classify(req.av, req.answers or {})
+
     @app.post("/api/refresh")
     def refresh():
         STORE.refresh()
@@ -518,6 +533,10 @@ def build_app():
     @app.get("/collectable.html", response_class=HTMLResponse)
     def collectable():
         return make_page("collectable")
+
+    @app.get("/tree.html", response_class=HTMLResponse)
+    def tree():
+        return make_page("tree")
 
     return app
 
@@ -543,6 +562,10 @@ h3{font-size:18px}.hint{font-size:13px}
 .navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 18px;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;margin-bottom:-1px}
 .navtab:hover{color:var(--ink)}
 .navtab.on{color:var(--accent);background:var(--card);border-color:var(--line);border-bottom:1px solid var(--card)}
+.treepath{display:grid;gap:6px}.treestep{font-size:14px;color:var(--ink2);padding:8px 12px;background:var(--card2);border-radius:8px;border-left:3px solid var(--accent)}
+.treestep b{color:var(--ink)}
+.treeq{margin-top:16px;padding:16px;border:1px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.treeres{margin-top:16px;padding:18px;border:2px solid var(--line);border-radius:12px;background:var(--card2)}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
@@ -606,6 +629,7 @@ __CONTENT__
 </div></div>
 
 <script>
+const VEX_TREE=__VEX_TREE__;
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
 const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under investigation'};
 async function run(){
@@ -796,6 +820,32 @@ async function advisories(){
     document.getElementById('adv-ven').innerHTML=v+'</div>';
   }catch(e){document.getElementById('adv-kpis').innerHTML='<span class="err">advisory data unavailable</span>';}
 }
+// ---- VEX decision tree walker (source-uncollectable CVEs) ----
+function avBranch(av){av=(av||'').toUpperCase();if(av==='N'||av==='A')return 'network';if(av==='L')return 'local';if(av==='P')return 'physical';return null;}
+function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;const path=[];
+  while(true){const node=nodes[nid];
+    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'미기재')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
+    const a=ans[nid];
+    if(a===undefined||a===null)return{status:null,path:path,complete:false,pending:nid,question:node.q};
+    path.push({node:nid,q:node.q,answer:!!a});
+    const target=a?node.yes:node.no;
+    if(Array.isArray(target))return{status:target[0],justification:target[1],path:path,complete:true};
+    nid=target;}}
+let _treeAns={};
+function treeStart(){_treeAns={_pre:1};_treeAns={};treeStep();}
+function treeAnswer(v){const r=classifyTree(document.getElementById('tree-av').value,_treeAns);if(r.pending)_treeAns[r.pending]=v;treeStep();}
+function treeStep(){const av=document.getElementById('tree-av').value;const r=classifyTree(av,_treeAns);
+  let h='<div class="treepath">';
+  for(const p of r.path){const ans=(p.answer===true)?'예':(p.answer===false)?'아니오':esc(p.answer);
+    h+='<div class="treestep">'+esc(p.q)+' → <b>'+ans+'</b></div>';}
+  h+='</div>';
+  if(r.complete){const st=r.status;const col=st==='not_affected'?'var(--safe)':(st==='under_investigation'?'var(--und)':'var(--accent)');
+    h+='<div class="treeres" style="border-color:'+col+'"><div style="font-size:22px;font-weight:800;color:'+col+'">'+esc(st)+'</div><div class="mono" style="font-size:15px;margin-top:4px">'+esc(r.justification||'')+'</div></div>';}
+  else if(r.pending){h+='<div class="treeq"><div class="ct" style="font-size:16px;margin-bottom:10px">'+esc(r.question)+'</div>'
+    +'<button class="primary" onclick="treeAnswer(true)">예 (Yes)</button> <button onclick="treeAnswer(false)">아니오 (No)</button></div>';}
+  else{h+='<div class="hint">'+esc(r.justification||'')+'</div>';}
+  document.getElementById('tree-body').innerHTML=h;}
+
 if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
@@ -841,14 +891,25 @@ COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source-code c
 </div>
 <div id="sa-cwe" style="margin-top:16px"></div></div>"""
 
+TREE_HTML = """<div class="card">
+<h3 style="margin:0 0 4px">VEX decision tree — source-code-uncollectable CVEs</h3>
+<p class="hint" style="margin:0 0 12px">폐쇄 펌웨어 등 소스 확보가 불가한 CVE의 VEX를 <b>운영 컨텍스트 + CVSS 공격 벡터</b>로 판정한다. 공격 벡터를 고르고 각 질문에 예/아니오로 답하면 결정트리를 따라 판정에 도달한다.</p>
+<div class="hint" style="margin:0 0 12px">CVSS Attack Vector
+  <select id="tree-av"><option value="N">N — Network</option><option value="A">A — Adjacent</option><option value="L">L — Local</option><option value="P">P — Physical</option></select>
+  <button class="primary" onclick="treeStart()" style="margin-left:8px">Start ▶</button>
+  <button onclick="treeStart()">Reset</button></div>
+<div id="tree-body"><span class="hint">Start 를 눌러 시작하세요.</span></div></div>"""
+
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", ANALYZER_HTML),
     "corpus": ("Corpus statistics", CORPUS_HTML),
     "collectable": ("Source-collectable CVEs", COLLECTABLE_HTML),
+    "tree": ("VEX decision tree", TREE_HTML),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
         ("corpus", "corpus.html", "Corpus"),
-        ("collectable", "collectable.html", "Collectable CVEs")]
+        ("collectable", "collectable.html", "Collectable CVEs"),
+        ("tree", "tree.html", "VEX Tree")]
 
 
 def nav_html(active):
@@ -861,6 +922,7 @@ def nav_html(active):
 def make_page(active):
     _sub, content = PAGES[active]
     return (FRONTEND_TEMPLATE
+            .replace("__VEX_TREE__", json.dumps(VT.TREE, ensure_ascii=False))
             .replace("__NAV__", nav_html(active))
             .replace("__CONTENT__", content))
 
