@@ -69,6 +69,18 @@ class Store:
                     continue
         self.pairs = {k for k, v in self.code_ev.items()
                       if isinstance(v, dict) and v.get("vuln_code") and v.get("patched_code")}
+        # CVE-level view (unique CVEs, worst-case verdict across assets)
+        rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
+        cve_worst, cve_tier = {}, {}
+        for cve, rows in self.by_cve.items():
+            w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
+            cve_worst[cve] = w["final_vex"]
+            cve_tier[cve] = w.get("evidence_tier")
+        self.cve_level = {
+            "total_cves": len(cve_worst),
+            "by_vex": dict(Counter(cve_worst.values())),
+            "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
+        }
 
 
 STORE = Store()
@@ -80,7 +92,8 @@ STORE = Store()
 def vex_for_sbom(sbom, exposure=None):
     comps = [((c.get("name") or "").strip(), (c.get("version") or "").strip())
              for c in sbom.get("components", []) if (c.get("name") or "").strip()]
-    findings = []
+    rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
+    by_cve = {}  # unique CVE -> worst-case row
     for name, ver in comps:
         comp = STORE.kb_idx.get(name.lower())
         if not comp:
@@ -107,17 +120,22 @@ def vex_for_sbom(sbom, exposure=None):
                     av, exp, "per-cve", "A" if has_pair else "C", bool(cv.get("kev")))
             tier = ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
                     else "under-investigation")
-            findings.append({
-                "component": comp["name"], "version": ver or "(unpinned)",
-                "version_pinned": pinned, "cve": cv["id"], "severity": cv.get("sev", ""),
+            row = {
+                "cve": cv["id"], "component": comp["name"], "version": ver or "(unpinned)",
+                "version_pinned": pinned, "severity": cv.get("sev", ""),
                 "av": av, "kev": bool(cv.get("kev")), "epss": cv.get("epss"),
                 "exposure": exp, "reachability": reach, "has_code_pair": has_pair,
                 "final_vex": status, "justification": just, "basis": basis,
                 "evidence_tier": tier,
-            })
-    by = Counter(f["final_vex"] for f in findings)
-    return {"components": len(comps), "matched": len(findings),
-            "summary": {"by_vex": dict(by)}, "findings": findings}
+            }
+            prev = by_cve.get(cv["id"])
+            if prev is None or rank.get(status, 0) > rank.get(prev["final_vex"], 0):
+                by_cve[cv["id"]] = row
+    cves = sorted(by_cve.values(),
+                  key=lambda r: (-rank.get(r["final_vex"], 0), r["cve"]))
+    by = Counter(r["final_vex"] for r in cves)
+    return {"components": len(comps), "cves_matched": len(cves),
+            "summary": {"by_vex": dict(by)}, "cves": cves}
 
 
 # ---------------------------------------------------------------------------
@@ -139,15 +157,16 @@ def build_app():
     @app.get("/api/health")
     def health():
         return {"ok": True, "kb_components": len(set(id(v) for v in STORE.kb_idx.values())),
-                "corpus_findings": STORE.summary.get("total_findings"),
+                "corpus_cves": STORE.cve_level.get("total_cves"),
                 "candidates": len(STORE.candidates.get("candidates", [])),
                 "exposures": EXPOSURES}
 
     @app.get("/api/summary")
     def summary():
-        if not STORE.summary:
+        """CVE-level corpus summary (unique CVEs, worst-case verdict)."""
+        if not STORE.cve_level.get("total_cves"):
             raise HTTPException(404, "run src/vex_batch.py first")
-        return STORE.summary
+        return STORE.cve_level
 
     @app.get("/api/candidates")
     def candidates(status: str | None = None, top: int | None = None):
@@ -214,11 +233,8 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px}
 .hint{font-size:12px;color:var(--ink3)}.err{color:var(--aff);font-size:13px}
 </style></head><body><div class="wrap">
-<div class="eyebrow">ICS-VEX · dynamic REST service</div>
-<h1>SBOM → VEX console</h1>
-<p class="sub">Live backend (FastAPI). Paste a CycloneDX SBOM to get per-component CVEs and a static VEX
-verdict (CVSS AV × exposure reachability — no PoC generated or executed). REST docs at
-<a href="/docs">/docs</a>. Corpus stats below load from <span class="mono">/api/summary</span>.</p>
+<div class="eyebrow">ICS-VEX</div>
+<h1>SBOM → CVE → VEX</h1>
 
 <div class="card"><div class="row">
   <div><label>CycloneDX SBOM (JSON)</label><textarea id="sbom" placeholder='{"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
@@ -228,7 +244,7 @@ verdict (CVSS AV × exposure reachability — no PoC generated or executed). RES
     <br><br><button class="primary" onclick="run()">Analyze ▶</button> <button onclick="ex()">Example</button></div>
 </div><div id="out" style="margin-top:12px"></div></div>
 
-<div class="card"><h3 style="margin:0 0 8px">Corpus (static triage)</h3><div id="kpis" class="kpis hint">loading…</div>
+<div class="card"><h3 style="margin:0 0 8px">Corpus by CVE</h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> · full view:
 <a href="https://kakyung98.github.io/ics-vex-dashboard/pipeline.html" target="_blank">pipeline.html</a></p></div>
 
@@ -242,13 +258,17 @@ async function run(){
     body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});
   if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
   const d=await r.json();
-  if(!d.matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
-  let h='<div class="hint">'+d.components+' components · '+d.matched+' CVE findings · '+JSON.stringify(d.summary.by_vex)+'</div>';
-  h+='<table><thead><tr><th>CVE</th><th>Component</th><th>AV</th><th>Reach</th><th>VEX</th><th>Tier</th></tr></thead><tbody>';
-  for(const f of d.findings){const c=C[f.final_vex]||'var(--ink3)';
-    h+='<tr><td class="mono">'+f.cve+'</td><td>'+f.component+' '+f.version+'</td><td class="mono">'+f.av+'</td>'
-      +'<td class="mono">'+f.reachability+'</td><td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
-      +'<td class="mono hint">'+f.evidence_tier+'</td></tr>';}
+  if(!d.cves_matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
+  const bv=d.summary.by_vex||{};
+  let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
+    +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
+  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>Sev</th><th>KEV</th><th>AV</th><th>Reach</th></tr></thead><tbody>';
+  for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
+    h+='<tr><td class="mono">'+f.cve+'</td>'
+      +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
+      +'<td>'+f.component+' '+f.version+'</td><td>'+(f.severity||'—')+'</td>'
+      +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
+      +'<td class="mono hint">'+f.reachability+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
@@ -256,7 +276,7 @@ function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"C
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();const v=s.by_vex||{};
     const k=document.getElementById('kpis');k.innerHTML='';
-    k.innerHTML+='<div class="kpi"><b>'+(s.total_findings||0).toLocaleString()+'</b><span>findings</span></div>';
+    k.innerHTML+='<div class="kpi"><b>'+(s.total_cves||0).toLocaleString()+'</b><span>unique CVEs</span></div>';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
     const cand=await(await fetch('/api/candidates?status=ready')).json();
