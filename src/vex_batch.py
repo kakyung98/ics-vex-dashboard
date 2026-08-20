@@ -66,6 +66,13 @@ def run(limit=None, use_securebert=False, progress_every=1000):
     total = len(rows)
 
     by_vex, by_tier, by_reach, by_cwe_vex = Counter(), Counter(), Counter(), {}
+    # source-availability class drives which pipeline legs apply:
+    #   code-available     -> code pair collected -> CodeBERT patch-diff eligible
+    #   oss-attributed     -> OSS (tier A/C) but no code collected -> context+reach only
+    #   vendor-proprietary -> tier E closed firmware -> context+reach only
+    by_class_vex = {"code-available": Counter(), "oss-attributed": Counter(),
+                    "vendor-proprietary": Counter()}
+    by_class_n = Counter()
     n_pair = 0
     with open(OUT, "w", encoding="utf-8") as out:
         for i, r in enumerate(rows):
@@ -85,6 +92,9 @@ def run(limit=None, use_securebert=False, progress_every=1000):
             has_pair = cve in pairs
             if has_pair:
                 n_pair += 1
+            source_class = ("code-available" if has_pair
+                            else "oss-attributed" if tier in ("A", "C")
+                            else "vendor-proprietary")
 
             # --- presence + reachability gate (static, deterministic) ---
             if reach == "no":
@@ -112,6 +122,7 @@ def run(limit=None, use_securebert=False, progress_every=1000):
             rec = {
                 "cve": cve, "device": device, "vendor": vendor, "product": product,
                 "cwe": cwe, "av": av, "sev": sev, "kev": kev, "epss": epss,
+                "tier": tier, "source_class": source_class,
                 "exposure": exposure, "exposure_synthetic": True,
                 "reachability": reach, "has_code_pair": has_pair,
                 "final_vex": status, "justification": just,
@@ -125,6 +136,8 @@ def run(limit=None, use_securebert=False, progress_every=1000):
             by_vex[status] += 1
             by_tier[et] += 1
             by_reach[reach] += 1
+            by_class_vex[source_class][status] += 1
+            by_class_n[source_class] += 1
             if cwe:
                 d = by_cwe_vex.setdefault(cwe, Counter())
                 d[status] += 1
@@ -141,6 +154,9 @@ def run(limit=None, use_securebert=False, progress_every=1000):
         "by_vex": dict(by_vex),
         "by_tier": dict(by_tier),
         "by_reachability": dict(by_reach),
+        "by_source_class": {k: {"n": by_class_n[k], **dict(by_class_vex[k])}
+                            for k in ("code-available", "oss-attributed",
+                                      "vendor-proprietary")},
         "by_cwe_top20": {cwe: dict(c) for cwe, c in cwe_top},
         "note": ("Static analysis only (no PoC, no execution). Deterministic legs; "
                  "sLLM analyst is reserved for interactive SBOM subsets."),
@@ -160,6 +176,9 @@ def main():
     print("by VEX   :", s["by_vex"])
     print("by tier  :", s["by_tier"])
     print("by reach :", s["by_reachability"])
+    print("by source-class:")
+    for k, c in s["by_source_class"].items():
+        print("   %-20s n=%-6d %s" % (k, c["n"], {x: c[x] for x in c if x != "n"}))
     print("wrote    :", os.path.relpath(OUT, BASE), "+", os.path.relpath(OUT_SUM, BASE))
 
 
