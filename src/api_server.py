@@ -22,7 +22,7 @@ The VEX computation here is the deterministic static leg (component match ->
 CVSS AV x exposure reachability); it needs no GPU/models, so the service starts
 instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
 """
-import os, sys, json, argparse
+import os, sys, json, argparse, difflib
 from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -167,6 +167,11 @@ class Store:
                     continue
         self.pairs = {k for k, v in self.code_ev.items()
                       if isinstance(v, dict) and v.get("vuln_code") and v.get("patched_code")}
+        # distinct KB components + their match strings (for CPE normalization)
+        self.kb_comps = list({id(c): c for c in self.kb_idx.values()}.values())
+        self.kb_match = [(c, [s.lower() for s in
+                              {c.get("name", ""), c.get("cpe_product", ""), c.get("key", "")} if s])
+                         for c in self.kb_comps]
         # per-CVE index for the clickable "related CVEs" drill-down
         srank = {"critical": 4, "high": 3, "medium": 2, "low": 1}
         vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
@@ -248,6 +253,65 @@ STORE = Store()
 # ---------------------------------------------------------------------------
 # live SBOM -> VEX (deterministic static leg, no models)
 # ---------------------------------------------------------------------------
+def _cve_ids(comp, ver):
+    """CVE ids a KB component exposes for a version (pinned, else union of all)."""
+    if not comp:
+        return []
+    vmap = comp.get("versions", {})
+    cves = vmap.get(ver)
+    if cves is None:
+        seen, cves = set(), []
+        for lst in vmap.values():
+            for cv in lst:
+                if cv["id"] not in seen:
+                    seen.add(cv["id"]); cves.append(cv)
+    return [cv["id"] for cv in cves]
+
+
+def _ro_best_match(name):
+    """Ratcliff-Obershelp (difflib) nearest KB component for a component name.
+    Returns (component, best_ratio) over the component's name/cpe/key strings."""
+    n = (name or "").lower()
+    best, best_r = None, 0.0
+    for comp, strs in STORE.kb_match:
+        r = max((difflib.SequenceMatcher(None, n, s).ratio() for s in strs), default=0.0)
+        if r > best_r:
+            best_r, best = r, comp
+    return best, round(best_r, 3)
+
+
+def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
+    """Compare CVE identification: exact component match vs a CPE normalized by
+    Ratcliff-Obershelp (difflib) fuzzy matching to the KB, then re-identified."""
+    comps = [((c.get("name") or "").strip(), (c.get("version") or "").strip())
+             for c in sbom.get("components", []) if (c.get("name") or "").strip()]
+    rows, exact_set, norm_set = [], set(), set()
+    for name, ver in comps:
+        exact = STORE.kb_idx.get(name.lower())
+        ex_ids = _cve_ids(exact, ver)
+        exact_set.update(ex_ids)
+        ncomp, ratio = _ro_best_match(name)
+        normalized = ncomp if ratio >= threshold else None
+        nm_ids = _cve_ids(normalized, ver)
+        norm_set.update(nm_ids)
+        rows.append({
+            "component": name, "version": ver or "(unpinned)",
+            "exact_match": exact["name"] if exact else None,
+            "normalized_match": normalized["name"] if normalized else None,
+            "ro_ratio": ratio, "matched_by_normalization": bool(normalized and not exact),
+            "exact_cve_count": len(ex_ids), "normalized_cve_count": len(nm_ids),
+        })
+    return {
+        "threshold": threshold, "components": len(comps), "normalization": rows,
+        "comparison": {
+            "exact_total": len(exact_set), "normalized_total": len(norm_set),
+            "both": sorted(exact_set & norm_set),
+            "only_exact": sorted(exact_set - norm_set),
+            "only_normalized": sorted(norm_set - exact_set),
+        },
+    }
+
+
 def vex_for_sbom(sbom, exposure=None):
     comps = [((c.get("name") or "").strip(), (c.get("version") or "").strip())
              for c in sbom.get("components", []) if (c.get("name") or "").strip()]
@@ -403,6 +467,16 @@ def build_app():
             raise HTTPException(400, f"exposure must be one of {EXPOSURES}")
         return vex_for_sbom(req.sbom, req.exposure)
 
+    class CompareReq(BaseModel):
+        sbom: dict
+        exposure: str | None = None
+        threshold: float = 0.7
+
+    @app.post("/api/vex_compare")
+    def vex_compare(req: CompareReq):
+        """CPE normalization (Ratcliff-Obershelp) + CVE re-identification vs exact."""
+        return vex_compare_sbom(req.sbom, req.exposure, req.threshold)
+
     @app.post("/api/refresh")
     def refresh():
         STORE.refresh()
@@ -495,6 +569,10 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
     <div id="fname" class="hint" style="margin-top:6px"></div></div>
 </div><div id="out" style="margin-top:12px"></div></div>
 
+<div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
+<p class="hint" style="margin:0 0 12px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
+<div id="cmp-body"></div></div>
+
 <div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
 
@@ -530,6 +608,7 @@ const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INV
 async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=JSON.parse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
+  compareNorm(sbom,document.getElementById('exp').value);
   const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});
   if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
@@ -546,6 +625,32 @@ async function run(){
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
+}
+async function compareNorm(sbom,exp){
+  let d=null;
+  try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,exposure:exp,threshold:0.7})});if(r.ok)d=await r.json();}catch(e){}
+  renderCompare(d);
+}
+function renderCompare(d){
+  const card=document.getElementById('cmp'),body=document.getElementById('cmp-body');
+  if(!d||!d.components){card.style.display='none';return;}
+  card.style.display='';const cm=d.comparison;
+  let h='<div style="overflow:auto"><table><thead><tr><th>Component</th><th>Exact CPE</th><th>RO-normalized CPE</th><th>RO ratio</th><th>Exact CVEs</th><th>Norm CVEs</th></tr></thead><tbody>';
+  for(const r of d.normalization){const flag=r.matched_by_normalization?' <span class="tag" style="color:var(--und)">fuzzy</span>':'';
+    h+='<tr><td class="mono">'+esc(r.component)+' '+esc(r.version)+'</td>'
+      +'<td>'+(r.exact_match?esc(r.exact_match):'<span class="hint">no exact match</span>')+'</td>'
+      +'<td>'+(r.normalized_match?esc(r.normalized_match)+flag:'<span class="hint">below threshold</span>')+'</td>'
+      +'<td class="mono">'+Number(r.ro_ratio).toFixed(2)+'</td><td class="mono">'+r.exact_cve_count+'</td><td class="mono">'+r.normalized_cve_count+'</td></tr>';}
+  h+='</tbody></table></div>';
+  h+='<div class="kpis" style="margin-top:14px">'
+    +'<div class="kpi"><b>'+cm.exact_total+'</b><span>exact CVEs</span></div>'
+    +'<div class="kpi"><b>'+cm.normalized_total+'</b><span>normalized CVEs</span></div>'
+    +'<div class="kpi"><b style="color:var(--safe)">'+cm.both.length+'</b><span>in both</span></div>'
+    +'<div class="kpi"><b style="color:var(--und)">'+cm.only_normalized.length+'</b><span>only via RO</span></div>'
+    +'<div class="kpi"><b style="color:var(--aff)">'+cm.only_exact.length+'</b><span>only exact</span></div></div>';
+  if(cm.only_normalized.length){h+='<div class="ct" style="margin-top:14px">CVEs recovered by RO-normalized CPE ('+cm.only_normalized.length+')</div><div class="hint">'
+    +cm.only_normalized.map(c=>'<a class="mono" href="https://nvd.nist.gov/vuln/detail/'+c+'" target="_blank" rel="noopener" style="margin-right:12px;white-space:nowrap">'+c+'</a>').join('')+'</div>';}
+  body.innerHTML=h;
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
