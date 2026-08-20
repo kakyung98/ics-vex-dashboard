@@ -1,439 +1,270 @@
-<title>ICS-VEX Analyzer &amp; Panel</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS-VEX API console</title>
 <style>
-  :root{
-    --ground:#e9edf1;--surface:#ffffff;--surface-2:#f1f5f8;--raise:#fbfcfd;
-    --ink:#111a20;--ink-2:#4b5a64;--ink-3:#7c8b95;--line:#d4dde4;
-    --accent:#0c7c8a;--accent-2:#0a626d;
-    --affected:#bd3b2c;--affected-bg:#f8e6e3;--safe:#1c8551;--safe-bg:#e2f2ea;
-    --under:#b07d16;--under-bg:#f6ecd6;
-    --shadow:0 1px 2px rgba(16,26,32,.06),0 6px 20px rgba(16,26,32,.05);
-    --mono:ui-monospace,"Cascadia Code","JetBrains Mono",Consolas,monospace;
-    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  }
-  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-    --ground:#0b1116;--surface:#111a20;--surface-2:#16222a;--raise:#1a2831;
-    --ink:#e6edf2;--ink-2:#93a3ad;--ink-3:#657580;--line:#25333c;
-    --accent:#38ccd9;--accent-2:#2aa7b3;
-    --affected:#e5675c;--affected-bg:#2a1613;--safe:#43be7c;--safe-bg:#0f2419;
-    --under:#e0b24c;--under-bg:#271f0d;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 26px rgba(0,0,0,.35);
-  }}
-  :root[data-theme="dark"]{
-    --ground:#0b1116;--surface:#111a20;--surface-2:#16222a;--raise:#1a2831;
-    --ink:#e6edf2;--ink-2:#93a3ad;--ink-3:#657580;--line:#25333c;
-    --accent:#38ccd9;--accent-2:#2aa7b3;
-    --affected:#e5675c;--affected-bg:#2a1613;--safe:#43be7c;--safe-bg:#0f2419;
-    --under:#e0b24c;--under-bg:#271f0d;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 26px rgba(0,0,0,.35);
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1120px;margin:0 auto;padding:32px 22px 64px}
-  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
-  h1{font-size:clamp(26px,4vw,38px);line-height:1.08;margin:.28em 0 .1em;letter-spacing:-.02em;text-wrap:balance;font-weight:680}
-  .sub{color:var(--ink-2);max-width:60ch;font-size:15px}
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-  .chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink-2);white-space:nowrap}
-  .chip b{color:var(--ink);font-weight:600}.chip .dot{color:var(--accent)}
-  .banner{display:flex;gap:12px;align-items:flex-start;background:var(--under-bg);border:1px solid color-mix(in srgb,var(--under) 40%,transparent);border-radius:10px;padding:14px 16px;margin:22px 0 8px;font-size:13.5px;color:var(--ink)}
-  .banner .k{font-family:var(--mono);font-weight:700;color:var(--under);text-transform:uppercase;letter-spacing:.08em;font-size:11px;padding-top:2px;white-space:nowrap}
-  section{margin-top:34px}
-  .sec-h{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-  .sec-h h2{font-size:16px;margin:0;letter-spacing:-.01em;font-weight:640}
-  .sec-h .n{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow)}
-  .card h3{margin:0 0 3px;font-size:13.5px;font-weight:620}.card .hint{font-size:12px;color:var(--ink-3);margin:0 0 14px}
-  /* analyzer */
-  .analyzer{border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 8%,transparent),var(--shadow)}
-  .an-io{display:grid;grid-template-columns:1fr;gap:12px}
-  .drop{border:1.5px dashed color-mix(in srgb,var(--accent) 40%,var(--line));border-radius:10px;padding:18px;text-align:center;background:var(--surface-2);cursor:pointer;transition:background .15s,border-color .15s}
-  .drop:hover,.drop.over{background:color-mix(in srgb,var(--accent) 8%,var(--surface-2));border-color:var(--accent)}
-  .drop .big{font-family:var(--mono);font-size:13px;color:var(--ink);font-weight:600}
-  .drop .small{font-size:12px;color:var(--ink-3);margin-top:4px}
-  textarea{width:100%;min-height:96px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px;font-family:var(--mono);font-size:12px;resize:vertical}
-  textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-  .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
-  .controls .grp{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
-  select{font-family:var(--mono);font-size:12.5px;padding:7px 9px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
-  button{font-family:var(--sans);font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;border:1px solid transparent;cursor:pointer}
-  .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-2)}
-  .btn-ghost{background:var(--surface);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
-  .btn-ghost:hover{background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
-  .an-result{margin-top:18px}
-  .an-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
-  .stile{background:var(--surface-2);border-radius:10px;padding:12px 14px;border:1px solid var(--line)}
-  .stile .v{font-family:var(--mono);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
-  .stile .l{font-size:11.5px;color:var(--ink-2);margin-top:5px}
-  .comp{border:1px solid var(--line);border-radius:11px;margin-bottom:11px;overflow:hidden}
-  .comp .ch{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:var(--surface-2);flex-wrap:wrap}
-  .comp .cn{font-family:var(--mono);font-size:13px;font-weight:600}
-  .comp .cv{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
-  .comp .cc{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
-  .cvelist{padding:4px 14px 12px}
-  .cverow{display:grid;grid-template-columns:118px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:12.5px}
-  .cverow:first-child{border-top:0}
-  .cverow .id{font-family:var(--mono);font-weight:600}
-  .cverow .tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-  .tag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
-  .tag.sev-critical{background:var(--affected-bg);color:var(--affected);border-color:transparent}
-  .tag.sev-high{background:color-mix(in srgb,var(--affected) 14%,transparent);color:var(--affected);border-color:transparent}
-  .tag.kev{background:var(--affected);color:#fff;border-color:transparent}
-  .pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.02em;padding:4px 9px;border-radius:20px;white-space:nowrap;text-transform:uppercase}
-  .pill.LIKELY_AFFECTED{background:var(--affected-bg);color:var(--affected)}
-  .pill.LIKELY_NOT_AFFECTED{background:var(--safe-bg);color:var(--safe)}
-  .pill.UNDER_INVESTIGATION{background:var(--under-bg);color:var(--under)}
-  .empty{color:var(--ink-3);font-size:13px;text-align:center;padding:20px}
-  .an-note{font-size:11.5px;color:var(--ink-3);margin-top:10px}
-  /* kpi */
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  @media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
-  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-  .kpi .lab{font-size:11.5px;color:var(--ink-2);letter-spacing:.03em;text-transform:uppercase;font-weight:600}
-  .kpi .val{font-family:var(--mono);font-size:34px;font-weight:600;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums;line-height:1}
-  .kpi .cap{font-size:12px;color:var(--ink-3);margin-top:6px}
-  .kpi.safety{background:linear-gradient(180deg,var(--safe-bg),var(--surface))}
-  .kpi.safety .val{color:var(--safe)}
-  .kpi.safety::after{content:"";position:absolute;top:0;left:0;width:4px;height:100%;background:var(--safe)}
-  .kpi .delta{color:var(--safe);font-family:var(--mono);font-size:12px}
-  .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
-  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
-  .cm{display:grid;grid-template-columns:auto repeat(3,1fr);gap:5px;font-family:var(--mono);font-variant-numeric:tabular-nums}
-  .cm .h{font-size:10.5px;color:var(--ink-3);display:flex;align-items:center;justify-content:center;text-align:center;padding:2px}
-  .cm .rh{font-size:10.5px;color:var(--ink-3);display:flex;align-items:center;justify-content:flex-end;padding-right:6px;text-align:right}
-  .cm .cell{aspect-ratio:1.9/1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:var(--ink);border:1px solid var(--line)}
-  .cm .cell small{font-size:9px;color:var(--ink-3);font-weight:400;margin-top:1px}
-  .cm .diag{outline:2px solid color-mix(in srgb,var(--accent) 55%,transparent);outline-offset:-2px}
-  .cm .zero-safe{background:var(--safe-bg)!important;color:var(--safe);border-color:var(--safe)}
-  .legend{display:flex;gap:14px;margin-top:12px;font-size:11.5px;color:var(--ink-2);flex-wrap:wrap}
-  .legend span{display:flex;align-items:center;gap:6px}.sw{width:11px;height:11px;border-radius:3px;display:inline-block}
-  .bars{display:flex;flex-direction:column;gap:13px}
-  .bar-row{display:grid;grid-template-columns:140px 1fr;gap:10px;align-items:center}
-  .bar-row .nm{font-size:12px;color:var(--ink-2)}
-  .track{background:var(--surface-2);border-radius:5px;height:22px;overflow:hidden}
-  .fill{height:100%;border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:var(--mono);font-size:11.5px;color:#fff;font-weight:600}
-  .stat-line{display:flex;gap:6px;margin-top:3px}
-  .stat-line .m{flex:1;text-align:center;font-family:var(--mono);font-size:11px;padding:5px 0;border-radius:5px;background:var(--surface-2);color:var(--ink-2)}
-  .stat-line .m b{color:var(--ink);font-weight:600;display:block;font-size:13px}
-  .rmet{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .rmet .box{background:var(--surface-2);border-radius:9px;padding:13px}
-  .rmet .box .v{font-family:var(--mono);font-size:26px;font-weight:600}
-  .rmet .box .l{font-size:11.5px;color:var(--ink-2);margin-top:3px}.rmet .box .d{font-size:11px;color:var(--ink-3);margin-top:6px}
-  .samples{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:760px){.samples{grid-template-columns:1fr}}
-  .svex{border:1px solid var(--line);border-radius:11px;padding:14px 15px;background:var(--surface)}
-  .svex .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
-  .cve{font-family:var(--mono);font-size:13px;font-weight:600}
-  .svex .dev{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-bottom:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rats{display:flex;flex-direction:column;gap:6px}
-  .rat{display:flex;gap:8px;font-size:12.5px;color:var(--ink-2);line-height:1.4}
-  .rat .eid{font-family:var(--mono);font-size:10px;color:var(--accent);padding-top:2px;flex-shrink:0}
-  .svex .meta{display:flex;justify-content:space-between;margin-top:11px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--ink-3)}
-  .svex .meta b{color:var(--ink-2)}
-  .svex .meta .tier{font-family:var(--mono);color:var(--ink-3,var(--ink-2));opacity:.75}
-  .ychart{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px}
-  .ycol{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-width:0}
-  .ycol .b{width:100%;background:var(--accent);border-radius:3px 3px 0 0;opacity:.85}
-  .ycol:hover .b{opacity:1}
-  .ycol .y{font-family:var(--mono);font-size:8.5px;color:var(--ink-3)}
-  footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3)}
-  .pipe{font-family:var(--mono);color:var(--ink-2);font-size:11.5px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-  .pipe .s{color:var(--accent)}
-</style>
+@font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');font-weight:800;font-display:swap}
+:root{--bg:#0b1116;--card:#111a20;--card2:#16222a;--ink:#e6edf2;--ink2:#93a3ad;--ink3:#657580;
+--line:#25333c;--accent:#38ccd9;--aff:#e5675c;--safe:#43be7c;--und:#e0b24c;
+--mono:ui-monospace,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px}
+.wrap{max-width:1560px;margin:0 auto;padding:34px clamp(20px,4vw,56px) 72px}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-width:80ch;font-size:16px}
+h3{font-size:18px}.hint{font-size:13px}
+a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
+@media(max-width:640px){.row{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
+h3{font-size:16px}
+label{font-size:13px;color:var(--ink2)}textarea{width:100%;min-height:190px;background:var(--bg);color:var(--ink);
+border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mono);font-size:13px;transition:border-color .12s,background .12s}
+textarea.dragover{border-color:var(--accent);border-style:dashed;background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
+select,button{font-family:var(--sans);font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
+background:var(--card2);color:var(--ink)}button.primary{background:var(--accent);color:#04120c;font-weight:700;border:none;cursor:pointer}
+.kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:14px 20px;flex:1;min-width:150px}
+.kpi b{font-size:30px}.kpi span{display:block;font-size:13px;color:var(--ink3);font-family:var(--mono);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:16px;margin-top:6px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
+.badge{font-family:var(--mono);font-size:13px;font-weight:700;padding:2px 9px;border-radius:5px}
+.err{color:var(--aff);font-size:14px}
+#sa-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.chart{margin-bottom:6px}.ct{font-size:15px;font-weight:600;color:var(--ink2);margin-bottom:8px}
+.mb{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-size:14px}
+.legend .lg{display:flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.cwe{display:grid;gap:7px}.cwerow{display:grid;grid-template-columns:minmax(260px,440px) 1fr 44px;align-items:center;gap:12px;font-size:14px}
+.cwerow>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.foot{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);text-align:center;font-size:14px;color:var(--ink3)}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.ssrc{width:70px;height:70px;flex:none}
+.btxt .bk{font-family:'Paperlogy',var(--sans);font-size:25px;font-weight:800;color:#ffffff;letter-spacing:.5px;line-height:1.15}
+.btxt .be{font-family:'Paperlogy',var(--sans);font-size:14px;font-weight:700;color:#c8d3da;letter-spacing:.4px}
+.brand-sm{justify-content:center;margin-bottom:10px}
+.brand-sm .ssrc{width:50px;height:50px}.brand-sm .bk{font-size:18px}.brand-sm .be{font-size:12px}
+.cright{color:var(--ink3);font-size:13px}
+.cwebar{background:var(--card2);border-radius:5px;height:15px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.cwerow b{text-align:right;font-family:var(--mono)}
+.clk{cursor:pointer}.clk:hover{opacity:.8}
+.cwename{color:var(--ink3);font-size:12px;margin-left:6px}
+/* drill-down modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow:auto}
+.ov.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:1100px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal .mh{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.modal h3{margin:0}.xbtn{cursor:pointer;background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:15px}
+.satwo{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.dtt{font-size:13px}.dtt td{padding:7px 8px}
+.ybars{display:flex;align-items:flex-end;gap:6px;height:230px;overflow-x:auto;padding-top:6px}
+.ycol{flex:1;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.yval{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-bottom:4px;white-space:nowrap}
+.ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
+.yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
+</style></head><body><div class="wrap">
+<div class="eyebrow" style="color:#37b24d">System Security Research Center</div>
+<h1>ICS-VEXForge</h1>
 
-<div class="wrap">
-  <header>
-    <div class="eyebrow">Explainable ICS VEX &middot; SecureBERT / CodeBERT / sLLM</div>
-    <h1>ICS-VEXForge</h1>
-    <div class="chips" id="chips"></div>
-    <div style="margin-top:12px;font-family:var(--mono);font-size:12px;line-height:1.5;
-        padding:10px 14px;border-radius:9px;border:1px solid color-mix(in srgb,var(--safe) 45%,transparent);
-        background:color-mix(in srgb,var(--safe) 10%,transparent);max-width:760px">
-      🛡️ <b>Static-analysis VEX.</b> The full pipeline decides VEX from static evidence &mdash;
-      SecureBERT context, CodeBERT patch-diff, and an sLLM analyst&rarr;critic loop over
-      Attack&nbsp;Vector&nbsp;&times;&nbsp;exposure reachability. <b>No proof-of-concept is generated or executed.</b>
-      The model pipeline runs in the <b>ICS-VEXForge webapp</b> / <span style="font-family:var(--mono)">vex_pipeline.py</span>
-      (needs a Python backend); the in-page tool below is a fast reachability preview only.
-    </div>
-    <div style="margin-top:14px">
-      <a href="cve_analysis.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
-        font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;
-        background:var(--accent,#12b886);color:#04120c;letter-spacing:.02em">
-        📊 Full CVE analysis (11,336) &rarr;</a>
-      <a href="pipeline.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
-        font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;margin-left:8px;
-        border:1px solid var(--accent,#12b886);color:var(--accent,#12b886);letter-spacing:.02em">
-        🔀 Hybrid pipeline &rarr;</a>
-    </div>
-  </header>
+<div class="card"><div class="row">
+  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
+  <div><label>Deployment exposure</label><br><select id="exp">
+    <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
+    <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
+    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
+    <button class="primary" onclick="run()">Analyze ▶</button>
+    <button onclick="document.getElementById('file').click()">Upload JSON</button>
+    <button onclick="ex()">Example</button>
+    <div id="fname" class="hint" style="margin-top:6px"></div></div>
+</div><div id="out" style="margin-top:12px"></div></div>
 
-  <section>
-    <div class="sec-h"><h2>SBOM &rarr; CVE &rarr; VEX Analyzer</h2><span class="n">CycloneDX 1.x &middot; in-browser reachability preview</span></div>
-    <div class="card analyzer">
-      <div class="an-io">
-        <div class="drop" id="drop">
-          <div class="big">Drop an SBOM file here or click to select</div>
-          <div class="small">CycloneDX JSON (.json) &middot; files are never uploaded, processed in your browser only</div>
-          <input type="file" id="file" accept=".json,application/json" hidden>
-        </div>
-        <textarea id="paste" placeholder="Or paste CycloneDX JSON here…"></textarea>
-        <div class="controls">
-          <button class="btn-primary" id="analyze">Analyze</button>
-          <button class="btn-ghost" id="loadex">Load example SBOM</button>
-          <div class="grp">Deployment exposure
-            <select id="exposure">
-              <option value="isolated-cell">Isolated cell (air-gap)</option>
-              <option value="control-network" selected>Control network</option>
-              <option value="dmz-routable">DMZ routable</option>
-              <option value="remote-accessible">Remote accessible</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="an-result" id="anres"><div class="empty">Enter an SBOM to see per-component CVEs and VEX status here.</div></div>
-      <div class="an-note"><b>Preview only.</b> This in-page tool computes reachability from the CVE's
-        Attack Vector &times; the chosen deployment exposure &rarr; reachable + vulnerable version = <b>Affected</b>,
-        unreachable = <b>Not affected</b>, conditional = <b>Under investigation</b> (version outside the vulnerable
-        range is not flagged, e.g. zlib 1.2.13). It does <b>not</b> run SecureBERT/CodeBERT/sLLM &mdash; the full
-        model-based static VEX (with rationale, patch-diff and analyst&rarr;critic adjudication) runs server-side in
-        the ICS-VEXForge webapp via <span style="font-family:var(--mono)">vex_pipeline.py</span>. Nothing is ever executed.</div>
-    </div>
-  </section>
+<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
 
-  <section>
-    <div class="sec-h"><h2>System evaluation</h2><span class="n">SecureBERT &middot; test n=2,117 &middot; device-disjoint</span></div>
-    <div class="kpis" id="kpis"></div>
-  </section>
+<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
+<div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
+<div id="adv-year" style="margin-top:14px"></div>
+<div id="adv-ven" style="margin-top:14px"></div></div>
 
-  <section>
-    <div class="grid2">
-      <div class="card">
-        <h3>Confusion Matrix</h3>
-        <p class="hint">Rows = truth, columns = prediction. Diagonal (correct) highlighted; the safety-critical cell (Affected&rarr;Not affected) in green.</p>
-        <div class="cm" id="cm"></div>
-        <div class="legend">
-          <span><i class="sw" style="background:var(--safe)"></i>Affected&rarr;Not affected errors = 0</span>
-          <span><i class="sw" style="background:color-mix(in srgb,var(--accent) 30%,transparent)"></i>Diagonal</span>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Per-class P / R / F1</h3><p class="hint">Precision, recall, F1 per VEX status.</p>
-        <div class="bars" id="perclass"></div>
-      </div>
-    </div>
-  </section>
+<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
+<div id="year" style="margin-top:12px">loading…</div></div>
 
-  <section>
-    <div class="grid2">
-      <div class="card">
-        <h3>Per-arm performance</h3><p class="hint">OSS-arm (dynamic reproduction) vs vendor-context-arm (closed). Macro F1.</p>
-        <div class="bars" id="perarm"></div>
-        <div class="legend"><span>Both arms: zero Affected&rarr;Not affected errors</span></div>
-      </div>
-      <div class="card">
-        <h3>Rationale faithfulness</h3><p class="hint">Verifies the selected rationale actually drives the prediction, via input ablation.</p>
-        <div class="rmet" id="rmet"></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-h"><h2>Two-model combination</h2><span class="n">context leg + code leg</span></div>
-    <div class="grid2">
-      <div class="card">
-        <h3>CodeBERT</h3>
-        <div class="rmet" id="tm_code"></div>
-      </div>
-      <div class="card">
-        <h3>Backport detection</h3>
-        <p class="hint">CodeBERT detects cases where the version looks vulnerable but the code is already patched.</p>
-        <div id="tm_bp"></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-h"><h2>Domain adaptation (model tuning)</h2><span class="n">frozen &rarr; ICS adaptation / vulnerability-detection fine-tuning</span></div>
-    <div class="grid2">
-      <div class="card">
-        <h3>SecureBERT ICS-DAPT (text)</h3>
-        <p class="hint">Continued MLM on CISA advisories. Measured with label-free metrics.</p>
-        <div class="rmet" id="da_sb"></div>
-      </div>
-      <div class="card">
-        <h3>CodeBERT fine-tuning (code)</h3>
-        <p class="hint">Vulnerability detection trained on Devign. Transfer to the fine-grained task is limited.</p>
-        <div class="rmet" id="da_cb"></div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="sec-h"><h2>Explainable VEX output</h2><span class="n">each verdict carries rationale sentences</span></div>
-    <div class="samples" id="samples"></div>
-  </section>
-
-  <section>
-    <div class="card">
-      <h3>Data source &middot; CISA ICS advisories (2010–2026)</h3>
-      <p class="hint">Advisories with CVEs per year. Fully crawled real data.</p>
-      <div class="ychart" id="ychart"></div>
-    </div>
-  </section>
-
-  <footer>
-    <div class="pipe" id="pipe"></div>
-    <p style="margin-top:10px">&copy; 2026 System Security Research Center, Chonnam National University. All rights reserved.</p>
-  </footer>
+<div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
+<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
+<div id="sa-kpis" class="kpis">loading…</div>
+<div id="sa-charts" style="margin-top:16px"></div>
+<div class="satwo" style="margin-top:16px">
+  <div id="sa-vendors"></div>
+  <div id="sa-devtype"></div>
 </div>
+<div id="sa-cwe" style="margin-top:16px"></div></div>
+
+<div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
+<div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)closeCves()"><div class="modal">
+  <div class="mh"><h3 id="mtitle">Related CVEs</h3><button class="xbtn" onclick="closeCves()">✕ Close</button></div>
+  <div id="mbody" class="hint">loading…</div>
+</div></div>
 
 <script>
-const D = {"provenance": {"advisories": 3765, "cves": 11336, "devices": 3103, "findings": 13005, "oss": 2151, "vendor": 10854, "kev": 149, "years": {"2010": 1, "2011": 31, "2012": 79, "2013": 82, "2014": 101, "2015": 142, "2016": 137, "2017": 172, "2018": 193, "2019": 204, "2020": 225, "2021": 368, "2022": 370, "2023": 371, "2024": 409, "2025": 481, "2026": 329}}, "overall": {"macro_f1": 0.9038, "ece": 0.0126, "under_rate": 0.4374, "wrong_na": 0, "confusion_matrix": [[520, 0, 65], [4, 588, 61], [27, 52, 800]], "per_class": {"LIKELY_AFFECTED": {"precision": 0.9437, "recall": 0.8889, "f1": 0.9155, "support": 585}, "LIKELY_NOT_AFFECTED": {"precision": 0.9187, "recall": 0.9005, "f1": 0.9095, "support": 653}, "UNDER_INVESTIGATION": {"precision": 0.8639, "recall": 0.9101, "f1": 0.8864, "support": 879}}}, "rationale": {"suff": -0.0011, "comp": 0.5919}, "baseline": 0.8903, "perarm": {"oss": [0.901, 378], "vendor": [0.904, 1739]}, "labels": ["LIKELY_AFFECTED", "LIKELY_NOT_AFFECTED", "UNDER_INVESTIGATION"], "runtime": 36.5, "device": "cuda", "two_model": {"codebert_standalone_acc": 0.5, "ref_match_perturbed": 0.971, "ref_match_n": 68, "bp_injected": 16, "bp_caught": 16, "ctx_acc": 0.667, "two_acc": 1.0, "ctx_fp": 6, "two_fp": 0, "code_cves": 34, "unavail": 12969, "total": 13005}, "domain_adapt": {"dapt_ppl_before": 4.01, "dapt_ppl_after": 2.23, "dapt_drop": 44.4, "dapt_term_vanilla": 0.303, "dapt_term_dapt": 0.386, "dapt_corpus": 52061, "cb_devign_acc": 0.644, "cb_devign_f1": 0.659, "cb_match_frozen": 0.5, "cb_match_ft": 0.457}, "samples": [{"cve": "CVE-2012-4704", "device": "CODESYS Gateway Server", "status": "LIKELY_AFFECTED", "conf": 0.933, "oracle": "LIKELY_AFFECTED", "rationale": ["The weakness is driven through network messages accepted by an exposed interface.", "The unit is reachable remotely, including through vendor remote-support tunnels."]}, {"cve": "CVE-2012-4705", "device": "CODESYS Gateway Server", "status": "UNDER_INVESTIGATION", "conf": 0.946, "oracle": "UNDER_INVESTIGATION", "rationale": ["The prerequisites an attacker would need here are not established in the evidence.", "The unit is reachable remotely, including through vendor remote-support tunnels."]}, {"cve": "CVE-2019-9013", "device": "CODESYS V3 Runtime", "status": "LIKELY_NOT_AFFECTED", "conf": 0.944, "oracle": "LIKELY_NOT_AFFECTED", "rationale": ["The path opens only to an adjacent station on the same physical network.", "The unit operates islanded, with no IP path in from plant or enterprise networks."]}, {"cve": "CVE-2012-4708", "device": "CODESYS Gateway Server", "status": "LIKELY_AFFECTED", "conf": 0.933, "oracle": "UNDER_INVESTIGATION", "rationale": ["The weakness is driven through network messages accepted by an exposed interface.", "The unit is reachable remotely, including through vendor remote-support tunnels."]}]};
-const KB = {"components":[{"key":"openssl","name":"OpenSSL","cpe_vendor":"openssl","cpe_product":"openssl","purl":"pkg:generic/openssl","versions":{"1.0.2k":[{"id":"CVE-2017-3731","sev":"high","av":"N","kev":false,"epss":0.576},{"id":"CVE-2017-3732","sev":"medium","av":"N","kev":false,"epss":0.154},{"id":"CVE-2016-7055","sev":"medium","av":"N","kev":false,"epss":0.142}],"1.0.2u":[{"id":"CVE-2021-23840","sev":"high","av":"N","kev":false,"epss":0.507},{"id":"CVE-2021-3712","sev":"high","av":"N","kev":false,"epss":0.504}],"1.1.1g":[{"id":"CVE-2020-1971","sev":"medium","av":"N","kev":false,"epss":0.07},{"id":"CVE-2021-3450","sev":"high","av":"N","kev":false,"epss":0.183},{"id":"CVE-2021-3711","sev":"critical","av":"N","kev":false,"epss":0.878}],"1.1.1k":[{"id":"CVE-2021-3711","sev":"critical","av":"N","kev":false,"epss":0.878},{"id":"CVE-2021-3712","sev":"high","av":"N","kev":false,"epss":0.504},{"id":"CVE-2022-0778","sev":"high","av":"N","kev":false,"epss":0.706}],"1.1.1n":[{"id":"CVE-2022-1292","sev":"high","av":"L","kev":false,"epss":0.826},{"id":"CVE-2022-2068","sev":"high","av":"L","kev":false,"epss":0.958},{"id":"CVE-2022-4304","sev":"medium","av":"N","kev":false,"epss":0.162}],"3.0.7":[{"id":"CVE-2023-0286","sev":"high","av":"N","kev":false,"epss":0.595},{"id":"CVE-2023-0215","sev":"high","av":"N","kev":false,"epss":0.045},{"id":"CVE-2022-4304","sev":"medium","av":"N","kev":false,"epss":0.162}],"3.0.13":[],"3.1.4":[],"3.2.1":[]}},{"key":"busybox","name":"BusyBox","cpe_vendor":"busybox","cpe_product":"busybox","purl":"pkg:generic/busybox","versions":{"1.20.2":[{"id":"CVE-2017-16544","sev":"high","av":"N","kev":false,"epss":0.062},{"id":"CVE-2016-2147","sev":"high","av":"N","kev":false,"epss":0.076},{"id":"CVE-2018-1000500","sev":"high","av":"N","kev":false,"epss":0.025}],"1.30.1":[{"id":"CVE-2021-42374","sev":"medium","av":"L","kev":false,"epss":0.006},{"id":"CVE-2021-42378","sev":"high","av":"N","kev":false,"epss":0.025},{"id":"CVE-2021-42386","sev":"high","av":"N","kev":false,"epss":0.025}],"1.31.1":[{"id":"CVE-2021-42375","sev":"medium","av":"L","kev":false,"epss":0.004},{"id":"CVE-2021-42376","sev":"medium","av":"L","kev":false,"epss":0.004},{"id":"CVE-2022-28391","sev":"high","av":"N","kev":false,"epss":0.035}],"1.33.1":[{"id":"CVE-2021-42379","sev":"high","av":"N","kev":false,"epss":0.026},{"id":"CVE-2021-42380","sev":"high","av":"N","kev":false,"epss":0.029},{"id":"CVE-2022-28391","sev":"high","av":"N","kev":false,"epss":0.035}],"1.35.0":[{"id":"CVE-2022-28391","sev":"high","av":"N","kev":false,"epss":0.035}],"1.36.1":[]}},{"key":"zlib","name":"zlib","cpe_vendor":"zlib","cpe_product":"zlib","purl":"pkg:generic/zlib","versions":{"1.2.8":[{"id":"CVE-2016-9840","sev":"high","av":"N","kev":false,"epss":0.048},{"id":"CVE-2016-9841","sev":"critical","av":"N","kev":false,"epss":0.075},{"id":"CVE-2018-25032","sev":"high","av":"N","kev":false,"epss":0.517}],"1.2.11":[{"id":"CVE-2018-25032","sev":"high","av":"N","kev":false,"epss":0.517},{"id":"CVE-2022-37434","sev":"critical","av":"N","kev":false,"epss":0.179}],"1.2.12":[{"id":"CVE-2022-37434","sev":"critical","av":"N","kev":false,"epss":0.179}],"1.2.13":[],"1.3.1":[]}},{"key":"libcurl","name":"libcurl","cpe_vendor":"haxx","cpe_product":"libcurl","purl":"pkg:generic/curl","versions":{"7.29.0":[{"id":"CVE-2016-8615","sev":"high","av":"N","kev":false,"epss":0.048},{"id":"CVE-2018-1000120","sev":"critical","av":"N","kev":false,"epss":0.118},{"id":"CVE-2019-5482","sev":"critical","av":"N","kev":false,"epss":0.179}],"7.64.0":[{"id":"CVE-2019-5481","sev":"critical","av":"N","kev":false,"epss":0.073},{"id":"CVE-2019-5482","sev":"critical","av":"N","kev":false,"epss":0.179},{"id":"CVE-2020-8177","sev":"high","av":"L","kev":false,"epss":0.012}],"7.79.1":[{"id":"CVE-2022-22576","sev":"high","av":"N","kev":false,"epss":0.022},{"id":"CVE-2022-27774","sev":"medium","av":"N","kev":false,"epss":0.017},{"id":"CVE-2022-32221","sev":"critical","av":"N","kev":false,"epss":0.043}],"8.0.1":[{"id":"CVE-2023-27533","sev":"high","av":"N","kev":false,"epss":0.02},{"id":"CVE-2023-27536","sev":"medium","av":"N","kev":false,"epss":0.016},{"id":"CVE-2023-38545","sev":"critical","av":"N","kev":false,"epss":0.785}],"8.4.0":[{"id":"CVE-2023-46218","sev":"medium","av":"N","kev":false,"epss":0.017},{"id":"CVE-2024-2379","sev":"medium","av":"N","kev":false,"epss":0.017}],"8.7.1":[]}},{"key":"lwip","name":"lwIP","cpe_vendor":"lwip_project","cpe_product":"lwip","purl":"pkg:generic/lwip","versions":{"1.4.1":[{"id":"CVE-2014-1912","sev":"high","av":"N","kev":false,"epss":0.283},{"id":"CVE-2020-22283","sev":"high","av":"N","kev":false,"epss":0.014},{"id":"CVE-2020-22284","sev":"high","av":"N","kev":false,"epss":0.012}],"2.0.3":[{"id":"CVE-2020-22283","sev":"high","av":"N","kev":false,"epss":0.014},{"id":"CVE-2020-22284","sev":"high","av":"N","kev":false,"epss":0.012},{"id":"CVE-2020-22288","sev":"unknown","av":"","kev":false,"epss":null}],"2.1.2":[{"id":"CVE-2020-22283","sev":"high","av":"N","kev":false,"epss":0.014},{"id":"CVE-2020-22285","sev":"unknown","av":"","kev":false,"epss":null},{"id":"CVE-2020-22286","sev":"unknown","av":"","kev":false,"epss":null}],"2.1.3":[{"id":"CVE-2023-5188","sev":"high","av":"N","kev":false,"epss":0.01}],"2.2.0":[]}},{"key":"linux_kernel","name":"Linux Kernel","cpe_vendor":"linux","cpe_product":"linux_kernel","purl":"pkg:generic/linux","versions":{"3.10.108":[{"id":"CVE-2017-1000112","sev":"high","av":"L","kev":false,"epss":0.208},{"id":"CVE-2018-5333","sev":"medium","av":"L","kev":false,"epss":0.077},{"id":"CVE-2019-11477","sev":"high","av":"N","kev":false,"epss":0.987}],"4.9.337":[{"id":"CVE-2019-11477","sev":"high","av":"N","kev":false,"epss":0.987},{"id":"CVE-2021-33909","sev":"high","av":"L","kev":false,"epss":0.097},{"id":"CVE-2022-0847","sev":"high","av":"L","kev":true,"epss":0.886}],"4.14.336":[{"id":"CVE-2021-33909","sev":"high","av":"L","kev":false,"epss":0.097},{"id":"CVE-2022-0847","sev":"high","av":"L","kev":true,"epss":0.886}],"4.19.325":[{"id":"CVE-2022-0847","sev":"high","av":"L","kev":true,"epss":0.886},{"id":"CVE-2023-32233","sev":"high","av":"L","kev":false,"epss":0.13}],"5.4.278":[{"id":"CVE-2023-32233","sev":"high","av":"L","kev":false,"epss":0.13},{"id":"CVE-2024-1086","sev":"high","av":"L","kev":true,"epss":0.281}],"5.10.220":[{"id":"CVE-2024-1086","sev":"high","av":"L","kev":true,"epss":0.281}],"5.15.160":[],"6.1.90":[]}},{"key":"dropbear","name":"Dropbear SSH","cpe_vendor":"dropbear_ssh_project","cpe_product":"dropbear_ssh","purl":"pkg:generic/dropbear","versions":{"2016.74":[{"id":"CVE-2016-7406","sev":"critical","av":"N","kev":false,"epss":0.105},{"id":"CVE-2016-7407","sev":"critical","av":"N","kev":false,"epss":0.055},{"id":"CVE-2016-7408","sev":"high","av":"N","kev":false,"epss":0.04}],"2019.78":[{"id":"CVE-2018-15599","sev":"medium","av":"N","kev":false,"epss":0.027},{"id":"CVE-2020-36254","sev":"high","av":"N","kev":false,"epss":0.016}],"2020.81":[{"id":"CVE-2021-36369","sev":"high","av":"N","kev":false,"epss":0.015}],"2022.83":[{"id":"CVE-2023-48795","sev":"medium","av":"N","kev":false,"epss":0.933}],"2024.85":[]}},{"key":"openssh","name":"OpenSSH","cpe_vendor":"openbsd","cpe_product":"openssh","purl":"pkg:generic/openssh","versions":{"7.4p1":[{"id":"CVE-2018-15473","sev":"medium","av":"N","kev":false,"epss":0.986},{"id":"CVE-2019-6111","sev":"medium","av":"N","kev":false,"epss":0.582},{"id":"CVE-2016-10708","sev":"high","av":"N","kev":false,"epss":0.157}],"8.2p1":[{"id":"CVE-2020-15778","sev":"high","av":"A","kev":false,"epss":0.13},{"id":"CVE-2021-41617","sev":"high","av":"L","kev":false,"epss":0.025},{"id":"CVE-2023-48795","sev":"medium","av":"N","kev":false,"epss":0.933}],"9.3p1":[{"id":"CVE-2023-38408","sev":"critical","av":"N","kev":false,"epss":0.797},{"id":"CVE-2023-48795","sev":"medium","av":"N","kev":false,"epss":0.933},{"id":"CVE-2024-6387","sev":"high","av":"N","kev":false,"epss":0.995}],"9.6p1":[{"id":"CVE-2024-6387","sev":"high","av":"N","kev":false,"epss":0.995}],"9.8p1":[]}},{"key":"mbedtls","name":"Mbed TLS","cpe_vendor":"arm","cpe_product":"mbed_tls","purl":"pkg:generic/mbedtls","versions":{"2.16.3":[{"id":"CVE-2020-10932","sev":"medium","av":"L","kev":false,"epss":0.003},{"id":"CVE-2020-16150","sev":"medium","av":"L","kev":false,"epss":0.004},{"id":"CVE-2021-24119","sev":"medium","av":"N","kev":false,"epss":0.015}],"2.28.0":[{"id":"CVE-2022-35409","sev":"critical","av":"N","kev":false,"epss":0.022},{"id":"CVE-2023-43615","sev":"high","av":"N","kev":false,"epss":0.008}],"3.4.0":[{"id":"CVE-2023-43615","sev":"high","av":"N","kev":false,"epss":0.008}],"3.5.2":[]}},{"key":"wolfssl","name":"wolfSSL","cpe_vendor":"wolfssl","cpe_product":"wolfssl","purl":"pkg:generic/wolfssl","versions":{"4.5.0":[{"id":"CVE-2021-3336","sev":"high","av":"N","kev":false,"epss":0.008},{"id":"CVE-2021-24116","sev":"medium","av":"N","kev":false,"epss":0.01}],"5.5.0":[{"id":"CVE-2022-42905","sev":"critical","av":"N","kev":false,"epss":0.02},{"id":"CVE-2023-3724","sev":"high","av":"N","kev":false,"epss":0.007}],"5.6.6":[]}},{"key":"libxml2","name":"libxml2","cpe_vendor":"xmlsoft","cpe_product":"libxml2","purl":"pkg:generic/libxml2","versions":{"2.9.4":[{"id":"CVE-2016-9318","sev":"medium","av":"L","kev":false,"epss":0.029},{"id":"CVE-2017-5969","sev":"medium","av":"L","kev":false,"epss":0.026},{"id":"CVE-2018-14567","sev":"medium","av":"N","kev":false,"epss":0.043}],"2.9.10":[{"id":"CVE-2021-3517","sev":"high","av":"N","kev":false,"epss":0.082},{"id":"CVE-2021-3518","sev":"high","av":"N","kev":false,"epss":0.036},{"id":"CVE-2022-29824","sev":"medium","av":"N","kev":false,"epss":0.038}],"2.9.14":[{"id":"CVE-2022-40303","sev":"high","av":"N","kev":false,"epss":0.228},{"id":"CVE-2022-40304","sev":"high","av":"L","kev":false,"epss":0.068},{"id":"CVE-2023-28484","sev":"medium","av":"N","kev":false,"epss":0.011}],"2.10.4":[{"id":"CVE-2023-45322","sev":"medium","av":"N","kev":false,"epss":0.008}],"2.12.5":[]}},{"key":"expat","name":"Expat","cpe_vendor":"libexpat_project","cpe_product":"libexpat","purl":"pkg:generic/expat","versions":{"2.2.0":[{"id":"CVE-2018-20843","sev":"high","av":"N","kev":false,"epss":0.071},{"id":"CVE-2019-15903","sev":"high","av":"N","kev":false,"epss":0.066}],"2.2.10":[{"id":"CVE-2022-22822","sev":"critical","av":"N","kev":false,"epss":0.048},{"id":"CVE-2022-23852","sev":"critical","av":"N","kev":false,"epss":0.045},{"id":"CVE-2022-25235","sev":"critical","av":"N","kev":false,"epss":0.05}],"2.4.1":[{"id":"CVE-2022-25236","sev":"critical","av":"N","kev":false,"epss":0.359},{"id":"CVE-2022-25315","sev":"critical","av":"N","kev":false,"epss":0.048}],"2.5.0":[{"id":"CVE-2023-52425","sev":"high","av":"N","kev":false,"epss":0.018}],"2.6.2":[]}},{"key":"sqlite","name":"SQLite","cpe_vendor":"sqlite","cpe_product":"sqlite","purl":"pkg:generic/sqlite","versions":{"3.22.0":[{"id":"CVE-2018-8740","sev":"high","av":"N","kev":false,"epss":0.081},{"id":"CVE-2019-8457","sev":"critical","av":"N","kev":false,"epss":0.454},{"id":"CVE-2020-11655","sev":"high","av":"N","kev":false,"epss":0.043}],"3.31.1":[{"id":"CVE-2020-13434","sev":"medium","av":"L","kev":false,"epss":0.01},{"id":"CVE-2020-13630","sev":"high","av":"L","kev":false,"epss":0.01},{"id":"CVE-2021-20227","sev":"medium","av":"L","kev":false,"epss":0.005}],"3.39.4":[{"id":"CVE-2022-46908","sev":"high","av":"L","kev":false,"epss":0.004},{"id":"CVE-2023-7104","sev":"high","av":"N","kev":false,"epss":0.012}],"3.41.2":[{"id":"CVE-2023-7104","sev":"high","av":"N","kev":false,"epss":0.012}],"3.45.1":[]}},{"key":"net_snmp","name":"Net-SNMP","cpe_vendor":"net-snmp","cpe_product":"net-snmp","purl":"pkg:generic/net-snmp","versions":{"5.7.3":[{"id":"CVE-2018-18065","sev":"medium","av":"N","kev":false,"epss":0.172},{"id":"CVE-2019-20892","sev":"medium","av":"N","kev":false,"epss":0.023},{"id":"CVE-2020-15862","sev":"high","av":"L","kev":false,"epss":0.004}],"5.8":[{"id":"CVE-2020-15861","sev":"high","av":"L","kev":false,"epss":0.005},{"id":"CVE-2020-15862","sev":"high","av":"L","kev":false,"epss":0.004},{"id":"CVE-2022-24805","sev":"high","av":"N","kev":false,"epss":0.013}],"5.9.1":[{"id":"CVE-2022-24805","sev":"high","av":"N","kev":false,"epss":0.013},{"id":"CVE-2022-24809","sev":"medium","av":"N","kev":false,"epss":0.011}],"5.9.4":[]}},{"key":"lighttpd","name":"lighttpd","cpe_vendor":"lighttpd","cpe_product":"lighttpd","purl":"pkg:generic/lighttpd","versions":{"1.4.45":[{"id":"CVE-2018-19052","sev":"high","av":"N","kev":false,"epss":0.141},{"id":"CVE-2019-11072","sev":"critical","av":"N","kev":false,"epss":0.738}],"1.4.55":[{"id":"CVE-2022-22707","sev":"medium","av":"N","kev":false,"epss":0.09},{"id":"CVE-2023-44487","sev":"high","av":"N","kev":true,"epss":1.0}],"1.4.64":[{"id":"CVE-2023-44487","sev":"high","av":"N","kev":true,"epss":1.0}],"1.4.76":[]}},{"key":"goahead","name":"GoAhead Embedded Web Server","cpe_vendor":"embedthis","cpe_product":"goahead","purl":"pkg:generic/goahead","versions":{"3.6.5":[{"id":"CVE-2017-17562","sev":"high","av":"N","kev":true,"epss":0.963},{"id":"CVE-2019-5096","sev":"critical","av":"N","kev":false,"epss":0.67},{"id":"CVE-2019-5097","sev":"high","av":"N","kev":false,"epss":0.451}],"4.1.0":[{"id":"CVE-2021-42342","sev":"critical","av":"N","kev":false,"epss":0.595}],"5.1.0":[],"6.0.0":[]}},{"key":"nginx","name":"nginx","cpe_vendor":"f5","cpe_product":"nginx","purl":"pkg:generic/nginx","versions":{"1.14.2":[{"id":"CVE-2019-9511","sev":"high","av":"N","kev":false,"epss":0.595},{"id":"CVE-2019-9513","sev":"high","av":"N","kev":false,"epss":0.816},{"id":"CVE-2019-20372","sev":"medium","av":"N","kev":false,"epss":0.15}],"1.18.0":[{"id":"CVE-2021-23017","sev":"high","av":"N","kev":false,"epss":0.535},{"id":"CVE-2022-41741","sev":"high","av":"L","kev":false,"epss":0.008},{"id":"CVE-2022-41742","sev":"high","av":"L","kev":false,"epss":0.011}],"1.20.1":[{"id":"CVE-2022-41741","sev":"high","av":"L","kev":false,"epss":0.008},{"id":"CVE-2022-41742","sev":"high","av":"L","kev":false,"epss":0.011}],"1.24.0":[{"id":"CVE-2023-44487","sev":"high","av":"N","kev":true,"epss":1.0}],"1.26.0":[]}},{"key":"dnsmasq","name":"dnsmasq","cpe_vendor":"thekelleys","cpe_product":"dnsmasq","purl":"pkg:generic/dnsmasq","versions":{"2.78":[{"id":"CVE-2017-14491","sev":"critical","av":"N","kev":false,"epss":0.849},{"id":"CVE-2017-14492","sev":"critical","av":"N","kev":false,"epss":0.933},{"id":"CVE-2020-25681","sev":"high","av":"N","kev":false,"epss":0.812}],"2.82":[{"id":"CVE-2020-25681","sev":"high","av":"N","kev":false,"epss":0.812},{"id":"CVE-2020-25684","sev":"low","av":"N","kev":false,"epss":0.04},{"id":"CVE-2021-3448","sev":"medium","av":"N","kev":false,"epss":0.023}],"2.86":[{"id":"CVE-2022-0934","sev":"high","av":"N","kev":false,"epss":0.02},{"id":"CVE-2023-28450","sev":"high","av":"N","kev":false,"epss":0.018}],"2.90":[]}},{"key":"wpa_supplicant","name":"wpa_supplicant","cpe_vendor":"w1.fi","cpe_product":"wpa_supplicant","purl":"pkg:generic/wpa_supplicant","versions":{"2.6":[{"id":"CVE-2017-13077","sev":"medium","av":"A","kev":false,"epss":0.024},{"id":"CVE-2017-13078","sev":"medium","av":"A","kev":false,"epss":0.021},{"id":"CVE-2018-14526","sev":"medium","av":"A","kev":false,"epss":0.015}],"2.9":[{"id":"CVE-2021-27803","sev":"high","av":"A","kev":false,"epss":0.012},{"id":"CVE-2021-30004","sev":"medium","av":"N","kev":false,"epss":0.017},{"id":"CVE-2022-23303","sev":"critical","av":"N","kev":false,"epss":0.031}],"2.10":[{"id":"CVE-2023-52160","sev":"medium","av":"N","kev":false,"epss":0.012}],"2.11":[]}},{"key":"u_boot","name":"Das U-Boot","cpe_vendor":"denx","cpe_product":"u-boot","purl":"pkg:generic/u-boot","versions":{"2018.03":[{"id":"CVE-2019-11059","sev":"critical","av":"N","kev":false,"epss":0.019},{"id":"CVE-2019-13103","sev":"high","av":"L","kev":false,"epss":0.004},{"id":"CVE-2019-13106","sev":"high","av":"L","kev":false,"epss":0.018}],"2020.04":[{"id":"CVE-2020-10648","sev":"high","av":"L","kev":false,"epss":0.014},{"id":"CVE-2021-27097","sev":"high","av":"L","kev":false,"epss":0.011},{"id":"CVE-2022-30767","sev":"critical","av":"N","kev":false,"epss":0.027}],"2021.10":[{"id":"CVE-2022-30767","sev":"critical","av":"N","kev":false,"epss":0.027},{"id":"CVE-2022-33967","sev":"high","av":"L","kev":false,"epss":0.006}],"2023.10":[]}},{"key":"glibc","name":"GNU C Library","cpe_vendor":"gnu","cpe_product":"glibc","purl":"pkg:generic/glibc","versions":{"2.17":[{"id":"CVE-2015-7547","sev":"high","av":"N","kev":false,"epss":0.896},{"id":"CVE-2018-11236","sev":"critical","av":"N","kev":false,"epss":0.073},{"id":"CVE-2021-3999","sev":"high","av":"L","kev":false,"epss":0.007}],"2.28":[{"id":"CVE-2021-3999","sev":"high","av":"L","kev":false,"epss":0.007},{"id":"CVE-2021-33574","sev":"critical","av":"N","kev":false,"epss":0.029},{"id":"CVE-2023-4911","sev":"high","av":"L","kev":true,"epss":0.814}],"2.31":[{"id":"CVE-2021-35942","sev":"critical","av":"N","kev":false,"epss":0.027},{"id":"CVE-2023-4911","sev":"high","av":"L","kev":true,"epss":0.814}],"2.35":[{"id":"CVE-2023-4911","sev":"high","av":"L","kev":true,"epss":0.814},{"id":"CVE-2024-2961","sev":"high","av":"L","kev":false,"epss":0.883}],"2.38":[]}},{"key":"musl","name":"musl libc","cpe_vendor":"musl-libc","cpe_product":"musl","purl":"pkg:generic/musl","versions":{"1.1.24":[{"id":"CVE-2020-28928","sev":"medium","av":"L","kev":false,"epss":0.006}],"1.2.2":[{"id":"CVE-2020-28928","sev":"medium","av":"L","kev":false,"epss":0.006}],"1.2.4":[]}},{"key":"mosquitto","name":"Eclipse Mosquitto","cpe_vendor":"eclipse","cpe_product":"mosquitto","purl":"pkg:generic/mosquitto","versions":{"1.5.8":[{"id":"CVE-2019-11779","sev":"medium","av":"N","kev":false,"epss":0.027},{"id":"CVE-2021-28166","sev":"medium","av":"N","kev":false,"epss":0.01}],"2.0.11":[{"id":"CVE-2021-34431","sev":"medium","av":"N","kev":false,"epss":0.011},{"id":"CVE-2021-41039","sev":"high","av":"N","kev":false,"epss":0.013},{"id":"CVE-2023-0809","sev":"medium","av":"N","kev":false,"epss":0.006}],"2.0.15":[{"id":"CVE-2023-0809","sev":"medium","av":"N","kev":false,"epss":0.006},{"id":"CVE-2023-3592","sev":"high","av":"N","kev":false,"epss":0.007}],"2.0.18":[]}},{"key":"open62541","name":"open62541 OPC UA Stack","cpe_vendor":"open62541","cpe_product":"open62541","purl":"pkg:generic/open62541","versions":{"1.2.2":[{"id":"CVE-2021-40206","sev":"unknown","av":"","kev":false,"epss":null},{"id":"CVE-2022-25761","sev":"high","av":"N","kev":false,"epss":0.011}],"1.3.6":[{"id":"CVE-2023-31048","sev":"medium","av":"N","kev":false,"epss":0.008}],"1.3.9":[]}},{"key":"libmodbus","name":"libmodbus","cpe_vendor":"libmodbus","cpe_product":"libmodbus","purl":"pkg:generic/libmodbus","versions":{"3.0.6":[{"id":"CVE-2019-14462","sev":"critical","av":"N","kev":false,"epss":0.02},{"id":"CVE-2019-14463","sev":"critical","av":"N","kev":false,"epss":0.019}],"3.1.4":[{"id":"CVE-2019-14462","sev":"critical","av":"N","kev":false,"epss":0.02},{"id":"CVE-2019-14463","sev":"critical","av":"N","kev":false,"epss":0.019}],"3.1.6":[],"3.1.10":[]}},{"key":"freertos","name":"FreeRTOS Kernel","cpe_vendor":"amazon","cpe_product":"freertos","purl":"pkg:generic/freertos-kernel","versions":{"10.2.1":[{"id":"CVE-2021-31571","sev":"critical","av":"N","kev":false,"epss":0.014},{"id":"CVE-2021-31572","sev":"critical","av":"N","kev":false,"epss":0.014}],"10.4.3":[{"id":"CVE-2021-32020","sev":"critical","av":"N","kev":false,"epss":0.013},{"id":"CVE-2021-43997","sev":"high","av":"L","kev":false,"epss":0.003}],"11.0.1":[]}},{"key":"zephyr","name":"Zephyr RTOS","cpe_vendor":"zephyrproject","cpe_product":"zephyr","purl":"pkg:generic/zephyr","versions":{"2.5.0":[{"id":"CVE-2021-3319","sev":"critical","av":"N","kev":false,"epss":0.009},{"id":"CVE-2021-3323","sev":"critical","av":"N","kev":false,"epss":0.009},{"id":"CVE-2021-3581","sev":"high","av":"A","kev":false,"epss":0.003}],"3.1.0":[{"id":"CVE-2023-3725","sev":"critical","av":"N","kev":false,"epss":0.011},{"id":"CVE-2023-4257","sev":"critical","av":"N","kev":false,"epss":0.009}],"3.6.0":[]}},{"key":"log4j","name":"Apache Log4j","cpe_vendor":"apache","cpe_product":"log4j","purl":"pkg:maven/org.apache.logging.log4j/log4j-core","versions":{"2.14.1":[{"id":"CVE-2021-44228","sev":"critical","av":"N","kev":true,"epss":1.0},{"id":"CVE-2021-45046","sev":"critical","av":"N","kev":true,"epss":1.0},{"id":"CVE-2021-45105","sev":"medium","av":"N","kev":false,"epss":1.0}],"2.15.0":[{"id":"CVE-2021-45046","sev":"critical","av":"N","kev":true,"epss":1.0},{"id":"CVE-2021-45105","sev":"medium","av":"N","kev":false,"epss":1.0}],"2.17.0":[{"id":"CVE-2021-44832","sev":"medium","av":"N","kev":false,"epss":0.979}],"2.20.0":[],"2.23.1":[]}},{"key":"tomcat","name":"Apache Tomcat","cpe_vendor":"apache","cpe_product":"tomcat","purl":"pkg:maven/org.apache.tomcat/tomcat","versions":{"7.0.90":[{"id":"CVE-2019-0221","sev":"medium","av":"N","kev":false,"epss":0.456},{"id":"CVE-2019-0232","sev":"high","av":"N","kev":false,"epss":0.997},{"id":"CVE-2020-1938","sev":"critical","av":"N","kev":true,"epss":0.993}],"8.5.63":[{"id":"CVE-2021-25122","sev":"high","av":"N","kev":false,"epss":0.181},{"id":"CVE-2021-30640","sev":"medium","av":"N","kev":false,"epss":0.099},{"id":"CVE-2021-41079","sev":"high","av":"N","kev":false,"epss":0.072}],"9.0.63":[{"id":"CVE-2022-42252","sev":"high","av":"N","kev":false,"epss":0.015},{"id":"CVE-2023-28708","sev":"medium","av":"N","kev":false,"epss":0.018},{"id":"CVE-2023-44487","sev":"high","av":"N","kev":true,"epss":1.0}],"10.1.19":[]}},{"key":"openjdk","name":"OpenJDK Runtime","cpe_vendor":"oracle","cpe_product":"jdk","purl":"pkg:generic/openjdk","versions":{"8u202":[{"id":"CVE-2019-2602","sev":"high","av":"N","kev":false,"epss":0.044},{"id":"CVE-2019-2699","sev":"critical","av":"N","kev":false,"epss":0.029},{"id":"CVE-2020-2803","sev":"high","av":"N","kev":false,"epss":0.062}],"11.0.14":[{"id":"CVE-2022-21426","sev":"medium","av":"N","kev":false,"epss":0.032},{"id":"CVE-2022-21449","sev":"high","av":"N","kev":false,"epss":0.603},{"id":"CVE-2022-21496","sev":"medium","av":"N","kev":false,"epss":0.028}],"17.0.6":[{"id":"CVE-2023-21930","sev":"high","av":"N","kev":false,"epss":0.013},{"id":"CVE-2023-21937","sev":"low","av":"N","kev":false,"epss":0.012}],"17.0.10":[]}},{"key":"jackson","name":"Jackson Databind","cpe_vendor":"fasterxml","cpe_product":"jackson-databind","purl":"pkg:maven/com.fasterxml.jackson.core/jackson-databind","versions":{"2.9.10":[{"id":"CVE-2019-20330","sev":"critical","av":"N","kev":false,"epss":0.086},{"id":"CVE-2020-8840","sev":"critical","av":"N","kev":false,"epss":0.266},{"id":"CVE-2020-36518","sev":"high","av":"N","kev":false,"epss":0.049}],"2.12.3":[{"id":"CVE-2020-36518","sev":"high","av":"N","kev":false,"epss":0.049},{"id":"CVE-2022-42003","sev":"high","av":"N","kev":false,"epss":0.028},{"id":"CVE-2022-42004","sev":"high","av":"N","kev":false,"epss":0.028}],"2.13.4":[{"id":"CVE-2022-42003","sev":"high","av":"N","kev":false,"epss":0.028},{"id":"CVE-2022-42004","sev":"high","av":"N","kev":false,"epss":0.028}],"2.16.1":[]}},{"key":"spring","name":"Spring Framework","cpe_vendor":"vmware","cpe_product":"spring_framework","purl":"pkg:maven/org.springframework/spring-core","versions":{"5.3.17":[{"id":"CVE-2022-22965","sev":"critical","av":"N","kev":true,"epss":0.997},{"id":"CVE-2022-22968","sev":"medium","av":"N","kev":false,"epss":0.057},{"id":"CVE-2022-22970","sev":"medium","av":"N","kev":false,"epss":0.02}],"5.3.25":[{"id":"CVE-2023-20860","sev":"high","av":"N","kev":false,"epss":0.035},{"id":"CVE-2023-20861","sev":"medium","av":"N","kev":false,"epss":0.01}],"6.0.9":[{"id":"CVE-2023-34035","sev":"medium","av":"N","kev":false,"epss":0.007}],"6.1.4":[]}},{"key":"dotnet","name":"Microsoft .NET Framework","cpe_vendor":"microsoft","cpe_product":".net_framework","purl":"pkg:generic/dotnet-framework","versions":{"4.6.2":[{"id":"CVE-2018-8421","sev":"critical","av":"N","kev":false,"epss":0.289},{"id":"CVE-2019-0545","sev":"high","av":"N","kev":false,"epss":0.096},{"id":"CVE-2020-1147","sev":"high","av":"L","kev":true,"epss":0.943}],"4.7.2":[{"id":"CVE-2020-1147","sev":"high","av":"L","kev":true,"epss":0.943},{"id":"CVE-2021-24112","sev":"high","av":"N","kev":false,"epss":0.033},{"id":"CVE-2021-26701","sev":"high","av":"N","kev":false,"epss":0.303}],"4.8":[{"id":"CVE-2021-26701","sev":"high","av":"N","kev":false,"epss":0.303},{"id":"CVE-2023-21808","sev":"high","av":"L","kev":false,"epss":0.011}],"4.8.1":[]}},{"key":"vcredist","name":"Microsoft Visual C++ Runtime","cpe_vendor":"microsoft","cpe_product":"visual_c++_redistributable","purl":"pkg:generic/vcredist","versions":{"14.0.24215":[],"14.16.27033":[],"14.29.30139":[],"14.38.33130":[]}},{"key":"sqlserver_express","name":"Microsoft SQL Server Express","cpe_vendor":"microsoft","cpe_product":"sql_server","purl":"pkg:generic/mssql-express","versions":{"2016 SP2":[{"id":"CVE-2019-1068","sev":"high","av":"N","kev":false,"epss":0.33},{"id":"CVE-2020-0618","sev":"high","av":"N","kev":true,"epss":0.99}],"2017 CU31":[{"id":"CVE-2022-29143","sev":"high","av":"N","kev":false,"epss":0.019},{"id":"CVE-2023-21528","sev":"high","av":"L","kev":false,"epss":0.004}],"2019 CU22":[{"id":"CVE-2023-21528","sev":"high","av":"L","kev":false,"epss":0.004}],"2022 CU11":[]}},{"key":"treck_tcpip","name":"Treck TCP/IP Stack","cpe_vendor":"treck","cpe_product":"tcp%2fip","purl":"pkg:generic/treck-tcpip","versions":{"6.0.1.66":[{"id":"CVE-2020-11896","sev":"critical","av":"N","kev":false,"epss":0.369},{"id":"CVE-2020-11897","sev":"critical","av":"N","kev":false,"epss":0.091},{"id":"CVE-2020-11901","sev":"critical","av":"N","kev":false,"epss":0.211}],"6.0.1.67":[{"id":"CVE-2020-11898","sev":"critical","av":"N","kev":false,"epss":0.189},{"id":"CVE-2020-11900","sev":"high","av":"N","kev":false,"epss":0.132}],"6.0.1.68":[]}},{"key":"ipnet","name":"Interpeak IPnet TCP/IP Stack","cpe_vendor":"windriver","cpe_product":"vxworks","purl":"pkg:generic/ipnet","versions":{"6.9":[{"id":"CVE-2019-12255","sev":"critical","av":"N","kev":false,"epss":0.752},{"id":"CVE-2019-12256","sev":"critical","av":"N","kev":false,"epss":0.266},{"id":"CVE-2019-12257","sev":"high","av":"A","kev":false,"epss":0.842},{"id":"CVE-2019-12260","sev":"critical","av":"N","kev":false,"epss":0.228}],"7.0":[{"id":"CVE-2019-12258","sev":"high","av":"N","kev":false,"epss":0.234},{"id":"CVE-2019-12259","sev":"high","av":"N","kev":false,"epss":0.159},{"id":"CVE-2019-12262","sev":"critical","av":"N","kev":false,"epss":0.041}],"7.2":[]}},{"key":"codesys_rt","name":"CODESYS Control Runtime System","cpe_vendor":"codesys","cpe_product":"control_runtime_system","purl":"pkg:generic/codesys-control","versions":{"3.5.16.0":[{"id":"CVE-2021-30186","sev":"high","av":"N","kev":false,"epss":0.074},{"id":"CVE-2021-30188","sev":"critical","av":"N","kev":false,"epss":0.013},{"id":"CVE-2021-30189","sev":"critical","av":"N","kev":false,"epss":0.013}],"3.5.17.0":[{"id":"CVE-2022-22515","sev":"high","av":"N","kev":false,"epss":0.011},{"id":"CVE-2022-22517","sev":"high","av":"N","kev":false,"epss":0.013},{"id":"CVE-2022-31802","sev":"critical","av":"N","kev":false,"epss":0.012}],"3.5.18.20":[{"id":"CVE-2023-37559","sev":"medium","av":"N","kev":false,"epss":0.006},{"id":"CVE-2023-37560","sev":"medium","av":"N","kev":false,"epss":0.005}],"3.5.19.20":[{"id":"CVE-2023-3663","sev":"high","av":"N","kev":false,"epss":0.01},{"id":"CVE-2023-3665","sev":"high","av":"L","kev":false,"epss":0.002}],"3.5.20.10":[]}},{"key":"libpcap","name":"libpcap","cpe_vendor":"tcpdump","cpe_product":"libpcap","purl":"pkg:generic/libpcap","versions":{"1.8.1":[{"id":"CVE-2018-16301","sev":"high","av":"L","kev":false,"epss":0.006},{"id":"CVE-2019-15165","sev":"medium","av":"N","kev":false,"epss":0.028}],"1.9.1":[{"id":"CVE-2019-15165","sev":"medium","av":"N","kev":false,"epss":0.028},{"id":"CVE-2023-7256","sev":"medium","av":"L","kev":false,"epss":0.002}],"1.10.4":[]}},{"key":"ntp","name":"NTP Daemon","cpe_vendor":"ntp","cpe_product":"ntp","purl":"pkg:generic/ntp","versions":{"4.2.8p10":[{"id":"CVE-2018-7182","sev":"high","av":"N","kev":false,"epss":0.288},{"id":"CVE-2018-7183","sev":"critical","av":"N","kev":false,"epss":0.104},{"id":"CVE-2018-7184","sev":"high","av":"N","kev":false,"epss":0.085}],"4.2.8p13":[{"id":"CVE-2019-8936","sev":"high","av":"N","kev":false,"epss":0.057},{"id":"CVE-2020-11868","sev":"high","av":"N","kev":false,"epss":0.021}],"4.2.8p15":[{"id":"CVE-2023-26551","sev":"medium","av":"N","kev":false,"epss":0.007}],"4.2.8p18":[]}},{"key":"openvpn","name":"OpenVPN","cpe_vendor":"openvpn","cpe_product":"openvpn","purl":"pkg:generic/openvpn","versions":{"2.4.7":[{"id":"CVE-2020-11810","sev":"low","av":"N","kev":false,"epss":0.016},{"id":"CVE-2020-15078","sev":"high","av":"N","kev":false,"epss":0.049}],"2.5.5":[{"id":"CVE-2022-0547","sev":"critical","av":"N","kev":false,"epss":0.036},{"id":"CVE-2023-46849","sev":"high","av":"N","kev":false,"epss":0.012},{"id":"CVE-2023-46850","sev":"critical","av":"N","kev":false,"epss":0.02}],"2.6.9":[]}},{"key":"libssh2","name":"libssh2","cpe_vendor":"libssh2","cpe_product":"libssh2","purl":"pkg:generic/libssh2","versions":{"1.8.0":[{"id":"CVE-2019-3855","sev":"high","av":"N","kev":false,"epss":0.092},{"id":"CVE-2019-3856","sev":"high","av":"N","kev":false,"epss":0.061},{"id":"CVE-2019-3858","sev":"critical","av":"N","kev":false,"epss":0.064}],"1.9.0":[{"id":"CVE-2019-17498","sev":"high","av":"N","kev":false,"epss":0.038},{"id":"CVE-2020-22218","sev":"high","av":"N","kev":false,"epss":0.009}],"1.11.0":[]}}]};
-const EXAMPLE = {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "firmware", "name": "Example Substation Gateway", "version": "2.4.1"}}, "components": [{"type": "library", "name": "OpenSSL", "version": "1.1.1k", "cpe": "cpe:2.3:a:openssl:openssl:1.1.1k:*:*:*:*:*:*:*", "purl": "pkg:generic/openssl@1.1.1k"}, {"type": "library", "name": "BusyBox", "version": "1.31.1", "purl": "pkg:generic/busybox@1.31.1"}, {"type": "library", "name": "Dropbear SSH", "version": "2019.78", "purl": "pkg:generic/dropbear@2019.78"}, {"type": "library", "name": "zlib", "version": "1.2.13", "purl": "pkg:generic/zlib@1.2.13"}, {"type": "library", "name": "Apache Log4j", "version": "2.14.1", "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"}]};
-const LAB={LIKELY_AFFECTED:"Affected",LIKELY_NOT_AFFECTED:"Not affected",UNDER_INVESTIGATION:"Under investigation"};
-const SC={LIKELY_AFFECTED:"var(--affected)",LIKELY_NOT_AFFECTED:"var(--safe)",UNDER_INVESTIGATION:"var(--under)"};
-const $=(s)=>document.querySelector(s);
+const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
+const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under investigation'};
 
-/* ---------- analyzer: KB index ---------- */
-const IDX=new Map();
-function key(){return Array.from(arguments).join("||").toLowerCase();}
-for(const c of KB.components){
-  for(const [ver,cl] of Object.entries(c.versions)){
-    IDX.set(key("purl",c.purl,ver),{comp:c,cves:cl});
-    IDX.set(key("cpe",c.cpe_vendor,c.cpe_product,ver),{comp:c,cves:cl});
-    IDX.set(key("name",c.name,ver),{comp:c,cves:cl});
-  }
-}
-function parsePurl(p){if(!p||p.indexOf("@")<0)return null;const i=p.lastIndexOf("@");return[p.slice(0,i),p.slice(i+1)];}
-function parseCpe(c){const m=/^cpe:2\.3:[aoh]:([^:]+):([^:]+):([^:]+):/.exec(c||"");return m?[m[1],m[2],m[3]]:null;}
-function lookup(comp){
-  const v=comp.version||"";
-  if(comp.purl){const pk=parsePurl(comp.purl);if(pk){const h=IDX.get(key("purl",pk[0],pk[1]));if(h)return h;}}
-  if(comp.cpe){const ck=parseCpe(comp.cpe);if(ck){const h=IDX.get(key("cpe",ck[0],ck[1],ck[2]));if(h)return h;}}
-  if(comp.name){const h=IDX.get(key("name",comp.name,v));if(h)return h;}
-  return null;
-}
-/* reachability + VEX (AV x exposure rule, static) */
-const EXPT={"isolated-cell":0,"control-network":1,"dmz-routable":2,"remote-accessible":3};
-function reach(av,exp){const t=EXPT[exp];
-  if(av==="N")return t===0?"no":(t===1?"cond":"yes");
-  if(av==="A")return t===0?"no":(t<=2?"cond":"yes");
-  if(av==="L")return "cond"; if(av==="P")return "no"; return "cond";}
-const AVW={N:"Network",A:"Adjacent",L:"Local",P:"Physical"};
-function vex(cve,exp){
-  const r=reach(cve.av,exp);
-  if(r==="no")return {s:"LIKELY_NOT_AFFECTED",why:(cve.av==="P"?"Physical access required":"No reachable path")+" · "+exp};
-  if(r==="yes")return {s:"LIKELY_AFFECTED",why:AVW[cve.av]+" attack surface · "+exp+(cve.kev?" · exploited in the wild":"")};
-  return {s:"UNDER_INVESTIGATION",why:"Reachability conditional("+(AVW[cve.av]||"?")+") · "+exp};
-}
-function analyze(sbom,exp){
-  let comps=[];
-  if(sbom.components)comps=comps.concat(sbom.components);
-  if(sbom.metadata&&sbom.metadata.component)comps.push(sbom.metadata.component);
-  const rows=[]; let total=0,aff=0,kev=0,crit=0;
-  for(const c of comps){
-    const h=lookup(c); if(!h)continue;
-    const cves=h.cves.map(cv=>{const vx=vex(cv,exp);total++;if(vx.s==="LIKELY_AFFECTED")aff++;
-      if(cv.kev)kev++;if(cv.sev==="critical")crit++;return {...cv,vex:vx};});
-    if(cves.length)rows.push({name:c.name||h.comp.name,version:c.version||"",cves});
-  }
-  return {rows,total,aff,kev,crit,scanned:comps.length};
-}
-function sevRank(s){return {critical:0,high:1,medium:2,low:3,unknown:4}[s]||4;}
-function render(res,exp){
-  const el=$("#anres");
-  if(!res.rows.length){el.innerHTML='<div class="empty">No known CVEs found in the '+res.scanned+' scanned components. (Built-in KB covers 42 major OSS.)</div>';return;}
-  let h='<div class="an-summary">'
-    +tile(res.total,"Matched CVEs")+tile(res.aff,"Affected",res.aff?"var(--affected)":"")
-    +tile(res.crit,"Critical",res.crit?"var(--affected)":"")+tile(res.kev,"KEV exploited",res.kev?"var(--affected)":"")
-    +tile(res.rows.length,"Vulnerable components")+'</div>';
-  for(const r of res.rows.sort((a,b)=>Math.min(...a.cves.map(x=>sevRank(x.sev)))-Math.min(...b.cves.map(x=>sevRank(x.sev))))){
-    const worst=r.cves.some(x=>x.vex.s==="LIKELY_AFFECTED");
-    h+='<div class="comp"><div class="ch"><div><span class="cn">'+esc(r.name)+'</span> <span class="cv">'+esc(r.version)+'</span></div>'
-      +'<span class="cc pill '+(worst?"LIKELY_AFFECTED":"UNDER_INVESTIGATION")+'">'+r.cves.length+' CVE</span></div><div class="cvelist">';
-    for(const cv of r.cves.sort((a,b)=>sevRank(a.sev)-sevRank(b.sev))){
-      h+='<div class="cverow"><span class="id">'+cv.id+'</span><span class="tags">'
-        +'<span class="tag sev-'+cv.sev+'">'+cv.sev+'</span>'
-        +(cv.kev?'<span class="tag kev">KEV</span>':'')
-        +(cv.epss!=null?'<span class="tag">EPSS '+cv.epss.toFixed(2)+'</span>':'')
-        +(cv.av?'<span class="tag">AV:'+cv.av+'</span>':'')
-        +'<span style="color:var(--ink-3);font-size:11px">'+esc(cv.vex.why)+'</span></span>'
-        +'<span class="pill '+cv.vex.s+'">'+LAB[cv.vex.s]+'</span></div>';
-    }
-    h+='</div></div>';
-  }
-  el.innerHTML=h;
-}
-function tile(v,l,col){return '<div class="stile"><div class="v"'+(col?' style="color:'+col+'"':'')+'>'+v+'</div><div class="l">'+l+'</div></div>';}
-function esc(s){return String(s).replace(/[&<>]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));}
-function run(){
-  const raw=$("#paste").value.trim(); if(!raw){$("#anres").innerHTML='<div class="empty">Paste SBOM JSON or select a file.</div>';return;}
-  let sbom; try{sbom=JSON.parse(raw);}catch(e){$("#anres").innerHTML='<div class="empty">JSON parse error: '+esc(e.message)+'</div>';return;}
-  render(analyze(sbom,$("#exposure").value),$("#exposure").value);
-}
-$("#analyze").addEventListener("click",run);
-$("#exposure").addEventListener("change",()=>{if($("#paste").value.trim())run();});
-$("#loadex").addEventListener("click",()=>{$("#paste").value=JSON.stringify(EXAMPLE,null,1);run();});
-const drop=$("#drop"),file=$("#file");
-drop.addEventListener("click",()=>file.click());
-file.addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$("#paste").value=rd.result;run();};rd.readAsText(f);});
-["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over");}));
-["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over");}));
-drop.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$("#paste").value=rd.result;run();};rd.readAsText(f);});
+let CVE_INDEX=[], CVE_KB={};
+fetch('cve_index.json').then(r=>r.json()).then(d=>{CVE_INDEX=d;}).catch(()=>{});
+fetch('cve_kb.json').then(r=>r.json()).then(d=>{const idx={};for(const c of (d.components||[])){for(const k of new Set([c.key,(c.name||'').toLowerCase(),c.cpe_product||''])){if(k)idx[String(k).toLowerCase()]=c;}}CVE_KB=idx;}).catch(()=>{});
+function reachability(av,exp){const t={'isolated-cell':0,'control-network':1,'dmz-routable':2,'remote-accessible':3}[exp];if(!av)return 'unknown';if(av==='N')return t===0?'no':(t===1?'conditional':'yes');if(av==='A')return t===0?'no':(t<=2?'conditional':'yes');if(av==='L')return 'conditional';if(av==='P')return 'no';return 'conditional';}
+function computeVex(sbom,exp){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(const [name,ver] of comps){const comp=CVE_KB[name.toLowerCase()];if(!comp)continue;const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}for(const cv of cves){const av=cv.av||'N';const reach=reachability(av,exp);let status=reach==='yes'?'LIKELY_AFFECTED':(reach==='no'?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION');const row={cve:cv.id,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',av:av,kev:!!cv.kev,reachability:reach,final_vex:status,evidence_tier:(status==='UNDER_INVESTIGATION'?'under-investigation':'static-reasoned')};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
+function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='reachability')return r.reachability===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,reachability:r.reachability,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url}))};}
 
-/* ---------- evaluation render ---------- */
-const p=D.provenance;
-$("#chips").innerHTML=[["CISA advisories",p.advisories.toLocaleString()],["Unique CVEs",p.cves.toLocaleString()],
-  ["Device SBOMs",p.devices.toLocaleString()],["Findings",p.findings.toLocaleString()],
-  ["OSS-arm",p.oss.toLocaleString()],["Vendor-context-arm",p.vendor.toLocaleString()],["KEV exploited",p.kev]]
-  .map(([k,v])=>'<span class="chip"><span class="dot">&#9679;</span> '+k+' <b>'+v+'</b></span>').join("");
-const o=D.overall;
-$("#kpis").innerHTML=
-  '<div class="kpi"><div class="lab">Macro F1</div><div class="val">'+o.macro_f1.toFixed(3)+'</div>'
-  +'<div class="cap">vs baseline <span class="delta">+'+(o.macro_f1-D.baseline).toFixed(3)+'</span> (TF-IDF '+D.baseline.toFixed(3)+')</div></div>'
-  +'<div class="kpi safety"><div class="lab">Affected&rarr;Not affected errors</div><div class="val">'+o.wrong_na+'</div>'
-  +'<div class="cap">Key ICS safety metric · zero of the most dangerous errors</div></div>'
-  +'<div class="kpi"><div class="lab">Calibration ECE</div><div class="val">'+o.ece.toFixed(3)+'</div><div class="cap">Lower is better-calibrated</div></div>'
-  +'<div class="kpi"><div class="lab">Under-investigation rate</div><div class="val">'+(o.under_rate*100).toFixed(0)+'<span style="font-size:18px">%</span></div><div class="cap">Conservative hold when uncertain</div></div>';
-const cm=o.confusion_matrix,L=D.labels,mx=Math.max(...cm.flat());
-let cmh='<div class="h"></div>'+L.map(l=>'<div class="h">'+LAB[l]+'<br>pred</div>').join("");
-cm.forEach((row,i)=>{cmh+='<div class="rh">'+LAB[L[i]]+' · truth</div>';
-  row.forEach((v,j)=>{const diag=i===j,zs=(i===0&&j===1),inten=v/mx;
-    const bg=diag?'color-mix(in srgb,var(--accent) '+(8+inten*30)+'%,var(--surface))':'color-mix(in srgb,var(--ink-3) '+(inten*22)+'%,var(--surface))';
-    cmh+='<div class="cell'+(diag?' diag':'')+(zs?' zero-safe':'')+'" style="background:'+(zs?'':bg)+'">'+v+(zs?'<small>safe</small>':'')+'</div>';});});
-$("#cm").innerHTML=cmh;
-$("#perclass").innerHTML=L.map(l=>{const c=o.per_class[l];
-  return '<div><div class="bar-row" style="grid-template-columns:1fr"><div class="nm"><i class="sw" style="background:'+SC[l]+'"></i> <b style="color:var(--ink)">'+LAB[l]+'</b> <span style="color:var(--ink-3);font-family:var(--mono);font-size:11px">n='+c.support+'</span></div></div>'
-    +'<div class="stat-line"><div class="m"><b>'+c.precision.toFixed(3)+'</b>Precision</div><div class="m"><b>'+c.recall.toFixed(3)+'</b>Recall</div><div class="m"><b>'+c.f1.toFixed(3)+'</b>F1</div></div></div>';}).join("");
-const arms=[["OSS-arm (dynamic)",D.perarm.oss,"var(--accent)"],["Vendor-context-arm (closed)",D.perarm.vendor,"var(--accent-2)"]];
-$("#perarm").innerHTML=arms.map(a=>'<div class="bar-row"><div class="nm">'+a[0]+'<br><span style="color:var(--ink-3);font-family:var(--mono);font-size:10px">n='+a[1][1]+'</span></div>'
-  +'<div class="track"><div class="fill" style="width:'+(a[1][0]*100)+'%;background:'+a[2]+'">'+a[1][0].toFixed(3)+'</div></div></div>').join("");
-const r=D.rationale;
-$("#rmet").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+r.comp.toFixed(3)+'</div><div class="l">Comprehensiveness &uarr;</div><div class="d">Confidence drops sharply when rationale removed &rarr; causal</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--accent)">'+r.suff.toFixed(3)+'</div><div class="l">Sufficiency drop &darr;</div><div class="d">Prediction holds on rationale alone &rarr; sufficient</div></div>';
-$("#samples").innerHTML=D.samples.map(s=>{
-  const tier=s.status==="UNDER_INVESTIGATION"?"under-investigation":"static-reasoned";
-  return '<div class="svex"><div class="top"><span class="cve">'+s.cve+'</span><span class="pill '+s.status+'">'+LAB[s.status]+'</span></div><div class="dev">'+s.device+'</div>'
-    +'<div class="rats">'+s.rationale.map((t,i)=>'<div class="rat"><span class="eid">CVE-'+(i+2)+'</span><span>'+esc(t)+'</span></div>').join("")+'</div>'
-    +'<div class="meta"><span>confidence <b>'+s.conf.toFixed(2)+'</b></span><span class="tier">'+tier+'</span></div></div>';}).join("");
-// two-model
-const T=D.two_model;
-$("#tm_code").innerHTML='<div class="box"><div class="v" style="color:var(--affected)">'+T.codebert_standalone_acc.toFixed(2)+'</div><div class="l">Abstract vulnerability classification</div><div class="d">Unseen CVEs, random 0.50 = failure (reported honestly)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--safe)">'+T.ref_match_perturbed.toFixed(2)+'</div><div class="l">Reference matching (perturbed)</div><div class="d">Perturbed shipped code &rarr; correct reference. n='+T.ref_match_n+'</div></div>';
-$("#tm_bp").innerHTML=
-  '<div class="an-summary" style="grid-template-columns:1fr 1fr">'
-  +'<div class="stile"><div class="v">'+T.bp_caught+'/'+T.bp_injected+'</div><div class="l">Backports caught by CodeBERT</div></div>'
-  +'<div class="stile"><div class="v" style="color:var(--safe)">'+T.ctx_fp+'&rarr;'+T.two_fp+'</div><div class="l">Backport false-positive reduction</div></div></div>'
-  +'<div class="bars"><div class="bar-row"><div class="nm">Context alone</div><div class="track"><div class="fill" style="width:'+(T.ctx_acc*100)+'%;background:var(--under)">'+T.ctx_acc.toFixed(3)+'</div></div></div>'
-  +'<div class="bar-row"><div class="nm">+CodeBERT</div><div class="track"><div class="fill" style="width:'+(T.two_acc*100)+'%;background:var(--safe)">'+T.two_acc.toFixed(3)+'</div></div></div></div>';
-// domain adaptation
-const A2=D.domain_adapt;
-$("#da_sb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">-'+A2.dapt_drop.toFixed(0)+'%</div><div class="l">ICS-text perplexity</div><div class="d">'+A2.dapt_ppl_before.toFixed(2)+' → '+A2.dapt_ppl_after.toFixed(2)+' ('+(A2.dapt_corpus/1000).toFixed(0)+'k sentences)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--safe)">'+A2.dapt_term_vanilla.toFixed(2)+'→'+A2.dapt_term_dapt.toFixed(2)+'</div><div class="l">ICS term recovery</div><div class="d">vanilla → ICS-DAPT (Modbus·PLC·GOOSE, etc.)</div></div>';
-$("#da_cb").innerHTML='<div class="box"><div class="v" style="color:var(--safe)">'+A2.cb_match_frozen.toFixed(2)+'→'+A2.cb_devign_f1.toFixed(2)+'</div><div class="l">Devign vuln-detection F1</div><div class="d">frozen 0.50 &rarr; fine-tuned (real vuln-detection training)</div></div>'
-  +'<div class="box"><div class="v" style="color:var(--under)">'+A2.cb_match_ft.toFixed(2)+'</div><div class="l">vuln/patch fine-grained task</div><div class="d">Fine-tuning does not transfer either &rarr; reference matching (0.97) is the answer</div></div>';
-const yrs=D.provenance.years,ymax=Math.max(...Object.values(yrs));
-$("#ychart").innerHTML=Object.entries(yrs).map(([y,v])=>'<div class="ycol" title="'+y+': '+v+'"><div class="b" style="height:'+Math.max(3,v/ymax*92)+'px"></div><div class="y">'+y.slice(2)+'</div></div>').join("");
-
-$("#rt").textContent=D.runtime+"s";$("#dev").textContent=D.device.toUpperCase();
-</script>
+async function run(){
+  const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
+  let sbom;try{sbom=JSON.parse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
+  const d=computeVex(sbom,document.getElementById('exp').value);
+  if(!d.cves_matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
+  const bv=d.summary.by_vex||{};
+  let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
+    +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
+  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>Sev</th><th>KEV</th><th>AV</th><th>Reach</th></tr></thead><tbody>';
+  for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
+    h+='<tr><td class="mono">'+f.cve+'</td>'
+      +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
+      +'<td>'+f.component+' '+f.version+'</td><td>'+(f.severity||'—')+'</td>'
+      +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
+      +'<td class="mono hint">'+f.reachability+'</td></tr>';}
+  o.innerHTML=h+'</tbody></table>';
+}
+function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
+  components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
+  document.getElementById('fname').textContent='';}
+function loadFile(f){
+  if(!f)return;
+  const fn=document.getElementById('fname');fn.textContent='reading '+f.name+'…';
+  const rd=new FileReader();
+  rd.onload=function(){
+    try{JSON.parse(rd.result);}catch(err){fn.innerHTML='<span class="err">'+f.name+' is not valid JSON</span>';return;}
+    document.getElementById('sbom').value=rd.result;
+    fn.textContent='loaded '+f.name+' — analyzing…';
+    run();
+  };
+  rd.readAsText(f);
+}
+document.getElementById('file').addEventListener('change',function(e){loadFile(e.target.files[0]);e.target.value='';});
+// drag & drop a .json SBOM anywhere on the input textarea
+const _ta=document.getElementById('sbom');
+['dragenter','dragover'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.add('dragover');}));
+['dragleave','dragend'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');}));
+_ta.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');
+  const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadFile(f);});
+// stop the browser from opening a file dropped outside the textarea
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+async function stats(){
+  try{const s=await(await fetch('cve_level.json')).json();const v=s.by_vex||{};
+    const k=document.getElementById('kpis');k.innerHTML='';
+    k.innerHTML+='<div class="kpi"><b>'+(s.total_cves||0).toLocaleString()+'</b><span>unique CVEs</span></div>';
+    for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
+      k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
+    const cand=await(await fetch('candidates_ready.json')).json();
+    document.getElementById('cand').textContent=cand.count+' ready';
+  }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
+}
+const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
+const REC={yes:'var(--aff)',conditional:'var(--und)',no:'var(--safe)',unknown:'var(--ink3)'};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function openCves(dim,value,scope,label){
+  document.getElementById('mtitle').textContent=label;
+  document.getElementById('mbody').innerHTML='loading…';
+  document.getElementById('ov').classList.add('on');
+  try{const d=queryCves(dim,value,scope);
+    if(!d.count){document.getElementById('mbody').innerHTML='<span class="hint">no CVEs.</span>';return;}
+    let h='<div class="hint" style="margin-bottom:8px"><b>'+d.count+'</b> CVEs</div>'+
+      '<div style="overflow:auto"><table><thead><tr><th>CVE</th><th>VEX</th><th>Sev</th><th>KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
+    for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
+      h+='<tr><td class="mono"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
+        +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
+        +'<td>'+esc(f.severity)+'</td><td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
+        +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
+        +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener">repo</a>':'')+'</td></tr>';}
+    document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
+  }catch(e){document.getElementById('mbody').innerHTML='<span class="err">error loading CVEs</span>';}
+}
+function closeCves(){document.getElementById('ov').classList.remove('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});
+function bar(counts,order,cmap,total,dim,scope,lmap){
+  let segs='',leg='';
+  for(const k of order){const v=counts[k]||0;if(!v)continue;const w=100*v/total;
+    const lbl=(lmap&&lmap[k])||k;const cl=dim?' class="clk"':'';
+    const clk=dim?' onclick="openCves(\''+dim+'\',\''+k+'\',\''+scope+'\',\''+lbl.replace(/'/g,'')+' — related CVEs\')"':'';
+    segs+='<div'+cl+clk+' style="width:'+w.toFixed(2)+'%;background:'+(cmap[k]||'var(--ink3)')+'" title="'+lbl+': '+v+'"></div>';
+    leg+='<span class="lg'+(dim?' clk':'')+'"'+clk+'><i style="background:'+(cmap[k]||'var(--ink3)')+'"></i>'+lbl+' <b>'+v+'</b></span>';}
+  return '<div class="mb">'+segs+'</div><div class="legend">'+leg+'</div>';
+}
+async function sourceAvail(){
+  try{const s=await(await fetch('source_available.json')).json();
+    const t=s.total_cves;
+    document.getElementById('sa-kpis').innerHTML=
+      '<div class="kpi"><b>'+t+'</b><span>collectable CVEs</span></div>'+
+      '<div class="kpi"><b style="color:var(--safe)">'+s.code_collected+'</b><span>code collected</span></div>'+
+      '<div class="kpi"><b style="color:var(--und)">'+s.pending_collection+'</b><span>pending collection</span></div>'+
+      '<div class="kpi"><b style="color:var(--aff)">'+s.kev+'</b><span>KEV</span></div>';
+    document.getElementById('sa-charts').innerHTML=
+      '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t,'vex','source_available',{LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under inv'})+'</div>'+
+      '<div class="chart"><div class="ct">Severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
+      '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
+    let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · 132 collectable CVEs total</span></div><div class="cwe">';
+    const mx=Math.max(...s.top_cwe.map(x=>x.count));
+    for(const x of s.top_cwe)cwe+='<div class="cwerow clk" title="'+x.cwe+' '+esc(x.name||'')+'" onclick="openCves(\'cwe\',\''+x.cwe+'\',\'source_available\',\''+x.cwe+' '+esc(x.name||'')+' — CVEs\')">'+
+      '<span><span class="mono">'+x.cwe+'</span><span class="cwename">'+esc(x.name||'')+'</span></span>'+
+      '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
+    if(s.cwe_other&&s.cwe_other.count)cwe+='<div class="cwerow"><span class="hint">Other ('+s.cwe_other.types+' more types)</span>'+
+      '<span class="cwebar"><i style="width:'+(100*s.cwe_other.count/mx)+'%;background:var(--ink3)"></i></span><b>'+s.cwe_other.count+'</b></div>';
+    if(s.cwe_none)cwe+='<div class="cwerow clk" onclick="openCves(\'cwe\',\'\',\'source_available\',\'CVEs with no CWE assigned\')"><span class="hint">No CWE assigned</span>'+
+      '<span class="cwebar"><i style="width:'+(100*s.cwe_none/mx)+'%;background:var(--ink3)"></i></span><b>'+s.cwe_none+'</b></div>';
+    document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
+    // top vendors
+    let vn='<div class="ct">Top vendors <span class="hint">click to list CVEs</span></div><div class="cwe">';
+    const vmx=Math.max(...s.top_vendors.map(x=>x.count));
+    for(const x of s.top_vendors)vn+='<div class="cwerow clk" onclick="openCves(\'vendor\',\''+esc(x.vendor)+'\',\'source_available\',\''+esc(x.vendor)+' — CVEs\')"><span>'+esc(x.vendor)+'</span>'+
+      '<span class="cwebar"><i style="width:'+(100*x.count/vmx)+'%"></i></span><b>'+x.count+'</b></div>';
+    document.getElementById('sa-vendors').innerHTML=vn+'</div>';
+    // device-type mapping table
+    let dt='<div class="ct">Device-type mapping <span class="hint">click a row to list CVEs</span></div>'+
+      '<table class="dtt"><thead><tr><th>Equipment type</th><th style="text-align:right">CVEs</th></tr></thead><tbody>';
+    for(const x of s.device_types)dt+='<tr class="clk" onclick="openCves(\'device_type\',\''+esc(x.type)+'\',\'source_available\',\''+esc(x.type)+' — CVEs\')"><td>'+esc(x.type)+'</td><td style="text-align:right" class="mono">'+x.count+'</td></tr>';
+    dt+='</tbody></table><div class="hint" style="margin-top:5px">One CVE can span multiple types (shared component).</div>';
+    document.getElementById('sa-devtype').innerHTML=dt;
+  }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
+}
+function yearBars(y,noteTotal,noteLabel){
+  const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
+  const pre=keys.filter(k=>k<2010).reduce((a,k)=>a+y[k],0);
+  const show=keys.filter(k=>k>=2010);
+  const mx=Math.max(...show.map(k=>y[k]));
+  let h='<div class="ybars">';
+  for(const k of show){const c=y[k];const hp=Math.max(4,100*c/mx);
+    h+='<div class="ycol clk" onclick="openCves(\'year\',\''+k+'\',\'corpus\',\'CVEs published in '+k+'\')"><div class="yval">'+c.toLocaleString()+'</div>'
+     +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+' — click for CVEs"></div>'
+     +'<div class="yr">’'+String(k).slice(2)+'</div></div>';}
+  return h+'</div><div class="hint" style="margin-top:8px">'+noteTotal.toLocaleString()+' '+noteLabel
+    +(pre?' · '+pre+' before 2010 (not shown)':'')+' · click a bar for its CVEs</div>';
+}
+async function yearChart(){
+  try{const s=await(await fetch('by_year.json')).json();
+    document.getElementById('year').innerHTML=yearBars(s.by_year,s.total_cves,'CVEs total');
+  }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
+}
+async function advisories(){
+  try{const s=await(await fetch('advisories.json')).json();
+    document.getElementById('adv-kpis').innerHTML=
+      '<div class="kpi"><b>'+s.total.toLocaleString()+'</b><span>advisories</span></div>'+
+      '<div class="kpi"><b>'+s.vendors.toLocaleString()+'</b><span>vendors</span></div>'+
+      '<div class="kpi"><b>2010–2026</b><span>coverage</span></div>';
+    document.getElementById('adv-year').innerHTML=yearBars(s.by_year,s.total,'advisories total');
+    let v='<div class="ct">Top vendors</div><div class="cwe">';
+    const mx=Math.max(...s.top_vendors.map(x=>x.count));
+    for(const x of s.top_vendors)v+='<div class="cwerow"><span>'+x.vendor+'</span>'+
+      '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
+    document.getElementById('adv-ven').innerHTML=v+'</div>';
+  }catch(e){document.getElementById('adv-kpis').innerHTML='<span class="err">advisory data unavailable</span>';}
+}
+stats(); advisories(); yearChart(); sourceAvail();
+</script></body></html>
