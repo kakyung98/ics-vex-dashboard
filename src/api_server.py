@@ -270,14 +270,15 @@ def _cve_ids(comp, ver):
 
 def _ro_best_match(name):
     """Ratcliff-Obershelp (difflib) nearest KB component for a component name.
-    Returns (component, best_ratio) over the component's name/cpe/key strings."""
+    Returns (component, best_ratio, matched_string) over its name/cpe/key strings."""
     n = (name or "").lower()
-    best, best_r = None, 0.0
+    best, best_r, best_s = None, 0.0, None
     for comp, strs in STORE.kb_match:
-        r = max((difflib.SequenceMatcher(None, n, s).ratio() for s in strs), default=0.0)
-        if r > best_r:
-            best_r, best = r, comp
-    return best, round(best_r, 3)
+        for s in strs:
+            r = difflib.SequenceMatcher(None, n, s).ratio()
+            if r > best_r:
+                best_r, best, best_s = r, comp, s
+    return best, round(best_r, 3), best_s
 
 
 def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
@@ -290,7 +291,7 @@ def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
         exact = STORE.kb_idx.get(name.lower())
         ex_ids = _cve_ids(exact, ver)
         exact_set.update(ex_ids)
-        ncomp, ratio = _ro_best_match(name)
+        ncomp, ratio, matched_str = _ro_best_match(name)
         normalized = ncomp if ratio >= threshold else None
         nm_ids = _cve_ids(normalized, ver)
         norm_set.update(nm_ids)
@@ -298,6 +299,8 @@ def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
             "component": name, "version": ver or "(unpinned)",
             "exact_match": exact["name"] if exact else None,
             "normalized_match": normalized["name"] if normalized else None,
+            "best_match": ncomp["name"] if ncomp else None,   # closest, even below threshold
+            "matched_string": matched_str,                    # the KB string RO matched on
             "ro_ratio": ratio, "matched_by_normalization": bool(normalized and not exact),
             "exact_cve_count": len(ex_ids), "normalized_cve_count": len(nm_ids),
         })
@@ -570,7 +573,8 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </div><div id="out" style="margin-top:12px"></div></div>
 
 <div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
-<p class="hint" style="margin:0 0 12px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
+<p class="hint" style="margin:0 0 8px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
+<div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
 <div id="cmp-body"></div></div>
 
 <div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
@@ -626,20 +630,27 @@ async function run(){
       +'<td class="mono hint">'+f.reachability+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
 }
+let _lastSbom=null,_lastExp=null;
 async function compareNorm(sbom,exp){
+  _lastSbom=sbom;_lastExp=exp;
+  const th=parseFloat((document.getElementById('ro-th')||{}).value||0.7);
   let d=null;
-  try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,exposure:exp,threshold:0.7})});if(r.ok)d=await r.json();}catch(e){}
+  try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,exposure:exp,threshold:th})});if(r.ok)d=await r.json();}catch(e){}
   renderCompare(d);
 }
 function renderCompare(d){
   const card=document.getElementById('cmp'),body=document.getElementById('cmp-body');
   if(!d||!d.components){card.style.display='none';return;}
   card.style.display='';const cm=d.comparison;
-  let h='<div style="overflow:auto"><table><thead><tr><th>Component</th><th>Exact CPE</th><th>RO-normalized CPE</th><th>RO ratio</th><th>Exact CVEs</th><th>Norm CVEs</th></tr></thead><tbody>';
+  let h='<div style="overflow:auto"><table><thead><tr><th>Component</th><th>Exact CPE</th><th>RO-normalized CPE (closest)</th><th>RO ratio</th><th>Exact CVEs</th><th>Norm CVEs</th></tr></thead><tbody>';
   for(const r of d.normalization){const flag=r.matched_by_normalization?' <span class="tag" style="color:var(--und)">fuzzy</span>':'';
-    h+='<tr><td class="mono">'+esc(r.component)+' '+esc(r.version)+'</td>'
+    let ncol;
+    if(r.normalized_match)ncol='<b>'+esc(r.normalized_match)+'</b>'+flag;
+    else if(r.best_match)ncol='<span class="hint">closest: '+esc(r.best_match)+' (&lt; threshold)</span>';
+    else ncol='<span class="hint">—</span>';
+    h+='<tr title="'+(r.matched_string?'RO matched on: '+esc(r.matched_string):'')+'"><td class="mono">'+esc(r.component)+' '+esc(r.version)+'</td>'
       +'<td>'+(r.exact_match?esc(r.exact_match):'<span class="hint">no exact match</span>')+'</td>'
-      +'<td>'+(r.normalized_match?esc(r.normalized_match)+flag:'<span class="hint">below threshold</span>')+'</td>'
+      +'<td>'+ncol+'</td>'
       +'<td class="mono">'+Number(r.ro_ratio).toFixed(2)+'</td><td class="mono">'+r.exact_cve_count+'</td><td class="mono">'+r.normalized_cve_count+'</td></tr>';}
   h+='</tbody></table></div>';
   h+='<div class="kpis" style="margin-top:14px">'
