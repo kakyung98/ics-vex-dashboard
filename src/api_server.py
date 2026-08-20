@@ -59,6 +59,13 @@ def _norm_vendor(v):
     return (v or "").replace("​", "").strip().strip(",").strip() or "Unknown"
 
 
+def _canon_cwe(rows):
+    """A CVE's CWE = the most common non-empty CWE across its findings (the
+    worst-VEX row can lack a CWE while another row carries it)."""
+    cws = [r.get("cwe") for r in rows if r.get("cwe")]
+    return Counter(cws).most_common(1)[0][0] if cws else ""
+
+
 def _device_type(name):
     """ICS-aware device categorization from the product/device slug."""
     d = (name or "").lower()
@@ -131,7 +138,7 @@ class Store:
             self.cve_index[cve] = {
                 "cve": cve, "vex": w["final_vex"], "reachability": w.get("reachability"),
                 "severity": sev if sev in srank else "unrated",
-                "cwe": w.get("cwe", ""), "kev": any(r.get("kev") for r in rows),
+                "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
                 "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
                 "source_available": any(r.get("tier") == "A" for r in rows),
                 "has_code_pair": cve in self.pairs,
@@ -171,7 +178,9 @@ class Store:
                 ven_cves[_norm_vendor(r.get("vendor"))].add(cve)
                 dtype_cves[_device_type(r.get("device"))].add(cve)
         sev_norm = lambda s: s if s in ("critical", "high", "medium", "low") else "unrated"
-        _cwe_ctr = Counter(w.get("cwe") for w in a_worst.values() if w.get("cwe"))
+        # canonical CWE per CVE (non-empty), so counts match the CVE's real weakness
+        _a_cwe = {cve: self.cve_index[cve]["cwe"] for cve in a_worst}
+        _cwe_ctr = Counter(c for c in _a_cwe.values() if c)
         self.tier_a = {
             "total_cves": len(a_worst),
             "code_collected": sum(1 for w in a_worst.values() if w.get("has_code_pair")),
@@ -184,7 +193,7 @@ class Store:
                         _cwe_ctr.most_common(10)],
             "cwe_other": {"count": sum(_cwe_ctr.values()) - sum(n for _, n in _cwe_ctr.most_common(10)),
                           "types": max(0, len(_cwe_ctr) - 10)},
-            "cwe_none": sum(1 for w in a_worst.values() if not w.get("cwe")),
+            "cwe_none": sum(1 for c in _a_cwe.values() if not c),
             "top_vendors": [{"vendor": v, "count": len(cs)} for v, cs in
                             sorted(ven_cves.items(), key=lambda kv: -len(kv[1]))[:8]],
             "device_types": [{"type": t, "count": len(cs)} for t, cs in
