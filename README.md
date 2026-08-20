@@ -4,15 +4,24 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 **SecureBERT(맥락) + CodeBERT(코드)** 기반 설명가능 VEX 판정 시스템을
 학습·평가하는 엔드투엔드 파이프라인.
 
-> **🛡️ 2026-08 정적분석 전면 개편.** 라이브 판정 파이프라인은 이제 PoC 를 **생성하지도
+> **🛡️ 2026-08 정적분석 전면 개편.** 라이브 판정 파이프라인은 PoC 를 **생성하지도
 > 실행하지도 않는다.** CVE-Genie 의 developer→critic 다중에이전트 구조는 유지하되,
 > Exploiter(PoC 작성·실행)와 CTF Verifier(실행→flag)를 **정적 Exploitability 분석기**와
 > **정적 증거 grounding critic** 으로 치환했다. 신규 확정 tier 는 `static-analysis-verified`.
 > 상세: [`docs/GENIE_STYLE_VEX.md`](docs/GENIE_STYLE_VEX.md). 비활성화된 실행 경로는
 > [`archive/`](archive/) 에 격리(삭제 아님).
 
+> **🔀 하이브리드(정적 트리아지 → 실행 재현).** 실행 검증(execution-verified) ground truth 가
+> 필요한 소수 CVE 를 위해, 정적 배치가 **재현 대상만 선별**해 격리된 CVE-Genie 에 넘기는
+> 하이브리드를 갖춘다: 전 코퍼스 정적 스윕([`src/vex_batch.py`](src/vex_batch.py)) → 재현 후보
+> export([`tools/export_genie_candidates.py`](tools/export_genie_candidates.py)) → 역할별 모델
+> 라우팅으로 CVE-Genie 실행. 재현의 병목이던 **모델 거부(refusal)** 는 거부-빈발 Exploiter 만
+> 로컬 모델([`tools/serve_poc_llm.py`](tools/serve_poc_llm.py))로 라우팅해 우회한다. 상세는
+> 아래 [하이브리드 실행 재현](#하이브리드-정적-트리아지--실행-재현) 절.
+
 > **🔗 라이브 대시보드**: https://kakyung98.github.io/ics-vex-dashboard/
 > SBOM을 올려 CVE·VEX를 즉석 분석 + 시스템 평가 결과 시각화 (브라우저 내 처리)
+> · [파이프라인 뷰](https://kakyung98.github.io/ics-vex-dashboard/pipeline.html) — 정적 분포·소스 라우팅·재현 후보
 
 ---
 
@@ -64,6 +73,10 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | 역방향 SBOM | `src/build_reverse_sbom.py` | `reverse_sbom/`, `data/findings.csv` (`tier` = 소스 확보 가능성) |
 | OSS 취약/패치 코드 수집 | `tools/collect_code_gh.py` | `data/code_evidence.json` |
 | **정적 VEX 판정 (라이브)** | `src/vex_pipeline.py` | JSON-line 스트림 (SBOM→VEX) |
+| **전 코퍼스 정적 스윕** | `src/vex_batch.py` | `results/vex_batch.jsonl` + `_summary.json` (source_class 분류) |
+| **재현 후보 export (브리지)** | `tools/export_genie_candidates.py` | `results/genie_candidates.json` |
+| **로컬 PoC 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (CVE-Genie Exploiter 라우팅용) |
+| **파이프라인 웹페이지 생성** | `tools/build_pipeline_page.py` | `pipeline.html` |
 | ~~검증 스펙/실행 검증~~ (격리) | `archive/*` | 과거 `results/exec_verification*.json` (역사적 근거로만 유지) |
 | **Ground Truth (증거 계층)** | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | SecureBERT 학습·평가 | `src/train_eval_vex.py` | `results/metrics.json` |
@@ -125,6 +138,42 @@ CVE별 트리거 수작업은 [`archive/`](archive/) 로 격리됐다 — 정적
 > | TF-IDF baseline | 0.890 | 재측정 필요 |
 > | CodeBERT 레퍼런스 매칭 | 0.971 | 유효 (데이터셋 무관, `code_evidence.json` 기반) |
 > | CodeBERT 추상 취약성 분류 | 0.50 (무작위) | 유효 (정직한 음성 결과) |
+
+## 하이브리드: 정적 트리아지 → 실행 재현
+
+정적 판정은 전 코퍼스를 싸게 트리아지하지만 "재현된 크래시"의 확실성은 없다. 실행 검증
+ground truth 가 필요한 소수 CVE 를 위해, 정적 배치가 **재현 대상만 선별**해 격리된 CVE-Genie
+로 넘기는 하이브리드를 둔다.
+
+**소스 확보 3분류** (재현 가능성이 여기서 갈린다):
+
+| 부류 | findings | 의미 |
+|---|---|---|
+| `code-available` | 36 (15 CVE) | 취약/패치 코드쌍 실보유 → CodeBERT 정적 diff + **재현 즉시 가능** |
+| `oss-attributed` | 2,115 | OSS(tier A/C)지만 코드 미수집 → 수집 시 승격 |
+| `vendor-proprietary` | 10,854 | 폐쇄 펌웨어 → **재현 불가**, 정적 판정에만 |
+
+**흐름**:
+```
+src/vex_batch.py           # 전 13,005건 정적 스윕 (source_class 분류)
+tools/export_genie_candidates.py   # 재현 후보 선별 -> results/genie_candidates.json
+                                   #   ready 15 (repo+commit) / needs-code 1,716
+# CVE-Genie 실행 (Docker, 격리) — Exploiter만 로컬 모델로 라우팅
+tools/serve_poc_llm.py --port 8000 --served-name ics-vex-poc-sllm   # 로컬 PoC 서버
+LOCAL_LLM_BASE_URL=http://host.docker.internal:8000/v1 \
+LOCAL_LLM_MODELS=local-poc=ics-vex-poc-sllm EXPLOITER_MODEL=local-poc \
+  python3 main.py --cve <CVE> --json <data> --run-type build,exploit,verify
+```
+
+**모델 거부(refusal) 우회 — 역할별 라우팅**: CVE-Genie 재현의 병목은 실행 차단이 아니라
+클라우드 모델이 익스플로잇 작성 단계에서 **거부**하는 것이었다. 거부-빈발 Exploiter 만
+로컬 모델(`poc-sllm-lora`, 거부 안 함)로 라우팅하고 추론-무거운 나머지 역할은 능력 모델을
+유지한다(`cve-genie/src/agents/model_routing.py`, env 기반, 미설정 시 업스트림과 동일).
+
+> **검증 결과(2026-08, CVE-2024-4340)**: 역할별 라우팅 **동작 확인**(Exploiter=로컬 $0,
+> 나머지=o3/o4-mini), **거부 문제 해소**(로컬 모델이 PoC 정상 생성). 단 7B 로컬 모델은
+> Exploit Critic 이 요구하는 실행-증거 수준을 만족 못 해 재현은 실패 — 16GB→7B 능력 한계.
+> 실제 재현엔 Exploiter 를 클라우드 32~70B 로 올리는 것이 유일한 길(라우팅은 env 만 교체).
 
 ## 도메인 적응 (모델 튜닝)
 

@@ -217,6 +217,10 @@ HTML = r"""<title>ICS-VEX Analyzer &amp; Panel</title>
         font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;
         background:var(--accent,#12b886);color:#04120c;letter-spacing:.02em">
         📊 Full CVE analysis (11,336) &rarr;</a>
+      <a href="pipeline.html" style="display:inline-block;font-family:var(--mono);font-size:12px;
+        font-weight:700;text-decoration:none;padding:9px 16px;border-radius:9px;margin-left:8px;
+        border:1px solid var(--accent,#12b886);color:var(--accent,#12b886);letter-spacing:.02em">
+        🔀 Hybrid pipeline &rarr;</a>
     </div>
   </header>
 
