@@ -41,6 +41,31 @@ def _load(path, default=None):
     return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else default
 
 
+def _norm_vendor(v):
+    """Merge whitespace/zero-width duplicates (e.g. '\\u200bSiemens' -> 'Siemens')."""
+    return (v or "").replace("​", "").strip().strip(",").strip() or "Unknown"
+
+
+def _device_type(name):
+    """ICS-aware device categorization from the product/device slug."""
+    d = (name or "").lower()
+    if any(k in d for k in ("vxworks", "ipnet", "tcp-ip", "tcpip", "rtos", "treck",
+                            "interpeak", "freertos", "stack")):
+        return "OS / Protocol stack"
+    if any(k in d for k in ("scalance", "ruggedcom", "switch", "router", "gateway",
+                            "sinec", "telecontrol", "firewall", "vpn", "modem", "ethernet")):
+        return "Network / Comms"
+    if any(k in d for k in ("simatic", "s7-", "-cpu", "plc", "logix", "modicon",
+                            "controller", "logic")):
+        return "PLC / Controller"
+    if any(k in d for k in ("sinamics", "drive", "motion", "servo", "inverter", "robot")):
+        return "Drive / Motion"
+    if any(k in d for k in ("hmi", "scada", "wincc", "historian", "workstation",
+                            "-server", "nms", "-ins")):
+        return "HMI / SCADA / Server"
+    return "Other / Field device"
+
+
 class Store:
     """Loads the corpus artifacts once; refresh() re-reads them."""
     def __init__(self):
@@ -101,9 +126,15 @@ class Store:
         }
         # tier-A = OSS-attributed, source-code collectable (the "132")
         a_worst = {}
+        ven_cves, dtype_cves = defaultdict(set), defaultdict(set)
         for cve, rows in self.by_cve.items():
-            if any(r.get("tier") == "A" for r in rows):
-                a_worst[cve] = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
+            a_rows = [r for r in rows if r.get("tier") == "A"]
+            if not a_rows:
+                continue
+            a_worst[cve] = max(a_rows, key=lambda r: rank.get(r["final_vex"], 0))
+            for r in a_rows:
+                ven_cves[_norm_vendor(r.get("vendor"))].add(cve)
+                dtype_cves[_device_type(r.get("device"))].add(cve)
         sev_norm = lambda s: s if s in ("critical", "high", "medium", "low") else "unrated"
         self.tier_a = {
             "total_cves": len(a_worst),
@@ -115,6 +146,10 @@ class Store:
             "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
             "top_cwe": [{"cwe": c, "count": n} for c, n in
                         Counter(w.get("cwe") for w in a_worst.values() if w.get("cwe")).most_common(10)],
+            "top_vendors": [{"vendor": v, "count": len(cs)} for v, cs in
+                            sorted(ven_cves.items(), key=lambda kv: -len(kv[1]))[:8]],
+            "device_types": [{"type": t, "count": len(cs)} for t, cs in
+                             sorted(dtype_cves.items(), key=lambda kv: -len(kv[1]))],
         }
 
 
@@ -271,24 +306,26 @@ FRONTEND = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 :root{--bg:#0b1116;--card:#111a20;--card2:#16222a;--ink:#e6edf2;--ink2:#93a3ad;--ink3:#657580;
 --line:#25333c;--accent:#38ccd9;--aff:#e5675c;--safe:#43be7c;--und:#e0b24c;
 --mono:ui-monospace,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,sans-serif}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}
-.wrap{max-width:1000px;margin:0 auto;padding:28px 20px 60px}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
-h1{margin:.2em 0}.sub{color:var(--ink2);max-width:70ch;font-size:14px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px}
+.wrap{max-width:1560px;margin:0 auto;padding:34px clamp(20px,4vw,56px) 72px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+h1{margin:.2em 0;font-size:clamp(26px,3.4vw,40px)}.sub{color:var(--ink2);max-width:80ch;font-size:15px}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:18px}
-label{font-size:12px;color:var(--ink2)}textarea{width:100%;min-height:150px;background:var(--bg);color:var(--ink);
-border:1px solid var(--line);border-radius:8px;padding:10px;font-family:var(--mono);font-size:12px}
-select,button{font-family:var(--sans);font-size:13px;padding:8px 12px;border-radius:8px;border:1px solid var(--line);
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
+h3{font-size:16px}
+label{font-size:13px;color:var(--ink2)}textarea{width:100%;min-height:190px;background:var(--bg);color:var(--ink);
+border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mono);font-size:13px}
+select,button{font-family:var(--sans);font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
 background:var(--card2);color:var(--ink)}button.primary{background:var(--accent);color:#04120c;font-weight:700;border:none;cursor:pointer}
-.kpis{display:flex;flex-wrap:wrap;gap:10px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
-.kpi b{font-size:20px}.kpi span{display:block;font-size:11px;color:var(--ink3);font-family:var(--mono)}
-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:14px 20px;flex:1;min-width:150px}
+.kpi b{font-size:27px}.kpi span{display:block;font-size:12px;color:var(--ink3);font-family:var(--mono);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
 th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
 .badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px}
 .hint{font-size:12px;color:var(--ink3)}.err{color:var(--aff);font-size:13px}
-.chart{margin-bottom:14px}.ct{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+#sa-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px}
+.chart{margin-bottom:6px}.ct{font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px}
 .mb{display:flex;height:20px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:7px;font-size:12px}
 .legend .lg{display:flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -296,11 +333,13 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--ink3)}
 .cwebar{background:var(--card2);border-radius:5px;height:12px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .cwerow b{text-align:right;font-family:var(--mono)}
-.ybars{display:flex;align-items:flex-end;gap:4px;height:170px;overflow-x:auto;padding-top:4px}
-.ycol{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
-.yval{font-family:var(--mono);font-size:10px;color:var(--ink2);margin-bottom:3px;white-space:nowrap}
-.ybar{width:80%;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px}
-.yr{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:5px}
+.satwo{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.dtt{font-size:13px}.dtt td{padding:7px 8px}
+.ybars{display:flex;align-items:flex-end;gap:6px;height:230px;overflow-x:auto;padding-top:6px}
+.ycol{flex:1;min-width:44px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.yval{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-bottom:4px;white-space:nowrap}
+.ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
+.yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
 </style></head><body><div class="wrap">
 <div class="eyebrow">ICS-VEX</div>
 <h1>SBOM → CVE → VEX</h1>
@@ -333,7 +372,11 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
 <div id="sa-kpis" class="kpis">loading…</div>
 <div id="sa-charts" style="margin-top:16px"></div>
-<div id="sa-cwe" style="margin-top:14px"></div></div>
+<div class="satwo" style="margin-top:16px">
+  <div id="sa-vendors"></div>
+  <div id="sa-devtype"></div>
+</div>
+<div id="sa-cwe" style="margin-top:16px"></div></div>
 
 <div class="foot">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div>
 
@@ -412,6 +455,18 @@ async function sourceAvail(){
     for(const x of s.top_cwe)cwe+='<div class="cwerow"><span class="mono">'+x.cwe+'</span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
     document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
+    // top vendors
+    let vn='<div class="ct">Top vendors <span class="hint">by CVE count</span></div><div class="cwe">';
+    const vmx=Math.max(...s.top_vendors.map(x=>x.count));
+    for(const x of s.top_vendors)vn+='<div class="cwerow"><span>'+x.vendor+'</span>'+
+      '<span class="cwebar"><i style="width:'+(100*x.count/vmx)+'%"></i></span><b>'+x.count+'</b></div>';
+    document.getElementById('sa-vendors').innerHTML=vn+'</div>';
+    // device-type mapping table
+    let dt='<div class="ct">Device-type mapping <span class="hint">CVEs per equipment type</span></div>'+
+      '<table class="dtt"><thead><tr><th>Equipment type</th><th style="text-align:right">CVEs</th></tr></thead><tbody>';
+    for(const x of s.device_types)dt+='<tr><td>'+x.type+'</td><td style="text-align:right" class="mono">'+x.count+'</td></tr>';
+    dt+='</tbody></table><div class="hint" style="margin-top:5px">One CVE can span multiple types (shared component).</div>';
+    document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
 function yearBars(y,noteTotal,noteLabel){
