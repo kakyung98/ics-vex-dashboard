@@ -27,7 +27,20 @@ from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(BASE, "src"))
-import build_ground_truth as G  # reachability(), exposure_for()
+import build_ground_truth as G  # reachability(), exposure_for(), CWE_NAME
+
+# fill common CWE names missing from build_ground_truth.CWE_NAME
+_CWE_SUPP = {
+    "CWE-20": "improper input validation", "CWE-121": "stack-based buffer overflow",
+    "CWE-122": "heap-based buffer overflow", "CWE-125": "out-of-bounds read",
+    "CWE-190": "integer overflow", "CWE-287": "improper authentication",
+    "CWE-306": "missing authentication", "CWE-311": "missing encryption",
+    "CWE-416": "use after free", "CWE-476": "NULL pointer dereference",
+    "CWE-787": "out-of-bounds write", "CWE-835": "loop with unreachable exit (DoS)",
+    "CWE-22": "path traversal", "CWE-284": "improper access control",
+    "CWE-79": "cross-site scripting", "CWE-89": "SQL injection",
+}
+CWE_NAMES = {**_CWE_SUPP, **getattr(G, "CWE_NAME", {})}
 
 RESULTS = os.path.join(BASE, "results")
 DATA = os.path.join(BASE, "data")
@@ -105,6 +118,28 @@ class Store:
                     continue
         self.pairs = {k for k, v in self.code_ev.items()
                       if isinstance(v, dict) and v.get("vuln_code") and v.get("patched_code")}
+        # per-CVE index for the clickable "related CVEs" drill-down
+        srank = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+        vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
+        self.cve_index = {}
+        for cve, rows in self.by_cve.items():
+            w = max(rows, key=lambda r: vrank.get(r["final_vex"], 0))
+            sev = max((r.get("sev", "") for r in rows), key=lambda s: srank.get(s, 0))
+            parts = cve.split("-")
+            ev = self.code_ev.get(cve) or {}
+            repo = ev.get("repo")
+            self.cve_index[cve] = {
+                "cve": cve, "vex": w["final_vex"], "reachability": w.get("reachability"),
+                "severity": sev if sev in srank else "unrated",
+                "cwe": w.get("cwe", ""), "kev": any(r.get("kev") for r in rows),
+                "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
+                "source_available": any(r.get("tier") == "A" for r in rows),
+                "has_code_pair": cve in self.pairs,
+                "vendors": sorted({_norm_vendor(r.get("vendor")) for r in rows}),
+                "device_types": sorted({_device_type(r.get("device")) for r in rows}),
+                "component": w.get("product") or w.get("component"),
+                "repo_url": (f"https://github.com/{repo}" if repo and "/" in repo else None),
+            }
         # CVE-level view (unique CVEs, worst-case verdict across assets)
         rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
         cve_worst, cve_tier = {}, {}
@@ -144,7 +179,7 @@ class Store:
             "by_vex": dict(Counter(w["final_vex"] for w in a_worst.values())),
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
             "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
-            "top_cwe": [{"cwe": c, "count": n} for c, n in
+            "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
                         Counter(w.get("cwe") for w in a_worst.values() if w.get("cwe")).most_common(10)],
             "top_vendors": [{"vendor": v, "count": len(cs)} for v, cs in
                             sorted(ven_cves.items(), key=lambda kv: -len(kv[1]))[:8]],
@@ -238,6 +273,35 @@ def build_app():
             raise HTTPException(404, "run src/vex_batch.py first")
         return STORE.cve_level
 
+    @app.get("/api/cves")
+    def cves_by(dim: str, value: str, scope: str = "corpus", limit: int = 400):
+        """Related CVEs for a chart selection (drill-down).
+        dim: cwe|vendor|device_type|year|vex|reachability|severity ; scope: corpus|source_available."""
+        srank = {"critical": 4, "high": 3, "medium": 2, "low": 1, "unrated": 0}
+        vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
+
+        def ok(r):
+            if scope == "source_available" and not r["source_available"]:
+                return False
+            if dim == "cwe":            return r["cwe"] == value
+            if dim == "vendor":         return value in r["vendors"]
+            if dim == "device_type":    return value in r["device_types"]
+            if dim == "year":           return str(r["year"]) == str(value)
+            if dim == "vex":            return r["vex"] == value
+            if dim == "reachability":   return r["reachability"] == value
+            if dim == "severity":       return r["severity"] == value
+            return False
+
+        hits = [r for r in STORE.cve_index.values() if ok(r)]
+        hits.sort(key=lambda r: (-int(r["kev"]), -vrank.get(r["vex"], 0),
+                                 -srank.get(r["severity"], 0), r["cve"]))
+        return {"dim": dim, "value": value, "scope": scope, "count": len(hits),
+                "cves": [{"cve": r["cve"], "vex": r["vex"], "severity": r["severity"],
+                          "kev": r["kev"], "reachability": r["reachability"],
+                          "vendor": ", ".join(r["vendors"][:2]), "component": r["component"],
+                          "cwe": r["cwe"], "has_code_pair": r["has_code_pair"],
+                          "repo_url": r["repo_url"]} for r in hits[:limit]]}
+
     @app.get("/api/advisories")
     def advisories():
         """CISA ICS advisory provenance stats (total, by year, top vendors)."""
@@ -306,10 +370,11 @@ FRONTEND = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 :root{--bg:#0b1116;--card:#111a20;--card2:#16222a;--ink:#e6edf2;--ink2:#93a3ad;--ink3:#657580;
 --line:#25333c;--accent:#38ccd9;--aff:#e5675c;--safe:#43be7c;--und:#e0b24c;
 --mono:ui-monospace,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,sans-serif}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px}
 .wrap{max-width:1560px;margin:0 auto;padding:34px clamp(20px,4vw,56px) 72px}
-.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
-h1{margin:.2em 0;font-size:clamp(26px,3.4vw,40px)}.sub{color:var(--ink2);max-width:80ch;font-size:15px}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
+h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-width:80ch;font-size:16px}
+h3{font-size:18px}.hint{font-size:13px}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
@@ -319,20 +384,28 @@ border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mo
 select,button{font-family:var(--sans);font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
 background:var(--card2);color:var(--ink)}button.primary{background:var(--accent);color:#04120c;font-weight:700;border:none;cursor:pointer}
 .kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:14px 20px;flex:1;min-width:150px}
-.kpi b{font-size:27px}.kpi span{display:block;font-size:12px;color:var(--ink3);font-family:var(--mono);margin-top:2px}
-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line)}
-th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
-.badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px}
-.hint{font-size:12px;color:var(--ink3)}.err{color:var(--aff);font-size:13px}
-#sa-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px}
-.chart{margin-bottom:6px}.ct{font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:6px}
-.mb{display:flex;height:20px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
-.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:7px;font-size:12px}
-.legend .lg{display:flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.cwe{display:grid;gap:5px}.cwerow{display:grid;grid-template-columns:minmax(120px,160px) 1fr 34px;align-items:center;gap:8px;font-size:12px}
-.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--ink3)}
-.cwebar{background:var(--card2);border-radius:5px;height:12px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.kpi b{font-size:30px}.kpi span{display:block;font-size:13px;color:var(--ink3);font-family:var(--mono);margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:16px;margin-top:6px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
+.badge{font-family:var(--mono);font-size:13px;font-weight:700;padding:2px 9px;border-radius:5px}
+.err{color:var(--aff);font-size:14px}
+#sa-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.chart{margin-bottom:6px}.ct{font-size:15px;font-weight:600;color:var(--ink2);margin-bottom:8px}
+.mb{display:flex;height:26px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-size:14px}
+.legend .lg{display:flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.cwe{display:grid;gap:7px}.cwerow{display:grid;grid-template-columns:minmax(150px,230px) 1fr 40px;align-items:center;gap:10px;font-size:14px}
+.foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);text-align:center;font-size:14px;color:var(--ink3)}
+.cwebar{background:var(--card2);border-radius:5px;height:15px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .cwerow b{text-align:right;font-family:var(--mono)}
+.clk{cursor:pointer}.clk:hover{opacity:.8}
+.cwename{color:var(--ink3);font-size:12px;margin-left:6px}
+/* drill-down modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow:auto}
+.ov.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--line);border-radius:14px;max-width:1100px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal .mh{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.modal h3{margin:0}.xbtn{cursor:pointer;background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 12px;font-size:15px}
 .satwo{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
 .dtt{font-size:13px}.dtt td{padding:7px 8px}
 .ybars{display:flex;align-items:flex-end;gap:6px;height:230px;overflow-x:auto;padding-top:6px}
@@ -379,6 +452,11 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <div id="sa-cwe" style="margin-top:16px"></div></div>
 
 <div class="foot">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)closeCves()"><div class="modal">
+  <div class="mh"><h3 id="mtitle">Related CVEs</h3><button class="xbtn" onclick="closeCves()">✕ Close</button></div>
+  <div id="mbody" class="hint">loading…</div>
+</div></div>
 
 <script>
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
@@ -431,11 +509,33 @@ async function stats(){
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
 const REC={yes:'var(--aff)',conditional:'var(--und)',no:'var(--safe)',unknown:'var(--ink3)'};
-function bar(counts,order,cmap,total){
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+async function openCves(dim,value,scope,label){
+  document.getElementById('mtitle').textContent=label;
+  document.getElementById('mbody').innerHTML='loading…';
+  document.getElementById('ov').classList.add('on');
+  try{const d=await(await fetch('/api/cves?dim='+encodeURIComponent(dim)+'&value='+encodeURIComponent(value)+'&scope='+scope)).json();
+    if(!d.count){document.getElementById('mbody').innerHTML='<span class="hint">no CVEs.</span>';return;}
+    let h='<div class="hint" style="margin-bottom:8px"><b>'+d.count+'</b> CVEs</div>'+
+      '<div style="overflow:auto"><table><thead><tr><th>CVE</th><th>VEX</th><th>Sev</th><th>KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
+    for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
+      h+='<tr><td class="mono"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
+        +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
+        +'<td>'+esc(f.severity)+'</td><td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
+        +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
+        +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener">repo</a>':'')+'</td></tr>';}
+    document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
+  }catch(e){document.getElementById('mbody').innerHTML='<span class="err">error loading CVEs</span>';}
+}
+function closeCves(){document.getElementById('ov').classList.remove('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});
+function bar(counts,order,cmap,total,dim,scope,lmap){
   let segs='',leg='';
   for(const k of order){const v=counts[k]||0;if(!v)continue;const w=100*v/total;
-    segs+='<div style="width:'+w.toFixed(2)+'%;background:'+(cmap[k]||'var(--ink3)')+'" title="'+k+': '+v+'"></div>';
-    leg+='<span class="lg"><i style="background:'+(cmap[k]||'var(--ink3)')+'"></i>'+k+' <b>'+v+'</b></span>';}
+    const lbl=(lmap&&lmap[k])||k;const cl=dim?' class="clk"':'';
+    const clk=dim?' onclick="openCves(\\''+dim+'\\',\\''+k+'\\',\\''+scope+'\\',\\''+lbl.replace(/'/g,'')+' — related CVEs\\')"':'';
+    segs+='<div'+cl+clk+' style="width:'+w.toFixed(2)+'%;background:'+(cmap[k]||'var(--ink3)')+'" title="'+lbl+': '+v+'"></div>';
+    leg+='<span class="lg'+(dim?' clk':'')+'"'+clk+'><i style="background:'+(cmap[k]||'var(--ink3)')+'"></i>'+lbl+' <b>'+v+'</b></span>';}
   return '<div class="mb">'+segs+'</div><div class="legend">'+leg+'</div>';
 }
 async function sourceAvail(){
@@ -447,24 +547,25 @@ async function sourceAvail(){
       '<div class="kpi"><b style="color:var(--und)">'+s.pending_collection+'</b><span>pending collection</span></div>'+
       '<div class="kpi"><b style="color:var(--aff)">'+s.kev+'</b><span>KEV</span></div>';
     document.getElementById('sa-charts').innerHTML=
-      '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t).replace(/LIKELY_AFFECTED/g,'Affected').replace(/LIKELY_NOT_AFFECTED/g,'Not affected').replace(/UNDER_INVESTIGATION/g,'Under inv')+'</div>'+
-      '<div class="chart"><div class="ct">Severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t)+'</div>'+
-      '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t)+'</div>';
-    let cwe='<div class="ct">Top CWE types</div><div class="cwe">';
+      '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t,'vex','source_available',{LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under inv'})+'</div>'+
+      '<div class="chart"><div class="ct">Severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
+      '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
+    let cwe='<div class="ct">Top CWE types <span class="hint">click to list CVEs</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
-    for(const x of s.top_cwe)cwe+='<div class="cwerow"><span class="mono">'+x.cwe+'</span>'+
+    for(const x of s.top_cwe)cwe+='<div class="cwerow clk" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
+      '<span><span class="mono">'+x.cwe+'</span><span class="cwename">'+esc(x.name||'')+'</span></span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
     document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
     // top vendors
-    let vn='<div class="ct">Top vendors <span class="hint">by CVE count</span></div><div class="cwe">';
+    let vn='<div class="ct">Top vendors <span class="hint">click to list CVEs</span></div><div class="cwe">';
     const vmx=Math.max(...s.top_vendors.map(x=>x.count));
-    for(const x of s.top_vendors)vn+='<div class="cwerow"><span>'+x.vendor+'</span>'+
+    for(const x of s.top_vendors)vn+='<div class="cwerow clk" onclick="openCves(\\'vendor\\',\\''+esc(x.vendor)+'\\',\\'source_available\\',\\''+esc(x.vendor)+' — CVEs\\')"><span>'+esc(x.vendor)+'</span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/vmx)+'%"></i></span><b>'+x.count+'</b></div>';
     document.getElementById('sa-vendors').innerHTML=vn+'</div>';
     // device-type mapping table
-    let dt='<div class="ct">Device-type mapping <span class="hint">CVEs per equipment type</span></div>'+
+    let dt='<div class="ct">Device-type mapping <span class="hint">click a row to list CVEs</span></div>'+
       '<table class="dtt"><thead><tr><th>Equipment type</th><th style="text-align:right">CVEs</th></tr></thead><tbody>';
-    for(const x of s.device_types)dt+='<tr><td>'+x.type+'</td><td style="text-align:right" class="mono">'+x.count+'</td></tr>';
+    for(const x of s.device_types)dt+='<tr class="clk" onclick="openCves(\\'device_type\\',\\''+esc(x.type)+'\\',\\'source_available\\',\\''+esc(x.type)+' — CVEs\\')"><td>'+esc(x.type)+'</td><td style="text-align:right" class="mono">'+x.count+'</td></tr>';
     dt+='</tbody></table><div class="hint" style="margin-top:5px">One CVE can span multiple types (shared component).</div>';
     document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
@@ -476,11 +577,11 @@ function yearBars(y,noteTotal,noteLabel){
   const mx=Math.max(...show.map(k=>y[k]));
   let h='<div class="ybars">';
   for(const k of show){const c=y[k];const hp=Math.max(4,100*c/mx);
-    h+='<div class="ycol"><div class="yval">'+c.toLocaleString()+'</div>'
-     +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+'"></div>'
+    h+='<div class="ycol clk" onclick="openCves(\\'year\\',\\''+k+'\\',\\'corpus\\',\\'CVEs published in '+k+'\\')"><div class="yval">'+c.toLocaleString()+'</div>'
+     +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+' — click for CVEs"></div>'
      +'<div class="yr">’'+String(k).slice(2)+'</div></div>';}
   return h+'</div><div class="hint" style="margin-top:8px">'+noteTotal.toLocaleString()+' '+noteLabel
-    +(pre?' · '+pre+' before 2010 (not shown)':'')+'</div>';
+    +(pre?' · '+pre+' before 2010 (not shown)':'')+' · click a bar for its CVEs</div>';
 }
 async function yearChart(){
   try{const s=await(await fetch('/api/by_year')).json();
