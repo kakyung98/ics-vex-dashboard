@@ -81,6 +81,23 @@ class Store:
             "by_vex": dict(Counter(cve_worst.values())),
             "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
         }
+        # tier-A = OSS-attributed, source-code collectable (the "132")
+        a_worst = {}
+        for cve, rows in self.by_cve.items():
+            if any(r.get("tier") == "A" for r in rows):
+                a_worst[cve] = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
+        sev_norm = lambda s: s if s in ("critical", "high", "medium", "low") else "unrated"
+        self.tier_a = {
+            "total_cves": len(a_worst),
+            "code_collected": sum(1 for w in a_worst.values() if w.get("has_code_pair")),
+            "pending_collection": sum(1 for w in a_worst.values() if not w.get("has_code_pair")),
+            "kev": sum(1 for w in a_worst.values() if w.get("kev")),
+            "by_vex": dict(Counter(w["final_vex"] for w in a_worst.values())),
+            "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
+            "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
+            "top_cwe": [{"cwe": c, "count": n} for c, n in
+                        Counter(w.get("cwe") for w in a_worst.values() if w.get("cwe")).most_common(10)],
+        }
 
 
 STORE = Store()
@@ -168,6 +185,13 @@ def build_app():
             raise HTTPException(404, "run src/vex_batch.py first")
         return STORE.cve_level
 
+    @app.get("/api/source_available")
+    def source_available():
+        """Stats for the source-code-collectable (tier-A) CVEs — the '132'."""
+        if not STORE.tier_a.get("total_cves"):
+            raise HTTPException(404, "run src/vex_batch.py first")
+        return STORE.tier_a
+
     @app.get("/api/candidates")
     def candidates(status: str | None = None, top: int | None = None):
         items = STORE.candidates.get("candidates", [])
@@ -232,6 +256,13 @@ table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}th,td{te
 th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
 .badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px}
 .hint{font-size:12px;color:var(--ink3)}.err{color:var(--aff);font-size:13px}
+.chart{margin-bottom:14px}.ct{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+.mb{display:flex;height:20px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:7px;font-size:12px}
+.legend .lg{display:flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.cwe{display:grid;gap:5px}.cwerow{display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:12px}
+.cwebar{background:var(--card2);border-radius:5px;height:12px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
+.cwerow b{text-align:right;font-family:var(--mono)}
 </style></head><body><div class="wrap">
 <div class="eyebrow">ICS-VEX</div>
 <h1>SBOM → CVE → VEX</h1>
@@ -247,6 +278,12 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <div class="card"><h3 style="margin:0 0 8px">Corpus by CVE</h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> · full view:
 <a href="https://kakyung98.github.io/ics-vex-dashboard/pipeline.html" target="_blank">pipeline.html</a></p></div>
+
+<div class="card"><h3 style="margin:0 0 4px">Source-available CVEs <span class="hint">tier A · code-collectable</span></h3>
+<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
+<div id="sa-kpis" class="kpis">loading…</div>
+<div id="sa-charts" style="margin-top:16px"></div>
+<div id="sa-cwe" style="margin-top:14px"></div></div>
 
 <script>
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
@@ -283,7 +320,35 @@ async function stats(){
     document.getElementById('cand').textContent=cand.count+' ready';
   }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
 }
-stats();
+const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
+const REC={yes:'var(--aff)',conditional:'var(--und)',no:'var(--safe)',unknown:'var(--ink3)'};
+function bar(counts,order,cmap,total){
+  let segs='',leg='';
+  for(const k of order){const v=counts[k]||0;if(!v)continue;const w=100*v/total;
+    segs+='<div style="width:'+w.toFixed(2)+'%;background:'+(cmap[k]||'var(--ink3)')+'" title="'+k+': '+v+'"></div>';
+    leg+='<span class="lg"><i style="background:'+(cmap[k]||'var(--ink3)')+'"></i>'+k+' <b>'+v+'</b></span>';}
+  return '<div class="mb">'+segs+'</div><div class="legend">'+leg+'</div>';
+}
+async function sourceAvail(){
+  try{const s=await(await fetch('/api/source_available')).json();
+    const t=s.total_cves;
+    document.getElementById('sa-kpis').innerHTML=
+      '<div class="kpi"><b>'+t+'</b><span>tier-A CVEs</span></div>'+
+      '<div class="kpi"><b style="color:var(--safe)">'+s.code_collected+'</b><span>code collected</span></div>'+
+      '<div class="kpi"><b style="color:var(--und)">'+s.pending_collection+'</b><span>pending collection</span></div>'+
+      '<div class="kpi"><b style="color:var(--aff)">'+s.kev+'</b><span>KEV</span></div>';
+    document.getElementById('sa-charts').innerHTML=
+      '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t).replace(/LIKELY_AFFECTED/g,'Affected').replace(/LIKELY_NOT_AFFECTED/g,'Not affected').replace(/UNDER_INVESTIGATION/g,'Under inv')+'</div>'+
+      '<div class="chart"><div class="ct">Severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t)+'</div>'+
+      '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t)+'</div>';
+    let cwe='<div class="ct">Top CWE types</div><div class="cwe">';
+    const mx=Math.max(...s.top_cwe.map(x=>x.count));
+    for(const x of s.top_cwe)cwe+='<div class="cwerow"><span class="mono">'+x.cwe+'</span>'+
+      '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
+    document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
+  }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
+}
+stats(); sourceAvail();
 </script></body></html>"""
 
 
