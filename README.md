@@ -175,6 +175,30 @@ LOCAL_LLM_MODELS=local-poc=ics-vex-poc-sllm EXPLOITER_MODEL=local-poc \
 > Exploit Critic 이 요구하는 실행-증거 수준을 만족 못 해 재현은 실패 — 16GB→7B 능력 한계.
 > 실제 재현엔 Exploiter 를 클라우드 32~70B 로 올리는 것이 유일한 길(라우팅은 env 만 교체).
 
+## 동적 REST API 서비스
+
+GitHub Pages 는 정적이라 REST·라이브 실행이 불가하다. 이를 위한 **동적 백엔드**가
+[`src/api_server.py`](src/api_server.py) (FastAPI) — 코퍼스 통계·재현 후보를 REST 로 제공하고,
+업로드한 SBOM 을 **라이브로 VEX 판정**한다(결정론 정적 leg, GPU 불필요라 즉시 기동).
+
+```bash
+pip install fastapi uvicorn
+python src/api_server.py --port 8100      # http://127.0.0.1:8100  (docs: /docs)
+```
+
+| 엔드포인트 | 설명 |
+|---|---|
+| `GET /` | 인터랙티브 웹 콘솔 (SBOM→VEX + 코퍼스 통계) |
+| `GET /docs` | **Swagger UI** (자동 REST 문서) |
+| `GET /api/summary` | 전 코퍼스 정적 VEX 요약 (verdict/tier/source_class) |
+| `GET /api/candidates?status=ready&top=15` | 재현 후보 |
+| `GET /api/findings/{cve}` | 단일 CVE 정적 판정 |
+| `POST /api/vex` | `{sbom, exposure}` → 컴포넌트별 CVE + 라이브 VEX |
+
+정적 Pages(대시보드·파이프라인 뷰)는 그대로 두고, 이 서비스는 별도 포트에서 동적으로 돈다.
+배포는 Python 이 도는 어디든 가능하다(VPS·Render·Railway 등). 전체 3-모델 경로가 필요하면
+`src/vex_pipeline.py`(SecureBERT+CodeBERT+sLLM)를 쓴다.
+
 ## 도메인 적응 (모델 튜닝)
 
 프로토타입은 인코더를 동결(frozen)해 특징 추출기로 썼다. 실전형으로 다음을 진행한다:
