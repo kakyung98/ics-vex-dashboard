@@ -244,12 +244,12 @@ async function openCves(dim,value,scope,label){
   document.getElementById('ov').classList.add('on');
   try{const d=queryCves(dim,value,scope);
     if(!d.count){document.getElementById('mbody').innerHTML='<span class="hint">no CVEs.</span>';return;}
-    let h='<div class="hint" style="margin-bottom:8px"><b>'+d.count+'</b> CVEs</div>'+
-      '<div style="overflow:auto"><table><thead><tr><th>CVE</th><th>VEX</th><th>CVSS</th><th>KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
+    let h='<div class="srch-meta"><b>'+d.count+'</b> CVEs</div>'+
+      '<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>VEX</th><th style="text-align:center">CVSS</th><th style="text-align:center">KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
     for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
-      h+='<tr><td class="mono"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
         +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
-        +'<td class="mono" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity?esc(f.severity):'—'))+'</td><td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
+        +'<td class="mono" style="text-align:center" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity?esc(f.severity):'—'))+'</td><td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
         +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
         +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener">repo</a>':'')+'</td></tr>';}
     document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
