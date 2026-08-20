@@ -29,18 +29,60 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 sys.path.insert(0, os.path.join(BASE, "src"))
 import build_ground_truth as G  # reachability(), exposure_for(), CWE_NAME
 
-# fill common CWE names missing from build_ground_truth.CWE_NAME
-_CWE_SUPP = {
-    "CWE-20": "improper input validation", "CWE-121": "stack-based buffer overflow",
-    "CWE-122": "heap-based buffer overflow", "CWE-125": "out-of-bounds read",
-    "CWE-190": "integer overflow", "CWE-287": "improper authentication",
-    "CWE-306": "missing authentication", "CWE-311": "missing encryption",
-    "CWE-416": "use after free", "CWE-476": "NULL pointer dereference",
-    "CWE-787": "out-of-bounds write", "CWE-835": "loop with unreachable exit (DoS)",
-    "CWE-22": "path traversal", "CWE-284": "improper access control",
-    "CWE-79": "cross-site scripting", "CWE-89": "SQL injection",
+# Official MITRE CWE names (Title Case). Covers every CWE shown in the
+# collectable-CVE pool + common corpus weaknesses. Overrides the informal
+# lowercase names in build_ground_truth.CWE_NAME.
+CWE_OFFICIAL = {
+    "CWE-20": "Improper Input Validation",
+    "CWE-22": "Improper Limitation of a Pathname to a Restricted Directory (Path Traversal)",
+    "CWE-74": "Improper Neutralization of Special Elements (Injection)",
+    "CWE-78": "OS Command Injection",
+    "CWE-79": "Cross-site Scripting",
+    "CWE-88": "Argument Injection",
+    "CWE-89": "SQL Injection",
+    "CWE-94": "Improper Control of Generation of Code (Code Injection)",
+    "CWE-116": "Improper Encoding or Escaping of Output",
+    "CWE-119": "Improper Restriction of Operations within the Bounds of a Memory Buffer",
+    "CWE-120": "Buffer Copy without Checking Size of Input (Classic Buffer Overflow)",
+    "CWE-121": "Stack-based Buffer Overflow",
+    "CWE-122": "Heap-based Buffer Overflow",
+    "CWE-125": "Out-of-bounds Read",
+    "CWE-130": "Improper Handling of Length Parameter Inconsistency",
+    "CWE-187": "Partial String Comparison",
+    "CWE-190": "Integer Overflow or Wraparound",
+    "CWE-193": "Off-by-one Error",
+    "CWE-208": "Observable Timing Discrepancy",
+    "CWE-222": "Truncation of Security-relevant Information",
+    "CWE-254": "Security Features",
+    "CWE-281": "Improper Preservation of Permissions",
+    "CWE-284": "Improper Access Control",
+    "CWE-287": "Improper Authentication",
+    "CWE-295": "Improper Certificate Validation",
+    "CWE-306": "Missing Authentication for Critical Function",
+    "CWE-311": "Missing Encryption of Sensitive Data",
+    "CWE-330": "Use of Insufficiently Random Values",
+    "CWE-345": "Insufficient Verification of Data Authenticity",
+    "CWE-346": "Origin Validation Error",
+    "CWE-362": "Race Condition (Concurrent Execution using Shared Resource)",
+    "CWE-364": "Signal Handler Race Condition",
+    "CWE-399": "Resource Management Errors",
+    "CWE-400": "Uncontrolled Resource Consumption",
+    "CWE-415": "Double Free",
+    "CWE-416": "Use After Free",
+    "CWE-428": "Unquoted Search Path or Element",
+    "CWE-440": "Expected Behavior Violation",
+    "CWE-476": "NULL Pointer Dereference",
+    "CWE-522": "Insufficiently Protected Credentials",
+    "CWE-611": "Improper Restriction of XML External Entity Reference",
+    "CWE-665": "Improper Initialization",
+    "CWE-668": "Exposure of Resource to Wrong Sphere",
+    "CWE-787": "Out-of-bounds Write",
+    "CWE-835": "Loop with Unreachable Exit Condition (Infinite Loop)",
+    "CWE-843": "Access of Resource Using Incompatible Type (Type Confusion)",
+    "CWE-924": "Improper Enforcement of Message Integrity During Transmission",
+    "CWE-1104": "Use of Unmaintained Third Party Components",
 }
-CWE_NAMES = {**_CWE_SUPP, **getattr(G, "CWE_NAME", {})}
+CWE_NAMES = {**getattr(G, "CWE_NAME", {}), **CWE_OFFICIAL}
 
 RESULTS = os.path.join(BASE, "results")
 DATA = os.path.join(BASE, "data")
@@ -408,7 +450,14 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-size:14px}
 .legend .lg{display:flex;align-items:center;gap:6px}.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
 .cwe{display:grid;gap:7px}.cwerow{display:grid;grid-template-columns:minmax(150px,230px) 1fr 40px;align-items:center;gap:10px;font-size:14px}
-.foot{margin-top:44px;padding-top:18px;border-top:1px solid var(--line);text-align:center;font-size:14px;color:var(--ink3)}
+.foot{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);text-align:center;font-size:14px;color:var(--ink3)}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.ssrc{width:70px;height:70px;flex:none}
+.btxt .bk{font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.5px;line-height:1.15}
+.btxt .be{font-size:14px;font-weight:600;color:#c8d3da;letter-spacing:.4px}
+.brand-sm{justify-content:center;margin-bottom:10px}
+.brand-sm .ssrc{width:50px;height:50px}.brand-sm .bk{font-size:18px}.brand-sm .be{font-size:12px}
+.cright{color:var(--ink3);font-size:13px}
 .cwebar{background:var(--card2);border-radius:5px;height:15px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .cwerow b{text-align:right;font-family:var(--mono)}
 .clk{cursor:pointer}.clk:hover{opacity:.8}
@@ -427,7 +476,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
 .yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
 </style></head><body><div class="wrap">
-<div class="eyebrow">System Security Research Center</div>
+<div class="brand"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <h1>ICS-VEXForge</h1>
 
 <div class="card"><div class="row">
@@ -464,7 +513,8 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </div>
 <div id="sa-cwe" style="margin-top:16px"></div></div>
 
-<div class="foot">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div>
+<div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
+<div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
 
 <div class="ov" id="ov" onclick="if(event.target===this)closeCves()"><div class="modal">
   <div class="mh"><h3 id="mtitle">Related CVEs</h3><button class="xbtn" onclick="closeCves()">✕ Close</button></div>
@@ -635,13 +685,29 @@ stats(); advisories(); yearChart(); sourceAvail();
 app = build_app()
 
 
+def _lan_ip():
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80)); ip = s.getsockname()[0]; s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8100)
-    ap.add_argument("--host", default="127.0.0.1")
+    # 0.0.0.0 = reachable from other computers on the LAN (use --host 127.0.0.1
+    # to restrict to this machine only).
+    ap.add_argument("--host", default="0.0.0.0")
     a = ap.parse_args()
     import uvicorn
-    print(f"ICS-VEX API on http://{a.host}:{a.port}  (docs: /docs)", flush=True)
+    print(f"ICS-VEXForge API - this machine: http://localhost:{a.port}", flush=True)
+    if a.host == "0.0.0.0":
+        print(f"  other computers on your network: http://{_lan_ip()}:{a.port}", flush=True)
+        print(f"  (allow inbound TCP {a.port} in Windows Firewall the first time)", flush=True)
+    print(f"  REST docs: /docs", flush=True)
     uvicorn.run(app, host=a.host, port=a.port, log_level="info")
 
 
