@@ -384,7 +384,8 @@ a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
 h3{font-size:16px}
 label{font-size:13px;color:var(--ink2)}textarea{width:100%;min-height:190px;background:var(--bg);color:var(--ink);
-border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mono);font-size:13px}
+border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mono);font-size:13px;transition:border-color .12s,background .12s}
+textarea.dragover{border-color:var(--accent);border-style:dashed;background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
 select,button{font-family:var(--sans);font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
 background:var(--card2);color:var(--ink)}button.primary{background:var(--accent);color:#04120c;font-weight:700;border:none;cursor:pointer}
 .kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:14px 20px;flex:1;min-width:150px}
@@ -422,7 +423,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <h1>ICS-VEXForge</h1>
 
 <div class="card"><div class="row">
-  <div><label>CycloneDX SBOM (JSON)</label><textarea id="sbom" placeholder='{"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
+  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
   <div><label>Deployment exposure</label><br><select id="exp">
     <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
     <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
@@ -433,7 +434,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
     <div id="fname" class="hint" style="margin-top:6px"></div></div>
 </div><div id="out" style="margin-top:12px"></div></div>
 
-<div class="card"><h3 style="margin:0 0 8px">Corpus by CVE</h3><div id="kpis" class="kpis hint">loading…</div>
+<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> · full view:
 <a href="https://kakyung98.github.io/ics-vex-dashboard/pipeline.html" target="_blank">pipeline.html</a></p></div>
 
@@ -488,8 +489,8 @@ async function run(){
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
   document.getElementById('fname').textContent='';}
-document.getElementById('file').addEventListener('change',function(e){
-  const f=e.target.files[0];if(!f)return;
+function loadFile(f){
+  if(!f)return;
   const fn=document.getElementById('fname');fn.textContent='reading '+f.name+'…';
   const rd=new FileReader();
   rd.onload=function(){
@@ -499,8 +500,17 @@ document.getElementById('file').addEventListener('change',function(e){
     run();
   };
   rd.readAsText(f);
-  e.target.value='';   // allow re-selecting the same file
-});
+}
+document.getElementById('file').addEventListener('change',function(e){loadFile(e.target.files[0]);e.target.value='';});
+// drag & drop a .json SBOM anywhere on the input textarea
+const _ta=document.getElementById('sbom');
+['dragenter','dragover'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.add('dragover');}));
+['dragleave','dragend'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');}));
+_ta.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');
+  const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadFile(f);});
+// stop the browser from opening a file dropped outside the textarea
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();const v=s.by_vex||{};
     const k=document.getElementById('kpis');k.innerHTML='';
