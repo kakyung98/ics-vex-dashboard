@@ -496,8 +496,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </div><div id="out" style="margin-top:12px"></div></div>
 
 <div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> · full view:
-<a href="https://kakyung98.github.io/ics-vex-dashboard/pipeline.html" target="_blank">pipeline.html</a></p></div>
+<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
 
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
