@@ -11,10 +11,8 @@
 .layout{display:grid;grid-template-columns:236px minmax(0,1fr);max-width:1720px;margin:0 auto;min-height:100vh}
 .side{border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;align-self:start;height:100vh;overflow:auto}
 .main{padding:28px clamp(18px,3vw,48px) 64px;min-width:0}
-.side-brand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
-.side-brand .ssrc{width:44px;height:44px;flex:none}
-.sb-title{font-size:19px;font-weight:800;letter-spacing:-.01em}
-.sb-sub{font-size:11px;color:#37b24d;font-weight:600;line-height:1.2;margin-top:1px}
+.side-brand{display:flex;justify-content:center;margin:4px 0 6px}
+.side-brand .ssrc{width:84px;height:84px}
 @media(max-width:860px){.layout{grid-template-columns:1fr}.side{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
 .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
 h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-width:80ch;font-size:16px}
@@ -31,6 +29,9 @@ h3{font-size:18px}.hint{font-size:13px}
 .treeres{margin-top:16px;padding:18px;border:2px solid var(--line);border-radius:12px;background:var(--card2)}
 .treebtn{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:7px;border:1px solid var(--und);background:transparent;color:var(--und);cursor:pointer;white-space:nowrap}
 .treebtn:hover{background:color-mix(in srgb,var(--und) 15%,transparent)}
+.treecve{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--card2)}
+.treecve-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tc-hi{outline:2px solid var(--und);outline-offset:2px;transition:outline .2s}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
@@ -80,8 +81,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
 </style></head><body><div class="layout">
 <aside class="side">
-  <div class="side-brand"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text></svg>
-  <div><div class="sb-title">ICS-VEXForge</div><div class="sb-sub">System Security Research Center</div></div></div>
+  <div class="side-brand"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></div>
   <nav class="nav"><div class="navlabel">Menu</div><a class="navtab" href="index.html">Analyzer</a><a class="navtab" href="corpus.html">Corpus</a><a class="navtab on" href="collectable.html">Collectable CVEs</a></nav>
 </aside>
 <main class="main">
@@ -124,6 +124,7 @@ function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGAT
 async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=JSON.parse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
+  _treeState={};   // fresh decision trees for this SBOM
   compareNorm(sbom,document.getElementById('exp').value);
   const d=computeVex(sbom,document.getElementById('exp').value);
   if(!d.cves_matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
@@ -141,6 +142,7 @@ async function run(){
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
+  renderTreeList(d.cves);
 }
 let _lastSbom=null,_lastExp=null;
 async function compareNorm(sbom,exp){
@@ -320,25 +322,36 @@ function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;
     const target=a?node.yes:node.no;
     if(Array.isArray(target))return{status:target[0],justification:target[1],path:path,complete:true};
     nid=target;}}
-let _treeAns={};
-function treeStart(){_treeAns={};treeStep();}
-function treeAnswer(v){const r=classifyTree(document.getElementById('tree-av').value,_treeAns);if(r.pending)_treeAns[r.pending]=v;treeStep();}
-// launched from a source-uncollectable CVE in the SBOM results: affected-range=yes,
-// source-obtainable=no are known, so jump straight into the AV branch.
-function treeForCve(cve,av){const sel=document.getElementById('tree-av');if(sel&&av&&['N','A','L','P'].includes(av))sel.value=av;
-  _treeAns={affected_range:true,source_check:false};treeStep();
-  const el=document.getElementById('vextree');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
-function treeStep(){const av=document.getElementById('tree-av').value;const r=classifyTree(av,_treeAns);
-  let h='<div class="treepath">';
-  for(const p of r.path){const ans=(p.answer===true)?'Yes':(p.answer===false)?'No':esc(p.answer);
-    h+='<div class="treestep">'+esc(p.q)+' → <b>'+ans+'</b></div>';}
-  h+='</div>';
+// per-CVE decision tree: only source-uncollectable CVEs from the SBOM appear,
+// each walked independently (pre-seeded affected-range=yes, source-obtainable=no).
+let _treeState={};
+function renderTreeList(cves){
+  const un=(cves||[]).filter(f=>!f.source_collectable);
+  const card=document.getElementById('vextree'); if(!card)return;
+  if(!un.length){card.style.display='none';return;}
+  card.style.display='';
+  const cnt=document.getElementById('tree-count'); if(cnt)cnt.textContent='('+un.length+')';
+  for(const f of un){if(!_treeState[f.cve])_treeState[f.cve]={av:f.av||'N',answers:{affected_range:true,source_check:false}};}
+  document.getElementById('tree-list').innerHTML=un.map(f=>'<div class="treecve" id="tc-'+f.cve+'">'+renderCveTree(f.cve)+'</div>').join('');
+}
+function renderCveTree(cve){
+  const s=_treeState[cve];const r=classifyTree(s.av,s.answers);
+  let h='<div class="treecve-h"><a class="mono" href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" style="font-weight:700">'+esc(cve)+'</a> <span class="hint">AV:'+esc(s.av)+'</span>';
   if(r.complete){const st=r.status;const col=st==='not_affected'?'var(--safe)':(st==='under_investigation'?'var(--und)':'var(--accent)');
-    h+='<div class="treeres" style="border-color:'+col+'"><div style="font-size:22px;font-weight:800;color:'+col+'">'+esc(st)+'</div><div class="mono" style="font-size:15px;margin-top:4px">'+esc(r.justification||'')+'</div></div>';}
-  else if(r.pending){h+='<div class="treeq"><div class="ct" style="font-size:16px;margin-bottom:10px">'+esc(r.question)+'</div>'
-    +'<button class="primary" onclick="treeAnswer(true)">Yes</button> <button onclick="treeAnswer(false)">No</button></div>';}
-  else{h+='<div class="hint">'+esc(r.justification||'')+'</div>';}
-  document.getElementById('tree-body').innerHTML=h;}
+    h+=' <span class="badge" style="background:'+col+'22;color:'+col+'">'+esc(st)+'</span> <span class="mono hint">'+esc(r.justification||'')+'</span>'
+     +'<button class="treebtn" style="margin-left:auto" onclick="treeReset(\''+cve+'\')">restart</button>';}
+  h+='</div>';
+  if(r.path.length>2){h+='<div class="treepath" style="margin-top:8px">';
+    for(const p of r.path){if(p.node==='affected_range'||p.node==='source_check')continue;const ans=(p.answer===true)?'Yes':(p.answer===false)?'No':esc(p.answer);
+      h+='<div class="treestep">'+esc(p.q)+' → <b>'+ans+'</b></div>';}
+    h+='</div>';}
+  if(!r.complete&&r.pending){h+='<div class="treeq"><div class="ct" style="font-size:15px;margin-bottom:8px">'+esc(r.question)+'</div>'
+    +'<button class="primary" onclick="treeAnswerFor(\''+cve+'\',true)">Yes</button> <button onclick="treeAnswerFor(\''+cve+'\',false)">No</button></div>';}
+  return h;
+}
+function treeAnswerFor(cve,v){const s=_treeState[cve];const r=classifyTree(s.av,s.answers);if(r.pending)s.answers[r.pending]=v;document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);}
+function treeReset(cve){_treeState[cve]={av:_treeState[cve].av,answers:{affected_range:true,source_check:false}};document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);}
+function treeForCve(cve,av){const el=document.getElementById('tc-'+cve);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('tc-hi');setTimeout(()=>el.classList.remove('tc-hi'),1600);}}
 
 if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
