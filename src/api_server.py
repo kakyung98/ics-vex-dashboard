@@ -421,6 +421,9 @@ def build_app():
 FRONTEND = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS-VEX API console</title>
 <style>
+@font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+@font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');font-weight:800;font-display:swap}
 :root{--bg:#0b1116;--card:#111a20;--card2:#16222a;--ink:#e6edf2;--ink2:#93a3ad;--ink3:#657580;
 --line:#25333c;--accent:#38ccd9;--aff:#e5675c;--safe:#43be7c;--und:#e0b24c;
 --mono:ui-monospace,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,sans-serif}
@@ -454,8 +457,8 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .foot{margin-top:44px;padding-top:22px;border-top:1px solid var(--line);text-align:center;font-size:14px;color:var(--ink3)}
 .brand{display:flex;align-items:center;gap:16px;margin-bottom:8px}
 .ssrc{width:70px;height:70px;flex:none}
-.btxt .bk{font-size:24px;font-weight:800;color:#ffffff;letter-spacing:.5px;line-height:1.15}
-.btxt .be{font-size:14px;font-weight:600;color:#c8d3da;letter-spacing:.4px}
+.btxt .bk{font-family:'Paperlogy',var(--sans);font-size:25px;font-weight:800;color:#ffffff;letter-spacing:.5px;line-height:1.15}
+.btxt .be{font-family:'Paperlogy',var(--sans);font-size:14px;font-weight:700;color:#c8d3da;letter-spacing:.4px}
 .brand-sm{justify-content:center;margin-bottom:10px}
 .brand-sm .ssrc{width:50px;height:50px}.brand-sm .bk{font-size:18px}.brand-sm .be{font-size:12px}
 .cright{color:var(--ink3);font-size:13px}
