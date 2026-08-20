@@ -190,9 +190,8 @@ class Store:
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
             "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
             "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
-                        _cwe_ctr.most_common(10)],
-            "cwe_other": {"count": sum(_cwe_ctr.values()) - sum(n for _, n in _cwe_ctr.most_common(10)),
-                          "types": max(0, len(_cwe_ctr) - 10)},
+                        _cwe_ctr.most_common()],
+            "cwe_other": {"count": 0, "types": 0},
             "cwe_none": sum(1 for c in _a_cwe.values() if not c),
             "top_vendors": [{"vendor": v, "count": len(cs)} for v, cs in
                             sorted(ven_cves.items(), key=lambda kv: -len(kv[1]))[:8]],
