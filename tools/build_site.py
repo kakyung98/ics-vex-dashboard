@@ -88,14 +88,16 @@ assert "async function run(){" in html
 html = html.replace("async function run(){", INJECT + "\nasync function run(){", 1)
 
 # emit one static file per page (same shared shell/script, different nav+content)
+_tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
+html = html.replace("__VEX_TREE__", _tree_json)
 for key, fname in [("analyzer", "index.html"), ("corpus", "corpus.html"),
-                   ("collectable", "collectable.html")]:
+                   ("collectable", "collectable.html"), ("tree", "tree.html")]:
     page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])
     open(os.path.join(BASE, fname), "w", encoding="utf-8").write(page)
 
 sz = lambda n: os.path.getsize(os.path.join(BASE, n)) / 1024
 print("wrote pages: index.html corpus.html collectable.html + json:")
-for n in ["index.html", "corpus.html", "collectable.html", "cve_index.json",
+for n in ["index.html", "corpus.html", "collectable.html", "tree.html", "cve_index.json",
           "cve_level.json", "source_available.json", "by_year.json",
           "advisories.json", "candidates_ready.json", "cve_kb.json"]:
     print("  %-24s %.0f KB" % (n, sz(n)))
