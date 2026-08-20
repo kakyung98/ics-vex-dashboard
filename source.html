@@ -32,8 +32,18 @@ h3{font-size:18px}.hint{font-size:13px}
 .treecve{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--card2)}
 .treecve-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tc-hi{outline:2px solid var(--und);outline-offset:2px;transition:outline .2s}
-.srch{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px 14px;font-size:15px}
-.srch:focus{outline:none;border-color:var(--accent)}
+.srch{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:12px 15px;font-size:15px}
+.srch:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.srch-wrap{max-height:620px;overflow:auto;border:1px solid var(--line);border-radius:11px;margin-top:10px}
+.srch-wrap table{margin:0;font-size:14.5px}
+.srch-wrap thead th{position:sticky;top:0;background:var(--card);z-index:1;padding:11px 14px;border-bottom:1px solid var(--line)}
+.srch-wrap td{padding:11px 14px;border-bottom:1px solid color-mix(in srgb,var(--line) 60%,transparent)}
+.srch-wrap tbody tr:last-child td{border-bottom:none}
+.srch-wrap tbody tr:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.idcell{white-space:nowrap;font-family:var(--mono);font-weight:600}
+.idcell a{text-decoration:none}.idcell a:hover{text-decoration:underline}
+.cvecount{display:inline-block;min-width:24px;text-align:center;font-family:var(--mono);font-size:12.5px;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:2px 9px}
+.srch-meta{font-size:13px;color:var(--ink3);margin-bottom:2px}.srch-meta b{color:var(--ink)}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
@@ -371,10 +381,10 @@ function advSearch(){
   let items=ADV_LIST;
   if(q)items=ADV_LIST.filter(a=>String(a.id).toLowerCase().includes(q)||(a.title||'').toLowerCase().includes(q)||(a.vendor||'').toLowerCase().includes(q)||String(a.year).includes(q)||(a.cves||[]).some(c=>String(c).toLowerCase().includes(q)));
   const total=items.length;items=items.slice(0,100);
-  let h='<div class="hint" style="margin-bottom:6px">'+total.toLocaleString()+' match'+(total===1?'':'es')+(total>100?' (showing 100)':'')+'</div>';
-  h+='<div style="overflow:auto"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th>Year</th><th>CVEs</th></tr></thead><tbody>';
+  let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> advisor'+(total===1?'y':'ies')+(total>100?' · showing first 100':'')+'</div>';
+  h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th style="text-align:center">Year</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){const idl=a.url?'<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.id)+'</a>':esc(a.id);
-    h+='<tr><td class="mono">'+idl+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono">'+esc(a.year||'')+'</td><td class="mono">'+((a.cves||[]).length)+'</td></tr>';}
+    h+='<tr><td class="idcell">'+idl+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
 function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};
@@ -390,11 +400,11 @@ async function cveSearchRun(){
   let items=null;
   try{const r=await fetch('/api/cve_search?q='+encodeURIComponent(q));if(r.ok)items=(await r.json()).cves;}catch(e){}
   if(items===null)items=cveSearchLocal(q);
-  let h=nvd+'<div class="hint" style="margin-bottom:6px">'+items.length+(items.length===100?'+':'')+' CVEs</div>';
-  h+='<div style="overflow:auto"><table><thead><tr><th>CVE</th><th>CVSS</th><th>CWE</th><th>KEV</th><th>Vendor</th><th>Component</th></tr></thead><tbody>';
-  for(const f of items){h+='<tr><td class="mono"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
-    +'<td class="mono">'+(f.cvss!=null?f.cvss:(f.severity||'—'))+'</td><td class="mono hint">'+esc(f.cwe||'')+'</td>'
-    +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td>'+esc(f.vendor||'')+'</td><td class="hint">'+esc(f.component||'')+'</td></tr>';}
+  let h=nvd+'<div class="srch-meta"><b>'+items.length+(items.length===100?'+':'')+'</b> CVEs</div>';
+  h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th style="text-align:center">CVSS</th><th>CWE</th><th style="text-align:center">KEV</th><th>Vendor</th><th>Component</th></tr></thead><tbody>';
+  for(const f of items){h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
+    +'<td class="mono" style="text-align:center">'+(f.cvss!=null?f.cvss:(f.severity||'—'))+'</td><td class="mono hint">'+esc(f.cwe||'')+'</td>'
+    +'<td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td><td>'+esc(f.vendor||'')+'</td><td class="hint">'+esc(f.component||'')+'</td></tr>';}
   out.innerHTML=h+'</tbody></table></div>';
 }
 
