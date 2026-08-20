@@ -51,6 +51,17 @@ class Store:
         self.candidates = _load(os.path.join(RESULTS, "genie_candidates.json"),
                                 {"candidates": []})
         self.code_ev = _load(os.path.join(DATA, "code_evidence.json"), {})
+        # CISA ICS advisories (the corpus provenance)
+        adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
+        adv = list(adv_raw.values()) if isinstance(adv_raw, dict) else (adv_raw or [])
+        adv_yr = Counter(str(a.get("year")) for a in adv if a.get("year"))
+        adv_ven = Counter(a.get("vendor") for a in adv if a.get("vendor"))
+        self.advisories = {
+            "total": len(adv),
+            "vendors": len(adv_ven),
+            "by_year": {y: adv_yr[y] for y in sorted(adv_yr, key=lambda x: int(x))},
+            "top_vendors": [{"vendor": v, "count": n} for v, n in adv_ven.most_common(8)],
+        }
         kb = _load(KB_PATH, {"components": []})["components"]
         self.kb_idx = {}
         for comp in kb:
@@ -192,6 +203,13 @@ def build_app():
             raise HTTPException(404, "run src/vex_batch.py first")
         return STORE.cve_level
 
+    @app.get("/api/advisories")
+    def advisories():
+        """CISA ICS advisory provenance stats (total, by year, top vendors)."""
+        if not STORE.advisories.get("total"):
+            raise HTTPException(404, "data/cisa_advisories.json not found")
+        return STORE.advisories
+
     @app.get("/api/by_year")
     def by_year():
         """Unique CVE count by CVE-ID year (all 11,336)."""
@@ -274,7 +292,8 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .mb{display:flex;height:20px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.mb>div{height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:7px;font-size:12px}
 .legend .lg{display:flex;align-items:center;gap:5px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.cwe{display:grid;gap:5px}.cwerow{display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:12px}
+.cwe{display:grid;gap:5px}.cwerow{display:grid;grid-template-columns:minmax(120px,160px) 1fr 34px;align-items:center;gap:8px;font-size:12px}
+.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);text-align:center;font-size:12px;color:var(--ink3)}
 .cwebar{background:var(--card2);border-radius:5px;height:12px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .cwerow b{text-align:right;font-family:var(--mono)}
 .ybars{display:flex;align-items:flex-end;gap:4px;height:170px;overflow-x:auto;padding-top:4px}
@@ -302,6 +321,11 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> · full view:
 <a href="https://kakyung98.github.io/ics-vex-dashboard/pipeline.html" target="_blank">pipeline.html</a></p></div>
 
+<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
+<div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
+<div id="adv-year" style="margin-top:14px"></div>
+<div id="adv-ven" style="margin-top:14px"></div></div>
+
 <div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
 <div id="year" style="margin-top:12px">loading…</div></div>
 
@@ -310,6 +334,8 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <div id="sa-kpis" class="kpis">loading…</div>
 <div id="sa-charts" style="margin-top:16px"></div>
 <div id="sa-cwe" style="margin-top:14px"></div></div>
+
+<div class="foot">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div>
 
 <script>
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
@@ -388,23 +414,39 @@ async function sourceAvail(){
     document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
+function yearBars(y,noteTotal,noteLabel){
+  const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
+  const pre=keys.filter(k=>k<2010).reduce((a,k)=>a+y[k],0);
+  const show=keys.filter(k=>k>=2010);
+  const mx=Math.max(...show.map(k=>y[k]));
+  let h='<div class="ybars">';
+  for(const k of show){const c=y[k];const hp=Math.max(4,100*c/mx);
+    h+='<div class="ycol"><div class="yval">'+c.toLocaleString()+'</div>'
+     +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+'"></div>'
+     +'<div class="yr">’'+String(k).slice(2)+'</div></div>';}
+  return h+'</div><div class="hint" style="margin-top:8px">'+noteTotal.toLocaleString()+' '+noteLabel
+    +(pre?' · '+pre+' before 2010 (not shown)':'')+'</div>';
+}
 async function yearChart(){
-  try{const s=await(await fetch('/api/by_year')).json();const y=s.by_year;
-    const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
-    const pre=keys.filter(k=>k<2010).reduce((a,k)=>a+y[k],0);
-    const show=keys.filter(k=>k>=2010);
-    const mx=Math.max(...show.map(k=>y[k]));
-    let h='<div class="ybars">';
-    for(const k of show){const c=y[k];const hp=Math.max(4,100*c/mx);
-      h+='<div class="ycol"><div class="yval">'+c.toLocaleString()+'</div>'
-       +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+'"></div>'
-       +'<div class="yr">’'+String(k).slice(2)+'</div></div>';}
-    h+='</div><div class="hint" style="margin-top:8px">'+s.total_cves.toLocaleString()
-      +' CVEs total'+(pre?' · '+pre+' before 2010 (not shown)':'')+'</div>';
-    document.getElementById('year').innerHTML=h;
+  try{const s=await(await fetch('/api/by_year')).json();
+    document.getElementById('year').innerHTML=yearBars(s.by_year,s.total_cves,'CVEs total');
   }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
-stats(); yearChart(); sourceAvail();
+async function advisories(){
+  try{const s=await(await fetch('/api/advisories')).json();
+    document.getElementById('adv-kpis').innerHTML=
+      '<div class="kpi"><b>'+s.total.toLocaleString()+'</b><span>advisories</span></div>'+
+      '<div class="kpi"><b>'+s.vendors.toLocaleString()+'</b><span>vendors</span></div>'+
+      '<div class="kpi"><b>2010–2026</b><span>coverage</span></div>';
+    document.getElementById('adv-year').innerHTML=yearBars(s.by_year,s.total,'advisories total');
+    let v='<div class="ct">Top vendors</div><div class="cwe">';
+    const mx=Math.max(...s.top_vendors.map(x=>x.count));
+    for(const x of s.top_vendors)v+='<div class="cwerow"><span>'+x.vendor+'</span>'+
+      '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
+    document.getElementById('adv-ven').innerHTML=v+'</div>';
+  }catch(e){document.getElementById('adv-kpis').innerHTML='<span class="err">advisory data unavailable</span>';}
+}
+stats(); advisories(); yearChart(); sourceAvail();
 </script></body></html>"""
 
 
