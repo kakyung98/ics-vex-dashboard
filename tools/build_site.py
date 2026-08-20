@@ -50,7 +50,7 @@ function computeVex(sbom,exp){const comps=(sbom.components||[]).filter(c=>c&&c.n
 function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='reachability')return r.reachability===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,reachability:r.reachability,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url}))};}
 """
 
-html = A.FRONTEND
+html = A.FRONTEND_TEMPLATE   # shared shell (head + script) with __NAV__/__CONTENT__
 
 # stat endpoints -> static json
 for old, new in [
@@ -87,10 +87,15 @@ html = html.replace(old_cmp, "  d=compareNormJs(sbom,exp,th);")
 assert "async function run(){" in html
 html = html.replace("async function run(){", INJECT + "\nasync function run(){", 1)
 
-open(os.path.join(BASE, "index.html"), "w", encoding="utf-8").write(html)
+# emit one static file per page (same shared shell/script, different nav+content)
+for key, fname in [("analyzer", "index.html"), ("corpus", "corpus.html"),
+                   ("collectable", "collectable.html")]:
+    page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])
+    open(os.path.join(BASE, fname), "w", encoding="utf-8").write(page)
 
 sz = lambda n: os.path.getsize(os.path.join(BASE, n)) / 1024
-print("wrote index.html (%.0f KB) + json:" % sz("index.html"))
-for n in ["cve_index.json", "cve_level.json", "source_available.json", "by_year.json",
+print("wrote pages: index.html corpus.html collectable.html + json:")
+for n in ["index.html", "corpus.html", "collectable.html", "cve_index.json",
+          "cve_level.json", "source_available.json", "by_year.json",
           "advisories.json", "candidates_ready.json", "cve_kb.json"]:
     print("  %-24s %.0f KB" % (n, sz(n)))

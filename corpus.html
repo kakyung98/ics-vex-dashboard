@@ -67,23 +67,17 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <div class="eyebrow" style="color:#37b24d">System Security Research Center</div>
 <h1>ICS-VEXForge</h1>
 
-<div class="nav"><a class="navtab on" href="index.html">Analyzer</a><a class="navtab" href="corpus.html">Corpus</a><a class="navtab" href="collectable.html">Collectable CVEs</a></div>
-<div class="card"><div class="row">
-  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
-  <div><label>Deployment exposure</label><br><select id="exp">
-    <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
-    <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
-    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
-    <button class="primary" onclick="run()">Analyze ▶</button>
-    <button onclick="document.getElementById('file').click()">Upload JSON</button>
-    <button onclick="ex()">Example</button>
-    <div id="fname" class="hint" style="margin-top:6px"></div></div>
-</div><div id="out" style="margin-top:12px"></div></div>
+<div class="nav"><a class="navtab" href="index.html">Analyzer</a><a class="navtab on" href="corpus.html">Corpus</a><a class="navtab" href="collectable.html">Collectable CVEs</a></div>
+<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
 
-<div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
-<p class="hint" style="margin:0 0 8px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
-<div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
-<div id="cmp-body"></div></div>
+<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
+<div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
+<div id="adv-year" style="margin-top:14px"></div>
+<div id="adv-ven" style="margin-top:14px"></div></div>
+
+<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
+<div id="year" style="margin-top:12px">loading…</div></div>
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>

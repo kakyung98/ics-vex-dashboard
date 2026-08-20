@@ -507,8 +507,17 @@ def build_app():
         return {"ok": True, "reloaded": True}
 
     @app.get("/", response_class=HTMLResponse)
+    @app.get("/index.html", response_class=HTMLResponse)
     def index():
-        return FRONTEND
+        return make_page("analyzer")
+
+    @app.get("/corpus.html", response_class=HTMLResponse)
+    def corpus():
+        return make_page("corpus")
+
+    @app.get("/collectable.html", response_class=HTMLResponse)
+    def collectable():
+        return make_page("collectable")
 
     return app
 
@@ -516,7 +525,7 @@ def build_app():
 # ---------------------------------------------------------------------------
 # frontend (single page, calls the API above)
 # ---------------------------------------------------------------------------
-FRONTEND = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+FRONTEND_TEMPLATE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS-VEX API console</title>
 <style>
 @font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-display:swap}
@@ -530,6 +539,10 @@ FRONTEND = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
 h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-width:80ch;font-size:16px}
 h3{font-size:18px}.hint{font-size:13px}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 6px;border-bottom:1px solid var(--line)}
+.navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 18px;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;margin-bottom:-1px}
+.navtab:hover{color:var(--ink)}
+.navtab.on{color:var(--accent);background:var(--card);border-color:var(--line);border-bottom:1px solid var(--card)}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
@@ -581,43 +594,8 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <div class="eyebrow" style="color:#37b24d">System Security Research Center</div>
 <h1>ICS-VEXForge</h1>
 
-<div class="card"><div class="row">
-  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
-  <div><label>Deployment exposure</label><br><select id="exp">
-    <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
-    <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
-    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
-    <button class="primary" onclick="run()">Analyze ▶</button>
-    <button onclick="document.getElementById('file').click()">Upload JSON</button>
-    <button onclick="ex()">Example</button>
-    <div id="fname" class="hint" style="margin-top:6px"></div></div>
-</div><div id="out" style="margin-top:12px"></div></div>
-
-<div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
-<p class="hint" style="margin:0 0 8px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
-<div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
-<div id="cmp-body"></div></div>
-
-<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
-
-<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
-<div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
-<div id="adv-year" style="margin-top:14px"></div>
-<div id="adv-ven" style="margin-top:14px"></div></div>
-
-<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
-<div id="year" style="margin-top:12px">loading…</div></div>
-
-<div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
-<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
-<div id="sa-kpis" class="kpis">loading…</div>
-<div id="sa-charts" style="margin-top:16px"></div>
-<div class="satwo" style="margin-top:16px">
-  <div id="sa-vendors"></div>
-  <div id="sa-devtype"></div>
-</div>
-<div id="sa-cwe" style="margin-top:16px"></div></div>
+__NAV__
+__CONTENT__
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
@@ -699,16 +677,16 @@ function loadFile(f){
   };
   rd.readAsText(f);
 }
-document.getElementById('file').addEventListener('change',function(e){loadFile(e.target.files[0]);e.target.value='';});
-// drag & drop a .json SBOM anywhere on the input textarea
 const _ta=document.getElementById('sbom');
-['dragenter','dragover'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.add('dragover');}));
-['dragleave','dragend'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');}));
-_ta.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');
-  const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadFile(f);});
-// stop the browser from opening a file dropped outside the textarea
-window.addEventListener('dragover',e=>e.preventDefault());
-window.addEventListener('drop',e=>e.preventDefault());
+if(_ta){   // analyzer page only
+  document.getElementById('file').addEventListener('change',function(e){loadFile(e.target.files[0]);e.target.value='';});
+  ['dragenter','dragover'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.add('dragover');}));
+  ['dragleave','dragend'].forEach(ev=>_ta.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');}));
+  _ta.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();_ta.classList.remove('dragover');
+    const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadFile(f);});
+  window.addEventListener('dragover',e=>e.preventDefault());
+  window.addEventListener('drop',e=>e.preventDefault());
+}
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();const v=s.by_vex||{};
     const k=document.getElementById('kpis');k.innerHTML='';
@@ -818,8 +796,73 @@ async function advisories(){
     document.getElementById('adv-ven').innerHTML=v+'</div>';
   }catch(e){document.getElementById('adv-kpis').innerHTML='<span class="err">advisory data unavailable</span>';}
 }
-stats(); advisories(); yearChart(); sourceAvail();
+if(document.getElementById('kpis'))stats();
+if(document.getElementById('adv-kpis'))advisories();
+if(document.getElementById('year'))yearChart();
+if(document.getElementById('sa-kpis'))sourceAvail();
 </script></body></html>"""
+
+# ---- page content blocks (split across 3 pages) --------------------------
+ANALYZER_HTML = """<div class="card"><div class="row">
+  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
+  <div><label>Deployment exposure</label><br><select id="exp">
+    <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
+    <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
+    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
+    <button class="primary" onclick="run()">Analyze ▶</button>
+    <button onclick="document.getElementById('file').click()">Upload JSON</button>
+    <button onclick="ex()">Example</button>
+    <div id="fname" class="hint" style="margin-top:6px"></div></div>
+</div><div id="out" style="margin-top:12px"></div></div>
+
+<div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
+<p class="hint" style="margin:0 0 8px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
+<div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
+<div id="cmp-body"></div></div>"""
+
+CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
+
+<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
+<div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
+<div id="adv-year" style="margin-top:14px"></div>
+<div id="adv-ven" style="margin-top:14px"></div></div>
+
+<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
+<div id="year" style="margin-top:12px">loading…</div></div>"""
+
+COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
+<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
+<div id="sa-kpis" class="kpis">loading…</div>
+<div id="sa-charts" style="margin-top:16px"></div>
+<div class="satwo" style="margin-top:16px">
+  <div id="sa-vendors"></div>
+  <div id="sa-devtype"></div>
+</div>
+<div id="sa-cwe" style="margin-top:16px"></div></div>"""
+
+PAGES = {
+    "analyzer": ("SBOM → VEX Analyzer", ANALYZER_HTML),
+    "corpus": ("Corpus statistics", CORPUS_HTML),
+    "collectable": ("Source-collectable CVEs", COLLECTABLE_HTML),
+}
+_NAV = [("analyzer", "index.html", "Analyzer"),
+        ("corpus", "corpus.html", "Corpus"),
+        ("collectable", "collectable.html", "Collectable CVEs")]
+
+
+def nav_html(active):
+    tabs = "".join(
+        f'<a class="navtab{" on" if key == active else ""}" href="{href}">{label}</a>'
+        for key, href, label in _NAV)
+    return f'<div class="nav">{tabs}</div>'
+
+
+def make_page(active):
+    _sub, content = PAGES[active]
+    return (FRONTEND_TEMPLATE
+            .replace("__NAV__", nav_html(active))
+            .replace("__CONTENT__", content))
 
 
 app = build_app()
