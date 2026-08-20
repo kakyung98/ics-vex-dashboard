@@ -171,6 +171,7 @@ class Store:
                 ven_cves[_norm_vendor(r.get("vendor"))].add(cve)
                 dtype_cves[_device_type(r.get("device"))].add(cve)
         sev_norm = lambda s: s if s in ("critical", "high", "medium", "low") else "unrated"
+        _cwe_ctr = Counter(w.get("cwe") for w in a_worst.values() if w.get("cwe"))
         self.tier_a = {
             "total_cves": len(a_worst),
             "code_collected": sum(1 for w in a_worst.values() if w.get("has_code_pair")),
@@ -180,7 +181,10 @@ class Store:
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
             "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
             "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
-                        Counter(w.get("cwe") for w in a_worst.values() if w.get("cwe")).most_common(10)],
+                        _cwe_ctr.most_common(10)],
+            "cwe_other": {"count": sum(_cwe_ctr.values()) - sum(n for _, n in _cwe_ctr.most_common(10)),
+                          "types": max(0, len(_cwe_ctr) - 10)},
+            "cwe_none": sum(1 for w in a_worst.values() if not w.get("cwe")),
             "top_vendors": [{"vendor": v, "count": len(cs)} for v, cs in
                             sorted(ven_cves.items(), key=lambda kv: -len(kv[1]))[:8]],
             "device_types": [{"type": t, "count": len(cs)} for t, cs in
@@ -414,8 +418,8 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
 .yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
 </style></head><body><div class="wrap">
-<div class="eyebrow">ICS-VEX</div>
-<h1>SBOM → CVE → VEX</h1>
+<div class="eyebrow">System Security Research Center</div>
+<h1>ICS-VEXForge</h1>
 
 <div class="card"><div class="row">
   <div><label>CycloneDX SBOM (JSON)</label><textarea id="sbom" placeholder='{"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
@@ -550,11 +554,15 @@ async function sourceAvail(){
       '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t,'vex','source_available',{LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under inv'})+'</div>'+
       '<div class="chart"><div class="ct">Severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
       '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
-    let cwe='<div class="ct">Top CWE types <span class="hint">click to list CVEs</span></div><div class="cwe">';
+    let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · 132 collectable CVEs total</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
     for(const x of s.top_cwe)cwe+='<div class="cwerow clk" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
       '<span><span class="mono">'+x.cwe+'</span><span class="cwename">'+esc(x.name||'')+'</span></span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
+    if(s.cwe_other&&s.cwe_other.count)cwe+='<div class="cwerow"><span class="hint">Other ('+s.cwe_other.types+' more types)</span>'+
+      '<span class="cwebar"><i style="width:'+(100*s.cwe_other.count/mx)+'%;background:var(--ink3)"></i></span><b>'+s.cwe_other.count+'</b></div>';
+    if(s.cwe_none)cwe+='<div class="cwerow clk" onclick="openCves(\\'cwe\\',\\'\\',\\'source_available\\',\\'CVEs with no CWE assigned\\')"><span class="hint">No CWE assigned</span>'+
+      '<span class="cwebar"><i style="width:'+(100*s.cwe_none/mx)+'%;background:var(--ink3)"></i></span><b>'+s.cwe_none+'</b></div>';
     document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
     // top vendors
     let vn='<div class="ct">Top vendors <span class="hint">click to list CVEs</span></div><div class="cwe">';
