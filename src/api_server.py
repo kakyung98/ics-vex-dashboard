@@ -476,7 +476,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
 .yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
 </style></head><body><div class="wrap">
-<div class="brand"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
+<div class="eyebrow" style="color:#37b24d">System Security Research Center</div>
 <h1>ICS-VEXForge</h1>
 
 <div class="card"><div class="row">
