@@ -370,6 +370,9 @@ def vex_for_sbom(sbom, exposure=None):
                 "cve": cv["id"], "component": comp["name"], "version": ver or "(unpinned)",
                 "version_pinned": pinned, "severity": cv.get("sev", ""),
                 "cvss": cv.get("cvss"),
+                "source_collectable": bool(
+                    STORE.cve_index.get(cv["id"], {}).get("source_available")
+                    or cv["id"] in STORE.pairs),
                 "av": av, "kev": bool(cv.get("kev")), "epss": cv.get("epss"),
                 "exposure": exp, "reachability": reach, "has_code_pair": has_pair,
                 "final_vex": status, "justification": just, "basis": basis,
@@ -534,10 +537,6 @@ def build_app():
     def collectable():
         return make_page("collectable")
 
-    @app.get("/tree.html", response_class=HTMLResponse)
-    def tree():
-        return make_page("tree")
-
     return app
 
 
@@ -554,18 +553,29 @@ FRONTEND_TEMPLATE = """<!doctype html><html lang="en"><head><meta charset="utf-8
 --line:#25333c;--accent:#38ccd9;--aff:#e5675c;--safe:#43be7c;--und:#e0b24c;
 --mono:ui-monospace,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px}
-.wrap{max-width:1560px;margin:0 auto;padding:34px clamp(20px,4vw,56px) 72px}
+.layout{display:grid;grid-template-columns:236px minmax(0,1fr);max-width:1720px;margin:0 auto;min-height:100vh}
+.side{border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;align-self:start;height:100vh;overflow:auto}
+.main{padding:28px clamp(18px,3vw,48px) 64px;min-width:0}
+.side-brand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+.side-brand .ssrc{width:44px;height:44px;flex:none}
+.sb-title{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.sb-sub{font-size:11px;color:#37b24d;font-weight:600;line-height:1.2;margin-top:1px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.side{position:static;height:auto;border-right:none;border-bottom:1px solid var(--line)}}
 .eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent)}
 h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-width:80ch;font-size:16px}
 h3{font-size:18px}.hint{font-size:13px}
-.nav{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0 6px;border-bottom:1px solid var(--line)}
-.navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 18px;border-radius:8px 8px 0 0;border:1px solid transparent;border-bottom:none;margin-bottom:-1px}
-.navtab:hover{color:var(--ink)}
-.navtab.on{color:var(--accent);background:var(--card);border-color:var(--line);border-bottom:1px solid var(--card)}
+.nav{display:flex;flex-direction:column;gap:3px;margin-top:20px}
+.nav .navlabel{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-weight:700;margin:14px 8px 4px}
+.navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 14px;border-radius:9px;border:1px solid transparent}
+.navtab:hover{color:var(--ink);background:var(--card2)}
+.navtab.on{color:var(--accent);background:var(--card2);border-color:var(--line)}
+@media(max-width:860px){.nav{flex-direction:row;flex-wrap:wrap}.nav .navlabel{display:none}}
 .treepath{display:grid;gap:6px}.treestep{font-size:14px;color:var(--ink2);padding:8px 12px;background:var(--card2);border-radius:8px;border-left:3px solid var(--accent)}
 .treestep b{color:var(--ink)}
 .treeq{margin-top:16px;padding:16px;border:1px solid var(--accent);border-radius:10px;background:color-mix(in srgb,var(--accent) 7%,transparent)}
 .treeres{margin-top:16px;padding:18px;border:2px solid var(--line);border-radius:12px;background:var(--card2)}
+.treebtn{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:7px;border:1px solid var(--und);background:transparent;color:var(--und);cursor:pointer;white-space:nowrap}
+.treebtn:hover{background:color-mix(in srgb,var(--und) 15%,transparent)}
 a{color:var(--accent)}.row{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end}
 @media(max-width:640px){.row{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:20px}
@@ -613,15 +623,18 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .yval{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-bottom:4px;white-space:nowrap}
 .ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
 .yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
-</style></head><body><div class="wrap">
-<div class="eyebrow" style="color:#37b24d">System Security Research Center</div>
-<h1>ICS-VEXForge</h1>
-
-__NAV__
+</style></head><body><div class="layout">
+<aside class="side">
+  <div class="side-brand"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text></svg>
+  <div><div class="sb-title">ICS-VEXForge</div><div class="sb-sub">System Security Research Center</div></div></div>
+  __NAV__
+</aside>
+<main class="main">
 __CONTENT__
-
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
+</main>
+</div>
 
 <div class="ov" id="ov" onclick="if(event.target===this)closeCves()"><div class="modal">
   <div class="mh"><h3 id="mtitle">Related CVEs</h3><button class="xbtn" onclick="closeCves()">✕ Close</button></div>
@@ -644,13 +657,16 @@ async function run(){
   const bv=d.summary.by_vex||{};
   let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
-  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
+    const nextcol = f.source_collectable
+      ? '<span class="hint">source available &middot; code VEX</span>'
+      : '<button class="treebtn" onclick="treeForCve(\\''+f.cve+'\\',\\''+(f.av||'N')+'\\')">Decide via tree &rarr;</button>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity||'—'))+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
-      +'<td class="mono hint">'+f.reachability+'</td></tr>';}
+      +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
 }
 let _lastSbom=null,_lastExp=null;
@@ -832,17 +848,22 @@ function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;
     if(Array.isArray(target))return{status:target[0],justification:target[1],path:path,complete:true};
     nid=target;}}
 let _treeAns={};
-function treeStart(){_treeAns={_pre:1};_treeAns={};treeStep();}
+function treeStart(){_treeAns={};treeStep();}
 function treeAnswer(v){const r=classifyTree(document.getElementById('tree-av').value,_treeAns);if(r.pending)_treeAns[r.pending]=v;treeStep();}
+// launched from a source-uncollectable CVE in the SBOM results: affected-range=yes,
+// source-obtainable=no are known, so jump straight into the AV branch.
+function treeForCve(cve,av){const sel=document.getElementById('tree-av');if(sel&&av&&['N','A','L','P'].includes(av))sel.value=av;
+  _treeAns={affected_range:true,source_check:false};treeStep();
+  const el=document.getElementById('vextree');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}
 function treeStep(){const av=document.getElementById('tree-av').value;const r=classifyTree(av,_treeAns);
   let h='<div class="treepath">';
-  for(const p of r.path){const ans=(p.answer===true)?'예':(p.answer===false)?'아니오':esc(p.answer);
+  for(const p of r.path){const ans=(p.answer===true)?'Yes':(p.answer===false)?'No':esc(p.answer);
     h+='<div class="treestep">'+esc(p.q)+' → <b>'+ans+'</b></div>';}
   h+='</div>';
   if(r.complete){const st=r.status;const col=st==='not_affected'?'var(--safe)':(st==='under_investigation'?'var(--und)':'var(--accent)');
     h+='<div class="treeres" style="border-color:'+col+'"><div style="font-size:22px;font-weight:800;color:'+col+'">'+esc(st)+'</div><div class="mono" style="font-size:15px;margin-top:4px">'+esc(r.justification||'')+'</div></div>';}
   else if(r.pending){h+='<div class="treeq"><div class="ct" style="font-size:16px;margin-bottom:10px">'+esc(r.question)+'</div>'
-    +'<button class="primary" onclick="treeAnswer(true)">예 (Yes)</button> <button onclick="treeAnswer(false)">아니오 (No)</button></div>';}
+    +'<button class="primary" onclick="treeAnswer(true)">Yes</button> <button onclick="treeAnswer(false)">No</button></div>';}
   else{h+='<div class="hint">'+esc(r.justification||'')+'</div>';}
   document.getElementById('tree-body').innerHTML=h;}
 
@@ -891,32 +912,38 @@ COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source-code c
 </div>
 <div id="sa-cwe" style="margin-top:16px"></div></div>"""
 
-TREE_HTML = """<div class="card">
-<h3 style="margin:0 0 4px">VEX decision tree — source-code-uncollectable CVEs</h3>
-<p class="hint" style="margin:0 0 12px">폐쇄 펌웨어 등 소스 확보가 불가한 CVE의 VEX를 <b>운영 컨텍스트 + CVSS 공격 벡터</b>로 판정한다. 공격 벡터를 고르고 각 질문에 예/아니오로 답하면 결정트리를 따라 판정에 도달한다.</p>
+TREE_HTML = """<div class="card" id="vextree">
+<h3 style="margin:0 0 4px">VEX decision tree &mdash; source-code-uncollectable CVEs</h3>
+<p class="hint" style="margin:0 0 12px">For CVEs whose source cannot be obtained (e.g. closed firmware), VEX is decided from <b>operational context + the CVSS attack vector</b>. Pick the attack vector and answer each question Yes/No to walk the tree to a verdict.</p>
 <div class="hint" style="margin:0 0 12px">CVSS Attack Vector
   <select id="tree-av"><option value="N">N — Network</option><option value="A">A — Adjacent</option><option value="L">L — Local</option><option value="P">P — Physical</option></select>
   <button class="primary" onclick="treeStart()" style="margin-left:8px">Start ▶</button>
   <button onclick="treeStart()">Reset</button></div>
-<div id="tree-body"><span class="hint">Start 를 눌러 시작하세요.</span></div></div>"""
+<div id="tree-body"><span class="hint">Press Start to begin, or click &ldquo;Decide via tree&rdquo; on a source-uncollectable CVE above.</span></div></div>"""
 
+# Analyzer + VEX decision tree live on one page (one flow: SBOM -> source-available
+# CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
+_ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">SBOM &rarr; VEX Analyzer</h1>'
+                  '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
+                  'Source-available CVEs are judged directly; source-uncollectable CVEs continue into '
+                  'the decision tree below.</p>' + ANALYZER_HTML + "\n" + TREE_HTML)
 PAGES = {
-    "analyzer": ("SBOM → VEX Analyzer", ANALYZER_HTML),
-    "corpus": ("Corpus statistics", CORPUS_HTML),
-    "collectable": ("Source-collectable CVEs", COLLECTABLE_HTML),
-    "tree": ("VEX decision tree", TREE_HTML),
+    "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
+    "corpus": ("Corpus statistics",
+               '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
+    "collectable": ("Source-collectable CVEs",
+                    '<h1 style="margin:0 0 18px">Source-collectable CVEs</h1>' + COLLECTABLE_HTML),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
         ("corpus", "corpus.html", "Corpus"),
-        ("collectable", "collectable.html", "Collectable CVEs"),
-        ("tree", "tree.html", "VEX Tree")]
+        ("collectable", "collectable.html", "Collectable CVEs")]
 
 
 def nav_html(active):
     tabs = "".join(
         f'<a class="navtab{" on" if key == active else ""}" href="{href}">{label}</a>'
         for key, href, label in _NAV)
-    return f'<div class="nav">{tabs}</div>'
+    return f'<nav class="nav"><div class="navlabel">Menu</div>{tabs}</nav>'
 
 
 def make_page(active):
