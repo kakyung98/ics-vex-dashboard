@@ -23,74 +23,74 @@ TREE = {
     "start": "affected_range",
     "nodes": {
         "affected_range": {
-            "q": "CVE 영향 범위 포함 여부",
+            "q": "Is the component within the CVE's affected range?",
             "no": [NOT_AFFECTED, "code_not_reachable"],
             "yes": "source_check",
         },
         "source_check": {
-            "q": "소스코드 확보 가능 여부",
-            "yes": [ROUTE, "ICS-VEXForge 방법론으로 전환"],
+            "q": "Can the vulnerable source code be obtained?",
+            "yes": [ROUTE, "Switch to the ICS-VEXForge (code-based) methodology"],
             "no": "av_split",
         },
         "av_split": {
-            "q": "CVE 공격 벡터 (CVSS AV)",
+            "q": "CVE attack vector (CVSS AV)",
             "branch": {"network": "net_reach", "local": "loc_priv", "physical": "phy_access"},
         },
-        # --- 네트워크 접근 (AV: N, A) ---
+        # --- Network access (AV: N, A) ---
         "net_reach": {
-            "q": "도달성: 관측된 노출 경로로 서비스 도달 가능 여부",
+            "q": "Reachability: is the service reachable via an observed exposure path?",
             "no": [NOT_AFFECTED, "protected_at_perimeter"],
             "yes": "net_exec",
         },
         "net_exec": {
-            "q": "실행 활성: 취약 코드가 실행되는 서비스 도달 활성 여부",
+            "q": "Execution active: is the service running the vulnerable code active?",
             "no": [NOT_AFFECTED, "code_not_reachable"],
             "yes": "net_mit",
         },
         "net_mit": {
-            "q": "완화 통제 여부: 경로 차단 여부 (세그멘테이션 방화벽·인증 등)",
+            "q": "Mitigating control: is the path blocked? (segmentation, firewall, auth)",
             "no": [NOT_AFFECTED, "protected_by_mitigating_control"],
             "yes": "net_impact",
         },
         "net_impact": {
-            "q": "고영향 자산 여부 (안전기능·공정 영향)",
+            "q": "High-impact asset? (safety function / process impact)",
             "no": [UNDER_INV, "likely_affected_medium"],
             "yes": [UNDER_INV, "likely_affected_high"],
         },
-        # --- 로컬 접근 (AV: L) ---
+        # --- Local access (AV: L) ---
         "loc_priv": {
-            "q": "권한-상호작용: 로컬 접근·필요 권한 확보 가능 여부",
+            "q": "Privilege/interaction: can local access and the required privilege be obtained?",
             "no": [NOT_AFFECTED, "requires_environment"],
             "yes": "loc_exec",
         },
         "loc_exec": {
-            "q": "실행 활성: 취약 코드 경로 활성 여부",
+            "q": "Execution active: is the vulnerable code path active?",
             "no": [NOT_AFFECTED, "code_not_reachable"],
             "yes": "loc_mit",
         },
         "loc_mit": {
-            "q": "완화 통제: 계정·상호작용 통제 여부 (최소권한·서명)",
+            "q": "Mitigating control: account/interaction controls? (least privilege, signing)",
             "no": [NOT_AFFECTED, "protected_by_mitigating_control"],
             "yes": "loc_impact",
         },
         "loc_impact": {
-            "q": "고영향 자산 여부 (안전기능·공정 영향)",
+            "q": "High-impact asset? (safety function / process impact)",
             "no": [UNDER_INV, "likely_affected_medium"],
             "yes": [UNDER_INV, "likely_affected_high"],
         },
-        # --- 물리적 접근 (AV: P) ---
+        # --- Physical access (AV: P) ---
         "phy_access": {
-            "q": "물리 접근 통제: 포트·매체 접근 차단 여부",
+            "q": "Physical access control: are ports/media blocked?",
             "no": [NOT_AFFECTED, "protected_at_perimeter"],
             "yes": "phy_config",
         },
         "phy_config": {
-            "q": "구성: 탈착 매체·유지보수 포트 활성 구성 여부",
+            "q": "Configuration: are removable media / maintenance ports enabled?",
             "no": [NOT_AFFECTED, "requires_configuration"],
             "yes": "phy_impact",
         },
         "phy_impact": {
-            "q": "고영향 자산 여부 (안전기능·공정 영향)",
+            "q": "High-impact asset? (safety function / process impact)",
             "no": [UNDER_INV, "likely_affected_medium"],
             "yes": [UNDER_INV, "likely_affected_high"],
         },
