@@ -19,9 +19,12 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 > 로컬 모델([`tools/serve_poc_llm.py`](tools/serve_poc_llm.py))로 라우팅해 우회한다. 상세는
 > 아래 [하이브리드 실행 재현](#하이브리드-정적-트리아지--실행-재현) 절.
 
-> **🔗 라이브 대시보드**: https://kakyung98.github.io/ics-vex-dashboard/
-> SBOM을 올려 CVE·VEX를 즉석 분석 + 시스템 평가 결과 시각화 (브라우저 내 처리)
-> · [파이프라인 뷰](https://kakyung98.github.io/ics-vex-dashboard/pipeline.html) — 정적 분포·소스 라우팅·재현 후보
+> **🔗 라이브 대시보드 (ICS-VEXForge)**: https://kakyung98.github.io/ics-vex-dashboard/
+> SBOM을 올려(붙여넣기·업로드·드래그) CVE·VEX 즉석 분석 + 코퍼스 통계 시각화 (전부 브라우저 내 처리).
+> **3페이지 탭 구성**:
+> - [Analyzer](https://kakyung98.github.io/ics-vex-dashboard/index.html) — SBOM→VEX + CPE 정규화(Ratcliff–Obershelp) 비교
+> - [Corpus](https://kakyung98.github.io/ics-vex-dashboard/corpus.html) — Target CVE·CISA 어드바이저리·연도별 통계
+> - [Collectable CVEs](https://kakyung98.github.io/ics-vex-dashboard/collectable.html) — 소스 수집가능 CVE(CWE/벤더/장비, 클릭 드릴다운)
 
 ---
 
@@ -76,14 +79,14 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | **전 코퍼스 정적 스윕** | `src/vex_batch.py` | `results/vex_batch.jsonl` + `_summary.json` (source_class 분류) |
 | **재현 후보 export (브리지)** | `tools/export_genie_candidates.py` | `results/genie_candidates.json` |
 | **로컬 PoC 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (CVE-Genie Exploiter 라우팅용) |
-| **파이프라인 웹페이지 생성** | `tools/build_pipeline_page.py` | `pipeline.html` |
+| **동적 REST API 서비스** | `src/api_server.py` | FastAPI (SBOM→VEX·CPE 정규화·통계·드릴다운) |
+| **정적 사이트 생성 (3페이지)** | `tools/build_site.py` | `index.html`·`corpus.html`·`collectable.html` + 데이터 JSON |
 | ~~검증 스펙/실행 검증~~ (격리) | `archive/*` | 과거 `results/exec_verification*.json` (역사적 근거로만 유지) |
 | **Ground Truth (증거 계층)** | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | SecureBERT 학습·평가 | `src/train_eval_vex.py` | `results/metrics.json` |
 | **SecureBERT ICS 도메인 적응(DAPT)** | `src/train_securebert_dapt.py` | `models/ics-securebert/`, `results/dapt_metrics.json` |
 | **CodeBERT 코드 leg 검증** | `src/train_codebert.py`, `src/eval_two_model.py` | `results/two_model_metrics.json` |
 | **CodeBERT 취약탐지 파인튜닝** | `src/train_codebert_finetune.py` | `models/codebert-vuln/` |
-| 대시보드 생성 | `tools/build_dashboard.py` | `index.html` |
 
 > **라이브 판정 vs 학습 데이터**: 라이브 SBOM→VEX 판정은 `src/vex_pipeline.py` 가
 > 정적분석으로 수행한다(실행 없음, 신규 확정 tier = `static-analysis-verified`).
@@ -175,29 +178,35 @@ LOCAL_LLM_MODELS=local-poc=ics-vex-poc-sllm EXPLOITER_MODEL=local-poc \
 > Exploit Critic 이 요구하는 실행-증거 수준을 만족 못 해 재현은 실패 — 16GB→7B 능력 한계.
 > 실제 재현엔 Exploiter 를 클라우드 32~70B 로 올리는 것이 유일한 길(라우팅은 env 만 교체).
 
-## 동적 REST API 서비스
+## 웹 콘솔 — ICS-VEXForge
 
-GitHub Pages 는 정적이라 REST·라이브 실행이 불가하다. 이를 위한 **동적 백엔드**가
-[`src/api_server.py`](src/api_server.py) (FastAPI) — 코퍼스 통계·재현 후보를 REST 로 제공하고,
-업로드한 SBOM 을 **라이브로 VEX 판정**한다(결정론 정적 leg, GPU 불필요라 즉시 기동).
+두 가지 형태로 동일한 콘솔을 제공한다.
+
+- **정적 사이트 (GitHub Pages)** — `tools/build_site.py` 가 코퍼스를 동일-출처 JSON 으로
+  구워 `index.html`·`corpus.html`·`collectable.html` 3페이지를 생성한다. SBOM→VEX 계산과
+  CVE 드릴다운, CPE 정규화(Ratcliff–Obershelp)까지 **전부 브라우저 안에서** 돈다(백엔드 불필요).
+- **동적 REST 서비스 (로컬)** — [`src/api_server.py`](src/api_server.py) (FastAPI). 같은 UI 를
+  라이브 REST 로 서빙하고 Swagger 문서를 자동 제공한다.
 
 ```bash
 pip install fastapi uvicorn
-python src/api_server.py --port 8100      # http://127.0.0.1:8100  (docs: /docs)
+python src/api_server.py --port 8100   # localhost:8100 (docs: /docs) · 0.0.0.0 바인딩=LAN 접속
+python tools/build_site.py             # 정적 3페이지 + 데이터 JSON 재생성 → GitHub Pages 푸시
 ```
 
-| 엔드포인트 | 설명 |
+| 페이지 / 엔드포인트 | 설명 |
 |---|---|
-| `GET /` | 인터랙티브 웹 콘솔 (SBOM→VEX + 코퍼스 통계) |
+| `GET /` · `/corpus.html` · `/collectable.html` | 3페이지 탭 콘솔 (Analyzer / Corpus / Collectable) |
 | `GET /docs` | **Swagger UI** (자동 REST 문서) |
-| `GET /api/summary` | 전 코퍼스 정적 VEX 요약 (verdict/tier/source_class) |
+| `GET /api/summary` · `/api/source_available` · `/api/by_year` · `/api/advisories` | 코퍼스 통계 (CVE 단위) |
 | `GET /api/candidates?status=ready&top=15` | 재현 후보 |
-| `GET /api/findings/{cve}` | 단일 CVE 정적 판정 |
+| `GET /api/cves?dim=cwe&value=CWE-416&scope=source_available` | 드릴다운 (그래프 클릭 → 관련 CVE) |
 | `POST /api/vex` | `{sbom, exposure}` → 컴포넌트별 CVE + 라이브 VEX |
+| `POST /api/vex_compare` | **CPE 정규화(Ratcliff–Obershelp) vs 정확매칭 CVE 비교** |
 
-정적 Pages(대시보드·파이프라인 뷰)는 그대로 두고, 이 서비스는 별도 포트에서 동적으로 돈다.
-배포는 Python 이 도는 어디든 가능하다(VPS·Render·Railway 등). 전체 3-모델 경로가 필요하면
-`src/vex_pipeline.py`(SecureBERT+CodeBERT+sLLM)를 쓴다.
+주요 기능: SBOM 붙여넣기·업로드·드래그, **Severity 대신 CVSS v3 점수** 표시, 통계 그래프
+클릭 시 관련 CVE 목록(NVD 링크). 배포는 Python 이 도는 어디든 가능(VPS·Render·Railway).
+전체 3-모델 라이브 판정이 필요하면 `src/vex_pipeline.py`(SecureBERT+CodeBERT+sLLM)를 쓴다.
 
 ## 도메인 적응 (모델 튜닝)
 
@@ -228,7 +237,7 @@ python src/train_eval_vex.py              # SecureBERT 맥락 leg (GPU 권장)
 python src/eval_two_model.py              # CodeBERT 코드 leg (tier A 만)
 python src/train_securebert_dapt.py       # ICS 도메인 적응
 python src/train_codebert_finetune.py     # CodeBERT 취약탐지 파인튜닝
-python tools/build_dashboard.py           # 대시보드
+python tools/build_site.py                # 정적 웹 콘솔 3페이지 생성 (GitHub Pages)
 ```
 
 ## 한계
