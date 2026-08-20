@@ -76,6 +76,13 @@ class Store:
             w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
             cve_worst[cve] = w["final_vex"]
             cve_tier[cve] = w.get("evidence_tier")
+        # unique CVE count by CVE-ID year
+        yr = Counter()
+        for cve in cve_worst:
+            parts = cve.split("-")
+            if len(parts) >= 2 and parts[1].isdigit():
+                yr[int(parts[1])] += 1
+        self.by_year = {str(y): yr[y] for y in sorted(yr)}
         self.cve_level = {
             "total_cves": len(cve_worst),
             "by_vex": dict(Counter(cve_worst.values())),
@@ -185,6 +192,13 @@ def build_app():
             raise HTTPException(404, "run src/vex_batch.py first")
         return STORE.cve_level
 
+    @app.get("/api/by_year")
+    def by_year():
+        """Unique CVE count by CVE-ID year (all 11,336)."""
+        if not STORE.by_year:
+            raise HTTPException(404, "run src/vex_batch.py first")
+        return {"total_cves": sum(STORE.by_year.values()), "by_year": STORE.by_year}
+
     @app.get("/api/source_available")
     def source_available():
         """Stats for the source-code-collectable (tier-A) CVEs — the '132'."""
@@ -263,6 +277,11 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .cwe{display:grid;gap:5px}.cwerow{display:grid;grid-template-columns:110px 1fr 28px;align-items:center;gap:8px;font-size:12px}
 .cwebar{background:var(--card2);border-radius:5px;height:12px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .cwerow b{text-align:right;font-family:var(--mono)}
+.ybars{display:flex;align-items:flex-end;gap:4px;height:170px;overflow-x:auto;padding-top:4px}
+.ycol{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.yval{font-family:var(--mono);font-size:10px;color:var(--ink2);margin-bottom:3px;white-space:nowrap}
+.ybar{width:80%;background:var(--accent);border-radius:4px 4px 0 0;min-height:3px}
+.yr{font-family:var(--mono);font-size:10px;color:var(--ink3);margin-top:5px}
 </style></head><body><div class="wrap">
 <div class="eyebrow">ICS-VEX</div>
 <h1>SBOM → CVE → VEX</h1>
@@ -272,14 +291,21 @@ th{font-size:11px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <div><label>Deployment exposure</label><br><select id="exp">
     <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
     <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
-    <br><br><button class="primary" onclick="run()">Analyze ▶</button> <button onclick="ex()">Example</button></div>
+    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
+    <button class="primary" onclick="run()">Analyze ▶</button>
+    <button onclick="document.getElementById('file').click()">Upload JSON</button>
+    <button onclick="ex()">Example</button>
+    <div id="fname" class="hint" style="margin-top:6px"></div></div>
 </div><div id="out" style="margin-top:12px"></div></div>
 
 <div class="card"><h3 style="margin:0 0 8px">Corpus by CVE</h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> · full view:
 <a href="https://kakyung98.github.io/ics-vex-dashboard/pipeline.html" target="_blank">pipeline.html</a></p></div>
 
-<div class="card"><h3 style="margin:0 0 4px">Source-available CVEs <span class="hint">tier A · code-collectable</span></h3>
+<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
+<div id="year" style="margin-top:12px">loading…</div></div>
+
+<div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
 <p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
 <div id="sa-kpis" class="kpis">loading…</div>
 <div id="sa-charts" style="margin-top:16px"></div>
@@ -309,7 +335,21 @@ async function run(){
   o.innerHTML=h+'</tbody></table>';
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
-  components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);}
+  components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
+  document.getElementById('fname').textContent='';}
+document.getElementById('file').addEventListener('change',function(e){
+  const f=e.target.files[0];if(!f)return;
+  const fn=document.getElementById('fname');fn.textContent='reading '+f.name+'…';
+  const rd=new FileReader();
+  rd.onload=function(){
+    try{JSON.parse(rd.result);}catch(err){fn.innerHTML='<span class="err">'+f.name+' is not valid JSON</span>';return;}
+    document.getElementById('sbom').value=rd.result;
+    fn.textContent='loaded '+f.name+' — analyzing…';
+    run();
+  };
+  rd.readAsText(f);
+  e.target.value='';   // allow re-selecting the same file
+});
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();const v=s.by_vex||{};
     const k=document.getElementById('kpis');k.innerHTML='';
@@ -333,7 +373,7 @@ async function sourceAvail(){
   try{const s=await(await fetch('/api/source_available')).json();
     const t=s.total_cves;
     document.getElementById('sa-kpis').innerHTML=
-      '<div class="kpi"><b>'+t+'</b><span>tier-A CVEs</span></div>'+
+      '<div class="kpi"><b>'+t+'</b><span>collectable CVEs</span></div>'+
       '<div class="kpi"><b style="color:var(--safe)">'+s.code_collected+'</b><span>code collected</span></div>'+
       '<div class="kpi"><b style="color:var(--und)">'+s.pending_collection+'</b><span>pending collection</span></div>'+
       '<div class="kpi"><b style="color:var(--aff)">'+s.kev+'</b><span>KEV</span></div>';
@@ -348,7 +388,23 @@ async function sourceAvail(){
     document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
-stats(); sourceAvail();
+async function yearChart(){
+  try{const s=await(await fetch('/api/by_year')).json();const y=s.by_year;
+    const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
+    const pre=keys.filter(k=>k<2010).reduce((a,k)=>a+y[k],0);
+    const show=keys.filter(k=>k>=2010);
+    const mx=Math.max(...show.map(k=>y[k]));
+    let h='<div class="ybars">';
+    for(const k of show){const c=y[k];const hp=Math.max(4,100*c/mx);
+      h+='<div class="ycol"><div class="yval">'+c.toLocaleString()+'</div>'
+       +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+'"></div>'
+       +'<div class="yr">’'+String(k).slice(2)+'</div></div>';}
+    h+='</div><div class="hint" style="margin-top:8px">'+s.total_cves.toLocaleString()
+      +' CVEs total'+(pre?' · '+pre+' before 2010 (not shown)':'')+'</div>';
+    document.getElementById('year').innerHTML=h;
+  }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
+}
+stats(); yearChart(); sourceAvail();
 </script></body></html>"""
 
 

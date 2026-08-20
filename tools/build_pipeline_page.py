@@ -78,8 +78,8 @@ TIER_LABEL = {"static-reasoned": "static-reasoned", "under-investigation": "unde
 SC_META = {
     "code-available": ("Code available", "vuln/patched pair collected — CodeBERT diff + "
                        "reproduction-eligible", "var(--safe)"),
-    "oss-attributed": ("OSS, no code yet", "OSS-attributed (tier A/C) — promotable once "
-                       "code is collected", "var(--under)"),
+    "oss-attributed": ("OSS, no code yet", "open-source but code not collected yet — "
+                       "promotable once code is collected", "var(--under)"),
     "vendor-proprietary": ("Vendor firmware", "closed source — never reproducible, static "
                            "verdict only", "var(--ink-3)"),
 }
