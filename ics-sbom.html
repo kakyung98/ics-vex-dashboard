@@ -78,7 +78,9 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .cright{color:var(--ink3);font-size:13px}
 .cwebar{background:var(--card2);border-radius:5px;height:15px;overflow:hidden}.cwebar>i{display:block;height:100%;background:var(--accent);border-radius:5px}
 .cwerow b{text-align:right;font-family:var(--mono)}
-.clk{cursor:pointer}.clk:hover{opacity:.8}
+.clk{cursor:pointer}
+.vexf{display:block;margin:9px 0}.vexf>span{display:block;margin-bottom:3px}.vexf input,.vexf select{width:100%}
+.vexset .badge{outline:2px solid var(--accent)}.clk:hover{opacity:.8}
 .cwename{color:var(--ink3);font-size:12px;margin-left:6px}
 /* drill-down modal */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:40px 16px;overflow:auto}
@@ -152,7 +154,7 @@ async function run(){
       ? '<span class="hint">source available &middot; code VEX</span>'
       : '<button class="treebtn" onclick="treeForCve(\''+f.cve+'\',\''+(f.av||'N')+'\')">Decide via tree &rarr;</button>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
-      +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
+      +'<td id="vexcell-'+f.cve+'"><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span> <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\''+f.cve+'\')">✎ VEX</button></td>'
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
@@ -343,6 +345,11 @@ function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;
 // each walked independently (pre-seeded affected-range=yes, source-obtainable=no).
 let _treeState={};
 let _lastVex=null;
+let _vexFields={};   // cve -> {status, justification, remediation, action_statement, fixed_version, patch_reference, verification_result, investigation_progress, missing_evidence, planned_update}
+const VEX_JUST=[['component_not_present','Component not present'],['vulnerable_code_not_present','Vulnerable code not present'],['vulnerable_code_not_in_execute_path','Vulnerable code not in execute path'],['vulnerable_code_cannot_be_controlled_by_adversary','Vulnerable code cannot be controlled by adversary'],['inline_mitigations_already_exist','Inline mitigations already exist']];
+const VEX_REMED=[['patch_or_firmware_upgrade','Patch or firmware upgrade'],['temporary_mitigation','Temporary mitigation'],['feature_disablement','Feature disablement'],['network_access_restriction','Network access restriction']];
+const VEX_STATUSES=[['affected','affected'],['not_affected','not_affected'],['fixed','fixed'],['under_investigation','under_investigation']];
+function _remedCsaf(r){return {patch_or_firmware_upgrade:'vendor_fix',temporary_mitigation:'mitigation',feature_disablement:'workaround',network_access_restriction:'mitigation'}[r]||'mitigation';}
 function _canonStatus(s){s=String(s||'');
   if(s==='LIKELY_AFFECTED')return 'affected';
   if(s==='LIKELY_NOT_AFFECTED')return 'not_affected';
@@ -351,8 +358,8 @@ function _canonStatus(s){s=String(s||'');
   if(s==='route_to_icsvexforge')return 'under_investigation';
   if(s.indexOf('likely_affected')===0)return 'affected';
   if(s==='under_investigation')return 'under_investigation';
+  if(s==='fixed')return 'fixed';
   return 'under_investigation';}
-// map our justification tokens -> OpenVEX / CSAF not_affected justification vocab
 function _ovJust(j){j=String(j||'');
   if(/component_not_present/.test(j))return 'component_not_present';
   if(/vulnerable_code_not_present/.test(j))return 'vulnerable_code_not_present';
@@ -360,16 +367,20 @@ function _ovJust(j){j=String(j||'');
   if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
   if(/perimeter|mitigat|protected/.test(j))return 'inline_mitigations_already_exist';
   return 'vulnerable_code_not_in_execute_path';}
+function _autoStatus(cve){
+  const f=(_lastVex&&_lastVex.cves||[]).find(x=>x.cve===cve)||{};
+  let raw=f.final_vex, just=f.justification||'';
+  if(!f.source_collectable && typeof _treeState!=='undefined' && _treeState[cve]){
+    const t=classifyTree(_treeState[cve].av,_treeState[cve].answers);
+    if(t){raw=t.status; just=t.justification||just;}
+  }
+  return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 function _vexRows(){
   const rows=[];
   for(const f of ((_lastVex&&_lastVex.cves)||[])){
-    let raw=f.final_vex, just=f.justification||'', src='reachability';
-    if(!f.source_collectable && typeof _treeState!=='undefined' && _treeState[f.cve]){
-      const t=classifyTree(_treeState[f.cve].av,_treeState[f.cve].answers);
-      if(t){raw=t.status; just=t.justification||just; src='decision-tree'+(t.complete?'':' (incomplete)');}
-    }
-    rows.push({cve:f.cve,status:_canonStatus(raw),justification:just,component:f.component||'',
-               version:f.version||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,source:src});
+    const auto=_autoStatus(f.cve); const ov=_vexFields[f.cve]||{};
+    rows.push(Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,
+      status:auto.status,justification:auto.justification},ov));
   }
   return rows;}
 function _sbomProduct(){
@@ -379,44 +390,74 @@ function _isoNow(){return new Date().toISOString();}
 function _dl(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+function _opt(list,cur){return list.map(o=>'<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>').join('');}
+function _fld(id,label,val){return '<label class="vexf"><span class="hint">'+esc(label)+'</span><input id="'+id+'" class="srch" value="'+esc(val||'')+'"></label>';}
+function openVexEditor(cve){
+  const auto=_autoStatus(cve); const f=Object.assign({},auto,_vexFields[cve]||{});
+  document.getElementById('mtitle').textContent='VEX statement — '+cve;
+  let h='<div class="srch-meta">'+esc(f.component)+' · auto status: <b>'+esc(auto.status)+'</b>'+(auto.cvss!=null?(' · CVSS '+auto.cvss):'')+'</div>';
+  h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\''+cve+'\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';
+  h+='<div id="vf-body">'+_vexEditorBody(cve,f)+'</div>';
+  h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\''+cve+'\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
+  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
+function _vexEditorBody(cve,f){
+  f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
+  const st=f.status;
+  if(st==='not_affected')
+    return '<label class="vexf"><span class="hint">Justification (flags)</span><select id="vf-just" class="srch">'+_opt(VEX_JUST,f.justification&&VEX_JUST.some(j=>j[0]===f.justification)?f.justification:_ovJust(f.justification))+'</select></label>'
+      +_fld('vf-impact','Impact statement (optional)',f.action_statement);
+  if(st==='affected')
+    return '<label class="vexf"><span class="hint">Remediation (action_statement)</span><select id="vf-remed" class="srch">'+_opt(VEX_REMED,f.remediation||'patch_or_firmware_upgrade')+'</select></label>'
+      +_fld('vf-action','Action detail (optional)',f.action_statement);
+  if(st==='fixed')
+    return _fld('vf-fixver','Fixed version',f.fixed_version)+_fld('vf-patch','Patch reference',f.patch_reference)+_fld('vf-verify','Verification result',f.verification_result);
+  return _fld('vf-prog','Investigation progress',f.investigation_progress)+_fld('vf-missing','Missing evidence',f.missing_evidence)+_fld('vf-plan','Planned update',f.planned_update);
+}
+function vexStatusChange(cve){const st=document.getElementById('vf-status').value;const f=Object.assign({},_autoStatus(cve),_vexFields[cve]||{},{status:st});document.getElementById('vf-body').innerHTML=_vexEditorBody(cve,f);}
+function _v(id){const e=document.getElementById(id);return e?e.value.trim():'';}
+function saveVexFields(cve){
+  const st=_v('vf-status'); const o={status:st};
+  if(st==='not_affected'){o.justification=_v('vf-just');o.action_statement=_v('vf-impact');}
+  else if(st==='affected'){o.remediation=_v('vf-remed');o.action_statement=_v('vf-action');}
+  else if(st==='fixed'){o.fixed_version=_v('vf-fixver');o.patch_reference=_v('vf-patch');o.verification_result=_v('vf-verify');}
+  else {o.investigation_progress=_v('vf-prog');o.missing_evidence=_v('vf-missing');o.planned_update=_v('vf-plan');}
+  _vexFields[cve]=o; closeCves();
+  const cell=document.getElementById('vexcell-'+cve); if(cell)cell.classList.add('vexset');
+}
 function exportOpenVex(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
   const p=_sbomProduct(); const pid=p.purl||('pkg:generic/'+encodeURIComponent(p.name));
   const stmts=rows.map(r=>{const st={vulnerability:{name:r.cve},
-      products:[{"@id":pid,identifiers:(p.purl?{purl:p.purl}:undefined)}],
+      products:[Object.assign({"@id":pid},p.purl?{identifiers:{purl:p.purl}}:{})],
       status:r.status};
-    if(r.status==='not_affected'){st.justification=_ovJust(r.justification);st.impact_statement='ICS-VEXForge: '+(r.justification||'not affected')+' (component: '+r.component+')';}
-    if(r.status==='affected')st.action_statement='Review and remediate: apply vendor update or mitigation for '+r.component+'.';
+    if(r.status==='not_affected'){st.justification=r.justification&&VEX_JUST.some(j=>j[0]===r.justification)?r.justification:_ovJust(r.justification);if(r.action_statement)st.impact_statement=r.action_statement;}
+    else if(r.status==='affected'){st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||'Apply vendor update or mitigation for '+r.component+'.');}
+    else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('fixed in '+r.fixed_version);if(r.patch_reference)bits.push('patch: '+r.patch_reference);if(r.verification_result)bits.push('verified: '+r.verification_result);if(bits.length)st.impact_statement=bits.join('; ');}
+    else {const bits=[];if(r.investigation_progress)bits.push('progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('missing: '+r.missing_evidence);if(r.planned_update)bits.push('planned: '+r.planned_update);if(bits.length)st.impact_statement=bits.join('; ');}
     return st;});
-  const doc={"@context":"https://openvex.dev/ns/v0.2.0",
-    "@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/openvex-"+Date.now(),
-    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:_isoNow(),version:1,
-    tooling:"ICS-VEXForge",statements:stmts};
+  const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/openvex-"+Date.now(),
+    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:_isoNow(),version:1,tooling:"ICS-VEXForge",statements:stmts};
   _dl('openvex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
 function exportCsaf(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
   const p=_sbomProduct(); const pid=p.ref||'PRODUCT-1'; const now=_isoNow();
-  const buckets={known_affected:[],known_not_affected:[],under_investigation:[]};
+  const B2C={affected:'known_affected',not_affected:'known_not_affected',fixed:'fixed',under_investigation:'under_investigation'};
   const vulns=rows.map(r=>{
-    const key=r.status==='affected'?'known_affected':(r.status==='not_affected'?'known_not_affected':'under_investigation');
-    const v={cve:r.cve,product_status:{}};v.product_status[key]=[pid];
-    if(r.status==='not_affected')v.flags=[{label:_ovJust(r.justification),product_ids:[pid]}];
-    const notes=[{category:'other',title:'ICS-VEXForge assessment',
-      text:'status='+r.status+'; justification='+(r.justification||'n/a')+'; component='+r.component+'; basis='+r.source+(r.cvss!=null?('; cvss='+r.cvss):'')}];
-    v.notes=notes;
-    if(r.status==='affected')v.remediations=[{category:'vendor_fix',details:'Apply vendor update or mitigation for '+r.component+'.',product_ids:[pid]}];
-    return v;});
-  const doc={document:{category:'csaf_vex',csaf_version:'2.0',
-      title:'ICS-VEXForge VEX — '+p.name,
+    const v={cve:r.cve,product_status:{}};v.product_status[B2C[r.status]]=[pid];
+    const notes=[{category:'other',title:'ICS-VEXForge assessment',text:'status='+r.status+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
+    if(r.status==='not_affected'){const j=r.justification&&VEX_JUST.some(x=>x[0]===r.justification)?r.justification:_ovJust(r.justification);v.flags=[{label:j,product_ids:[pid]}];if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
+    else if(r.status==='affected'){v.remediations=[{category:_remedCsaf(r.remediation),details:(r.action_statement||('Apply '+(r.remediation||'patch_or_firmware_upgrade')+' for '+r.component)),product_ids:[pid]}];}
+    else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('Fixed version: '+r.fixed_version);if(r.patch_reference)bits.push('Patch reference: '+r.patch_reference);if(r.verification_result)bits.push('Verification: '+r.verification_result);if(bits.length)notes.push({category:'details',title:'Fix',text:bits.join(' | ')});if(r.fixed_version)v.remediations=[{category:'vendor_fix',details:'Fixed in '+r.fixed_version+(r.patch_reference?(' ('+r.patch_reference+')'):''),product_ids:[pid]}];}
+    else {const bits=[];if(r.investigation_progress)bits.push('Progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);if(r.planned_update)bits.push('Planned update: '+r.planned_update);if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
+    v.notes=notes; return v;});
+  const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
       publisher:{category:'vendor',name:'ICS-VEXForge (Chonnam SSRC)',namespace:'https://kakyung98.github.io/ics-vex-dashboard/'},
-      tracking:{id:'ICSVEXFORGE-'+Date.now(),status:'final',version:'1',
-        initial_release_date:now,current_release_date:now,
-        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],
-        generator:{engine:{name:'ICS-VEXForge',version:'2026.04'}}}},
-    product_tree:{full_product_names:[Object.assign({product_id:pid,name:p.name},
-        p.purl?{product_identification_helper:{purl:p.purl}}:{})]},
+      tracking:{id:'ICSVEXFORGE-'+Date.now(),status:'final',version:'1',initial_release_date:now,current_release_date:now,
+        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.04'}}}},
+    product_tree:{full_product_names:[Object.assign({product_id:pid,name:p.name},p.purl?{product_identification_helper:{purl:p.purl}}:{})]},
     vulnerabilities:vulns};
   _dl('csaf-vex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
+
 
 function renderTreeList(cves){
   const un=(cves||[]).filter(f=>!f.source_collectable);
