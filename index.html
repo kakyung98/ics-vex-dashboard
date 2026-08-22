@@ -430,6 +430,10 @@ let SBOM_INDEX=[], CVE2SBOM={};
 let CVE2ADV={};
 let VEND2SBOM={},VEND2ADV={};
 function normVendor(v){var t=String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ');return t[0]||'';}
+var PROD_STOP={series:1,product:1,products:1,control:1,controller:1,controllers:1,system:1,systems:1,module:1,modules:1,software:1,firmware:1,server:1,servers:1,gateway:1,update:1,and:1,for:1,the:1,with:1,cpu:1,inc:1,corp:1,corporation:1,ltd:1,gmbh:1,energy:1,automation:1,electric:1,electronics:1,solutions:1,technologies:1,industrial:1,group:1,company:1,version:1,vulnerability:1,vulnerabilities:1};
+function hasDigit(w){return /[0-9]/.test(w);}
+function prodTokens(str){var out=[];String(str||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').forEach(function(w){if(!w||PROD_STOP[w])return;if(hasDigit(w)&&w.length>=3)out.push(w);else if(w.length>=5&&!hasDigit(w))out.push(w);});return out;}
+function prodHit(at,st){var ad=at.filter(hasDigit),sd=st.filter(hasDigit);for(var i=0;i<ad.length;i++)if(sd.indexOf(ad[i])>=0)return true;return false;}
 function cvGrade(x){x=+x;if(x>=9)return 'Critical';if(x>=7)return 'High';if(x>=4)return 'Medium';if(x>0)return 'Low';return 'None';}
 function cvCap(x){x=String(x||'');return x?x.charAt(0).toUpperCase()+x.slice(1):'';}
 function cvssFmt(score,sev){if(score!=null&&score!==''&&!isNaN(+score)){var g=(sev&&sev!=='unrated')?cvCap(sev):cvGrade(score);return (+score)+' ('+g+')';}if(sev&&sev!=='unrated')return cvCap(sev);return '—';}
@@ -456,12 +460,12 @@ async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.ass
     for(const c of a.cves)h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+c.id+'" target="_blank" rel="noopener">'+esc(c.id)+'</a></td><td class="hint">'+esc(c.component||'')+'</td><td class="mono">'+cvssFmt(c.cvss,c.severity)+'</td><td class="mono hint">'+esc(c.cwe||'')+'</td></tr>';
     h+='</tbody></table></div>';}else h+='<span class="hint">none</span>';
   const radv={};for(const c of (a.cves||[])){for(const ad of (CVE2ADV[c.id]||[])){(radv[ad.id]=radv[ad.id]||{ad:ad,cves:[],vendor:false});radv[ad.id].cves.push(c.id);}}
-  const sv=normVendor(a.vendor);let vn=0;for(const ad of (VEND2ADV[sv]||[])){if(!radv[ad.id]){if(vn++>=25)break;radv[ad.id]={ad:ad,cves:[],vendor:true};}}
+  const sv=normVendor(a.vendor),st=prodTokens(a.product);for(const ad of (VEND2ADV[sv]||[])){if(radv[ad.id])continue;if(prodHit(st,prodTokens(ad.title)))radv[ad.id]={ad:ad,cves:[],vendor:true};}
   let radvArr=Object.values(radv);radvArr.sort((x,y)=>y.cves.length-x.cves.length);const radvN=radvArr.length;radvArr=radvArr.slice(0,100);
   h+='<h4 style="margin:14px 0 4px">Related ICS-CERT advisories ('+radvN+')</h4>';
   if(radvN){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th>Match</th></tr></thead><tbody>';
-    for(const r of radvArr)h+='<tr class="clk" onclick="openAdvisory(\''+r.ad.id+'\')"><td class="idcell">'+esc(r.ad.id)+'</td><td>'+esc(r.ad.title||'')+'</td><td>'+esc(r.ad.vendor||'')+'</td><td class="mono hint">'+(r.cves.length?esc([...new Set(r.cves)].join(', ')):'same vendor')+'</td></tr>';
-    h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-CERT advisory shares a CVE or vendor with this asset.</span>';
+    for(const r of radvArr)h+='<tr class="clk" onclick="openAdvisory(\''+r.ad.id+'\')"><td class="idcell">'+esc(r.ad.id)+'</td><td>'+esc(r.ad.title||'')+'</td><td>'+esc(r.ad.vendor||'')+'</td><td class="mono hint">'+(r.cves.length?esc([...new Set(r.cves)].join(', ')):'device match')+'</td></tr>';
+    h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-CERT advisory shares a CVE or matches this device.</span>';
   document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
 async function openAdvisory(id){await loadSbomIndex();const a=ADV_LIST.find(x=>String(x.id)===String(id));if(!a)return;
   const cves=a.cves||[];
@@ -470,12 +474,12 @@ async function openAdvisory(id){await loadSbomIndex();const a=ADV_LIST.find(x=>S
   if(a.overview)h+='<h4 style="margin:12px 0 4px">Advisory overview</h4><div class="hint" style="white-space:pre-wrap;max-height:220px;overflow:auto;line-height:1.5">'+esc(a.overview)+'</div>';
   if(a.cwes&&a.cwes.length)h+='<div class="srch-meta" style="margin-top:8px">CWE: <span class="mono">'+a.cwes.map(esc).join(', ')+'</span></div>';
   const rel={};for(const c of cves){for(const s of (CVE2SBOM[c]||[])){(rel[s.asset_id]=rel[s.asset_id]||{a:s,cves:[],vendor:false});rel[s.asset_id].cves.push(c);}}
-  const av=normVendor(a.vendor);for(const s of (VEND2SBOM[av]||[])){if(!rel[s.asset_id])rel[s.asset_id]={a:s,cves:[],vendor:true};}
+  const av=normVendor(a.vendor),at=prodTokens(a.title);for(const s of (VEND2SBOM[av]||[])){if(rel[s.asset_id])continue;if(prodHit(at,prodTokens(s.product)))rel[s.asset_id]={a:s,cves:[],vendor:true};}
   let relArr=Object.values(rel);relArr.sort((x,y)=>y.cves.length-x.cves.length);const relN=relArr.length;relArr=relArr.slice(0,100);
   h+='<h4 style="margin:12px 0 4px">Related ICS-SBOM assets ('+relN+')</h4>';
   if(relN){h+='<div class="srch-wrap"><table><thead><tr><th>Asset</th><th>Vendor</th><th>Product</th><th>Match</th></tr></thead><tbody>';
-    for(const r of relArr)h+='<tr class="clk" onclick="openSbom(\''+r.a.asset_id+'\')"><td class="idcell">'+esc(r.a.asset_id)+'</td><td>'+esc(r.a.vendor||'')+'</td><td>'+esc(r.a.product||'')+'</td><td class="mono hint">'+(r.cves.length?esc(r.cves.join(', ')):'same vendor')+'</td></tr>';
-    h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-SBOM asset shares a CVE or vendor with this advisory.</span>';
+    for(const r of relArr)h+='<tr class="clk" onclick="openSbom(\''+r.a.asset_id+'\')"><td class="idcell">'+esc(r.a.asset_id)+'</td><td>'+esc(r.a.vendor||'')+'</td><td>'+esc(r.a.product||'')+'</td><td class="mono hint">'+(r.cves.length?esc(r.cves.join(', ')):'device match')+'</td></tr>';
+    h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-SBOM asset shares a CVE or matches this device.</span>';
   h+='<h4 style="margin:14px 0 4px">Advisory CVEs ('+cves.length+')</h4>';
   if(cves.length){h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th style="text-align:center">In SBOM assets</th></tr></thead><tbody>';
     for(const c of cves){const n=(CVE2SBOM[c]||[]).length;h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+c+'" target="_blank" rel="noopener">'+esc(c)+'</a></td><td style="text-align:center">'+(n?'<span class="cvecount">'+n+'</span>':'—')+'</td></tr>';}
