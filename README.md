@@ -42,9 +42,11 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 
 > ⚠️ **`tier` 컬럼 주의**: SBOM 속성명이 `component:source-availability` 라서 소스 확보로 읽히지만,
 > 실제로는 **OSS 카탈로그 귀속 여부**일 뿐이다([build_reverse_sbom.py:202](src/build_reverse_sbom.py:202)).
-> `tier=="A"` 132 CVE 중 실제로 코드를 확보한 것은 **15 CVE**.
+> `tier=="A"` 110 CVE 중 실제로 코드를 확보한 것은 **15 CVE**.
+> (폐쇄소스 22건 — CODESYS·Interpeak/ipnet·Treck·SQL Server·.NET — 은 OSS 로 오분류돼 있던 것을
+> [build_reverse_sbom.py](src/build_reverse_sbom.py) 의 `CLOSED_OSS` 로 tier E 재분류: 132→110.)
 > 따라서 코드 leg 게이트는 `tier` 가 아니라 `code_evidence_available` 이다.
-> tier A 132 CVE 는 코드를 수집하면 승격 가능한 **확장 후보군**으로만 의미가 있다
+> tier A 110 CVE 는 코드를 수집하면 승격 가능한 **확장 후보군**으로만 의미가 있다
 > (`data/vex_dataset_code.jsonl` 로 별도 export).
 
   - **SecureBERT** — 보안/자산 텍스트(맥락·노출) 분석. 전 건의 1차 정적 신호

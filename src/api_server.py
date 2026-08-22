@@ -139,6 +139,7 @@ class Store:
         self.candidates = _load(os.path.join(RESULTS, "genie_candidates.json"),
                                 {"candidates": []})
         self.code_ev = _load(os.path.join(DATA, "code_evidence.json"), {})
+        self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
         # CISA ICS advisories (the corpus provenance)
         adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
         adv = list(adv_raw.values()) if isinstance(adv_raw, dict) else (adv_raw or [])
@@ -154,7 +155,9 @@ class Store:
         self.advisories_list = sorted(
             [{"id": a.get("advisory_id", ""), "title": a.get("title", ""),
               "vendor": _norm_vendor(a.get("vendor")), "year": a.get("year"),
-              "cves": a.get("cves", []), "url": a.get("url", "")} for a in adv],
+              "cves": a.get("cves", []), "url": a.get("url", ""),
+              "overview": (a.get("affected_text") or "").strip()[:800],
+              "cwes": a.get("cwes", [])} for a in adv],
             key=lambda x: str(x["id"]), reverse=True)
         kb = _load(KB_PATH, {"components": []})["components"]
         self.kb_idx = {}
@@ -193,6 +196,18 @@ class Store:
                     continue
                 if sc > self.cvss.get(r["cve"], -1):
                     self.cvss[r["cve"]] = sc
+        # fill gaps from the NVD cache (metric.score) so every KB CVE gets a real base score
+        _nvd = _load(os.path.join(DATA, "nvd_cache.json"), {})
+        for _cid, _e in (_nvd.items() if isinstance(_nvd, dict) else []):
+            if _cid in self.cvss:
+                continue
+            _m = (_e or {}).get("metric") or {}
+            _sc = _m.get("score") if isinstance(_m, dict) else None
+            if _sc is not None:
+                try:
+                    self.cvss[_cid] = float(_sc)
+                except (TypeError, ValueError):
+                    pass
         for comp in self.kb_comps:
             for lst in comp.get("versions", {}).values():
                 for cv in lst:
@@ -239,7 +254,7 @@ class Store:
             "by_vex": dict(Counter(cve_worst.values())),
             "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
         }
-        # tier-A = OSS-attributed, source-code collectable (the "132")
+        # tier-A = OSS-attributed, source-code collectable (the "110" after closed-source reclass)
         a_worst = {}
         ven_cves, dtype_cves = defaultdict(set), defaultdict(set)
         for cve, rows in self.by_cve.items():
@@ -466,6 +481,11 @@ def build_app():
         """Full slim advisory list for the Source-data search engine."""
         return {"count": len(STORE.advisories_list), "advisories": STORE.advisories_list}
 
+    @app.get("/api/sbom_index")
+    def sbom_index():
+        """Compact index of the synthetic ICS-SBOM dataset (assets + components + CVEs)."""
+        return STORE.sbom_index
+
     @app.get("/api/cve_search")
     def cve_search(q: str = "", limit: int = 100):
         """Search the corpus CVEs (id / CWE / vendor / component)."""
@@ -493,7 +513,7 @@ def build_app():
 
     @app.get("/api/source_available")
     def source_available():
-        """Stats for the source-code-collectable (tier-A) CVEs — the '132'."""
+        """Stats for the source-code-collectable (tier-A) CVEs — the '110'."""
         if not STORE.tier_a.get("total_cves"):
             raise HTTPException(404, "run src/vex_batch.py first")
         return STORE.tier_a
@@ -569,6 +589,10 @@ def build_app():
     @app.get("/source.html", response_class=HTMLResponse)
     def source():
         return make_page("source")
+
+    @app.get("/ics-sbom.html", response_class=HTMLResponse)
+    def ics_sbom_page():
+        return make_page("ics-sbom")
 
     return app
 
@@ -692,9 +716,10 @@ __CONTENT__
 const VEX_TREE=__VEX_TREE__;
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
 const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under investigation'};
+function jsoncParse(txt){var BS=String.fromCharCode(92),NL=String.fromCharCode(10),CR=String.fromCharCode(13);var s='',i=0,n=txt.length,inStr=false,esc=false;while(i<n){var c=txt[i];if(inStr){s+=c;if(esc){esc=false;}else if(c===BS){esc=true;}else if(c==='"'){inStr=false;}i++;continue;}if(c==='"'){inStr=true;s+=c;i++;continue;}if(c==='/'&&txt[i+1]==='/'){while(i<n&&txt[i]!==NL&&txt[i]!==CR){i++;}continue;}if(c==='/'&&txt[i+1]==='*'){i+=2;while(i+1<n&&!(txt[i]==='*'&&txt[i+1]==='/')){i++;}i+=2;continue;}s+=c;i++;}var WS=' '+String.fromCharCode(9)+String.fromCharCode(10)+String.fromCharCode(13);var re=new RegExp(',(['+WS+']*)(}|])','g');return JSON.parse(s.replace(re,'$1$2'));}
 async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
-  let sbom;try{sbom=JSON.parse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
+  let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
   compareNorm(sbom,document.getElementById('exp').value);
   const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -712,7 +737,7 @@ async function run(){
       : '<button class="treebtn" onclick="treeForCve(\\''+f.cve+'\\',\\''+(f.av||'N')+'\\')">Decide via tree &rarr;</button>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span></td>'
-      +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity||'—'))+'</td>'
+      +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
   o.innerHTML=h+'</tbody></table>';
@@ -759,7 +784,7 @@ function loadFile(f){
   const fn=document.getElementById('fname');fn.textContent='reading '+f.name+'…';
   const rd=new FileReader();
   rd.onload=function(){
-    try{JSON.parse(rd.result);}catch(err){fn.innerHTML='<span class="err">'+f.name+' is not valid JSON</span>';return;}
+    try{jsoncParse(rd.result);}catch(err){fn.innerHTML='<span class="err">'+f.name+' is not valid JSON</span>';return;}
     document.getElementById('sbom').value=rd.result;
     fn.textContent='loaded '+f.name+' — analyzing…';
     run();
@@ -800,7 +825,7 @@ async function openCves(dim,value,scope,label){
     for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
       h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
         +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
-        +'<td class="mono" style="text-align:center" title="CVSS v3 base score">'+(f.cvss!=null?f.cvss:(f.severity?esc(f.severity):'—'))+'</td><td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
+        +'<td class="mono" style="text-align:center" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td><td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
         +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
         +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener">repo</a>':'')+'</td></tr>';}
     document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
@@ -829,7 +854,7 @@ async function sourceAvail(){
       '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t,'vex','source_available',{LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under inv'})+'</div>'+
       '<div class="chart"><div class="ct">CVSS severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
       '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
-    let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · 132 collectable CVEs total</span></div><div class="cwe">';
+    let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · '+t+' collectable CVEs total</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
     for(const x of s.top_cwe)cwe+='<div class="cwerow clk" title="'+x.cwe+' '+esc(x.name||'')+'" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
       '<span><span class="mono">'+x.cwe+'</span><span class="cwename">'+esc(x.name||'')+'</span></span>'+
@@ -931,6 +956,7 @@ function treeForCve(cve,av){const el=document.getElementById('tc-'+cve);if(el){e
 async function tryJson(urls){for(const u of urls){try{const r=await fetch(u);if(r.ok)return await r.json();}catch(e){}}return null;}
 let ADV_LIST=[];
 async function initSource(){
+  await loadSbomIndex();
   const d=await tryJson(['/api/advisories/list','advisories_list.json']);
   ADV_LIST=(d&&d.advisories)||[];
   const hint=document.getElementById('adv-hint');if(hint)hint.textContent=ADV_LIST.length.toLocaleString()+' loaded';
@@ -943,8 +969,8 @@ function advSearch(){
   const total=items.length;items=items.slice(0,100);
   let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> advisor'+(total===1?'y':'ies')+(total>100?' · showing first 100':'')+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th style="text-align:center">Year</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
-  for(const a of items){const idl=a.url?'<a href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.id)+'</a>':esc(a.id);
-    h+='<tr><td class="idcell">'+idl+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
+  for(const a of items){
+    h+='<tr class="clk" onclick="openAdvisory(\\''+esc(String(a.id))+'\\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
 function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};
@@ -963,7 +989,7 @@ async function cveSearchRun(){
   let h=nvd+'<div class="srch-meta"><b>'+items.length+(items.length===100?'+':'')+'</b> CVEs</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th style="text-align:center">CVSS</th><th>CWE</th><th style="text-align:center">KEV</th><th>Vendor</th><th>Component</th></tr></thead><tbody>';
   for(const f of items){h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
-    +'<td class="mono" style="text-align:center">'+(f.cvss!=null?f.cvss:(f.severity||'—'))+'</td><td class="mono hint">'+esc(f.cwe||'')+'</td>'
+    +'<td class="mono" style="text-align:center">'+cvssFmt(f.cvss,f.severity)+'</td><td class="mono hint">'+esc(f.cwe||'')+'</td>'
     +'<td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td><td>'+esc(f.vendor||'')+'</td><td class="hint">'+esc(f.component||'')+'</td></tr>';}
   out.innerHTML=h+'</tbody></table></div>';
 }
@@ -972,6 +998,64 @@ if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
+// ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
+let SBOM_INDEX=[], CVE2SBOM={};
+let CVE2ADV={};
+let VEND2SBOM={},VEND2ADV={};
+function normVendor(v){var t=String(v||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ');return t[0]||'';}
+function cvGrade(x){x=+x;if(x>=9)return 'Critical';if(x>=7)return 'High';if(x>=4)return 'Medium';if(x>0)return 'Low';return 'None';}
+function cvCap(x){x=String(x||'');return x?x.charAt(0).toUpperCase()+x.slice(1):'';}
+function cvssFmt(score,sev){if(score!=null&&score!==''&&!isNaN(+score)){var g=(sev&&sev!=='unrated')?cvCap(sev):cvGrade(score);return (+score)+' ('+g+')';}if(sev&&sev!=='unrated')return cvCap(sev);return '\u2014';}
+function buildCve2Adv(){CVE2ADV={};VEND2ADV={};for(const a of (ADV_LIST||[])){const vk=normVendor(a.vendor);if(vk)(VEND2ADV[vk]=VEND2ADV[vk]||[]).push(a);for(const c of (a.cves||[])){(CVE2ADV[c]=CVE2ADV[c]||[]).push(a);}}}
+async function loadAdvList(){if((ADV_LIST||[]).length){if(!Object.keys(CVE2ADV).length)buildCve2Adv();return;}const d=await tryJson(['/api/advisories/list','advisories_list.json']);ADV_LIST=(d&&d.advisories)||[];buildCve2Adv();}
+function buildCve2Sbom(){CVE2SBOM={};VEND2SBOM={};for(const a of SBOM_INDEX){const vk=normVendor(a.vendor);if(vk)(VEND2SBOM[vk]=VEND2SBOM[vk]||[]).push(a);for(const c of (a.cves||[])){(CVE2SBOM[c.id]=CVE2SBOM[c.id]||[]).push(a);}}}
+async function loadSbomIndex(){if(SBOM_INDEX.length)return;const d=await tryJson(['/api/sbom_index','sbom_index.json']);SBOM_INDEX=(d&&d.assets)||[];buildCve2Sbom();}
+async function initIcsSbom(){const el=document.getElementById('sbom-results');if(el)el.innerHTML='<span class="hint">loading…</span>';await loadSbomIndex();await loadAdvList();const h=document.getElementById('sbom-hint');if(h)h.textContent=SBOM_INDEX.length.toLocaleString()+' assets loaded';sbomSearch();}
+function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim().toLowerCase();let items=SBOM_INDEX;
+  if(q)items=SBOM_INDEX.filter(a=>a.asset_id.toLowerCase().includes(q)||(a.vendor||'').toLowerCase().includes(q)||(a.product||'').toLowerCase().includes(q)||(a.device_class||'').toLowerCase().includes(q)||(a.sector||'').toLowerCase().includes(q)||(a.cves||[]).some(c=>c.id.toLowerCase().includes(q)));
+  const total=items.length;items=items.slice(0,100);
+  let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> asset'+(total===1?'':'s')+(total>100?' · showing first 100':'')+'</div>';
+  h+='<div class="srch-wrap"><table><thead><tr><th>Asset</th><th>Vendor</th><th>Product</th><th>Type</th><th style="text-align:center">Comp</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
+  for(const a of items){h+='<tr class="clk" onclick="openSbom(\\''+a.asset_id+'\\')"><td class="idcell">'+esc(a.asset_id)+'</td><td>'+esc(a.vendor||'')+'</td><td>'+esc(a.product||'')+'</td><td class="mono hint">'+esc(a.device_class||'')+'</td><td class="mono" style="text-align:center">'+a.component_count+'</td><td style="text-align:center"><span class="cvecount">'+(a.cves||[]).length+'</span></td></tr>';}
+  document.getElementById('sbom-results').innerHTML=h+'</tbody></table></div>';}
+async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.asset_id===id);if(!a)return;
+  document.getElementById('mtitle').textContent=a.asset_id+' — '+(a.product||'');
+  let h='<div class="srch-meta">'+esc(a.vendor||'')+' · '+esc(a.device_class||'')+' · Purdue L'+esc(a.purdue_level||'')+' · '+esc(a.sector||'')+' · <span class="mono">'+esc(a.file||'')+'</span></div>';
+  h+='<h4 style="margin:12px 0 4px">Components ('+(a.components||[]).length+')</h4><div class="srch-wrap"><table><thead><tr><th>Name</th><th>Version</th><th>Description</th></tr></thead><tbody>';
+  for(const c of (a.components||[]))h+='<tr><td>'+esc(c.name||'')+'</td><td class="mono">'+esc(c.version||'')+'</td><td class="hint">'+esc(c.description||'')+'</td></tr>';
+  h+='</tbody></table></div>';
+  h+='<h4 style="margin:14px 0 4px">Identified CVEs ('+(a.cves||[]).length+')</h4>';
+  if((a.cves||[]).length){h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Component</th><th>CVSS</th><th>CWE</th></tr></thead><tbody>';
+    for(const c of a.cves)h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+c.id+'" target="_blank" rel="noopener">'+esc(c.id)+'</a></td><td class="hint">'+esc(c.component||'')+'</td><td class="mono">'+cvssFmt(c.cvss,c.severity)+'</td><td class="mono hint">'+esc(c.cwe||'')+'</td></tr>';
+    h+='</tbody></table></div>';}else h+='<span class="hint">none</span>';
+  const radv={};for(const c of (a.cves||[])){for(const ad of (CVE2ADV[c.id]||[])){(radv[ad.id]=radv[ad.id]||{ad:ad,cves:[],vendor:false});radv[ad.id].cves.push(c.id);}}
+  const sv=normVendor(a.vendor);let vn=0;for(const ad of (VEND2ADV[sv]||[])){if(!radv[ad.id]){if(vn++>=25)break;radv[ad.id]={ad:ad,cves:[],vendor:true};}}
+  let radvArr=Object.values(radv);radvArr.sort((x,y)=>y.cves.length-x.cves.length);const radvN=radvArr.length;radvArr=radvArr.slice(0,100);
+  h+='<h4 style="margin:14px 0 4px">Related ICS-CERT advisories ('+radvN+')</h4>';
+  if(radvN){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th>Match</th></tr></thead><tbody>';
+    for(const r of radvArr)h+='<tr class="clk" onclick="openAdvisory(\\''+r.ad.id+'\\')"><td class="idcell">'+esc(r.ad.id)+'</td><td>'+esc(r.ad.title||'')+'</td><td>'+esc(r.ad.vendor||'')+'</td><td class="mono hint">'+(r.cves.length?esc([...new Set(r.cves)].join(', ')):'same vendor')+'</td></tr>';
+    h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-CERT advisory shares a CVE or vendor with this asset.</span>';
+  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
+async function openAdvisory(id){await loadSbomIndex();const a=ADV_LIST.find(x=>String(x.id)===String(id));if(!a)return;
+  const cves=a.cves||[];
+  document.getElementById('mtitle').textContent=a.id+' — '+(a.title||'');
+  let h='<div class="srch-meta">'+esc(a.vendor||'')+' · '+esc(a.year||'')+(a.url?' · <a href="'+esc(a.url)+'" target="_blank" rel="noopener">open advisory</a>':'')+'</div>';
+  if(a.overview)h+='<h4 style="margin:12px 0 4px">Advisory overview</h4><div class="hint" style="white-space:pre-wrap;max-height:220px;overflow:auto;line-height:1.5">'+esc(a.overview)+'</div>';
+  if(a.cwes&&a.cwes.length)h+='<div class="srch-meta" style="margin-top:8px">CWE: <span class="mono">'+a.cwes.map(esc).join(', ')+'</span></div>';
+  const rel={};for(const c of cves){for(const s of (CVE2SBOM[c]||[])){(rel[s.asset_id]=rel[s.asset_id]||{a:s,cves:[],vendor:false});rel[s.asset_id].cves.push(c);}}
+  const av=normVendor(a.vendor);for(const s of (VEND2SBOM[av]||[])){if(!rel[s.asset_id])rel[s.asset_id]={a:s,cves:[],vendor:true};}
+  let relArr=Object.values(rel);relArr.sort((x,y)=>y.cves.length-x.cves.length);const relN=relArr.length;relArr=relArr.slice(0,100);
+  h+='<h4 style="margin:12px 0 4px">Related ICS-SBOM assets ('+relN+')</h4>';
+  if(relN){h+='<div class="srch-wrap"><table><thead><tr><th>Asset</th><th>Vendor</th><th>Product</th><th>Match</th></tr></thead><tbody>';
+    for(const r of relArr)h+='<tr class="clk" onclick="openSbom(\\''+r.a.asset_id+'\\')"><td class="idcell">'+esc(r.a.asset_id)+'</td><td>'+esc(r.a.vendor||'')+'</td><td>'+esc(r.a.product||'')+'</td><td class="mono hint">'+(r.cves.length?esc(r.cves.join(', ')):'same vendor')+'</td></tr>';
+    h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-SBOM asset shares a CVE or vendor with this advisory.</span>';
+  h+='<h4 style="margin:14px 0 4px">Advisory CVEs ('+cves.length+')</h4>';
+  if(cves.length){h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th style="text-align:center">In SBOM assets</th></tr></thead><tbody>';
+    for(const c of cves){const n=(CVE2SBOM[c]||[]).length;h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+c+'" target="_blank" rel="noopener">'+esc(c)+'</a></td><td style="text-align:center">'+(n?'<span class="cvecount">'+n+'</span>':'—')+'</td></tr>';}
+    h+='</tbody></table></div>';}else h+='<span class="hint">none</span>';
+  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
+if(document.getElementById('sbom-q'))initIcsSbom();
+
 if(document.getElementById('adv-q'))initSource();
 </script></body></html>"""
 
@@ -1022,7 +1106,7 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # Analyzer + VEX decision tree live on one page (one flow: SBOM -> source-available
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
-                  '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
+                  '<p class="sub" style="margin:0 0 18px;white-space:nowrap;max-width:none;overflow-x:auto">Paste / upload / drag a CycloneDX SBOM. '
                   'Source-available CVEs are judged directly; source-uncollectable CVEs continue into '
                   'the decision tree below.</p>' + ANALYZER_HTML + "\n" + TREE_HTML)
 SOURCE_HTML = """<div class="card">
@@ -1037,19 +1121,30 @@ SOURCE_HTML = """<div class="card">
 <input id="cve-q" class="srch" oninput="cveSearchGo()" placeholder="e.g. CVE-2021-44228 · CWE-416 · OpenSSL · Siemens">
 <div id="cve-results" style="margin-top:12px"></div></div>"""
 
+_ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">ICS-SBOM dataset</h1>
+<p class="hint" style="margin:0 0 16px">1,000 synthetic CycloneDX SBOMs for ICS/OT assets. Search by asset ID, vendor, product, device type, sector, or CVE. Click a row to see its components and identified CVEs.</p>
+<div class="card">
+<h3 style="margin:0 0 4px">ICS-SBOM assets <span class="hint" id="sbom-hint"></span></h3>
+<p class="hint" style="margin:0 0 10px">Synthetic asset inventory reverse-built from the CISA ICS-CERT corpus; components and versions reference real OSS but hashes, serials and contacts are placeholders.</p>
+<input id="sbom-q" class="srch" oninput="sbomSearch()" placeholder="e.g. Siemens · PLC · SIMATIC · wastewater · CVE-2022-0778">
+<div id="sbom-results" style="margin-top:12px"><span class="hint">loading…</span></div></div>
+"""
+
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
-    "source": ("Source data",
-               '<h1 style="margin:0 0 18px">Source data</h1>' + SOURCE_HTML),
+    "source": ("ICS-CERT Advisories",
+               '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
     "corpus": ("Corpus statistics",
                '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
     "collectable": ("Source-collectable CVEs",
                     '<h1 style="margin:0 0 18px">Source-collectable CVEs</h1>' + COLLECTABLE_HTML),
+    "ics-sbom": ("ICS-SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
-        ("source", "source.html", "Source data"),
+        ("source", "source.html", "ICS-CERT Advisories"),
         ("corpus", "corpus.html", "Corpus"),
-        ("collectable", "collectable.html", "Collectable CVEs")]
+        ("collectable", "collectable.html", "Collectable CVEs"),
+        ("ics-sbom", "ics-sbom.html", "ICS-SBOM")]
 
 
 def nav_html(active):
