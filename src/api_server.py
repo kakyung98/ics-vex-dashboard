@@ -1488,8 +1488,8 @@ PAGES = {
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
         ("vex-method", "vex-method.html", "VEX Analysis Method"),
-        ("corpus", "corpus.html", "Corpus"),
-        ("collectable", "collectable.html", "Collectable CVEs"),
+        ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
+        ("collectable", "collectable.html", "Source Code Available CVEs"),
         ("source", "source.html", "ICS-CERT Advisories"),
         ("ics-sbom", "ics-sbom.html", "ICS-SBOM")]
 
