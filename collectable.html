@@ -120,7 +120,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab" href="index.html">Analyzer</a><a class="navtab" href="vex-method.html">VEX Analysis Method</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab on" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">ICS-SBOM</a></nav>
+  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab" href="index.html">Analyzer</a><a class="navtab" href="vex-method.html">VEX Analysis Method</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab on" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
 <h1 style="margin:0 0 18px">Source-collectable CVEs</h1><div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
@@ -174,7 +174,7 @@ async function run(){
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>SSVC</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
-      ? '<span class="hint">source available &middot; code VEX</span>'
+      ? '<span class="hint">source available &middot; execution-verified VEX</span>'
       : '<span class="hint">source-uncollectable &middot; SSVC + estimation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'

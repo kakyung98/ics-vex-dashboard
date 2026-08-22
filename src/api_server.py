@@ -864,7 +864,7 @@ async function run(){
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>SSVC</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
-      ? '<span class="hint">source available &middot; code VEX</span>'
+      ? '<span class="hint">source available &middot; execution-verified VEX</span>'
       : '<span class="hint">source-uncollectable &middot; SSVC + estimation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -1398,7 +1398,7 @@ SOURCE_HTML = """<div class="card">
 <input id="cve-q" class="srch" oninput="cveSearchGo()" placeholder="e.g. CVE-2021-44228 · CWE-416 · OpenSSL · Siemens">
 <div id="cve-results" style="margin-top:12px"></div></div>"""
 
-_ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">ICS-SBOM dataset</h1>
+_ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 <p class="hint" style="margin:0 0 16px">CycloneDX SBOMs reverse-built per ICS device from the CISA ICS-CERT corpus — each keyed to its source advisory. Search by vendor, product, advisory ID, or CVE. Click a row to see its source advisories, components, and identified CVEs.</p>
 <div class="card">
 <h3 style="margin:0 0 4px">ICS-SBOM assets <span class="hint" id="sbom-hint"></span></h3>
@@ -1408,7 +1408,7 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">ICS-SBOM dataset</h1>
 """
 
 _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs get a code-grounded static verdict; source-uncollectable CVEs are held as <b>under_investigation</b> with an <b>estimation</b> and ranked by an <b>SSVC</b> priority.</p>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs are confirmed by <b>execution</b>: the affected version is rebuilt and a reproducer is run against it, yielding an <b>execution-verified</b> verdict. Source-uncollectable CVEs are held as <b>under_investigation</b> with an <b>estimation</b> and ranked by an <b>SSVC</b> priority.</p>
 
 <div class="card">
 <div class="vm-flow">
@@ -1420,16 +1420,16 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>Code VEX</b></div>
-      <div class="vm-step"><b>1. SecureBERT</b> — security-context signal (asset/exposure prose)</div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>Execution-verified VEX</b></div>
+      <div class="vm-step"><b>1. Resolve upstream</b> — map the component to its repo + vulnerable commit/version (CVE/NVD refs)</div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. CodeBERT</b> — vuln/patch diff separability (backport detection)</div>
+      <div class="vm-step"><b>2. Rebuild the environment</b> — clone at the vulnerable version, resolve prerequisites, compile in an isolated sandbox (build critic loop)</div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>3. sLLM static analyst</b> — root cause / reachability / adversary-controllability (no PoC, no exec)</div>
+      <div class="vm-step"><b>3. Synthesize a reproducer</b> — craft an input/PoC that drives the vulnerable path (CWE + patch-diff guided)</div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>4. Grounding critic</b> — is the verdict supported by the evidence? one ReAct refine</div>
+      <div class="vm-step"><b>4. Execute &amp; verify</b> — run it in the sandbox; a crash / sanitizer / assert confirms the trigger (verifier critic)</div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">Evidence tier: <b>static-analysis-verified</b> (code pair + separable fix + grounded) / <b>static-reasoned</b></div>
+      <div class="vm-verd vm-vgreen">Evidence tier: <b>execution-verified</b> (reproducer triggers on the vulnerable build) / <b>build-only</b> if the trigger isn't reached</div>
     </div>
 
     <div class="vm-lane vm-no">
@@ -1451,14 +1451,14 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
 
 <div class="vm-cols">
   <div class="card">
-    <h3 style="margin:0 0 6px">Source-available path (Code VEX)</h3>
-    <p class="hint" style="margin:0 0 8px">When the vulnerable/patched code pair is obtainable (OSS with a fix commit), the verdict is grounded in the actual code — not just metadata.</p>
+    <h3 style="margin:0 0 6px">Source-available path (execution-based verification)</h3>
+    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is <b>confirmed by execution</b> — the affected version is actually built and a reproducer is run against it. This is the strongest VEX evidence, not metadata inference.</p>
     <ul class="vm-list">
-      <li><b>SecureBERT</b> reads the security/asset context and emits a first VEX signal.</li>
-      <li><b>CodeBERT</b> compares the vulnerable vs patched diff; catches backports (fix already applied) that context alone misses.</li>
-      <li><b>sLLM static analyst</b> reasons over patch diff + CWE + reachability to produce a structured exploitability assessment. <b>No PoC is generated and nothing is executed.</b></li>
-      <li><b>Grounding critic</b> rejects overreach; a verdict must be supported by evidence (e.g. <span class="mono">not_affected</span> needs counter-evidence).</li>
-      <li>Confirmed tier = <b>static-analysis-verified</b>; otherwise <b>static-reasoned</b>.</li>
+      <li>A <b>multi-agent developer&rarr;critic loop</b> runs fully locally (Ollama, $0): a builder rebuilds the environment, an exploiter writes a reproducer, a verifier confirms the trigger — each stage gated by a critic that must accept the evidence before proceeding.</li>
+      <li><b>Environment reconstruction</b>: clone the upstream repo at the vulnerable commit/version, resolve build prerequisites, and compile inside an isolated Docker sandbox.</li>
+      <li><b>Reproducer synthesis</b>: build an input/PoC that drives the vulnerable code path, guided by the CVE description, CWE, and patch diff.</li>
+      <li><b>Execution &amp; verification</b>: run the reproducer in the sandbox — an observed crash / sanitizer report / assert confirms the vulnerability is reachable and exploitable &rarr; <span class="mono">affected</span> (execution-verified). Running it against the patched build that no longer triggers &rarr; <span class="mono">fixed</span>/<span class="mono">not_affected</span> (execution-verified).</li>
+      <li>Confirmed tier = <b>execution-verified</b>; if the environment builds but the trigger isn't reached within budget it falls back to <b>build-only</b> &rarr; <span class="mono">under_investigation</span>.</li>
     </ul>
   </div>
   <div class="card">
@@ -1468,7 +1468,7 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
       <li>Status is always <span class="mono">under_investigation</span> &mdash; a not_affected/affected claim would be unsupported without code.</li>
       <li><b>estimation</b> sub-field records the leaning: <span class="mono">likely_affected</span>, <span class="mono">likely_not_affected</span>, <span class="mono">likely_fixed</span>, or <span class="mono">unable_to_determine</span>. It is carried into the exported OpenVEX/CSAF document.</li>
       <li><b>SSVC</b> (SEI <i>Deployer</i> tree) ranks remediation urgency from <b>Exploitation</b> (KEV/EPSS), <b>System Exposure</b> (from the deployment exposure selector), <b>Automatable</b> (CVSS attack vector), and <b>Human Impact</b> &rarr; <span class="mono">defer / scheduled / out-of-cycle / immediate</span>.</li>
-      <li>If the source later becomes obtainable, the case is routed back to the Code VEX path for a grounded verdict.</li>
+      <li>If the source later becomes obtainable, the case is routed into the execution-based verification path for a confirmed verdict.</li>
     </ul>
   </div>
 </div>
@@ -1484,14 +1484,14 @@ PAGES = {
                '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
     "collectable": ("Source-collectable CVEs",
                     '<h1 style="margin:0 0 18px">Source-collectable CVEs</h1>' + COLLECTABLE_HTML),
-    "ics-sbom": ("ICS-SBOM dataset", _ICSSBOM_PAGE),
+    "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
         ("vex-method", "vex-method.html", "VEX Analysis Method"),
         ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
         ("collectable", "collectable.html", "Source Code Available CVEs"),
         ("source", "source.html", "ICS-CERT Advisories"),
-        ("ics-sbom", "ics-sbom.html", "ICS-SBOM")]
+        ("ics-sbom", "ics-sbom.html", "Synthetic SBOM")]
 
 
 def nav_html(active):
