@@ -21,11 +21,13 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 
 > **🔗 라이브 대시보드 (ICS-VEXForge)**: https://kakyung98.github.io/ics-vex-dashboard/
 > SBOM을 올려(붙여넣기·업로드·드래그) CVE·VEX 즉석 분석 + 코퍼스 통계 시각화 (전부 브라우저 내 처리).
-> **사이드바 4페이지**:
-> - [Analyzer](https://kakyung98.github.io/ics-vex-dashboard/index.html) — SBOM→VEX + CPE 정규화(Ratcliff–Obershelp) + 수집불가 CVE 결정트리
-> - [Source data](https://kakyung98.github.io/ics-vex-dashboard/source.html) — ICS-CERT 어드바이저리·NVD CVE 검색
-> - [Corpus](https://kakyung98.github.io/ics-vex-dashboard/corpus.html) — Target CVE·CISA 어드바이저리·연도별 통계
-> - [Collectable CVEs](https://kakyung98.github.io/ics-vex-dashboard/collectable.html) — 소스 수집가능 CVE(CWE/벤더/장비, 클릭 드릴다운)
+> **사이드바 6페이지**:
+> - [Analyzer](https://kakyung98.github.io/ics-vex-dashboard/index.html) — SBOM→VEX + CPE 정규화(Ratcliff–Obershelp) + SSVC 우선순위 + VEX 문서(OpenVEX/CSAF) 출력
+> - [VEX Analysis Method](https://kakyung98.github.io/ics-vex-dashboard/vex-method.html) — 소스 확보/미확보 두 경로의 판정 방법 다이어그램
+> - [ICS Advisories-based CVE Corpus](https://kakyung98.github.io/ics-vex-dashboard/corpus.html) — Target CVE·CISA 어드바이저리·연도별 통계
+> - [Source Code Available CVEs](https://kakyung98.github.io/ics-vex-dashboard/collectable.html) — 소스 수집가능 CVE(CWE/벤더/장비, 클릭 드릴다운)
+> - [ICS-CERT Advisories](https://kakyung98.github.io/ics-vex-dashboard/source.html) — ICS-CERT 어드바이저리·NVD CVE 검색(어드바이저리 원문 표시)
+> - [ICS-SBOM](https://kakyung98.github.io/ics-vex-dashboard/ics-sbom.html) — KISA CycloneDX 스키마 역방향 SBOM 데이터셋(어드바이저리↔장비 링크)
 
 ---
 
@@ -55,9 +57,14 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
     grounding critic 통과 시 최종 VEX 확정. **PoC 를 생성·실행하지 않는다**
   - 대조할 코드가 없는 건을 CodeBERT 로 보내지 않는다 — 근거 없는 출력은 오탐만 만든다
 
-- **2차 VEX 추정**: 1차가 `UNDER_INVESTIGATION` 인 건은 확보 가능한 유일한 신호인
-  **CVSS Attack Vector × 배치 노출도**로 상태를 추정하고 `estimate_confidence` 를 함께 싣는다.
-  이는 VEX 진술이 아니라 추정치이며, 모델 학습 타깃은 이 값이다.
+- **소스 미확보 경로 (결정트리 폐기 → estimation + SSVC)**: 소스코드가 없으면 코드 근거가
+  없으므로 상태를 **항상 `under_investigation`** 으로 고정한다(과거의 Yes/No 결정트리는 제거).
+  대신 두 가지를 함께 싣는다:
+  - **`estimation` 하위필드** — `likely_affected` / `likely_not_affected` / `likely_fixed` /
+    `unable_to_determine`. VEX 진술이 아니라 추정치이며, 출력 문서(OpenVEX/CSAF)에 반영된다.
+  - **SSVC 우선순위** — SEI **Deployer** 트리(72행): Exploitation(KEV/EPSS) × System Exposure
+    (배치 노출도) × Automatable(CVSS AV) × Human Impact → `defer`/`scheduled`/`out-of-cycle`/`immediate`.
+    트리의 운영 맥락(노출도)을 SSVC 입력으로 흘려보내 우선순위화에 재사용한다.
 
 ## ⚠️ 데이터 성격 (정직한 고지)
 
@@ -82,9 +89,10 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | **전 코퍼스 정적 스윕** | `src/vex_batch.py` | `results/vex_batch.jsonl` + `_summary.json` (source_class 분류) |
 | **재현 후보 export (브리지)** | `tools/export_genie_candidates.py` | `results/genie_candidates.json` |
 | **로컬 PoC 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (CVE-Genie Exploiter 라우팅용) |
-| **동적 REST API 서비스** | `src/api_server.py` | FastAPI (SBOM→VEX·CPE 정규화·통계·검색·결정트리) |
-| **소스-불가 CVE 결정트리** | `src/vex_source_unavailable.py` | 운영 컨텍스트+CVSS AV 기반 VEX 결정트리 |
-| **정적 사이트 생성 (4페이지)** | `tools/build_site.py` | `index`·`source`·`corpus`·`collectable.html` + 데이터 JSON |
+| **동적 REST API 서비스** | `src/api_server.py` | FastAPI (SBOM→VEX·CPE 정규화·통계·검색·SSVC·VEX 문서 출력) |
+| **VEX 문서 출력** | `src/api_server.py` (Analyzer) | OpenVEX v0.2.0 · CSAF 2.0(csaf_vex) — status별 필수필드 + estimation + SSVC |
+| ~~소스-불가 CVE 결정트리~~ (폐기) | `src/vex_source_unavailable.py` | Yes/No 트리 제거 → `under_investigation`+estimation+SSVC 로 대체(모듈만 잔존) |
+| **정적 사이트 생성 (6페이지)** | `tools/build_site.py` | `index`·`vex-method`·`corpus`·`collectable`·`source`·`ics-sbom.html` + 데이터 JSON |
 | ~~검증 스펙/실행 검증~~ (격리) | `archive/*` | 과거 `results/exec_verification*.json` (역사적 근거로만 유지) |
 | **Ground Truth (증거 계층)** | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | SecureBERT 학습·평가 | `src/train_eval_vex.py` | `results/metrics.json` |
@@ -184,50 +192,58 @@ LOCAL_LLM_MODELS=local-poc=ics-vex-poc-sllm EXPLOITER_MODEL=local-poc \
 
 ## 웹 콘솔 — ICS-VEXForge
 
-좌측 사이드바 + 메인의 **4페이지 콘솔**. 두 형태로 동일하게 제공한다.
+좌측 사이드바 + 메인의 **6페이지 콘솔**. 두 형태로 동일하게 제공한다.
 
 - **정적 사이트 (GitHub Pages)** — `tools/build_site.py` 가 코퍼스를 동일-출처 JSON 으로 구워
-  `index.html`(Analyzer)·`source.html`·`corpus.html`·`collectable.html` 4페이지를 생성한다.
-  SBOM→VEX 계산, CVE 드릴다운, CPE 정규화(Ratcliff–Obershelp), VEX 결정트리, 검색까지
-  **전부 브라우저 안에서** 돈다(백엔드 불필요).
+  `index`·`vex-method`·`corpus`·`collectable`·`source`·`ics-sbom.html` 6페이지를 생성한다.
+  SBOM→VEX 계산, CVE 드릴다운, CPE 정규화(Ratcliff–Obershelp), SSVC 우선순위,
+  VEX 문서(OpenVEX/CSAF) 출력, 검색까지 **전부 브라우저 안에서** 돈다(백엔드 불필요).
 - **동적 REST 서비스 (로컬)** — [`src/api_server.py`](src/api_server.py) (FastAPI). 같은 UI 를
   라이브 REST 로 서빙하고 Swagger 문서를 자동 제공한다.
 
 ```bash
 pip install fastapi uvicorn
 python src/api_server.py --port 8100   # localhost:8100 (docs: /docs) · 0.0.0.0 바인딩=LAN 접속
-python tools/build_site.py             # 정적 4페이지 + 데이터 JSON 재생성 → GitHub Pages 푸시
+python tools/build_site.py             # 정적 6페이지 + 데이터 JSON 재생성 → GitHub Pages 푸시
 ```
 
-**페이지 (사이드바 메뉴)**
+**페이지 (사이드바 메뉴 순서)**
 
 | 페이지 | 내용 |
 |---|---|
-| **Analyzer** (`/`) | SBOM 붙여넣기·업로드·드래그 → 컴포넌트별 CVE·VEX. **소스확보 가능** CVE 는 코드 VEX, **소스 수집불가** CVE 는 아래 **VEX 결정트리로 CVE별 연결**. CPE 정규화(RO) 비교 카드 포함 |
-| **Source data** (`/source.html`) | **ICS-CERT 어드바이저리 검색**(3,767건) + **NVD CVE 검색**(코퍼스, 각 NVD 링크) |
-| **Corpus** (`/corpus.html`) | Target CVE·CISA 어드바이저리·연도별 통계 |
-| **Collectable CVEs** (`/collectable.html`) | 소스 수집가능 CVE(CWE/벤더/장비, 그래프 클릭 드릴다운) |
+| **Analyzer** (`/`) | SBOM 붙여넣기·업로드·드래그 → 컴포넌트별 CVE·VEX. **소스확보 가능** CVE 는 코드 VEX, **소스 수집불가** CVE 는 `under_investigation`+**estimation**+**SSVC**. CPE 정규화(RO) 비교, **VEX 문서(OpenVEX/CSAF) 출력** 포함 |
+| **VEX Analysis Method** (`/vex-method.html`) | 소스 확보/미확보 두 경로의 판정 방법을 다이어그램으로 설명 |
+| **ICS Advisories-based CVE Corpus** (`/corpus.html`) | Target CVE·CISA 어드바이저리·연도별 통계 |
+| **Source Code Available CVEs** (`/collectable.html`) | 소스 수집가능 CVE(CWE/벤더/장비, 그래프 클릭 드릴다운) |
+| **ICS-CERT Advisories** (`/source.html`) | **ICS-CERT 어드바이저리 검색**(어드바이저리 원문 표시) + **NVD CVE 검색**(코퍼스, 각 NVD 링크) |
+| **ICS-SBOM** (`/ics-sbom.html`) | KISA CycloneDX 스키마 역방향 SBOM 데이터셋 열람(어드바이저리↔장비 정확 링크) |
 
 **REST 엔드포인트** (`GET /docs` Swagger)
 
 | 엔드포인트 | 설명 |
 |---|---|
 | `GET /api/summary` · `/api/source_available` · `/api/by_year` · `/api/advisories` | 코퍼스 통계 (CVE 단위) |
-| `GET /api/advisories/list` · `/api/cve_search?q=` | Source-data 검색 |
+| `GET /api/advisories/list` · `/api/cve_search?q=` | 검색 (ICS-CERT Advisories 페이지) |
 | `GET /api/cves?dim=cwe&value=CWE-416&scope=source_available` | 드릴다운 (그래프 클릭 → 관련 CVE) |
-| `POST /api/vex` | `{sbom, exposure}` → 컴포넌트별 CVE + 라이브 VEX |
+| `POST /api/vex` | `{sbom, exposure}` → 컴포넌트별 CVE + 라이브 VEX(임베디드 VDR 포함) |
 | `POST /api/vex_compare` | **CPE 정규화(Ratcliff–Obershelp) vs 정확매칭 CVE 비교** |
-| `GET`·`POST /api/vex_tree` | **소스 수집불가 CVE 결정트리** (정의 / `{av, answers}`→판정) |
 
-**VEX 결정트리** ([`src/vex_source_unavailable.py`](src/vex_source_unavailable.py)) — 소스코드 확보가
-불가한 CVE 는 코드 VEX 대신 **운영 컨텍스트 + CVSS 공격 벡터(N/A·L·P 분기)** 로 판정하는
-결정트리를 따른다. 종결 justification: `protected_at_perimeter`·`code_not_reachable`·
-`protected_by_mitigating_control`·`requires_environment`·`requires_configuration`·
-`likely_affected_medium/high`. Analyzer 에서 SBOM 의 수집불가 CVE 마다 트리가 개별로 열린다.
+**소스 미확보 CVE — SSVC + estimation** (과거 Yes/No 결정트리는 폐기) — 소스코드를 확보할 수
+없는 CVE 는 코드 근거가 없으므로 상태를 **`under_investigation`** 으로 고정하고, ① `estimation`
+하위필드(`likely_affected`/`likely_not_affected`/`likely_fixed`/`unable_to_determine`)와 ② **SSVC
+우선순위**(SEI Deployer: Exploitation×System Exposure×Automatable×Human Impact →
+`defer`/`scheduled`/`out-of-cycle`/`immediate`)를 함께 부여한다. 배치 노출도가 SSVC 의 System
+Exposure 입력으로 흘러간다. 두 값 모두 **VEX 출력 문서(OpenVEX v0.2.0 / CSAF 2.0)** 에 반영된다.
 
-주요 기능: **Severity 대신 CVSS v3 점수** 표시, 통계 그래프 클릭 → 관련 CVE(NVD 링크),
-스크롤·sticky 헤더 결과 테이블. 배포는 Python 이 도는 어디든 가능(VPS·Render·Railway).
-전체 3-모델 라이브 판정이 필요하면 `src/vex_pipeline.py`(SecureBERT+CodeBERT+sLLM)를 쓴다.
+**VEX 문서 출력** — Analyzer 에서 판정을 마치면 컴포넌트별 VEX 를 **OpenVEX v0.2.0** 과
+**CSAF 2.0(csaf_vex)** 두 포맷으로 내려받는다. status 별 필수필드를 채워 넣는다:
+`not_affected`→justification, `affected`→remediation, `fixed`→status_notes,
+`under_investigation`→estimation/status_notes.
+
+주요 기능: **CVSS 를 "점수(등급)" 로 통일** 표시(NVD API 2.0 재수집으로 코퍼스 97% 커버),
+통계 그래프 클릭 → 관련 CVE(NVD 링크), 스크롤·sticky 헤더 결과 테이블. 배포는 Python 이
+도는 어디든 가능(VPS·Render·Railway). 전체 3-모델 라이브 판정이 필요하면
+`src/vex_pipeline.py`(SecureBERT+CodeBERT+sLLM)를 쓴다.
 
 ## 도메인 적응 (모델 튜닝)
 
