@@ -155,10 +155,21 @@ class Store:
         self.advisories_list = sorted(
             [{"id": a.get("advisory_id", ""), "title": a.get("title", ""),
               "vendor": _norm_vendor(a.get("vendor")), "year": a.get("year"),
-              "cves": a.get("cves", []), "url": a.get("url", ""),
-              "overview": (a.get("affected_text") or "").strip()[:800],
-              "cwes": a.get("cwes", [])} for a in adv],
+              "cves": a.get("cves", []), "url": a.get("url", "")} for a in adv],
             key=lambda x: str(x["id"]), reverse=True)
+        # full per-advisory detail (served on demand; not in the slim list)
+        self.adv_detail = {}
+        for a in adv:
+            aid = a.get("advisory_id", "")
+            if not aid:
+                continue
+            self.adv_detail[aid] = {
+                "id": aid, "title": a.get("title", ""),
+                "vendor": a.get("vendor", ""), "year": a.get("year"),
+                "url": a.get("url", ""), "cves": a.get("cves", []),
+                "cwes": a.get("cwes", []),
+                "overview": (a.get("affected_text") or "").strip(),
+                "vulns": a.get("vulns", [])}
         kb = _load(KB_PATH, {"components": []})["components"]
         self.kb_idx = {}
         for comp in kb:
@@ -495,6 +506,14 @@ def build_app():
     def advisories_list():
         """Full slim advisory list for the Source-data search engine."""
         return {"count": len(STORE.advisories_list), "advisories": STORE.advisories_list}
+
+    @app.get("/api/advisory/{aid}")
+    def advisory_detail(aid: str):
+        """Full CISA ICS-CERT advisory content (overview, CWEs, CVEs, metrics)."""
+        d = STORE.adv_detail.get(aid)
+        if not d:
+            raise HTTPException(404, "advisory not found")
+        return d
 
     @app.get("/api/sbom_index")
     def sbom_index():
@@ -1054,11 +1073,12 @@ async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.ass
     for(const c of a.cves)h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+c.id+'" target="_blank" rel="noopener">'+esc(c.id)+'</a></td><td class="mono">'+cvssFmt(c.cvss,c.severity)+'</td><td class="mono hint">'+esc(c.cwe||'')+'</td></tr>';
     h+='</tbody></table></div>';}else h+='<span class="hint">none</span>';
   document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
-async function openAdvisory(id){await loadSbomIndex();const a=ADV_LIST.find(x=>String(x.id)===String(id))||{id:id};
+async function openAdvisory(id){await loadSbomIndex();let a=ADV_LIST.find(x=>String(x.id)===String(id))||{id:id};
+  const det=await tryJson(['/api/advisory/'+encodeURIComponent(id),'adv/'+id+'.json']);if(det)a=Object.assign({},a,det);
   const cves=a.cves||[];
   document.getElementById('mtitle').textContent=a.id+' — '+(a.title||'');
   let h='<div class="srch-meta">'+esc(a.vendor||'')+' · '+esc(a.year||'')+(a.url?' · <a href="'+esc(a.url)+'" target="_blank" rel="noopener">open advisory</a>':'')+'</div>';
-  if(a.overview)h+='<h4 style="margin:12px 0 4px">Advisory overview</h4><div class="hint" style="white-space:pre-wrap;max-height:220px;overflow:auto;line-height:1.5">'+esc(a.overview)+'</div>';
+  if(a.overview)h+='<h4 style="margin:12px 0 4px">Advisory content <span class="hint">(CISA ICS-CERT)</span></h4><div class="hint" style="white-space:pre-wrap;max-height:380px;overflow:auto;line-height:1.55">'+esc(a.overview)+'</div>';
   if(a.cwes&&a.cwes.length)h+='<div class="srch-meta" style="margin-top:8px">CWE: <span class="mono">'+a.cwes.map(esc).join(', ')+'</span></div>';
   const rel={};for(const s of (ADV2SBOM[a.id]||[]))rel[s.asset_id]={a:s,cves:[],exact:true};
   for(const c of cves){for(const s of (CVE2SBOM[c]||[])){if(!rel[s.asset_id])rel[s.asset_id]={a:s,cves:[],exact:false};rel[s.asset_id].cves.push(c);}}
