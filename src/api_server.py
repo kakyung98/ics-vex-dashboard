@@ -854,13 +854,14 @@ async function run(){
   const bv=d.summary.by_vex||{};
   let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
-  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>SSVC</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
       ? '<span class="hint">source available &middot; code VEX</span>'
       : '<button class="treebtn" onclick="treeForCve(\\''+f.cve+'\\',\\''+(f.av||'N')+'\\')">Decide via tree &rarr;</button>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'"><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span> <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+f.cve+'\\')">\u270e VEX</button></td>'
+      +(function(){var ss=ssvcFor(f.cve);var sd=ssvcDecide(ss);return '<td><span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span></td>';})()
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
@@ -1055,6 +1056,44 @@ let _vexFields={};   // cve -> {status, justification, remediation, action_state
 const VEX_JUST=[['component_not_present','Component not present'],['vulnerable_code_not_present','Vulnerable code not present'],['vulnerable_code_not_in_execute_path','Vulnerable code not in execute path'],['vulnerable_code_cannot_be_controlled_by_adversary','Vulnerable code cannot be controlled by adversary'],['inline_mitigations_already_exist','Inline mitigations already exist']];
 const VEX_REMED=[['patch_or_firmware_upgrade','Patch or firmware upgrade'],['temporary_mitigation','Temporary mitigation'],['feature_disablement','Feature disablement'],['network_access_restriction','Network access restriction']];
 const VEX_STATUSES=[['affected','affected'],['not_affected','not_affected'],['fixed','fixed'],['under_investigation','under_investigation']];
+// ---- SSVC (CISA Coordinator v2.0.3) ----
+const SSVC_EXPL=[['none','none'],['poc','poc'],['active','active']];
+const SSVC_AUTO=[['no','no'],['yes','yes']];
+const SSVC_TECH=[['partial','partial'],['total','total']];
+const SSVC_MW=[['low','low'],['medium','medium'],['high','high']];
+const SSVC_TABLE={
+"none|no|partial|low":"Track","none|no|partial|medium":"Track","none|no|partial|high":"Track",
+"none|no|total|low":"Track","none|no|total|medium":"Track","none|no|total|high":"Track*",
+"none|yes|partial|low":"Track","none|yes|partial|medium":"Track","none|yes|partial|high":"Attend",
+"none|yes|total|low":"Track","none|yes|total|medium":"Track","none|yes|total|high":"Attend",
+"poc|no|partial|low":"Track","poc|no|partial|medium":"Track","poc|no|partial|high":"Track*",
+"poc|no|total|low":"Track","poc|no|total|medium":"Track*","poc|no|total|high":"Attend",
+"poc|yes|partial|low":"Track","poc|yes|partial|medium":"Track","poc|yes|partial|high":"Attend",
+"poc|yes|total|low":"Track","poc|yes|total|medium":"Track*","poc|yes|total|high":"Attend",
+"active|no|partial|low":"Track","active|no|partial|medium":"Track","active|no|partial|high":"Attend",
+"active|no|total|low":"Track","active|no|total|medium":"Attend","active|no|total|high":"Act",
+"active|yes|partial|low":"Attend","active|yes|partial|medium":"Attend","active|yes|partial|high":"Act",
+"active|yes|total|low":"Attend","active|yes|total|medium":"Act","active|yes|total|high":"Act"};
+const SSVC_COL={"Act":"var(--aff)","Attend":"var(--und)","Track*":"var(--und)","Track":"var(--safe)"};
+function ssvcAuto(f){
+  const kev=!!f.kev; let epss=f.epss; epss=(typeof epss==='number')?epss:parseFloat(epss)||0;
+  const expl=kev?'active':(epss>=0.1?'poc':'none');
+  const av=String(f.av||'').toUpperCase();
+  const autom=(av==='N'||av==='A')?'yes':'no';
+  let cv=f.cvss; cv=(typeof cv==='number')?cv:parseFloat(cv);
+  const sev=String(f.severity||'').toLowerCase();
+  const tech=(sev==='critical'||(!isNaN(cv)&&cv>=9))?'total':'partial';
+  return {exploitation:expl,automatable:autom,technical_impact:tech,mission_wellbeing:'medium'};
+}
+function ssvcDecide(p){return SSVC_TABLE[[p.exploitation,p.automatable,p.technical_impact,p.mission_wellbeing].join('|')]||'Track';}
+function ssvcVector(p){const E={none:'N',poc:'P',active:'A'},A={no:'N',yes:'Y'},T={partial:'P',total:'T'},M={low:'L',medium:'M',high:'H'};
+  return 'SSVCv2/E:'+E[p.exploitation]+'/A:'+A[p.automatable]+'/T:'+T[p.technical_impact]+'/M:'+M[p.mission_wellbeing]+'/D:'+ssvcDecide(p);}
+function ssvcFor(cve){
+  const f=((_lastVex&&_lastVex.cves)||[]).find(x=>x.cve===cve)||{};
+  const ov=(_vexFields[cve]||{}).ssvc||{};
+  return Object.assign(ssvcAuto(f),ov);
+}
+
 function _remedCsaf(r){return {patch_or_firmware_upgrade:'vendor_fix',temporary_mitigation:'mitigation',feature_disablement:'workaround',network_access_restriction:'mitigation'}[r]||'mitigation';}
 function _canonStatus(s){s=String(s||'');
   if(s==='LIKELY_AFFECTED')return 'affected';
@@ -1081,14 +1120,7 @@ function _autoStatus(cve){
     if(t){raw=t.status; just=t.justification||just;}
   }
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
-function _vexRows(){
-  const rows=[];
-  for(const f of ((_lastVex&&_lastVex.cves)||[])){
-    const auto=_autoStatus(f.cve); const ov=_vexFields[f.cve]||{};
-    rows.push(Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,
-      status:auto.status,justification:auto.justification},ov));
-  }
-  return rows;}
+function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const auto=_autoStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,status:auto.status,justification:auto.justification},ov);const ss=Object.assign(ssvcAuto(f),ov.ssvc||{});r.ssvc=ss;r.ssvc_decision=ssvcDecide(ss);r.ssvc_vector=ssvcVector(ss);rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
@@ -1098,14 +1130,15 @@ function _dl(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'appl
   setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
 function _opt(list,cur){return list.map(o=>'<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>').join('');}
 function _fld(id,label,val){return '<label class="vexf"><span class="hint">'+esc(label)+'</span><input id="'+id+'" class="srch" value="'+esc(val||'')+'"></label>';}
+function _ssvcPanel(cve){var p=ssvcFor(cve);var h='<label class="vexf"><span class="hint">Exploitation (auto: KEV/EPSS)</span><select id="vf-e" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_EXPL,p.exploitation)+'</select></label>';h+='<label class="vexf"><span class="hint">Automatable (auto: CVSS AV)</span><select id="vf-a" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_AUTO,p.automatable)+'</select></label>';h+='<label class="vexf"><span class="hint">Technical Impact (auto: CVSS)</span><select id="vf-t" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_TECH,p.technical_impact)+'</select></label>';h+='<label class="vexf"><span class="hint">Mission &amp; Well-being (operator input)</span><select id="vf-m" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_MW,p.mission_wellbeing)+'</select></label>';h+='<div id="vf-ssvc-dec" class="vm-verd" style="margin-top:4px"></div>';return h;}function _ssvcCur(){return {exploitation:_v('vf-e'),automatable:_v('vf-a'),technical_impact:_v('vf-t'),mission_wellbeing:_v('vf-m')};}function ssvcRecalc(){var p=_ssvcCur();var d=ssvcDecide(p);var el=document.getElementById('vf-ssvc-dec');if(el)el.innerHTML='SSVC decision: <b style="color:'+(SSVC_COL[d]||'var(--ink)')+'">'+d+'</b> &middot; <span class="mono hint">'+ssvcVector(p)+'</span>';}
 function openVexEditor(cve){
   const auto=_autoStatus(cve); const f=Object.assign({},auto,_vexFields[cve]||{});
   document.getElementById('mtitle').textContent='VEX statement — '+cve;
   let h='<div class="srch-meta">'+esc(f.component)+' · auto status: <b>'+esc(auto.status)+'</b>'+(auto.cvss!=null?(' · CVSS '+auto.cvss):'')+'</div>';
   h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\\''+cve+'\\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';
   h+='<div id="vf-body">'+_vexEditorBody(cve,f)+'</div>';
-  h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\\''+cve+'\\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
-  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
+  h+='<div style="border-top:1px solid var(--line);margin:14px 0 8px"></div><div class="srch-meta">SSVC priority (CISA Coordinator)</div>';h+=_ssvcPanel(cve);h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\\''+cve+'\\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
+  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');ssvcRecalc();}
 function _vexEditorBody(cve,f){
   f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
   const st=f.status;
@@ -1127,7 +1160,7 @@ function saveVexFields(cve){
   else if(st==='affected'){o.remediation=_v('vf-remed');o.action_statement=_v('vf-action');}
   else if(st==='fixed'){o.fixed_version=_v('vf-fixver');o.patch_reference=_v('vf-patch');o.verification_result=_v('vf-verify');}
   else {o.investigation_progress=_v('vf-prog');o.missing_evidence=_v('vf-missing');o.planned_update=_v('vf-plan');}
-  _vexFields[cve]=o; closeCves();
+  o.ssvc=_ssvcCur(); _vexFields[cve]=o; closeCves();
   const cell=document.getElementById('vexcell-'+cve); if(cell)cell.classList.add('vexset');
 }
 function exportOpenVex(){
@@ -1140,6 +1173,7 @@ function exportOpenVex(){
     else if(r.status==='affected'){st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||'Apply vendor update or mitigation for '+r.component+'.');}
     else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('fixed in '+r.fixed_version);if(r.patch_reference)bits.push('patch: '+r.patch_reference);if(r.verification_result)bits.push('verified: '+r.verification_result);if(bits.length)st.impact_statement=bits.join('; ');}
     else {const bits=[];if(r.investigation_progress)bits.push('progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('missing: '+r.missing_evidence);if(r.planned_update)bits.push('planned: '+r.planned_update);if(bits.length)st.impact_statement=bits.join('; ');}
+    st.ssvc={decision:r.ssvc_decision,vector:r.ssvc_vector};
     return st;});
   const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/openvex-"+Date.now(),
     author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:_isoNow(),version:1,tooling:"ICS-VEXForge",statements:stmts};
@@ -1155,6 +1189,7 @@ function exportCsaf(){
     else if(r.status==='affected'){v.remediations=[{category:_remedCsaf(r.remediation),details:(r.action_statement||('Apply '+(r.remediation||'patch_or_firmware_upgrade')+' for '+r.component)),product_ids:[pid]}];}
     else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('Fixed version: '+r.fixed_version);if(r.patch_reference)bits.push('Patch reference: '+r.patch_reference);if(r.verification_result)bits.push('Verification: '+r.verification_result);if(bits.length)notes.push({category:'details',title:'Fix',text:bits.join(' | ')});if(r.fixed_version)v.remediations=[{category:'vendor_fix',details:'Fixed in '+r.fixed_version+(r.patch_reference?(' ('+r.patch_reference+')'):''),product_ids:[pid]}];}
     else {const bits=[];if(r.investigation_progress)bits.push('Progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);if(r.planned_update)bits.push('Planned update: '+r.planned_update);if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
+    v.threats=[{category:'impact',details:'SSVC '+r.ssvc_decision+' | '+r.ssvc_vector,product_ids:[pid]}];
     v.notes=notes; return v;});
   const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
       publisher:{category:'vendor',name:'ICS-VEXForge (Chonnam SSRC)',namespace:'https://kakyung98.github.io/ics-vex-dashboard/'},
