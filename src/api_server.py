@@ -1459,8 +1459,8 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # Analyzer + VEX decision tree live on one page (one flow: SBOM -> source-available
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
-                  '<p class="sub" style="margin:0 0 18px;white-space:nowrap;max-width:none;overflow-x:auto">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs get a code-grounded VEX; source-uncollectable CVEs stay under_investigation with an estimation and an SSVC priority.</p>' + ANALYZER_HTML)
+                  '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
+                  'Source-available CVEs are confirmed by execution (build &rarr; reproduce &rarr; run); source-uncollectable CVEs stay under_investigation with an estimation and an SSVC priority.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
