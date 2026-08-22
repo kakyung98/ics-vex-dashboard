@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:c57e26b6-c924-5419-9182-b58001466570",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:johnson-controls-exacqvision-enterprise-system-manager",
       "name": "Johnson Controls exacqVision Enterprise System Manager",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'exacqVision Enterprise System Manager' by Johnson Controls, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Johnson Controls",
+      "purl": "pkg:generic/exacqvision-enterprise-system-manager@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:johnson-controls:exacqvision-enterprise-system-manager:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Johnson Controls"
       },
+      "supplier": {
+        "name": "Johnson Controls"
+      },
+      "tags": [
+        "ics",
+        "johnson-controls",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "55306b202a5d1d22f1525ca1e46f2efb09c3aa9fd17aa9f567a6a2616d116369"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-19-164-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-19-164-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:johnson-controls-exacqvision-enterprise-system-manager",
+      "dependsOn": [
+        "mod:johnson-controls-exacqvision-enterprise-system-manager:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:johnson-controls-exacqvision-enterprise-system-manager:firmware",
       "name": "exacqVision Enterprise System Manager Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Johnson Controls",
+      "manufacturer": {
+        "name": "Johnson Controls"
+      },
+      "supplier": {
+        "name": "Johnson Controls"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/exacqvision-enterprise-system-manager",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

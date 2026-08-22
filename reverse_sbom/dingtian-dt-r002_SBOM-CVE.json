@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:152beedc-0e26-5e1d-b733-00f9d7abc2a8",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,91 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:dingtian-dt-r002",
       "name": "Dingtian DT-R002",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'DT-R002' by Dingtian, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Dingtian",
+      "purl": "pkg:generic/dt-r002@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:dingtian:dt-r002:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Dingtian"
       },
+      "supplier": {
+        "name": "Dingtian"
+      },
+      "tags": [
+        "dingtian",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "adab534dff5bde7ce2c562fa201559dcdbb4b9679269649de63ad341c74d7214"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-299-01",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-268-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-23-299-01, icsa-25-268-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +131,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:dingtian-dt-r002",
+      "dependsOn": [
+        "mod:dingtian-dt-r002:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:dingtian-dt-r002:firmware",
       "name": "DT-R002 Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Dingtian",
+      "manufacturer": {
+        "name": "Dingtian"
+      },
+      "supplier": {
+        "name": "Dingtian"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/dt-r002",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

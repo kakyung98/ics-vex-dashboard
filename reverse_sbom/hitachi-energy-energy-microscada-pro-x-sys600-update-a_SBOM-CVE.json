@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:4c801b2e-1f87-5385-b157-1de6f13c3bcc",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:hitachi-energy-energy-microscada-pro-x-sys600-update-a",
       "name": "Hitachi Energy Energy MicroSCADA Pro/X SYS600 (Update A)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Energy MicroSCADA Pro/X SYS600 (Update A)' by Hitachi Energy, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Hitachi Energy",
+      "purl": "pkg:generic/energy-microscada-pro-x-sys600-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:hitachi-energy:energy-microscada-pro-x-sys600-update-a:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Hitachi Energy"
       },
+      "supplier": {
+        "name": "Hitachi Energy"
+      },
+      "tags": [
+        "hitachi-energy",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "84736748effe6d0e67416f1949c14609e06304b34211eef659a9943c568e52c3"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-331-04"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-331-04"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:hitachi-energy-energy-microscada-pro-x-sys600-update-a",
+      "dependsOn": [
+        "mod:hitachi-energy-energy-microscada-pro-x-sys600-update-a:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:hitachi-energy-energy-microscada-pro-x-sys600-update-a:firmware",
       "name": "Energy MicroSCADA Pro/X SYS600 (Update A) Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Hitachi Energy",
+      "manufacturer": {
+        "name": "Hitachi Energy"
+      },
+      "supplier": {
+        "name": "Hitachi Energy"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/energy-microscada-pro-x-sys600-update-a",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

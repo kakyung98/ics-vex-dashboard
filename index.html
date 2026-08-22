@@ -458,8 +458,8 @@ async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.ass
   if(src.length){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th style="text-align:center">Year</th></tr></thead><tbody>';
     for(const ad of src)h+='<tr class="clk" onclick="openAdvisory(\''+ad.id+'\')"><td class="idcell">'+esc(ad.id)+'</td><td>'+esc(ad.title||'')+'</td><td class="mono" style="text-align:center">'+esc(ad.year||'')+'</td></tr>';
     h+='</tbody></table></div>';}else h+='<span class="hint">none</span>';
-  h+='<h4 style="margin:14px 0 4px">Components ('+(a.components||[]).length+')</h4><div class="srch-wrap"><table><thead><tr><th>Name</th><th>Version</th></tr></thead><tbody>';
-  for(const c of (a.components||[]))h+='<tr><td>'+esc(c.name||'')+'</td><td class="mono">'+esc(c.version||'')+'</td></tr>';
+  h+='<h4 style="margin:14px 0 4px">Components ('+(a.components||[]).length+')</h4><div class="srch-wrap"><table><thead><tr><th>Name</th><th>Version</th><th>Description</th></tr></thead><tbody>';
+  for(const c of (a.components||[]))h+='<tr><td>'+esc(c.name||'')+'</td><td class="mono">'+esc(c.version||'')+'</td><td class="hint">'+esc(c.description||'')+'</td></tr>';
   h+='</tbody></table></div>';
   h+='<h4 style="margin:14px 0 4px">Identified CVEs ('+(a.cves||[]).length+')</h4>';
   if((a.cves||[]).length){h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>CVSS</th><th>CWE</th></tr></thead><tbody>';

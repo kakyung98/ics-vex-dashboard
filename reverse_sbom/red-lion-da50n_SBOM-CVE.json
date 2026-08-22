@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:17649307-d5f4-504d-819d-2d87d88e714a",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:red-lion-da50n",
       "name": "Red Lion DA50N",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'DA50N' by Red Lion, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Red Lion",
+      "purl": "pkg:generic/da50n@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:red-lion:da50n:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Red Lion"
       },
+      "supplier": {
+        "name": "Red Lion"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "red-lion",
+        "reverse-sbom"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "5b5e937a7326bf4f0952b88f1bae5fd42d88e4d8d68e65131d2c81f29d0f828d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-104-03"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-22-104-03"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:red-lion-da50n",
+      "dependsOn": [
+        "pkg:oss:linux-kernel"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:linux-kernel",
       "name": "Linux Kernel",
       "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
       "scope": "required",
       "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/linux",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

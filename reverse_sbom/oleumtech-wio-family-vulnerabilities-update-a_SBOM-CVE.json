@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:f63c4aaf-0e36-59ae-adf7-6b79cf81a170",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:oleumtech-wio-family-vulnerabilities-update-a",
       "name": "OleumTech WIO Family Vulnerabilities (Update A)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'WIO Family Vulnerabilities (Update A)' by OleumTech, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "OleumTech",
+      "purl": "pkg:generic/wio-family-vulnerabilities-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:oleumtech:wio-family-vulnerabilities-update-a:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "OleumTech"
       },
+      "supplier": {
+        "name": "OleumTech"
+      },
+      "tags": [
+        "ics",
+        "oleumtech",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "108dc682262d3c09f427313379b97596090f4ffc81c9c41bbd44005c52c0072b"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-14-202-01a"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-14-202-01a"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:oleumtech-wio-family-vulnerabilities-update-a",
+      "dependsOn": [
+        "mod:oleumtech-wio-family-vulnerabilities-update-a:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:oleumtech-wio-family-vulnerabilities-update-a:firmware",
       "name": "WIO Family Vulnerabilities (Update A) Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "OleumTech",
+      "manufacturer": {
+        "name": "OleumTech"
+      },
+      "supplier": {
+        "name": "OleumTech"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/wio-family-vulnerabilities-update-a",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

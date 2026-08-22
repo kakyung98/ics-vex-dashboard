@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:93aa0844-95a6-582b-a4ab-37fc0ca74479",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:weintek-cmt-x-series-hmi-easyweb-service",
       "name": "Weintek cMT X Series HMI EasyWeb Service",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'cMT X Series HMI EasyWeb Service' by Weintek, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Weintek",
+      "purl": "pkg:generic/cmt-x-series-hmi-easyweb-service@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:weintek:cmt-x-series-hmi-easyweb-service:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Weintek"
       },
+      "supplier": {
+        "name": "Weintek"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware",
+        "weintek"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6944636d88d2ff5a4f1fb450b380ea2ce0f7db46de17b33771c0d3a8864ffec4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-022-05"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-022-05"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:weintek-cmt-x-series-hmi-easyweb-service",
+      "dependsOn": [
+        "mod:weintek-cmt-x-series-hmi-easyweb-service:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:weintek-cmt-x-series-hmi-easyweb-service:firmware",
       "name": "cMT X Series HMI EasyWeb Service Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Weintek",
+      "manufacturer": {
+        "name": "Weintek"
+      },
+      "supplier": {
+        "name": "Weintek"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/cmt-x-series-hmi-easyweb-service",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

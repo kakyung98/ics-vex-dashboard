@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:af943497-781d-5880-ab6f-18d979124036",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:schneider-electric-u-motion-builder-update-a",
       "name": "Schneider Electric U.motion Builder (Update A)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'U.motion Builder (Update A)' by Schneider Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Schneider Electric",
+      "purl": "pkg:generic/u-motion-builder-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:schneider-electric:u-motion-builder-update-a:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Schneider Electric"
       },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "schneider-electric",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f6fbff84db0f0b86926d467bf7694b25506ee4effa0994e0efb9cf2029266a42"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-17-180-02"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-17-180-02"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:schneider-electric-u-motion-builder-update-a",
+      "dependsOn": [
+        "pkg:oss:sqlite"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:sqlite",
       "name": "SQLite",
       "version": "NOASSERTION",
+      "description": "Embedded database engine for alarm history, trend buffers, and local configuration storage.",
       "scope": "required",
       "publisher": "SQLite Consortium",
+      "manufacturer": {
+        "name": "SQLite Consortium"
+      },
+      "supplier": {
+        "name": "SQLite Consortium"
+      },
+      "tags": [
+        "database",
+        "oss",
+        "storage"
+      ],
       "cpe": "cpe:2.3:a:sqlite:sqlite:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/sqlite",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

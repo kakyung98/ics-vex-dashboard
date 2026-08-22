@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:01f97f45-ff15-59e6-ad30-1a485a32fed0",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,91 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:rockwell-automation-automation-lifecycle-services-with-vmware",
       "name": "Rockwell Automation Automation Lifecycle Services with VMware",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Automation Lifecycle Services with VMware' by Rockwell Automation, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Rockwell Automation",
+      "purl": "pkg:generic/automation-lifecycle-services-with-vmware@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:rockwell-automation:automation-lifecycle-services-with-vmware:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Rockwell Automation"
       },
+      "supplier": {
+        "name": "Rockwell Automation"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "reverse-sbom",
+        "rockwell-automation"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "17816231b26ca9c8eda42f042cc80368046fa64456cec6cd02122cf1de0d488e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-077-02",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-212-02"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-077-02, icsa-25-212-02"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +131,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:rockwell-automation-automation-lifecycle-services-with-vmware",
+      "dependsOn": [
+        "pkg:oss:linux-kernel"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:linux-kernel",
       "name": "Linux Kernel",
       "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
       "scope": "required",
       "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/linux",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

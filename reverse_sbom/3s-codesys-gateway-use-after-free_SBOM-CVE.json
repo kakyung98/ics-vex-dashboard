@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:417cedd8-3a49-5f9c-a9b3-80a7d4b7175a",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:3s-codesys-gateway-use-after-free",
       "name": "3S CODESYS Gateway Use After Free",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'CODESYS Gateway Use After Free' by 3S, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "3S",
+      "purl": "pkg:generic/codesys-gateway-use-after-free@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:3s:codesys-gateway-use-after-free:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "3S"
       },
+      "supplier": {
+        "name": "3S"
+      },
+      "tags": [
+        "3s",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e60f06c109826a7a71d0a8c7cfb60052c1614351e88fc169e2992e8f26379224"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-13-142-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-13-142-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:3s-codesys-gateway-use-after-free",
+      "dependsOn": [
+        "pkg:oss:codesys-rt"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:codesys-rt",
       "name": "CODESYS Control Runtime System",
       "version": "NOASSERTION",
+      "description": "Control runtime that executes IEC 61131-3 programs. Includes online change and a communication server.",
       "scope": "required",
       "publisher": "CODESYS GmbH",
+      "manufacturer": {
+        "name": "CODESYS GmbH"
+      },
+      "supplier": {
+        "name": "CODESYS GmbH"
+      },
+      "tags": [
+        "iec-61131",
+        "plc",
+        "runtime"
+      ],
       "cpe": "cpe:2.3:a:codesys:control_runtime_system:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/codesys-control",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

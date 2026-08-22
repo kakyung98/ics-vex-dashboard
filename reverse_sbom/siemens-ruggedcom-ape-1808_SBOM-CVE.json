@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:f8596c80-35d4-5a83-8115-7ce5407fd747",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,91 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-ruggedcom-ape-1808",
       "name": "Siemens RUGGEDCOM APE 1808",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'RUGGEDCOM APE 1808' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/ruggedcom-ape-1808@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:ruggedcom-ape-1808:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8e2f667814fe672d4bdf848e0a11efc38a3d5d1d56311670ca5010c7eca75d64"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-193-02",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-193-11"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-193-02, icsa-24-193-11"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +131,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-ruggedcom-ape-1808",
+      "dependsOn": [
+        "pkg:oss:openssh"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:openssh",
       "name": "OpenSSH",
       "version": "NOASSERTION",
+      "description": "SSH server/client used for remote management and secure file transfer.",
       "scope": "required",
       "publisher": "OpenBSD Project",
+      "manufacturer": {
+        "name": "OpenBSD Project"
+      },
+      "supplier": {
+        "name": "OpenBSD Project"
+      },
+      "tags": [
+        "oss",
+        "remote",
+        "ssh"
+      ],
       "cpe": "cpe:2.3:a:openbsd:openssh:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/openssh",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:317e0bb2-38bf-5660-891e-f55ed39e9ebf",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:honeywell-equip-and-performance-series-ip-cameras-and-recorders",
       "name": "Honeywell equIP and Performance Series IP Cameras and Recorders",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'equIP and Performance Series IP Cameras and Recorders' by Honeywell, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Honeywell",
+      "purl": "pkg:generic/equip-and-performance-series-ip-cameras-and-recorders@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:honeywell:equip-and-performance-series-ip-cameras-and-recorders:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Honeywell"
       },
+      "supplier": {
+        "name": "Honeywell"
+      },
+      "tags": [
+        "honeywell",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "df7a6c86d3aed8dc848ec8272928e781d1bc6b1c5b4fa1c46fdccc2f8810adaf"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-19-304-04"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-19-304-04"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:honeywell-equip-and-performance-series-ip-cameras-and-recorders",
+      "dependsOn": [
+        "mod:honeywell-equip-and-performance-series-ip-cameras-and-recorders:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:honeywell-equip-and-performance-series-ip-cameras-and-recorders:firmware",
       "name": "equIP and Performance Series IP Cameras and Reco Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Honeywell",
+      "manufacturer": {
+        "name": "Honeywell"
+      },
+      "supplier": {
+        "name": "Honeywell"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/equip-and-performance-series-ip-cameras-and-recorders",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

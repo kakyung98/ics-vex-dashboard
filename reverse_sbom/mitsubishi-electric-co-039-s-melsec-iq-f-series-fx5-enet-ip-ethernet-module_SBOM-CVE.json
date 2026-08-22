@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:56cb1679-8027-5e51-abc6-1b92dc71d96a",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:mitsubishi-electric-co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module",
       "name": "Mitsubishi Electric Co.&#039;s MELSEC iQ-F Series FX5-ENET/IP Ethernet Module",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Co.&#039;s MELSEC iQ-F Series FX5-ENET/IP Ethernet Module' by Mitsubishi Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Mitsubishi Electric",
+      "purl": "pkg:generic/co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:mitsubishi-electric:co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Mitsubishi Electric"
       },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "ics",
+        "mitsubishi-electric",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6f58da9ddf8c7b1bdd29a848c7e1c4dcce9235c1a47b48bb23b71a93a5feec04"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-169-06"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-169-06"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:mitsubishi-electric-co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module",
+      "dependsOn": [
+        "mod:mitsubishi-electric-co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:mitsubishi-electric-co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module:firmware",
       "name": "Co.&#039;s MELSEC iQ-F Series FX5-ENET/IP Ethern Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Mitsubishi Electric",
+      "manufacturer": {
+        "name": "Mitsubishi Electric"
+      },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/co-039-s-melsec-iq-f-series-fx5-enet-ip-ethernet-module",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:220ef6ab-0490-5189-a721-55724dcd051f",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:schneider-electric-electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-upda",
       "name": "Schneider Electric Electric Modicon M580 PLCs, BMENOR2200H and EVLink Pro AC (Update A)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Electric Modicon M580 PLCs, BMENOR2200H and EVLink Pro AC (Update A)' by Schneider Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Schneider Electric",
+      "purl": "pkg:generic/electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:schneider-electric:electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-update-a:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Schneider Electric"
       },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "schneider-electric",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "397c4389872eb2fb6f9e4ff0d11a6abb46dac8f63aa344ba885a51eac2d59922"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-035-04"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-035-04"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:schneider-electric-electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-upda",
+      "dependsOn": [
+        "mod:schneider-electric-electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-upda:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:schneider-electric-electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-upda:firmware",
       "name": "Electric Modicon M580 PLCs, BMENOR2200H and EVLi Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/electric-modicon-m580-plcs-bmenor2200h-and-evlink-pro-ac-update-a",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

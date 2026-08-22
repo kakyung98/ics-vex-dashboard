@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:03841935-f697-509d-a858-4d74fae28601",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:clorius-controls-a-s-isc-scada-insecure-java-client-web-authentication",
       "name": "Clorius Controls A/S ISC SCADA Insecure Java Client Web Authentication",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Controls A/S ISC SCADA Insecure Java Client Web Authentication' by Clorius, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Clorius",
+      "purl": "pkg:generic/controls-a-s-isc-scada-insecure-java-client-web-authentication@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:clorius:controls-a-s-isc-scada-insecure-java-client-web-authentication:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Clorius"
       },
+      "supplier": {
+        "name": "Clorius"
+      },
+      "tags": [
+        "clorius",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8ef0088b9dbf3c6a8d9bbc3b8bb61464c5f4e52cef2d31d0a3d364320dc69394"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-15-013-02"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-15-013-02"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:clorius-controls-a-s-isc-scada-insecure-java-client-web-authentication",
+      "dependsOn": [
+        "pkg:oss:openjdk"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:openjdk",
       "name": "OpenJDK Runtime",
       "version": "NOASSERTION",
+      "description": "Java runtime on which the supervisory/historian server application runs.",
       "scope": "required",
       "publisher": "Eclipse Adoptium",
+      "manufacturer": {
+        "name": "Eclipse Adoptium"
+      },
+      "supplier": {
+        "name": "Eclipse Adoptium"
+      },
+      "tags": [
+        "java",
+        "oss",
+        "runtime"
+      ],
       "cpe": "cpe:2.3:a:oracle:jdk:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/openjdk",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

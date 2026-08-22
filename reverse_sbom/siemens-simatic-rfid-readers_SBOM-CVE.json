@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:4e15304b-443c-5da8-800d-68c141093e8a",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-simatic-rfid-readers",
       "name": "Siemens SIMATIC RFID Readers",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SIMATIC RFID Readers' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/simatic-rfid-readers@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:simatic-rfid-readers:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7e9de4284f83669812edff2cc32b9cf51bad4f8c52b99b670e34b79ab6c23fea"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-256-07"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-256-07"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-simatic-rfid-readers",
+      "dependsOn": [
+        "pkg:oss:net-snmp"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:net-snmp",
       "name": "Net-SNMP",
       "version": "NOASSERTION",
+      "description": "SNMP agent that lets a network management system poll device status.",
       "scope": "required",
       "publisher": "Net-SNMP Project",
+      "manufacturer": {
+        "name": "Net-SNMP Project"
+      },
+      "supplier": {
+        "name": "Net-SNMP Project"
+      },
+      "tags": [
+        "management",
+        "oss",
+        "snmp"
+      ],
       "cpe": "cpe:2.3:a:net-snmp:net-snmp:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/net-snmp",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

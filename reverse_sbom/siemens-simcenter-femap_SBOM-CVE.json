@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:28dd363e-844a-5226-8d30-6729419fcaa4",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,103 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-simcenter-femap",
       "name": "Siemens Simcenter Femap",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Simcenter Femap' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/simcenter-femap@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:simcenter-femap:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "82a7da278903d245f73db3394a9ca875986848d13ffec2c23ece7ccfd69b21b1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-21-159-12",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-21-257-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-041-03",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-069-10",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-104-15",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-132-14",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-195-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-046-10",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-193-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-347-06",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-079-03",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-226-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-134-05",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-225-11"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-21-159-12, icsa-21-257-04, icsa-22-041-03, icsa-22-069-10, icsa-22-104-15, icsa-22-132-14, icsa-22-195-04, icsa-24-046-10, icsa-24-193-04, icsa-24-347-06, icsa-25-079-03, icsa-25-226-04, icsa-26-134-05, icsa-26-225-11"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +143,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-simcenter-femap",
+      "dependsOn": [
+        "mod:siemens-simcenter-femap:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:siemens-simcenter-femap:firmware",
       "name": "Simcenter Femap Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/simcenter-femap",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:12e5f516-9cca-5448-9182-8c6516af567d",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,94 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-siprotec-5",
       "name": "Siemens SIPROTEC 5",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SIPROTEC 5' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/siprotec-5@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:siprotec-5:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "679a98d30e5a0f7b6936d55496441a72dd39670b2e4d73128e928ae83b655414"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-044-03",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-044-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-191-06",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-226-10",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-134-13"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-044-03, icsa-25-044-04, icsa-25-191-06, icsa-25-226-10, icsa-26-134-13"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +134,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-siprotec-5",
+      "dependsOn": [
+        "mod:siemens-siprotec-5:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:siemens-siprotec-5:firmware",
       "name": "SIPROTEC 5 Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/siprotec-5",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

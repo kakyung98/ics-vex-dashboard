@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:95377e0a-c417-5f7d-b54f-7c6ce891d16a",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:kieback-amp-peter-ddc4000-series",
       "name": "Kieback&amp;Peter DDC4000 Series",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'DDC4000 Series' by Kieback&amp;Peter, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Kieback&amp;Peter",
+      "purl": "pkg:generic/ddc4000-series@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:kieback-amp-peter:ddc4000-series:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Kieback&amp;Peter"
       },
+      "supplier": {
+        "name": "Kieback&amp;Peter"
+      },
+      "tags": [
+        "ics",
+        "kieback-amp-peter",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e19720c0def7955576646ce491229fa773b1bf18b987f466aae8a97f2ea81150"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-291-05"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-291-05"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:kieback-amp-peter-ddc4000-series",
+      "dependsOn": [
+        "mod:kieback-amp-peter-ddc4000-series:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:kieback-amp-peter-ddc4000-series:firmware",
       "name": "DDC4000 Series Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Kieback&amp;Peter",
+      "manufacturer": {
+        "name": "Kieback&amp;Peter"
+      },
+      "supplier": {
+        "name": "Kieback&amp;Peter"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/ddc4000-series",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

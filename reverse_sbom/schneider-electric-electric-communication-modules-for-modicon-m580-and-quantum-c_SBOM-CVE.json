@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:4615b58c-0da3-5823-9c03-361d8a9f4f64",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:schneider-electric-electric-communication-modules-for-modicon-m580-and-quantum-c",
       "name": "Schneider Electric Electric Communication Modules for Modicon M580 and Quantum Controllers (Update B)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Electric Communication Modules for Modicon M580 and Quantum Controllers (Update B)' by Schneider Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Schneider Electric",
+      "purl": "pkg:generic/electric-communication-modules-for-modicon-m580-and-quantum-controllers-update-b@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:schneider-electric:electric-communication-modules-for-modicon-m580-and-quantum-controllers-update-b:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Schneider Electric"
       },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "schneider-electric",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "57c6bbb6586c14a1d410f316281fd2b6839d1963cfe3acfd57967d36473690d1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-058-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-058-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:schneider-electric-electric-communication-modules-for-modicon-m580-and-quantum-c",
+      "dependsOn": [
+        "mod:schneider-electric-electric-communication-modules-for-modicon-m580-and-quantum-c:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:schneider-electric-electric-communication-modules-for-modicon-m580-and-quantum-c:firmware",
       "name": "Electric Communication Modules for Modicon M580  Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/electric-communication-modules-for-modicon-m580-and-quantum-controllers-update-b",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

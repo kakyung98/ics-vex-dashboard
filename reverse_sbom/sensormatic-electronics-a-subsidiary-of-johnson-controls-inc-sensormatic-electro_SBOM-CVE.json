@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:f546386f-7f0a-57ff-bfd5-605ae22d755f",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:sensormatic-electronics-a-subsidiary-of-johnson-controls-inc-sensormatic-electro",
       "name": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc Sensormatic Electronics iSTAR",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Sensormatic Electronics iSTAR' by Sensormatic Electronics, a subsidiary of Johnson Controls Inc, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc",
+      "purl": "pkg:generic/sensormatic-electronics-istar@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:sensormatic-electronics-a-subsidiary-of-johnson-controls-inc:sensormatic-electronics-istar:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc"
       },
+      "supplier": {
+        "name": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "sensormatic-electronics-a-subsidiary-of-johnson-controls-inc",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "05a6891122371c7eca3300525c574ad20c288fa01c6335a3f89a0ab505336173"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-242-11"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-22-242-11"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:sensormatic-electronics-a-subsidiary-of-johnson-controls-inc-sensormatic-electro",
+      "dependsOn": [
+        "mod:sensormatic-electronics-a-subsidiary-of-johnson-controls-inc-sensormatic-electro:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:sensormatic-electronics-a-subsidiary-of-johnson-controls-inc-sensormatic-electro:firmware",
       "name": "Sensormatic Electronics iSTAR Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc",
+      "manufacturer": {
+        "name": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc"
+      },
+      "supplier": {
+        "name": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/sensormatic-electronics-istar",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:1e2f1322-0a38-5fde-86e6-210fb4506d80",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:optergy-proton-enterprise-building-management-system",
       "name": "Optergy Proton Enterprise Building Management System",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Proton Enterprise Building Management System' by Optergy, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Optergy",
+      "purl": "pkg:generic/proton-enterprise-building-management-system@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:optergy:proton-enterprise-building-management-system:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Optergy"
       },
+      "supplier": {
+        "name": "Optergy"
+      },
+      "tags": [
+        "ics",
+        "optergy",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "88e0c8e686d58dee305338e3038dbebacc91f52f661aead564956337538efed9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-19-157-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-19-157-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:optergy-proton-enterprise-building-management-system",
+      "dependsOn": [
+        "pkg:oss:openvpn"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:openvpn",
       "name": "OpenVPN",
       "version": "NOASSERTION",
+      "description": "Tunneling client/server for remote-maintenance access.",
       "scope": "required",
       "publisher": "OpenVPN Inc.",
+      "manufacturer": {
+        "name": "OpenVPN Inc."
+      },
+      "supplier": {
+        "name": "OpenVPN Inc."
+      },
+      "tags": [
+        "oss",
+        "remote",
+        "vpn"
+      ],
       "cpe": "cpe:2.3:a:openvpn:openvpn:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/openvpn",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

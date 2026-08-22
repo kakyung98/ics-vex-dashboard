@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:a3b73392-d299-57dc-a879-b3b4990e92a5",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-simatic-s7-plc-web-server",
       "name": "Siemens SIMATIC S7 PLC Web Server",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SIMATIC S7 PLC Web Server' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/simatic-s7-plc-web-server@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:simatic-s7-plc-web-server:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "reverse-sbom",
+        "siemens"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d368119f258d68c63a78a0e1b4cc183afdc9f33537a970e271d78e4317b7a9c0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-134-15"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-134-15"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-simatic-s7-plc-web-server",
+      "dependsOn": [
+        "pkg:oss:linux-kernel"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:linux-kernel",
       "name": "Linux Kernel",
       "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
       "scope": "required",
       "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/linux",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

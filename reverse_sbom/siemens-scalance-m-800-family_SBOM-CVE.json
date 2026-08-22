@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:3bf2bdce-8e4d-5d71-8a7d-74bef1f75bba",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-scalance-m-800-family",
       "name": "Siemens SCALANCE M-800 Family",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SCALANCE M-800 Family' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/scalance-m-800-family@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:scalance-m-800-family:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "reverse-sbom",
+        "siemens"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a91eccd861fbe326fc71de38eca503569df8c8b3d62d3c751d30274d8a449c5e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-319-06"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-319-06"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,45 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-scalance-m-800-family",
+      "dependsOn": [
+        "mod:siemens-scalance-m-800-family:firmware",
+        "pkg:oss:dnsmasq"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:siemens-scalance-m-800-family:firmware",
       "name": "SCALANCE M-800 Family Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/scalance-m-800-family",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",
@@ -81,10 +185,23 @@
       "bom-ref": "pkg:oss:dnsmasq",
       "name": "dnsmasq",
       "version": "NOASSERTION",
+      "description": "DNS cache and DHCP address-assignment service within the cell network.",
       "scope": "required",
       "publisher": "Simon Kelley",
+      "manufacturer": {
+        "name": "Simon Kelley"
+      },
+      "supplier": {
+        "name": "Simon Kelley"
+      },
+      "tags": [
+        "dhcp",
+        "dns",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:thekelleys:dnsmasq:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/dnsmasq",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:aa284481-e5d0-55f2-b424-4cd9bf15c299",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,102 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-sinec-nms",
       "name": "Siemens SINEC NMS",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SINEC NMS' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/sinec-nms@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:sinec-nms:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "reverse-sbom",
+        "siemens"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7efd2379d2ac726caf0191689386a9787d5baa8a402bdc845f96725198dead7b"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-21-222-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-21-257-14",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-21-287-05",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-285-08",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-046-15",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-102-07",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-228-06",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-319-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-191-01",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-289-08",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-043-01",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-111-03",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-111-09"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-21-222-04, icsa-21-257-14, icsa-21-287-05, icsa-23-285-08, icsa-24-046-15, icsa-24-102-07, icsa-24-228-06, icsa-24-319-04, icsa-25-191-01, icsa-25-289-08, icsa-26-043-01, icsa-26-111-03, icsa-26-111-09"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +142,49 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-sinec-nms",
+      "dependsOn": [
+        "mod:siemens-sinec-nms:firmware",
+        "pkg:oss:openssl",
+        "pkg:oss:libcurl",
+        "pkg:oss:spring",
+        "pkg:oss:tomcat",
+        "pkg:oss:expat"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:siemens-sinec-nms:firmware",
       "name": "SINEC NMS Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/sinec-nms",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",
@@ -81,10 +201,23 @@
       "bom-ref": "pkg:oss:openssl",
       "name": "OpenSSL",
       "version": "NOASSERTION",
+      "description": "TLS/SSL and general-purpose cryptography library. Handles the device's secure communication channels and certificate processing.",
       "scope": "required",
       "publisher": "OpenSSL Project",
+      "manufacturer": {
+        "name": "OpenSSL Project"
+      },
+      "supplier": {
+        "name": "OpenSSL Project"
+      },
+      "tags": [
+        "crypto",
+        "oss",
+        "tls"
+      ],
       "cpe": "cpe:2.3:a:openssl:openssl:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/openssl",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -108,10 +241,23 @@
       "bom-ref": "pkg:oss:libcurl",
       "name": "libcurl",
       "version": "NOASSERTION",
+      "description": "HTTP/TLS client used for firmware-update downloads and cloud telemetry uploads.",
       "scope": "required",
       "publisher": "curl Project",
+      "manufacturer": {
+        "name": "curl Project"
+      },
+      "supplier": {
+        "name": "curl Project"
+      },
+      "tags": [
+        "client",
+        "http",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:haxx:libcurl:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/curl",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -135,10 +281,23 @@
       "bom-ref": "pkg:oss:spring",
       "name": "Spring Framework",
       "version": "NOASSERTION",
+      "description": "Dependency-injection and web-layer framework for the supervisory server backend services.",
       "scope": "required",
       "publisher": "VMware Tanzu",
+      "manufacturer": {
+        "name": "VMware Tanzu"
+      },
+      "supplier": {
+        "name": "VMware Tanzu"
+      },
+      "tags": [
+        "framework",
+        "java",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:vmware:spring_framework:*:*:*:*:*:*:*:*",
       "purl": "pkg:maven/org.springframework/spring-core",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -162,10 +321,23 @@
       "bom-ref": "pkg:oss:tomcat",
       "name": "Apache Tomcat",
       "version": "NOASSERTION",
+      "description": "Servlet container serving the web-based supervisory client.",
       "scope": "required",
       "publisher": "Apache Software Foundation",
+      "manufacturer": {
+        "name": "Apache Software Foundation"
+      },
+      "supplier": {
+        "name": "Apache Software Foundation"
+      },
+      "tags": [
+        "java",
+        "oss",
+        "web"
+      ],
       "cpe": "cpe:2.3:a:apache:tomcat:*:*:*:*:*:*:*:*",
       "purl": "pkg:maven/org.apache.tomcat/tomcat",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -189,10 +361,23 @@
       "bom-ref": "pkg:oss:expat",
       "name": "Expat",
       "version": "NOASSERTION",
+      "description": "Streaming XML parser. Used to process device-description files and project configurations.",
       "scope": "required",
       "publisher": "libexpat Project",
+      "manufacturer": {
+        "name": "libexpat Project"
+      },
+      "supplier": {
+        "name": "libexpat Project"
+      },
+      "tags": [
+        "oss",
+        "parser",
+        "xml"
+      ],
       "cpe": "cpe:2.3:a:libexpat_project:libexpat:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/expat",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

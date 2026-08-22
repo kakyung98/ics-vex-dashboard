@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:8dfced36-39c2-5e88-a951-013fc397fb8c",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:o6-automation-gmbh-open62541",
       "name": "o6 Automation GmbH Open62541",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Open62541' by o6 Automation GmbH, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "o6 Automation GmbH",
+      "purl": "pkg:generic/open62541@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:o6-automation-gmbh:open62541:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "o6 Automation GmbH"
       },
+      "supplier": {
+        "name": "o6 Automation GmbH"
+      },
+      "tags": [
+        "ics",
+        "o6-automation-gmbh",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "cf57e06e9f2b99fff1ac9dba64778f0da28c6b47ea6b34cb9648d06c3f41e341"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-036-03"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-036-03"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:o6-automation-gmbh-open62541",
+      "dependsOn": [
+        "pkg:oss:open62541"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:open62541",
       "name": "open62541 OPC UA Stack",
       "version": "NOASSERTION",
+      "description": "Device-embedded OPC UA server implementation. Provides the tag address space and secure channels.",
       "scope": "required",
       "publisher": "open62541 Project",
+      "manufacturer": {
+        "name": "open62541 Project"
+      },
+      "supplier": {
+        "name": "open62541 Project"
+      },
+      "tags": [
+        "opc-ua",
+        "oss",
+        "protocol"
+      ],
       "cpe": "cpe:2.3:a:open62541:open62541:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/open62541",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
