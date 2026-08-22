@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 """Minimal OpenAI-compatible server for the local PoC model (Qwen2.5-Coder-7B + LoRA).
 
-Purpose: serve `models/poc-sllm-lora` over an OpenAI-compatible endpoint so
-CVE-Genie's per-role routing (EXPLOITER_MODEL=local-poc) can point its
-exploit-developer step at a local, non-refusing model for AUTHORIZED reproduction
-of PUBLISHED CVEs (research benchmark building). vLLM is unavailable on native
-Windows, so this reuses the proven transformers+peft 4-bit load from vex_infer.
+Purpose: serve `models/poc-sllm-lora` over an OpenAI-compatible endpoint so the
+execution-verification engine's per-role routing (EXPLOITER_MODEL=local-poc) can
+point its exploit-developer step at a local, non-refusing model for AUTHORIZED
+reproduction of PUBLISHED CVEs (research benchmark building). vLLM is unavailable
+on native Windows, so this reuses the proven transformers+peft 4-bit load from vex_infer.
 
 Endpoints (subset of the OpenAI API that agentlib/langchain uses):
   GET  /v1/models
@@ -15,11 +15,11 @@ Endpoints (subset of the OpenAI API that agentlib/langchain uses):
 
 Run:
   python tools/serve_poc_llm.py --port 8000 --served-name ics-vex-poc-sllm
-Then point CVE-Genie at it:
+Then point the engine at it:
   LOCAL_LLM_BASE_URL=http://localhost:8000/v1  LOCAL_LLM_MODELS=local-poc=ics-vex-poc-sllm
   EXPLOITER_MODEL=local-poc
 
-NOTE: from a CVE-Genie Docker container use http://host.docker.internal:8000/v1.
+NOTE: from the engine's Docker container use http://host.docker.internal:8000/v1.
 """
 import os, sys, json, time, argparse, re, uuid
 

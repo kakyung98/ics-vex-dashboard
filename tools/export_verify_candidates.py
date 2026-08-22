@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Static -> CVE-Genie bridge: pick which CVEs go to execution reproduction.
+"""Bridge: pick which CVEs go to execution verification.
 
-The static sweep (src/vex_batch.py) triages all 13,005 findings. Only a small
-subset can ever be *execution-verified* by CVE-Genie: those whose OSS source is
-obtainable. This bridge reads the static batch + code evidence and emits a
-prioritized reproduction worklist for CVE-Genie, so the expensive execution
-runs are spent only where they can grow the execution-verified ground truth.
+The corpus sweep (src/vex_batch.py) triages all 13,005 findings. Only a small
+subset can ever be *execution-verified*: those whose OSS source is obtainable.
+This bridge reads the batch + code evidence and emits a prioritized reproduction
+worklist for the execution-verification engine, so the expensive execution runs
+are spent only where they can grow the execution-verified ground truth.
 
 Selection (source_class from vex_batch):
   ready       code-available  -> vuln/patched pair already collected (repo+commit)
@@ -17,12 +17,12 @@ Ranking: ready-before-needs-code, then KEV, reachability (yes>conditional),
 severity, EPSS. One row per CVE (findings deduped, worst-case aggregated).
 
 Outputs:
-  results/genie_candidates.json   ordered worklist (CVE id, repo, commit, why)
+  results/verify_candidates.json   ordered worklist (CVE id, repo, commit, why)
 
 Run:
   python src/vex_batch.py                 # produce results/vex_batch.jsonl first
-  python tools/export_genie_candidates.py
-  python tools/export_genie_candidates.py --ready-only --top 25
+  python tools/export_verify_candidates.py
+  python tools/export_verify_candidates.py --ready-only --top 25
 """
 import os, sys, json, argparse
 from collections import defaultdict
@@ -30,7 +30,7 @@ from collections import defaultdict
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 BATCH = os.path.join(BASE, "results", "vex_batch.jsonl")
 CODE_EV = os.path.join(BASE, "data", "code_evidence.json")
-OUT = os.path.join(BASE, "results", "genie_candidates.json")
+OUT = os.path.join(BASE, "results", "verify_candidates.json")
 
 SEV_RANK = {"critical": 4, "high": 3, "medium": 2, "low": 1, "": 0}
 REACH_RANK = {"yes": 3, "conditional": 2, "unknown": 1, "no": 0}
@@ -127,17 +127,18 @@ def main():
     ready_n = sum(1 for c in cands if c["status"] == "ready")
     out = {
         "generated_from": "results/vex_batch.jsonl",
-        "note": ("Static triage selects execution-reproduction targets. 'ready' has "
-                 "a collected vuln/patched pair (repo+commit) and can go straight to "
-                 "CVE-Genie; 'needs-code' is OSS-attributed but needs code collection "
-                 "first. vendor-proprietary findings are excluded (not reproducible)."),
+        "note": ("Triage selects execution-verification targets. 'ready' has a "
+                 "collected vuln/patched pair (repo+commit) and can go straight to "
+                 "the build->reproduce->verify engine; 'needs-code' is OSS-attributed "
+                 "but needs code collection first. vendor-proprietary findings are "
+                 "excluded (not reproducible)."),
         "total_candidates": len(cands),
         "ready": ready_n,
         "needs_code": len(cands) - ready_n,
         "candidates": cands,
     }
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("== CVE-Genie reproduction candidates ==")
+    print("== execution-verification candidates ==")
     print("ready (code collected) :", ready_n)
     print("needs-code (OSS)       :", len(cands) - ready_n)
     print("wrote:", os.path.relpath(OUT, BASE))

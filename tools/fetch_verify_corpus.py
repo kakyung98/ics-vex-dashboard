@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CVE-GENIE 공개 데이터셋(Apache 2.0)에서 (CVE 정보 -> PoC exploit) SFT 코퍼스 수집.
+Build a (CVE info -> PoC exploit) SFT corpus from an external public reproduction
+dataset (Apache-2.0). Used only to fine-tune the local exploit-developer model.
 
 각 재현 CVE 폴더에서:
   conversations/cve_info.json  -> 명령(instruction) 재료 (CVE 설명·CWE·근본원인)
   scripts/exploit.py           -> 완성(completion) 타깃 (실제 작동 PoC)
 
 출력: data/poc_sft.jsonl  { cve, instruction, completion, lang }
-출처: github.com/BUseclab/cve-genie (Apache-2.0), CVE-GENIE (Ullah et al.)
+Data source (attribution per Apache-2.0): github.com/BUseclab/cve-genie (Ullah et al.).
 """
 import base64, json, os, subprocess, sys, time
 

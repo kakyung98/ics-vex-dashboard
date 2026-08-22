@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # C 라이브러리 CVE 실행 검증 harness (WSL + AddressSanitizer)
-# CVE-GENIE/FORGE 방식: 취약 버전 ASan 빌드 -> 트리거 실행 -> 크래시 관측 -> 패치 대조
+# 실행검증 방식: 취약 버전 ASan 빌드 -> 트리거 실행 -> 크래시 관측 -> 패치 대조
 # 사용: wsl -e bash tools/exec_verify_c.sh
 # 출력: results/exec_verification_c.json
 #
