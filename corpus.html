@@ -629,13 +629,24 @@ function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim
   h+='<div class="srch-wrap"><table><thead><tr><th>Vendor</th><th>Product</th><th>Advisory</th><th style="text-align:center">Comp</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){h+='<tr class="clk" onclick="openSbom(\''+a.asset_id+'\')"><td>'+esc(a.vendor||'')+'</td><td>'+esc(a.product||'')+'</td><td class="mono hint">'+(a.advisories||[]).join(', ')+'</td><td class="mono" style="text-align:center">'+a.component_count+'</td><td style="text-align:center"><span class="cvecount">'+(a.cves||[]).length+'</span></td></tr>';}
   document.getElementById('sbom-results').innerHTML=h+'</tbody></table></div>';}
+let _curSbomFile='';
+async function toggleSbomJson(){
+  const pre=document.getElementById('sbomjson');const btn=document.getElementById('sbomjson-btn');if(!pre)return;
+  if(pre.style.display!=='none'){pre.style.display='none';btn.innerHTML='&#128196; View CycloneDX JSON';return;}
+  pre.style.display='block';btn.innerHTML='&#128196; Hide CycloneDX JSON';
+  if(!pre.dataset.loaded){pre.textContent='loading…';
+    try{const r=await fetch('reverse_sbom/'+encodeURIComponent(_curSbomFile));let t=await r.text();
+      try{t=JSON.stringify(JSON.parse(t),null,2);}catch(e){}
+      pre.textContent=t;pre.dataset.loaded='1';
+    }catch(e){pre.textContent='failed to load '+_curSbomFile;}}
+}
 async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.asset_id===id);if(!a)return;
   document.getElementById('mtitle').textContent=(a.product||a.asset_id)+' — '+(a.vendor||'');
-  const _fp='reverse_sbom/'+encodeURIComponent(a.file||'');
-  const _btn='display:inline-block;padding:7px 14px;border-radius:8px;font-weight:600;text-decoration:none;border:1px solid var(--line)';
+  _curSbomFile=a.file||'';
+  const _btn='display:inline-block;padding:7px 14px;border-radius:8px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--accent);color:#04121b';
   let h='<div class="srch-meta">'+esc(a.vendor||'')+' · '+esc(a.base_platform||'')+' · <span class="mono">'+esc(a.file||'')+'</span></div>';
-  h+='<div style="margin:10px 0 4px">'
-    +'<a href="'+_fp+'" target="_blank" rel="noopener" style="'+_btn+';background:var(--accent);color:#04121b">&#128196; View CycloneDX JSON &#8599;</a></div>';
+  h+='<div style="margin:10px 0 4px"><button id="sbomjson-btn" style="'+_btn+'" onclick="toggleSbomJson()">&#128196; View CycloneDX JSON</button></div>'
+    +'<pre id="sbomjson" style="display:none;max-height:380px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;margin:0 0 4px;white-space:pre;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;line-height:1.5"></pre>';
   const src=(a.advisories||[]).map(x=>ADV_LIST.find(y=>String(y.id)===String(x))||{id:x});
   h+='<h4 style="margin:12px 0 4px">Source ICS-CERT advisories ('+src.length+')</h4>';
   if(src.length){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th style="text-align:center">Year</th></tr></thead><tbody>';
