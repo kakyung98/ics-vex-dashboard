@@ -22,7 +22,7 @@ The VEX computation here is the deterministic static leg (component match ->
 CVSS AV x exposure reachability); it needs no GPU/models, so the service starts
 instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
 """
-import os, sys, json, argparse, difflib, csv
+import os, sys, json, argparse, difflib, csv, re
 from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -428,6 +428,58 @@ def vex_for_sbom(sbom, exposure=None):
             prev = by_cve.get(cv["id"])
             if prev is None or rank.get(status, 0) > rank.get(prev["final_vex"], 0):
                 by_cve[cv["id"]] = row
+    # Also honor CVEs embedded in the SBOM's own VDR (vulnerabilities[]), e.g. a
+    # reverse_sbom SBOM-CVE whose closed-firmware component has no OSS KB match.
+    ref2name = {c.get("bom-ref"): (c.get("name") or "") for c in sbom.get("components", [])}
+    _top = (sbom.get("metadata") or {}).get("component") or {}
+    if _top.get("bom-ref"):
+        ref2name[_top["bom-ref"]] = _top.get("name") or ""
+    for v in (sbom.get("vulnerabilities", []) or []):
+        cid = v.get("id")
+        if not cid or cid in by_cve:
+            continue
+        props = {p.get("name"): p.get("value") for p in (v.get("properties") or [])}
+        score, sev = None, ""
+        for r in (v.get("ratings") or []):
+            if r.get("score") is not None:
+                try: score = float(r["score"])
+                except (TypeError, ValueError): pass
+            if r.get("severity"):
+                sev = str(r["severity"]).lower()
+        if score is None:
+            score = STORE.cvss.get(cid)
+        if not sev:
+            sev = (STORE.cve_index.get(cid, {}) or {}).get("severity", "")
+        av = ""
+        _m = re.search(r"AV:([NALP])", props.get("cisa:cvss-v3-vector", "") or "")
+        if _m:
+            av = _m.group(1)
+        kev = str(props.get("signal:kev", "")).lower() == "true"
+        aff = ((v.get("affects") or [{}])[0] or {}).get("ref")
+        exp = exposure or G.exposure_for(_top.get("name") or ref2name.get(aff, "") or "device")
+        if av:
+            reach = G.reachability(av, exp)
+            if reach == "no":
+                status, just = NOT_AFFECTED, "vulnerable_code_cannot_be_controlled_by_adversary"
+                basis = "AV:P physical access" if av == "P" else f"AV:{av} unreachable at '{exp}'"
+            else:
+                status, just, _v, basis, _c, reach = G.estimate(av, exp, "per-cve", "C", kev)
+        else:
+            status, just, basis, reach = UNDER_INV, None, "no CVSS attack vector in the source advisory", "unknown"
+        try:
+            epss = float(props["signal:epss"]) if props.get("signal:epss") not in (None, "NA", "") else None
+        except (TypeError, ValueError):
+            epss = None
+        by_cve[cid] = {
+            "cve": cid, "component": ref2name.get(aff, aff or _top.get("name") or ""),
+            "version": "NOASSERTION", "version_pinned": False, "severity": sev, "cvss": score,
+            "source_collectable": bool(STORE.cve_index.get(cid, {}).get("source_available") or cid in STORE.pairs),
+            "av": av, "kev": kev, "epss": epss,
+            "exposure": exp, "reachability": reach, "has_code_pair": cid in STORE.pairs,
+            "final_vex": status, "justification": just, "basis": basis,
+            "evidence_tier": ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED) else "under-investigation"),
+            "from_vdr": True,
+        }
     cves = sorted(by_cve.values(),
                   key=lambda r: (-rank.get(r["final_vex"], 0), r["cve"]))
     by = Counter(r["final_vex"] for r in cves)
