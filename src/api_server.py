@@ -616,6 +616,17 @@ def build_app():
         """Compact index of the synthetic ICS-SBOM dataset (assets + components + CVEs)."""
         return STORE.sbom_index
 
+    @app.get("/reverse_sbom/{name}")
+    def reverse_sbom_file(name: str):
+        """Serve a raw CycloneDX SBOM-CVE file (parity with GitHub Pages static hosting)."""
+        from fastapi.responses import FileResponse
+        if "/" in name or "\\" in name or not name.endswith(".json"):
+            raise HTTPException(400, "bad name")
+        path = os.path.join(BASE, "reverse_sbom", name)
+        if not os.path.isfile(path):
+            raise HTTPException(404, "SBOM not found")
+        return FileResponse(path, media_type="application/json")
+
     @app.get("/api/cve_search")
     def cve_search(q: str = "", limit: int = 100):
         """Search the corpus CVEs (id / CWE / vendor / component)."""
@@ -1348,7 +1359,11 @@ function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim
   document.getElementById('sbom-results').innerHTML=h+'</tbody></table></div>';}
 async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.asset_id===id);if(!a)return;
   document.getElementById('mtitle').textContent=(a.product||a.asset_id)+' — '+(a.vendor||'');
+  const _fp='reverse_sbom/'+encodeURIComponent(a.file||'');
   let h='<div class="srch-meta">'+esc(a.vendor||'')+' · '+esc(a.base_platform||'')+' · <span class="mono">'+esc(a.file||'')+'</span></div>';
+  h+='<div style="margin:8px 0 2px;display:flex;gap:8px;flex-wrap:wrap">'
+    +'<a class="treebtn" href="'+_fp+'" target="_blank" rel="noopener">View CycloneDX JSON &#8599;</a>'
+    +'<a class="treebtn" href="'+_fp+'" download="'+esc(a.file||'sbom.json')+'">Download JSON</a></div>';
   const src=(a.advisories||[]).map(x=>ADV_LIST.find(y=>String(y.id)===String(x))||{id:x});
   h+='<h4 style="margin:12px 0 4px">Source ICS-CERT advisories ('+src.length+')</h4>';
   if(src.length){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th style="text-align:center">Year</th></tr></thead><tbody>';
