@@ -193,8 +193,17 @@ class Store:
         self.kb_match = [(c, [s.lower() for s in
                               {c.get("name", ""), c.get("cpe_product", ""), c.get("key", "")} if s])
                          for c in self.kb_comps]
-        # CVE -> max CVSS v3 base score (from findings.csv); enrich KB versions
+        # CVE -> CVSS base score. NVD (tools/fetch_nvd_cvss_bulk.py) is authoritative,
+        # then findings.csv / NVD cache / CISA advisory metrics fill any gaps.
         self.cvss = {}
+        _ncp = os.path.join(DATA, "nvd_cvss.json")
+        if os.path.exists(_ncp):
+            for _c, _v in _load(_ncp, {}).items():
+                if _c != "__cursor__" and isinstance(_v, dict) and _v.get("score") is not None:
+                    try:
+                        self.cvss[_c] = float(_v["score"])
+                    except (TypeError, ValueError):
+                        pass
         fp = os.path.join(DATA, "findings.csv")
         if os.path.exists(fp):
             for r in csv.DictReader(open(fp, encoding="utf-8-sig")):

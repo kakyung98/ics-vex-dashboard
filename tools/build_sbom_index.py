@@ -30,6 +30,15 @@ OUT = os.path.join(BASE, "sbom_index.json")
 
 def load_scores():
     score, sev = {}, {}
+    ncp = os.path.join(DATA, "nvd_cvss.json")
+    if os.path.exists(ncp):
+        for c, v in json.load(open(ncp, encoding="utf-8")).items():
+            if c == "__cursor__" or not isinstance(v, dict):
+                continue
+            if v.get("score") is not None:
+                score[c] = v["score"]
+            if v.get("severity"):
+                sev[c] = str(v["severity"]).lower()
     nvd_p = os.path.join(DATA, "nvd_cache.json")
     if os.path.exists(nvd_p):
         nvd = json.load(open(nvd_p, encoding="utf-8"))
