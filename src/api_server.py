@@ -1179,9 +1179,9 @@ PAGES = {
     "ics-sbom": ("ICS-SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
-        ("source", "source.html", "ICS-CERT Advisories"),
         ("corpus", "corpus.html", "Corpus"),
         ("collectable", "collectable.html", "Collectable CVEs"),
+        ("source", "source.html", "ICS-CERT Advisories"),
         ("ics-sbom", "ics-sbom.html", "ICS-SBOM")]
 
 
