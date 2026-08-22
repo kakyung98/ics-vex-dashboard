@@ -546,12 +546,19 @@ async function initSource(){
   const hint=document.getElementById('adv-hint');if(hint)hint.textContent=ADV_LIST.length.toLocaleString()+' loaded';
   advSearch();
 }
+let _advAll=false;let _advQ=null;
+function advShowAll(){_advAll=true;advSearch();}
+function advShowLess(){_advAll=false;advSearch();document.getElementById('adv-results').scrollIntoView({block:'nearest'});}
 function advSearch(){
   const q=(document.getElementById('adv-q').value||'').trim().toLowerCase();
+  if(q!==_advQ){_advQ=q;_advAll=false;}
   let items=ADV_LIST;
   if(q)items=ADV_LIST.filter(a=>String(a.id).toLowerCase().includes(q)||(a.title||'').toLowerCase().includes(q)||(a.vendor||'').toLowerCase().includes(q)||String(a.year).includes(q)||(a.cves||[]).some(c=>String(c).toLowerCase().includes(q)));
-  const total=items.length;items=items.slice(0,100);
-  let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> advisor'+(total===1?'y':'ies')+(total>100?' · showing first 100':'')+'</div>';
+  const total=items.length;const CAP=100;const capped=!_advAll&&total>CAP;if(capped)items=items.slice(0,CAP);
+  let meta='<b>'+total.toLocaleString()+'</b> advisor'+(total===1?'y':'ies');
+  if(capped)meta+=' · showing first '+CAP+' <button class="treebtn" onclick="advShowAll()">Show all '+total.toLocaleString()+' &rarr;</button>';
+  else if(_advAll&&total>CAP)meta+=' · showing all <button class="treebtn" onclick="advShowLess()">Show less</button>';
+  let h='<div class="srch-meta">'+meta+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th style="text-align:center">Year</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){
     h+='<tr class="clk" onclick="openAdvisory(\''+esc(String(a.id))+'\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
@@ -600,10 +607,18 @@ async function loadAdvList(){if((ADV_LIST||[]).length){if(!Object.keys(CVE2ADV).
 function buildCve2Sbom(){CVE2SBOM={};ADV2SBOM={};for(const a of SBOM_INDEX){for(const c of (a.cves||[])){(CVE2SBOM[c.id]=CVE2SBOM[c.id]||[]).push(a);}for(const ad of (a.advisories||[])){(ADV2SBOM[ad]=ADV2SBOM[ad]||[]).push(a);}}}
 async function loadSbomIndex(){if(SBOM_INDEX.length)return;const d=await tryJson(['/api/sbom_index','sbom_index.json']);SBOM_INDEX=(d&&d.assets)||[];buildCve2Sbom();}
 async function initIcsSbom(){const el=document.getElementById('sbom-results');if(el)el.innerHTML='<span class="hint">loading…</span>';await loadSbomIndex();await loadAdvList();const h=document.getElementById('sbom-hint');if(h)h.textContent=SBOM_INDEX.length.toLocaleString()+' advisory-grounded SBOMs loaded';sbomSearch();}
-function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim().toLowerCase();let items=SBOM_INDEX;
+let _sbomAll=false;let _sbomQ=null;
+function sbomShowAll(){_sbomAll=true;sbomSearch();}
+function sbomShowLess(){_sbomAll=false;sbomSearch();document.getElementById('sbom-results').scrollIntoView({block:'nearest'});}
+function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim().toLowerCase();
+  if(q!==_sbomQ){_sbomQ=q;_sbomAll=false;}
+  let items=SBOM_INDEX;
   if(q)items=SBOM_INDEX.filter(a=>(a.vendor||'').toLowerCase().includes(q)||(a.product||'').toLowerCase().includes(q)||(a.base_platform||'').toLowerCase().includes(q)||(a.advisories||[]).some(x=>x.toLowerCase().includes(q))||(a.cves||[]).some(c=>c.id.toLowerCase().includes(q)));
-  const total=items.length;items=items.slice(0,150);
-  let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> SBOM'+(total===1?'':'s')+(total>150?' · showing first 150':'')+'</div>';
+  const total=items.length;const CAP=150;const capped=!_sbomAll&&total>CAP;if(capped)items=items.slice(0,CAP);
+  let meta='<b>'+total.toLocaleString()+'</b> SBOM'+(total===1?'':'s');
+  if(capped)meta+=' · showing first '+CAP+' <button class="treebtn" onclick="sbomShowAll()">Show all '+total.toLocaleString()+' &rarr;</button>';
+  else if(_sbomAll&&total>CAP)meta+=' · showing all <button class="treebtn" onclick="sbomShowLess()">Show less</button>';
+  let h='<div class="srch-meta">'+meta+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Vendor</th><th>Product</th><th>Advisory</th><th style="text-align:center">Comp</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){h+='<tr class="clk" onclick="openSbom(\''+a.asset_id+'\')"><td>'+esc(a.vendor||'')+'</td><td>'+esc(a.product||'')+'</td><td class="mono hint">'+(a.advisories||[]).join(', ')+'</td><td class="mono" style="text-align:center">'+a.component_count+'</td><td style="text-align:center"><span class="cvecount">'+(a.cves||[]).length+'</span></td></tr>';}
   document.getElementById('sbom-results').innerHTML=h+'</tbody></table></div>';}
