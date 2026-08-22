@@ -1,705 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""ICS-VEX REST API service (dynamic backend — the counterpart to the static Pages).
-
-GitHub Pages can only host static HTML. This is a real running service: a FastAPI
-app that serves the hybrid-pipeline data over REST and computes VEX for an uploaded
-SBOM live. Interactive Swagger docs are auto-served at /docs (and /redoc).
-
-Endpoints
-  GET  /                      -> the interactive web page (SBOM -> VEX + live stats)
-  GET  /api/health            -> service + data status
-  GET  /api/summary           -> corpus static-VEX summary (by verdict/tier/source_class)
-  GET  /api/candidates        -> reproduction candidates (?status=ready&top=15)
-  GET  /api/findings/{cve}    -> aggregated static verdict for one CVE
-  POST /api/vex               -> {sbom, exposure} -> per-component CVE + live VEX
-  GET  /docs                  -> Swagger UI (auto)
-
-Run
-  python src/api_server.py --port 8100
-  # or:  uvicorn src.api_server:app --port 8100
-The VEX computation here is the deterministic static leg (component match ->
-CVSS AV x exposure reachability); it needs no GPU/models, so the service starts
-instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
-"""
-import os, sys, json, argparse, difflib, csv, re
-from collections import defaultdict, Counter
-
-BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-sys.path.insert(0, os.path.join(BASE, "src"))
-import build_ground_truth as G  # reachability(), exposure_for(), CWE_NAME
-import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
-
-# Official MITRE CWE names (Title Case). Covers every CWE shown in the
-# collectable-CVE pool + common corpus weaknesses. Overrides the informal
-# lowercase names in build_ground_truth.CWE_NAME.
-CWE_OFFICIAL = {
-    "CWE-20": "Improper Input Validation",
-    "CWE-22": "Improper Limitation of a Pathname to a Restricted Directory (Path Traversal)",
-    "CWE-74": "Improper Neutralization of Special Elements (Injection)",
-    "CWE-78": "OS Command Injection",
-    "CWE-79": "Cross-site Scripting",
-    "CWE-88": "Argument Injection",
-    "CWE-89": "SQL Injection",
-    "CWE-94": "Improper Control of Generation of Code (Code Injection)",
-    "CWE-116": "Improper Encoding or Escaping of Output",
-    "CWE-119": "Improper Restriction of Operations within the Bounds of a Memory Buffer",
-    "CWE-120": "Buffer Copy without Checking Size of Input (Classic Buffer Overflow)",
-    "CWE-121": "Stack-based Buffer Overflow",
-    "CWE-122": "Heap-based Buffer Overflow",
-    "CWE-125": "Out-of-bounds Read",
-    "CWE-130": "Improper Handling of Length Parameter Inconsistency",
-    "CWE-187": "Partial String Comparison",
-    "CWE-190": "Integer Overflow or Wraparound",
-    "CWE-193": "Off-by-one Error",
-    "CWE-208": "Observable Timing Discrepancy",
-    "CWE-222": "Truncation of Security-relevant Information",
-    "CWE-254": "Security Features",
-    "CWE-281": "Improper Preservation of Permissions",
-    "CWE-284": "Improper Access Control",
-    "CWE-287": "Improper Authentication",
-    "CWE-295": "Improper Certificate Validation",
-    "CWE-306": "Missing Authentication for Critical Function",
-    "CWE-311": "Missing Encryption of Sensitive Data",
-    "CWE-330": "Use of Insufficiently Random Values",
-    "CWE-345": "Insufficient Verification of Data Authenticity",
-    "CWE-346": "Origin Validation Error",
-    "CWE-362": "Race Condition (Concurrent Execution using Shared Resource)",
-    "CWE-364": "Signal Handler Race Condition",
-    "CWE-399": "Resource Management Errors",
-    "CWE-400": "Uncontrolled Resource Consumption",
-    "CWE-415": "Double Free",
-    "CWE-416": "Use After Free",
-    "CWE-428": "Unquoted Search Path or Element",
-    "CWE-440": "Expected Behavior Violation",
-    "CWE-476": "NULL Pointer Dereference",
-    "CWE-522": "Insufficiently Protected Credentials",
-    "CWE-611": "Improper Restriction of XML External Entity Reference",
-    "CWE-665": "Improper Initialization",
-    "CWE-668": "Exposure of Resource to Wrong Sphere",
-    "CWE-787": "Out-of-bounds Write",
-    "CWE-835": "Loop with Unreachable Exit Condition (Infinite Loop)",
-    "CWE-843": "Access of Resource Using Incompatible Type (Type Confusion)",
-    "CWE-924": "Improper Enforcement of Message Integrity During Transmission",
-    "CWE-1104": "Use of Unmaintained Third Party Components",
-}
-CWE_NAMES = {**getattr(G, "CWE_NAME", {}), **CWE_OFFICIAL}
-
-RESULTS = os.path.join(BASE, "results")
-DATA = os.path.join(BASE, "data")
-KB_PATH = os.path.join(RESULTS, "cve_kb.json")
-
-AFFECTED, NOT_AFFECTED, UNDER_INV = "LIKELY_AFFECTED", "LIKELY_NOT_AFFECTED", "UNDER_INVESTIGATION"
-EXPOSURES = ["isolated-cell", "control-network", "dmz-routable", "remote-accessible"]
-
-
-def _load(path, default=None):
-    return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else default
-
-
-def _norm_vendor(v):
-    """Merge whitespace/zero-width duplicates (e.g. '\\u200bSiemens' -> 'Siemens')."""
-    return (v or "").replace("​", "").strip().strip(",").strip() or "Unknown"
-
-
-def _canon_cwe(rows):
-    """A CVE's CWE = the most common non-empty CWE across its findings (the
-    worst-VEX row can lack a CWE while another row carries it)."""
-    cws = [r.get("cwe") for r in rows if r.get("cwe")]
-    return Counter(cws).most_common(1)[0][0] if cws else ""
-
-
-def _device_type(name):
-    """ICS-aware device categorization from the product/device slug."""
-    d = (name or "").lower()
-    if any(k in d for k in ("vxworks", "ipnet", "tcp-ip", "tcpip", "rtos", "treck",
-                            "interpeak", "freertos", "stack")):
-        return "OS / Protocol stack"
-    if any(k in d for k in ("scalance", "ruggedcom", "switch", "router", "gateway",
-                            "sinec", "telecontrol", "firewall", "vpn", "modem", "ethernet")):
-        return "Network / Comms"
-    if any(k in d for k in ("simatic", "s7-", "-cpu", "plc", "logix", "modicon",
-                            "controller", "logic")):
-        return "PLC / Controller"
-    if any(k in d for k in ("sinamics", "drive", "motion", "servo", "inverter", "robot")):
-        return "Drive / Motion"
-    if any(k in d for k in ("hmi", "scada", "wincc", "historian", "workstation",
-                            "-server", "nms", "-ins")):
-        return "HMI / SCADA / Server"
-    return "Other / Field device"
-
-
-class Store:
-    """Loads the corpus artifacts once; refresh() re-reads them."""
-    def __init__(self):
-        self.refresh()
-
-    def refresh(self):
-        self.summary = _load(os.path.join(RESULTS, "vex_batch_summary.json"), {})
-        self.candidates = _load(os.path.join(RESULTS, "genie_candidates.json"),
-                                {"candidates": []})
-        self.code_ev = _load(os.path.join(DATA, "code_evidence.json"), {})
-        self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
-        # CISA ICS advisories (the corpus provenance)
-        adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
-        adv = list(adv_raw.values()) if isinstance(adv_raw, dict) else (adv_raw or [])
-        adv_yr = Counter(str(a.get("year")) for a in adv if a.get("year"))
-        adv_ven = Counter(a.get("vendor") for a in adv if a.get("vendor"))
-        self.advisories = {
-            "total": len(adv),
-            "vendors": len(adv_ven),
-            "by_year": {y: adv_yr[y] for y in sorted(adv_yr, key=lambda x: int(x))},
-            "top_vendors": [{"vendor": v, "count": n} for v, n in adv_ven.most_common(8)],
-        }
-        # slim searchable advisory list (for the Source-data search engine)
-        self.advisories_list = sorted(
-            [{"id": a.get("advisory_id", ""), "title": a.get("title", ""),
-              "vendor": _norm_vendor(a.get("vendor")), "year": a.get("year"),
-              "cves": a.get("cves", []), "url": a.get("url", "")} for a in adv],
-            key=lambda x: str(x["id"]), reverse=True)
-        # full per-advisory detail (served on demand; not in the slim list)
-        self.adv_detail = {}
-        for a in adv:
-            aid = a.get("advisory_id", "")
-            if not aid:
-                continue
-            self.adv_detail[aid] = {
-                "id": aid, "title": a.get("title", ""),
-                "vendor": a.get("vendor", ""), "year": a.get("year"),
-                "url": a.get("url", ""), "cves": a.get("cves", []),
-                "cwes": a.get("cwes", []),
-                "overview": (a.get("affected_text") or "").strip(),
-                "vulns": a.get("vulns", [])}
-        kb = _load(KB_PATH, {"components": []})["components"]
-        self.kb_idx = {}
-        for comp in kb:
-            for key in {comp["key"], comp["name"].lower(), comp.get("cpe_product", "")}:
-                if key:
-                    self.kb_idx[key.lower()] = comp
-        # per-CVE static verdicts from the batch (for /api/findings/{cve})
-        self.by_cve = defaultdict(list)
-        p = os.path.join(RESULTS, "vex_batch.jsonl")
-        if os.path.exists(p):
-            for line in open(p, encoding="utf-8"):
-                try:
-                    r = json.loads(line)
-                    self.by_cve[r["cve"]].append(r)
-                except Exception:
-                    continue
-        self.pairs = {k for k, v in self.code_ev.items()
-                      if isinstance(v, dict) and v.get("vuln_code") and v.get("patched_code")}
-        # distinct KB components + their match strings (for CPE normalization)
-        self.kb_comps = list({id(c): c for c in self.kb_idx.values()}.values())
-        self.kb_match = [(c, [s.lower() for s in
-                              {c.get("name", ""), c.get("cpe_product", ""), c.get("key", "")} if s])
-                         for c in self.kb_comps]
-        # CVE -> CVSS base score. NVD (tools/fetch_nvd_cvss_bulk.py) is authoritative,
-        # then findings.csv / NVD cache / CISA advisory metrics fill any gaps.
-        self.cvss = {}
-        _ncp = os.path.join(DATA, "nvd_cvss.json")
-        if os.path.exists(_ncp):
-            for _c, _v in _load(_ncp, {}).items():
-                if _c != "__cursor__" and isinstance(_v, dict) and _v.get("score") is not None:
-                    try:
-                        self.cvss[_c] = float(_v["score"])
-                    except (TypeError, ValueError):
-                        pass
-        fp = os.path.join(DATA, "findings.csv")
-        if os.path.exists(fp):
-            for r in csv.DictReader(open(fp, encoding="utf-8-sig")):
-                sc = r.get("cvss_v3_score")
-                if not sc:
-                    continue
-                try:
-                    sc = float(sc)
-                except ValueError:
-                    continue
-                if sc > self.cvss.get(r["cve"], -1):
-                    self.cvss[r["cve"]] = sc
-        # fill gaps from the NVD cache (metric.score) so every KB CVE gets a real base score
-        _nvd = _load(os.path.join(DATA, "nvd_cache.json"), {})
-        for _cid, _e in (_nvd.items() if isinstance(_nvd, dict) else []):
-            if _cid in self.cvss:
-                continue
-            _m = (_e or {}).get("metric") or {}
-            _sc = _m.get("score") if isinstance(_m, dict) else None
-            if _sc is not None:
-                try:
-                    self.cvss[_cid] = float(_sc)
-                except (TypeError, ValueError):
-                    pass
-        # broadest source: CISA advisory per-CVE metrics (v3 then v4)
-        _adv_raw2 = _load(os.path.join(DATA, "cisa_advisories.json"), {})
-        for _a in (_adv_raw2.values() if isinstance(_adv_raw2, dict) else []):
-            for _vu in (_a.get("vulns") or []):
-                _c = _vu.get("cve")
-                if not _c or _c in self.cvss:
-                    continue
-                _s = _vu.get("cvss_v3_score")
-                if _s is None:
-                    _s = _vu.get("cvss_v4_score")
-                if _s is not None:
-                    try:
-                        self.cvss[_c] = float(_s)
-                    except (TypeError, ValueError):
-                        pass
-        for comp in self.kb_comps:
-            for lst in comp.get("versions", {}).values():
-                for cv in lst:
-                    cv["cvss"] = self.cvss.get(cv["id"])
-        # per-CVE index for the clickable "related CVEs" drill-down
-        srank = {"critical": 4, "high": 3, "medium": 2, "low": 1}
-        vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-        self.cve_index = {}
-        for cve, rows in self.by_cve.items():
-            w = max(rows, key=lambda r: vrank.get(r["final_vex"], 0))
-            sev = max((r.get("sev", "") for r in rows), key=lambda s: srank.get(s, 0))
-            parts = cve.split("-")
-            ev = self.code_ev.get(cve) or {}
-            repo = ev.get("repo")
-            self.cve_index[cve] = {
-                "cve": cve, "vex": w["final_vex"], "reachability": w.get("reachability"),
-                "severity": sev if sev in srank else "unrated",
-                "cvss": self.cvss.get(cve),
-                "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
-                "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
-                "source_available": any(r.get("tier") == "A" for r in rows),
-                "has_code_pair": cve in self.pairs,
-                "vendors": sorted({_norm_vendor(r.get("vendor")) for r in rows}),
-                "device_types": sorted({_device_type(r.get("device")) for r in rows}),
-                "component": w.get("product") or w.get("component"),
-                "repo_url": (f"https://github.com/{repo}" if repo and "/" in repo else None),
-            }
-        # CVE-level view (unique CVEs, worst-case verdict across assets)
-        rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-        cve_worst, cve_tier = {}, {}
-        for cve, rows in self.by_cve.items():
-            w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
-            cve_worst[cve] = w["final_vex"]
-            cve_tier[cve] = w.get("evidence_tier")
-        # unique CVE count by CVE-ID year
-        yr = Counter()
-        for cve in cve_worst:
-            parts = cve.split("-")
-            if len(parts) >= 2 and parts[1].isdigit():
-                yr[int(parts[1])] += 1
-        self.by_year = {str(y): yr[y] for y in sorted(yr)}
-        self.cve_level = {
-            "total_cves": len(cve_worst),
-            "by_vex": dict(Counter(cve_worst.values())),
-            "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
-        }
-        # tier-A = OSS-attributed, source-code collectable (the "110" after closed-source reclass)
-        a_worst = {}
-        ven_cves, dtype_cves = defaultdict(set), defaultdict(set)
-        for cve, rows in self.by_cve.items():
-            a_rows = [r for r in rows if r.get("tier") == "A"]
-            if not a_rows:
-                continue
-            a_worst[cve] = max(a_rows, key=lambda r: rank.get(r["final_vex"], 0))
-            for r in a_rows:
-                ven_cves[_norm_vendor(r.get("vendor"))].add(cve)
-                dtype_cves[_device_type(r.get("device"))].add(cve)
-        sev_norm = lambda s: s if s in ("critical", "high", "medium", "low") else "unrated"
-        # canonical CWE per CVE (non-empty), so counts match the CVE's real weakness
-        _a_cwe = {cve: self.cve_index[cve]["cwe"] for cve in a_worst}
-        _cwe_ctr = Counter(c for c in _a_cwe.values() if c)
-        self.tier_a = {
-            "total_cves": len(a_worst),
-            "code_collected": sum(1 for w in a_worst.values() if w.get("has_code_pair")),
-            "pending_collection": sum(1 for w in a_worst.values() if not w.get("has_code_pair")),
-            "kev": sum(1 for w in a_worst.values() if w.get("kev")),
-            "by_vex": dict(Counter(w["final_vex"] for w in a_worst.values())),
-            "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
-            "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
-            "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
-                        _cwe_ctr.most_common()],
-            "cwe_other": {"count": 0, "types": 0},
-            "cwe_none": sum(1 for c in _a_cwe.values() if not c),
-            "top_vendors": [{"vendor": v, "count": len(cs)} for v, cs in
-                            sorted(ven_cves.items(), key=lambda kv: -len(kv[1]))[:8]],
-            "device_types": [{"type": t, "count": len(cs)} for t, cs in
-                             sorted(dtype_cves.items(), key=lambda kv: -len(kv[1]))],
-        }
-
-
-STORE = Store()
-
-
-# ---------------------------------------------------------------------------
-# live SBOM -> VEX (deterministic static leg, no models)
-# ---------------------------------------------------------------------------
-def _cve_ids(comp, ver):
-    """CVE ids a KB component exposes for a version (pinned, else union of all)."""
-    if not comp:
-        return []
-    vmap = comp.get("versions", {})
-    cves = vmap.get(ver)
-    if cves is None:
-        seen, cves = set(), []
-        for lst in vmap.values():
-            for cv in lst:
-                if cv["id"] not in seen:
-                    seen.add(cv["id"]); cves.append(cv)
-    return [cv["id"] for cv in cves]
-
-
-def _ro_best_match(name):
-    """Ratcliff-Obershelp (difflib) nearest KB component for a component name.
-    Returns (component, best_ratio, matched_string) over its name/cpe/key strings."""
-    n = (name or "").lower()
-    best, best_r, best_s = None, 0.0, None
-    for comp, strs in STORE.kb_match:
-        for s in strs:
-            r = difflib.SequenceMatcher(None, n, s).ratio()
-            if r > best_r:
-                best_r, best, best_s = r, comp, s
-    return best, round(best_r, 3), best_s
-
-
-def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
-    """Compare CVE identification: exact component match vs a CPE normalized by
-    Ratcliff-Obershelp (difflib) fuzzy matching to the KB, then re-identified."""
-    comps = [((c.get("name") or "").strip(), (c.get("version") or "").strip())
-             for c in sbom.get("components", []) if (c.get("name") or "").strip()]
-    rows, exact_set, norm_set = [], set(), set()
-    for name, ver in comps:
-        exact = STORE.kb_idx.get(name.lower())
-        ex_ids = _cve_ids(exact, ver)
-        exact_set.update(ex_ids)
-        ncomp, ratio, matched_str = _ro_best_match(name)
-        normalized = ncomp if ratio >= threshold else None
-        nm_ids = _cve_ids(normalized, ver)
-        norm_set.update(nm_ids)
-        rows.append({
-            "component": name, "version": ver or "(unpinned)",
-            "exact_match": exact["name"] if exact else None,
-            "normalized_match": normalized["name"] if normalized else None,
-            "best_match": ncomp["name"] if ncomp else None,   # closest, even below threshold
-            "matched_string": matched_str,                    # the KB string RO matched on
-            "ro_ratio": ratio, "matched_by_normalization": bool(normalized and not exact),
-            "exact_cve_count": len(ex_ids), "normalized_cve_count": len(nm_ids),
-        })
-    return {
-        "threshold": threshold, "components": len(comps), "normalization": rows,
-        "comparison": {
-            "exact_total": len(exact_set), "normalized_total": len(norm_set),
-            "both": sorted(exact_set & norm_set),
-            "only_exact": sorted(exact_set - norm_set),
-            "only_normalized": sorted(norm_set - exact_set),
-        },
-    }
-
-
-def vex_for_sbom(sbom, exposure=None):
-    comps = [((c.get("name") or "").strip(), (c.get("version") or "").strip())
-             for c in sbom.get("components", []) if (c.get("name") or "").strip()]
-    rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-    by_cve = {}  # unique CVE -> worst-case row
-    for name, ver in comps:
-        comp = STORE.kb_idx.get(name.lower())
-        if not comp:
-            continue
-        vmap = comp.get("versions", {})
-        cves = vmap.get(ver)
-        pinned = cves is not None
-        if cves is None:
-            seen = set(); cves = []
-            for lst in vmap.values():
-                for cv in lst:
-                    if cv["id"] not in seen:
-                        seen.add(cv["id"]); cves.append(cv)
-        for cv in cves:
-            av = cv.get("av", "N")
-            exp = exposure or G.exposure_for(comp["name"])
-            reach = G.reachability(av, exp)
-            has_pair = cv["id"] in STORE.pairs
-            if reach == "no":
-                status, just = NOT_AFFECTED, "vulnerable_code_cannot_be_controlled_by_adversary"
-                basis = "AV:P physical access" if av == "P" else f"AV:{av} unreachable at '{exp}'"
-            else:
-                status, just, _v, basis, _c, reach = G.estimate(
-                    av, exp, "per-cve", "A" if has_pair else "C", bool(cv.get("kev")))
-            tier = ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
-                    else "under-investigation")
-            row = {
-                "cve": cv["id"], "component": comp["name"], "version": ver or "(unpinned)",
-                "version_pinned": pinned, "severity": cv.get("sev", ""),
-                "cvss": cv.get("cvss"),
-                "source_collectable": bool(
-                    STORE.cve_index.get(cv["id"], {}).get("source_available")
-                    or cv["id"] in STORE.pairs),
-                "av": av, "kev": bool(cv.get("kev")), "epss": cv.get("epss"),
-                "exposure": exp, "reachability": reach, "has_code_pair": has_pair,
-                "final_vex": status, "justification": just, "basis": basis,
-                "evidence_tier": tier,
-            }
-            prev = by_cve.get(cv["id"])
-            if prev is None or rank.get(status, 0) > rank.get(prev["final_vex"], 0):
-                by_cve[cv["id"]] = row
-    # Also honor CVEs embedded in the SBOM's own VDR (vulnerabilities[]), e.g. a
-    # reverse_sbom SBOM-CVE whose closed-firmware component has no OSS KB match.
-    ref2name = {c.get("bom-ref"): (c.get("name") or "") for c in sbom.get("components", [])}
-    _top = (sbom.get("metadata") or {}).get("component") or {}
-    if _top.get("bom-ref"):
-        ref2name[_top["bom-ref"]] = _top.get("name") or ""
-    for v in (sbom.get("vulnerabilities", []) or []):
-        cid = v.get("id")
-        if not cid or cid in by_cve:
-            continue
-        props = {p.get("name"): p.get("value") for p in (v.get("properties") or [])}
-        score, sev = None, ""
-        for r in (v.get("ratings") or []):
-            if r.get("score") is not None:
-                try: score = float(r["score"])
-                except (TypeError, ValueError): pass
-            if r.get("severity"):
-                sev = str(r["severity"]).lower()
-        if score is None:
-            score = STORE.cvss.get(cid)
-        if not sev:
-            sev = (STORE.cve_index.get(cid, {}) or {}).get("severity", "")
-        av = ""
-        _m = re.search(r"AV:([NALP])", props.get("cisa:cvss-v3-vector", "") or "")
-        if _m:
-            av = _m.group(1)
-        kev = str(props.get("signal:kev", "")).lower() == "true"
-        aff = ((v.get("affects") or [{}])[0] or {}).get("ref")
-        exp = exposure or G.exposure_for(_top.get("name") or ref2name.get(aff, "") or "device")
-        if av:
-            reach = G.reachability(av, exp)
-            if reach == "no":
-                status, just = NOT_AFFECTED, "vulnerable_code_cannot_be_controlled_by_adversary"
-                basis = "AV:P physical access" if av == "P" else f"AV:{av} unreachable at '{exp}'"
-            else:
-                status, just, _v, basis, _c, reach = G.estimate(av, exp, "per-cve", "C", kev)
-        else:
-            status, just, basis, reach = UNDER_INV, None, "no CVSS attack vector in the source advisory", "unknown"
-        try:
-            epss = float(props["signal:epss"]) if props.get("signal:epss") not in (None, "NA", "") else None
-        except (TypeError, ValueError):
-            epss = None
-        by_cve[cid] = {
-            "cve": cid, "component": ref2name.get(aff, aff or _top.get("name") or ""),
-            "version": "NOASSERTION", "version_pinned": False, "severity": sev, "cvss": score,
-            "source_collectable": bool(STORE.cve_index.get(cid, {}).get("source_available") or cid in STORE.pairs),
-            "av": av, "kev": kev, "epss": epss,
-            "exposure": exp, "reachability": reach, "has_code_pair": cid in STORE.pairs,
-            "final_vex": status, "justification": just, "basis": basis,
-            "evidence_tier": ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED) else "under-investigation"),
-            "from_vdr": True,
-        }
-    cves = sorted(by_cve.values(),
-                  key=lambda r: (-rank.get(r["final_vex"], 0), r["cve"]))
-    by = Counter(r["final_vex"] for r in cves)
-    return {"components": len(comps), "cves_matched": len(cves),
-            "summary": {"by_vex": dict(by)}, "cves": cves}
-
-
-# ---------------------------------------------------------------------------
-# FastAPI app
-# ---------------------------------------------------------------------------
-def build_app():
-    from fastapi import FastAPI, HTTPException
-    from fastapi.responses import HTMLResponse
-    from pydantic import BaseModel
-
-    app = FastAPI(title="ICS-VEX API", version="1.0",
-                  description="Hybrid VEX pipeline — static triage over the corpus + "
-                              "live SBOM→VEX. No PoC is generated or executed.")
-
-    class SbomReq(BaseModel):
-        sbom: dict
-        exposure: str | None = None
-
-    @app.get("/api/health")
-    def health():
-        return {"ok": True, "kb_components": len(set(id(v) for v in STORE.kb_idx.values())),
-                "corpus_cves": STORE.cve_level.get("total_cves"),
-                "candidates": len(STORE.candidates.get("candidates", [])),
-                "exposures": EXPOSURES}
-
-    @app.get("/api/summary")
-    def summary():
-        """CVE-level corpus summary (unique CVEs, worst-case verdict)."""
-        if not STORE.cve_level.get("total_cves"):
-            raise HTTPException(404, "run src/vex_batch.py first")
-        return STORE.cve_level
-
-    @app.get("/api/cves")
-    def cves_by(dim: str, value: str, scope: str = "corpus", limit: int = 400):
-        """Related CVEs for a chart selection (drill-down).
-        dim: cwe|vendor|device_type|year|vex|reachability|severity ; scope: corpus|source_available."""
-        srank = {"critical": 4, "high": 3, "medium": 2, "low": 1, "unrated": 0}
-        vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-
-        def ok(r):
-            if scope == "source_available" and not r["source_available"]:
-                return False
-            if dim == "cwe":            return r["cwe"] == value
-            if dim == "vendor":         return value in r["vendors"]
-            if dim == "device_type":    return value in r["device_types"]
-            if dim == "year":           return str(r["year"]) == str(value)
-            if dim == "vex":            return r["vex"] == value
-            if dim == "reachability":   return r["reachability"] == value
-            if dim == "severity":       return r["severity"] == value
-            return False
-
-        hits = [r for r in STORE.cve_index.values() if ok(r)]
-        hits.sort(key=lambda r: (-int(r["kev"]), -vrank.get(r["vex"], 0),
-                                 -srank.get(r["severity"], 0), r["cve"]))
-        return {"dim": dim, "value": value, "scope": scope, "count": len(hits),
-                "cves": [{"cve": r["cve"], "vex": r["vex"], "severity": r["severity"],
-                          "cvss": r.get("cvss"),
-                          "kev": r["kev"], "reachability": r["reachability"],
-                          "vendor": ", ".join(r["vendors"][:2]), "component": r["component"],
-                          "cwe": r["cwe"], "has_code_pair": r["has_code_pair"],
-                          "repo_url": r["repo_url"]} for r in hits[:limit]]}
-
-    @app.get("/api/advisories")
-    def advisories():
-        """CISA ICS advisory provenance stats (total, by year, top vendors)."""
-        if not STORE.advisories.get("total"):
-            raise HTTPException(404, "data/cisa_advisories.json not found")
-        return STORE.advisories
-
-    @app.get("/api/advisories/list")
-    def advisories_list():
-        """Full slim advisory list for the Source-data search engine."""
-        return {"count": len(STORE.advisories_list), "advisories": STORE.advisories_list}
-
-    @app.get("/api/advisory/{aid}")
-    def advisory_detail(aid: str):
-        """Full CISA ICS-CERT advisory content (overview, CWEs, CVEs, metrics)."""
-        d = STORE.adv_detail.get(aid)
-        if not d:
-            raise HTTPException(404, "advisory not found")
-        return d
-
-    @app.get("/api/sbom_index")
-    def sbom_index():
-        """Compact index of the synthetic ICS-SBOM dataset (assets + components + CVEs)."""
-        return STORE.sbom_index
-
-    @app.get("/api/cve_search")
-    def cve_search(q: str = "", limit: int = 100):
-        """Search the corpus CVEs (id / CWE / vendor / component)."""
-        ql = (q or "").strip().lower()
-        vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-        hits = []
-        for r in STORE.cve_index.values():
-            if not ql or ql in r["cve"].lower() or ql in (r.get("cwe") or "").lower() \
-                    or any(ql in v.lower() for v in r.get("vendors", [])) \
-                    or ql in (r.get("component") or "").lower():
-                hits.append(r)
-        hits.sort(key=lambda r: (-int(r["kev"]), -vrank.get(r["vex"], 0), r["cve"]))
-        return {"count": len(hits),
-                "cves": [{"cve": r["cve"], "cvss": r.get("cvss"), "severity": r["severity"],
-                          "cwe": r.get("cwe"), "kev": r["kev"], "vex": r["vex"],
-                          "vendor": ", ".join(r.get("vendors", [])[:2]),
-                          "component": r.get("component")} for r in hits[:limit]]}
-
-    @app.get("/api/by_year")
-    def by_year():
-        """Unique CVE count by CVE-ID year (all 11,336)."""
-        if not STORE.by_year:
-            raise HTTPException(404, "run src/vex_batch.py first")
-        return {"total_cves": sum(STORE.by_year.values()), "by_year": STORE.by_year}
-
-    @app.get("/api/source_available")
-    def source_available():
-        """Stats for the source-code-collectable (tier-A) CVEs — the '110'."""
-        if not STORE.tier_a.get("total_cves"):
-            raise HTTPException(404, "run src/vex_batch.py first")
-        return STORE.tier_a
-
-    @app.get("/api/candidates")
-    def candidates(status: str | None = None, top: int | None = None):
-        items = STORE.candidates.get("candidates", [])
-        if status:
-            items = [c for c in items if c.get("status") == status]
-        if top:
-            items = items[:top]
-        return {"count": len(items), "candidates": items}
-
-    @app.get("/api/findings/{cve}")
-    def finding(cve: str):
-        rows = STORE.by_cve.get(cve.upper())
-        if not rows:
-            raise HTTPException(404, f"{cve} not in corpus")
-        worst = max(rows, key=lambda r: {"LIKELY_AFFECTED": 3, "UNDER_INVESTIGATION": 2,
-                                         "LIKELY_NOT_AFFECTED": 1}.get(r["final_vex"], 0))
-        return {"cve": cve.upper(), "finding_count": len(rows),
-                "assets": sorted({r.get("device") for r in rows if r.get("device")}),
-                "worst_case": worst}
-
-    @app.post("/api/vex")
-    def vex(req: SbomReq):
-        if req.exposure and req.exposure not in EXPOSURES:
-            raise HTTPException(400, f"exposure must be one of {EXPOSURES}")
-        return vex_for_sbom(req.sbom, req.exposure)
-
-    class CompareReq(BaseModel):
-        sbom: dict
-        exposure: str | None = None
-        threshold: float = 0.7
-
-    @app.post("/api/vex_compare")
-    def vex_compare(req: CompareReq):
-        """CPE normalization (Ratcliff-Obershelp) + CVE re-identification vs exact."""
-        return vex_compare_sbom(req.sbom, req.exposure, req.threshold)
-
-    class TreeReq(BaseModel):
-        av: str | None = None
-        answers: dict = {}
-
-    @app.get("/api/vex_tree")
-    def vex_tree_def():
-        """The source-uncollectable-CVE decision tree definition (for the walker)."""
-        return VT.TREE
-
-    @app.post("/api/vex_tree")
-    def vex_tree(req: TreeReq):
-        """Walk the source-uncollectable decision tree with the given answers."""
-        return VT.classify(req.av, req.answers or {})
-
-    @app.post("/api/refresh")
-    def refresh():
-        STORE.refresh()
-        return {"ok": True, "reloaded": True}
-
-    @app.get("/", response_class=HTMLResponse)
-    @app.get("/index.html", response_class=HTMLResponse)
-    def index():
-        return make_page("analyzer")
-
-    @app.get("/vex-method.html", response_class=HTMLResponse)
-    def vex_method():
-        return make_page("vex-method")
-
-    @app.get("/corpus.html", response_class=HTMLResponse)
-    def corpus():
-        return make_page("corpus")
-
-    @app.get("/collectable.html", response_class=HTMLResponse)
-    def collectable():
-        return make_page("collectable")
-
-    @app.get("/source.html", response_class=HTMLResponse)
-    def source():
-        return make_page("source")
-
-    @app.get("/ics-sbom.html", response_class=HTMLResponse)
-    def ics_sbom_page():
-        return make_page("ics-sbom")
-
-    return app
-
-
-# ---------------------------------------------------------------------------
-# frontend (single page, calls the API above)
-# ---------------------------------------------------------------------------
-FRONTEND_TEMPLATE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS-VEX API console</title>
 <style>
 @font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-display:swap}
@@ -821,10 +120,79 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  __NAV__
+  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab" href="index.html">Analyzer</a><a class="navtab on" href="vex-method.html">VEX Analysis Method</a><a class="navtab" href="corpus.html">Corpus</a><a class="navtab" href="collectable.html">Collectable CVEs</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">ICS-SBOM</a></nav>
 </aside>
 <main class="main">
-__CONTENT__
+<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs get a code-grounded static verdict; source-uncollectable CVEs go through an operational decision tree.</p>
+
+<div class="card">
+<div class="vm-flow">
+  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
+
+  <div class="vm-split">
+    <div class="vm-lane vm-yes">
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>Code VEX</b></div>
+      <div class="vm-step"><b>1. SecureBERT</b> — security-context signal (asset/exposure prose)</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. CodeBERT</b> — vuln/patch diff separability (backport detection)</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>3. sLLM static analyst</b> — root cause / reachability / adversary-controllability (no PoC, no exec)</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>4. Grounding critic</b> — is the verdict supported by the evidence? one ReAct refine</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vgreen">Evidence tier: <b>static-analysis-verified</b> (code pair + separable fix + grounded) / <b>static-reasoned</b></div>
+    </div>
+
+    <div class="vm-lane vm-no">
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>Decision Tree</b></div>
+      <div class="vm-step"><b>1. In the CVE's affected range?</b> &mdash; no &rarr; not_affected</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. CVSS Attack Vector</b> branches: <span class="mono">N/A</span> &middot; <span class="mono">L</span> &middot; <span class="mono">P</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>3. Deployment exposure</b> &times; reachability<span class="vm-sub">isolated-cell &rarr; control-network &rarr; dmz-routable &rarr; remote-accessible</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>4. Operational context Q&amp;A</b> — perimeter protection, mitigating controls, config/environment gating</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vamber">Terminal: <b>not_affected</b> (CSAF/OpenVEX justification) / <b>under_investigation</b></div>
+    </div>
+  </div>
+
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
+</div>
+</div>
+
+<div class="vm-cols">
+  <div class="card">
+    <h3 style="margin:0 0 6px">Source-available path (Code VEX)</h3>
+    <p class="hint" style="margin:0 0 8px">When the vulnerable/patched code pair is obtainable (OSS with a fix commit), the verdict is grounded in the actual code — not just metadata.</p>
+    <ul class="vm-list">
+      <li><b>SecureBERT</b> reads the security/asset context and emits a first VEX signal.</li>
+      <li><b>CodeBERT</b> compares the vulnerable vs patched diff; catches backports (fix already applied) that context alone misses.</li>
+      <li><b>sLLM static analyst</b> reasons over patch diff + CWE + reachability to produce a structured exploitability assessment. <b>No PoC is generated and nothing is executed.</b></li>
+      <li><b>Grounding critic</b> rejects overreach; a verdict must be supported by evidence (e.g. <span class="mono">not_affected</span> needs counter-evidence).</li>
+      <li>Confirmed tier = <b>static-analysis-verified</b>; otherwise <b>static-reasoned</b>.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 6px">Source-uncollectable path (Decision Tree)</h3>
+    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so VEX is decided from the deployment's <b>operational context</b> instead of code.</p>
+    <ul class="vm-list">
+      <li>Branch on the <b>CVSS Attack Vector</b> (Network/Adjacent, Local, Physical).</li>
+      <li>Cross with <b>deployment exposure</b> to get reachability (yes / conditional / no).</li>
+      <li>Walk operational questions: perimeter protection, compensating controls, configuration/environment preconditions.</li>
+      <li>Terminals map to CSAF/OpenVEX justifications: <span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>, <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span>, <span class="mono">inline_mitigations_already_exist</span> &hellip; or <b>under_investigation</b>.</li>
+      <li>If the source later becomes obtainable, the case is routed back to the Code VEX path.</li>
+    </ul>
+  </div>
+</div>
+<p class="hint" style="margin:14px 2px 0">Note: SBOM/AAS describe the asset's static composition; the operational inputs above (exposure, reachability, mitigations, exploitation) are supplied separately &mdash; that is what turns identification into a VEX decision. An SSVC-style priority axis (Exploitation via KEV/EPSS, Automatable, safety impact) is planned on top of this tree.</p>
+
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
 </main>
@@ -836,19 +204,29 @@ __CONTENT__
 </div></div>
 
 <script>
-const VEX_TREE=__VEX_TREE__;
+const VEX_TREE={"start": "affected_range", "nodes": {"affected_range": {"q": "Is the component within the CVE's affected range?", "no": ["not_affected", "code_not_reachable"], "yes": "source_check"}, "source_check": {"q": "Can the vulnerable source code be obtained?", "yes": ["route_to_icsvexforge", "Switch to the ICS-VEXForge (code-based) methodology"], "no": "av_split"}, "av_split": {"q": "CVE attack vector (CVSS AV)", "branch": {"network": "net_reach", "local": "loc_priv", "physical": "phy_access"}}, "net_reach": {"q": "Reachability: is the service reachable via an observed exposure path?", "no": ["not_affected", "protected_at_perimeter"], "yes": "net_exec"}, "net_exec": {"q": "Execution active: is the service running the vulnerable code active?", "no": ["not_affected", "code_not_reachable"], "yes": "net_mit"}, "net_mit": {"q": "Mitigating control: is the path blocked? (segmentation, firewall, auth)", "no": ["not_affected", "protected_by_mitigating_control"], "yes": "net_impact"}, "net_impact": {"q": "High-impact asset? (safety function / process impact)", "no": ["under_investigation", "likely_affected_medium"], "yes": ["under_investigation", "likely_affected_high"]}, "loc_priv": {"q": "Privilege/interaction: can local access and the required privilege be obtained?", "no": ["not_affected", "requires_environment"], "yes": "loc_exec"}, "loc_exec": {"q": "Execution active: is the vulnerable code path active?", "no": ["not_affected", "code_not_reachable"], "yes": "loc_mit"}, "loc_mit": {"q": "Mitigating control: account/interaction controls? (least privilege, signing)", "no": ["not_affected", "protected_by_mitigating_control"], "yes": "loc_impact"}, "loc_impact": {"q": "High-impact asset? (safety function / process impact)", "no": ["under_investigation", "likely_affected_medium"], "yes": ["under_investigation", "likely_affected_high"]}, "phy_access": {"q": "Physical access control: are ports/media blocked?", "no": ["not_affected", "protected_at_perimeter"], "yes": "phy_config"}, "phy_config": {"q": "Configuration: are removable media / maintenance ports enabled?", "no": ["not_affected", "requires_configuration"], "yes": "phy_impact"}, "phy_impact": {"q": "High-impact asset? (safety function / process impact)", "no": ["under_investigation", "likely_affected_medium"], "yes": ["under_investigation", "likely_affected_high"]}}};
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
 const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under investigation'};
 function jsoncParse(txt){var BS=String.fromCharCode(92),NL=String.fromCharCode(10),CR=String.fromCharCode(13);var s='',i=0,n=txt.length,inStr=false,esc=false;while(i<n){var c=txt[i];if(inStr){s+=c;if(esc){esc=false;}else if(c===BS){esc=true;}else if(c==='"'){inStr=false;}i++;continue;}if(c==='"'){inStr=true;s+=c;i++;continue;}if(c==='/'&&txt[i+1]==='/'){while(i<n&&txt[i]!==NL&&txt[i]!==CR){i++;}continue;}if(c==='/'&&txt[i+1]==='*'){i+=2;while(i+1<n&&!(txt[i]==='*'&&txt[i+1]==='/')){i++;}i+=2;continue;}s+=c;i++;}var WS=' '+String.fromCharCode(9)+String.fromCharCode(10)+String.fromCharCode(13);var re=new RegExp(',(['+WS+']*)(}|])','g');return JSON.parse(s.replace(re,'$1$2'));}
+
+let CVE_INDEX=[], CVE_KB={}, KB_COMPS=[], SRC_OK=new Set();
+fetch('cve_index.json').then(r=>r.json()).then(d=>{CVE_INDEX=d;for(const r of d)if(r.source_available||r.has_code_pair)SRC_OK.add(r.cve);}).catch(()=>{});
+fetch('cve_kb.json').then(r=>r.json()).then(d=>{const idx={};KB_COMPS=(d.components||[]);for(const c of KB_COMPS){for(const k of new Set([c.key,(c.name||'').toLowerCase(),c.cpe_product||''])){if(k)idx[String(k).toLowerCase()]=c;}}CVE_KB=idx;}).catch(()=>{});
+function roMatches(a,b){let bi=0,bj=0,bs=0;for(let i=0;i<a.length;i++){for(let j=0;j<b.length;j++){let k=0;while(i+k<a.length&&j+k<b.length&&a[i+k]===b[j+k])k++;if(k>bs){bs=k;bi=i;bj=j;}}}if(bs===0)return 0;return bs+roMatches(a.slice(0,bi),b.slice(0,bj))+roMatches(a.slice(bi+bs),b.slice(bj+bs));}
+function roRatio(a,b){a=(a||'').toLowerCase();b=(b||'').toLowerCase();const t=a.length+b.length;return t?2*roMatches(a,b)/t:0;}
+function cveIdsFor(comp,ver){if(!comp)return [];const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}return cves.map(cv=>cv.id);}
+function roBest(name){const n=(name||'').toLowerCase();let best=null,br=0,bs=null;for(const c of KB_COMPS){for(const s of [c.name,c.cpe_product,c.key].filter(Boolean)){const r=roRatio(n,s);if(r>br){br=r;best=c;bs=s;}}}return [best,Math.round(br*1000)/1000,bs];}
+function compareNormJs(sbom,exp,th){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rows=[];const ex=new Set(),nm=new Set();for(const [name,ver] of comps){const exact=CVE_KB[name.toLowerCase()];const exIds=cveIdsFor(exact,ver);exIds.forEach(x=>ex.add(x));const rb=roBest(name),nc=rb[0],ratio=rb[1],ms=rb[2];const normalized=ratio>=th?nc:null;const nmIds=cveIdsFor(normalized,ver);nmIds.forEach(x=>nm.add(x));rows.push({component:name,version:ver||'(unpinned)',exact_match:exact?exact.name:null,normalized_match:normalized?normalized.name:null,best_match:nc?nc.name:null,matched_string:ms,ro_ratio:ratio,matched_by_normalization:!!(normalized&&!exact),exact_cve_count:exIds.length,normalized_cve_count:nmIds.length});}const both=[...ex].filter(x=>nm.has(x)).sort();const onlyE=[...ex].filter(x=>!nm.has(x)).sort();const onlyN=[...nm].filter(x=>!ex.has(x)).sort();return {threshold:th,components:comps.length,normalization:rows,comparison:{exact_total:ex.size,normalized_total:nm.size,both:both,only_exact:onlyE,only_normalized:onlyN}};}
+function reachability(av,exp){const t={'isolated-cell':0,'control-network':1,'dmz-routable':2,'remote-accessible':3}[exp];if(!av)return 'unknown';if(av==='N')return t===0?'no':(t===1?'conditional':'yes');if(av==='A')return t===0?'no':(t<=2?'conditional':'yes');if(av==='L')return 'conditional';if(av==='P')return 'no';return 'conditional';}
+function computeVex(sbom,exp){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(const [name,ver] of comps){const comp=CVE_KB[name.toLowerCase()];if(!comp)continue;const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}for(const cv of cves){const av=cv.av||'N';const reach=reachability(av,exp);let status=reach==='yes'?'LIKELY_AFFECTED':(reach==='no'?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION');const row={cve:cv.id,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,reachability:reach,final_vex:status,evidence_tier:(status==='UNDER_INVESTIGATION'?'under-investigation':'static-reasoned')};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const reach=av?reachability(av,exp):'unknown';let status=reach==='yes'?'LIKELY_AFFECTED':(reach==='no'?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION');byCve[cid]={cve:cid,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:SRC_OK.has(cid),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',reachability:reach,final_vex:status,evidence_tier:(status==='UNDER_INVESTIGATION'?'under-investigation':'static-reasoned'),from_vdr:true};}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
+function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='reachability')return r.reachability===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,reachability:r.reachability,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url}))};}
+
 async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
   compareNorm(sbom,document.getElementById('exp').value);
-  const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});
-  if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
-  const d=await r.json();
+  const d=computeVex(sbom,document.getElementById('exp').value);
   if(!d.cves_matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
   _lastVex=d;
   const bv=d.summary.by_vex||{};
@@ -858,9 +236,9 @@ async function run(){
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
       ? '<span class="hint">source available &middot; code VEX</span>'
-      : '<button class="treebtn" onclick="treeForCve(\\''+f.cve+'\\',\\''+(f.av||'N')+'\\')">Decide via tree &rarr;</button>';
+      : '<button class="treebtn" onclick="treeForCve(\''+f.cve+'\',\''+(f.av||'N')+'\')">Decide via tree &rarr;</button>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
-      +'<td id="vexcell-'+f.cve+'"><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span> <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+f.cve+'\\')">\u270e VEX</button></td>'
+      +'<td id="vexcell-'+f.cve+'"><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span> <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\''+f.cve+'\')">✎ VEX</button></td>'
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
@@ -874,7 +252,7 @@ async function compareNorm(sbom,exp){
   _lastSbom=sbom;_lastExp=exp;
   const th=parseFloat((document.getElementById('ro-th')||{}).value||0.7);
   let d=null;
-  try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,exposure:exp,threshold:th})});if(r.ok)d=await r.json();}catch(e){}
+  d=compareNormJs(sbom,exp,th);
   renderCompare(d);
 }
 function renderCompare(d){
@@ -928,12 +306,12 @@ if(_ta){   // analyzer page only
   window.addEventListener('drop',e=>e.preventDefault());
 }
 async function stats(){
-  try{const s=await(await fetch('/api/summary')).json();const v=s.by_vex||{};
+  try{const s=await(await fetch('cve_level.json')).json();const v=s.by_vex||{};
     const k=document.getElementById('kpis');k.innerHTML='';
     k.innerHTML+='<div class="kpi"><b>'+(s.total_cves||0).toLocaleString()+'</b><span>unique CVEs</span></div>';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
-    const cand=await(await fetch('/api/candidates?status=ready')).json();
+    const cand=await(await fetch('candidates_ready.json')).json();
     document.getElementById('cand').textContent=cand.count+' ready';
   }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
 }
@@ -944,7 +322,7 @@ async function openCves(dim,value,scope,label){
   document.getElementById('mtitle').textContent=label;
   document.getElementById('mbody').innerHTML='loading…';
   document.getElementById('ov').classList.add('on');
-  try{const d=await(await fetch('/api/cves?dim='+encodeURIComponent(dim)+'&value='+encodeURIComponent(value)+'&scope='+scope)).json();
+  try{const d=queryCves(dim,value,scope);
     if(!d.count){document.getElementById('mbody').innerHTML='<span class="hint">no CVEs.</span>';return;}
     let h='<div class="srch-meta"><b>'+d.count+'</b> CVEs</div>'+
       '<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>VEX</th><th style="text-align:center">CVSS</th><th style="text-align:center">KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
@@ -963,13 +341,13 @@ function bar(counts,order,cmap,total,dim,scope,lmap){
   let segs='',leg='';
   for(const k of order){const v=counts[k]||0;if(!v)continue;const w=100*v/total;
     const lbl=(lmap&&lmap[k])||k;const cl=dim?' class="clk"':'';
-    const clk=dim?' onclick="openCves(\\''+dim+'\\',\\''+k+'\\',\\''+scope+'\\',\\''+lbl.replace(/'/g,'')+' — related CVEs\\')"':'';
+    const clk=dim?' onclick="openCves(\''+dim+'\',\''+k+'\',\''+scope+'\',\''+lbl.replace(/'/g,'')+' — related CVEs\')"':'';
     segs+='<div'+cl+clk+' style="width:'+w.toFixed(2)+'%;background:'+(cmap[k]||'var(--ink3)')+'" title="'+lbl+': '+v+'"></div>';
     leg+='<span class="lg'+(dim?' clk':'')+'"'+clk+'><i style="background:'+(cmap[k]||'var(--ink3)')+'"></i>'+lbl+' <b>'+v+'</b></span>';}
   return '<div class="mb">'+segs+'</div><div class="legend">'+leg+'</div>';
 }
 async function sourceAvail(){
-  try{const s=await(await fetch('/api/source_available')).json();
+  try{const s=await(await fetch('source_available.json')).json();
     const t=s.total_cves;
     document.getElementById('sa-kpis').innerHTML=
       '<div class="kpi"><b>'+t+'</b><span>collectable CVEs</span></div>'+
@@ -982,24 +360,24 @@ async function sourceAvail(){
       '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
     let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · '+t+' collectable CVEs total</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
-    for(const x of s.top_cwe)cwe+='<div class="cwerow clk" title="'+x.cwe+' '+esc(x.name||'')+'" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
+    for(const x of s.top_cwe)cwe+='<div class="cwerow clk" title="'+x.cwe+' '+esc(x.name||'')+'" onclick="openCves(\'cwe\',\''+x.cwe+'\',\'source_available\',\''+x.cwe+' '+esc(x.name||'')+' — CVEs\')">'+
       '<span><span class="mono">'+x.cwe+'</span><span class="cwename">'+esc(x.name||'')+'</span></span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/mx)+'%"></i></span><b>'+x.count+'</b></div>';
     if(s.cwe_other&&s.cwe_other.count)cwe+='<div class="cwerow"><span class="hint">Other ('+s.cwe_other.types+' more types)</span>'+
       '<span class="cwebar"><i style="width:'+(100*s.cwe_other.count/mx)+'%;background:var(--ink3)"></i></span><b>'+s.cwe_other.count+'</b></div>';
-    if(s.cwe_none)cwe+='<div class="cwerow clk" onclick="openCves(\\'cwe\\',\\'\\',\\'source_available\\',\\'CVEs with no CWE assigned\\')"><span class="hint">No CWE assigned</span>'+
+    if(s.cwe_none)cwe+='<div class="cwerow clk" onclick="openCves(\'cwe\',\'\',\'source_available\',\'CVEs with no CWE assigned\')"><span class="hint">No CWE assigned</span>'+
       '<span class="cwebar"><i style="width:'+(100*s.cwe_none/mx)+'%;background:var(--ink3)"></i></span><b>'+s.cwe_none+'</b></div>';
     document.getElementById('sa-cwe').innerHTML=cwe+'</div>';
     // top vendors
     let vn='<div class="ct">Top vendors <span class="hint">click to list CVEs</span></div><div class="cwe">';
     const vmx=Math.max(...s.top_vendors.map(x=>x.count));
-    for(const x of s.top_vendors)vn+='<div class="cwerow clk" onclick="openCves(\\'vendor\\',\\''+esc(x.vendor)+'\\',\\'source_available\\',\\''+esc(x.vendor)+' — CVEs\\')"><span>'+esc(x.vendor)+'</span>'+
+    for(const x of s.top_vendors)vn+='<div class="cwerow clk" onclick="openCves(\'vendor\',\''+esc(x.vendor)+'\',\'source_available\',\''+esc(x.vendor)+' — CVEs\')"><span>'+esc(x.vendor)+'</span>'+
       '<span class="cwebar"><i style="width:'+(100*x.count/vmx)+'%"></i></span><b>'+x.count+'</b></div>';
     document.getElementById('sa-vendors').innerHTML=vn+'</div>';
     // device-type mapping table
     let dt='<div class="ct">Device-type mapping <span class="hint">click a row to list CVEs</span></div>'+
       '<table class="dtt"><thead><tr><th>Equipment type</th><th style="text-align:right">CVEs</th></tr></thead><tbody>';
-    for(const x of s.device_types)dt+='<tr class="clk" onclick="openCves(\\'device_type\\',\\''+esc(x.type)+'\\',\\'source_available\\',\\''+esc(x.type)+' — CVEs\\')"><td>'+esc(x.type)+'</td><td style="text-align:right" class="mono">'+x.count+'</td></tr>';
+    for(const x of s.device_types)dt+='<tr class="clk" onclick="openCves(\'device_type\',\''+esc(x.type)+'\',\'source_available\',\''+esc(x.type)+' — CVEs\')"><td>'+esc(x.type)+'</td><td style="text-align:right" class="mono">'+x.count+'</td></tr>';
     dt+='</tbody></table><div class="hint" style="margin-top:5px">One CVE can span multiple types (shared component).</div>';
     document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
@@ -1011,19 +389,19 @@ function yearBars(y,noteTotal,noteLabel){
   const mx=Math.max(...show.map(k=>y[k]));
   let h='<div class="ybars">';
   for(const k of show){const c=y[k];const hp=Math.max(4,100*c/mx);
-    h+='<div class="ycol clk" onclick="openCves(\\'year\\',\\''+k+'\\',\\'corpus\\',\\'CVEs published in '+k+'\\')"><div class="yval">'+c.toLocaleString()+'</div>'
+    h+='<div class="ycol clk" onclick="openCves(\'year\',\''+k+'\',\'corpus\',\'CVEs published in '+k+'\')"><div class="yval">'+c.toLocaleString()+'</div>'
      +'<div class="ybar" style="height:'+hp+'%" title="'+k+': '+c+' — click for CVEs"></div>'
      +'<div class="yr">’'+String(k).slice(2)+'</div></div>';}
   return h+'</div><div class="hint" style="margin-top:8px">'+noteTotal.toLocaleString()+' '+noteLabel
     +(pre?' · '+pre+' before 2010 (not shown)':'')+' · click a bar for its CVEs</div>';
 }
 async function yearChart(){
-  try{const s=await(await fetch('/api/by_year')).json();
+  try{const s=await(await fetch('by_year.json')).json();
     document.getElementById('year').innerHTML=yearBars(s.by_year,s.total_cves,'CVEs total');
   }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
 async function advisories(){
-  try{const s=await(await fetch('/api/advisories')).json();
+  try{const s=await(await fetch('advisories.json')).json();
     document.getElementById('adv-kpis').innerHTML=
       '<div class="kpi"><b>'+s.total.toLocaleString()+'</b><span>advisories</span></div>'+
       '<div class="kpi"><b>'+s.vendors.toLocaleString()+'</b><span>vendors</span></div>'+
@@ -1102,9 +480,9 @@ function openVexEditor(cve){
   const auto=_autoStatus(cve); const f=Object.assign({},auto,_vexFields[cve]||{});
   document.getElementById('mtitle').textContent='VEX statement — '+cve;
   let h='<div class="srch-meta">'+esc(f.component)+' · auto status: <b>'+esc(auto.status)+'</b>'+(auto.cvss!=null?(' · CVSS '+auto.cvss):'')+'</div>';
-  h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\\''+cve+'\\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';
+  h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\''+cve+'\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';
   h+='<div id="vf-body">'+_vexEditorBody(cve,f)+'</div>';
-  h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\\''+cve+'\\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
+  h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\''+cve+'\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
   document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
 function _vexEditorBody(cve,f){
   f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
@@ -1179,14 +557,14 @@ function renderCveTree(cve){
   let h='<div class="treecve-h"><a class="mono" href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" style="font-weight:700">'+esc(cve)+'</a> <span class="hint">AV:'+esc(s.av)+'</span>';
   if(r.complete){const st=r.status;const col=st==='not_affected'?'var(--safe)':(st==='under_investigation'?'var(--und)':'var(--accent)');
     h+=' <span class="badge" style="background:'+col+'22;color:'+col+'">'+esc(st)+'</span> <span class="mono hint">'+esc(r.justification||'')+'</span>'
-     +'<button class="treebtn" style="margin-left:auto" onclick="treeReset(\\''+cve+'\\')">restart</button>';}
+     +'<button class="treebtn" style="margin-left:auto" onclick="treeReset(\''+cve+'\')">restart</button>';}
   h+='</div>';
   if(r.path.length>2){h+='<div class="treepath" style="margin-top:8px">';
     for(const p of r.path){if(p.node==='affected_range'||p.node==='source_check')continue;const ans=(p.answer===true)?'Yes':(p.answer===false)?'No':esc(p.answer);
       h+='<div class="treestep">'+esc(p.q)+' → <b>'+ans+'</b></div>';}
     h+='</div>';}
   if(!r.complete&&r.pending){h+='<div class="treeq"><div class="ct" style="font-size:15px;margin-bottom:8px">'+esc(r.question)+'</div>'
-    +'<button class="primary" onclick="treeAnswerFor(\\''+cve+'\\',true)">Yes</button> <button onclick="treeAnswerFor(\\''+cve+'\\',false)">No</button></div>';}
+    +'<button class="primary" onclick="treeAnswerFor(\''+cve+'\',true)">Yes</button> <button onclick="treeAnswerFor(\''+cve+'\',false)">No</button></div>';}
   return h;
 }
 function treeAnswerFor(cve,v){const s=_treeState[cve];const r=classifyTree(s.av,s.answers);if(r.pending)s.answers[r.pending]=v;document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);}
@@ -1211,7 +589,7 @@ function advSearch(){
   let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> advisor'+(total===1?'y':'ies')+(total>100?' · showing first 100':'')+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th style="text-align:center">Year</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){
-    h+='<tr class="clk" onclick="openAdvisory(\\''+esc(String(a.id))+'\\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
+    h+='<tr class="clk" onclick="openAdvisory(\''+esc(String(a.id))+'\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
 function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};
@@ -1251,7 +629,7 @@ function prodTokens(str){var out=[];String(str||'').toLowerCase().replace(/[^a-z
 function prodHit(at,st){var ad=at.filter(hasDigit),sd=st.filter(hasDigit);for(var i=0;i<ad.length;i++)if(sd.indexOf(ad[i])>=0)return true;return false;}
 function cvGrade(x){x=+x;if(x>=9)return 'Critical';if(x>=7)return 'High';if(x>=4)return 'Medium';if(x>0)return 'Low';return 'None';}
 function cvCap(x){x=String(x||'');return x?x.charAt(0).toUpperCase()+x.slice(1):'';}
-function cvssFmt(score,sev){if(score!=null&&score!==''&&!isNaN(+score)){var g=(sev&&sev!=='unrated')?cvCap(sev):cvGrade(score);return (+score)+' ('+g+')';}if(sev&&sev!=='unrated')return cvCap(sev);return '\u2014';}
+function cvssFmt(score,sev){if(score!=null&&score!==''&&!isNaN(+score)){var g=(sev&&sev!=='unrated')?cvCap(sev):cvGrade(score);return (+score)+' ('+g+')';}if(sev&&sev!=='unrated')return cvCap(sev);return '—';}
 function buildCve2Adv(){CVE2ADV={};VEND2ADV={};for(const a of (ADV_LIST||[])){const vk=normVendor(a.vendor);if(vk)(VEND2ADV[vk]=VEND2ADV[vk]||[]).push(a);for(const c of (a.cves||[])){(CVE2ADV[c]=CVE2ADV[c]||[]).push(a);}}}
 async function loadAdvList(){if((ADV_LIST||[]).length){if(!Object.keys(CVE2ADV).length)buildCve2Adv();return;}const d=await tryJson(['/api/advisories/list','advisories_list.json']);ADV_LIST=(d&&d.advisories)||[];buildCve2Adv();}
 function buildCve2Sbom(){CVE2SBOM={};ADV2SBOM={};for(const a of SBOM_INDEX){for(const c of (a.cves||[])){(CVE2SBOM[c.id]=CVE2SBOM[c.id]||[]).push(a);}for(const ad of (a.advisories||[])){(ADV2SBOM[ad]=ADV2SBOM[ad]||[]).push(a);}}}
@@ -1262,7 +640,7 @@ function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim
   const total=items.length;items=items.slice(0,150);
   let h='<div class="srch-meta"><b>'+total.toLocaleString()+'</b> SBOM'+(total===1?'':'s')+(total>150?' · showing first 150':'')+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Vendor</th><th>Product</th><th>Advisory</th><th style="text-align:center">Comp</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
-  for(const a of items){h+='<tr class="clk" onclick="openSbom(\\''+a.asset_id+'\\')"><td>'+esc(a.vendor||'')+'</td><td>'+esc(a.product||'')+'</td><td class="mono hint">'+(a.advisories||[]).join(', ')+'</td><td class="mono" style="text-align:center">'+a.component_count+'</td><td style="text-align:center"><span class="cvecount">'+(a.cves||[]).length+'</span></td></tr>';}
+  for(const a of items){h+='<tr class="clk" onclick="openSbom(\''+a.asset_id+'\')"><td>'+esc(a.vendor||'')+'</td><td>'+esc(a.product||'')+'</td><td class="mono hint">'+(a.advisories||[]).join(', ')+'</td><td class="mono" style="text-align:center">'+a.component_count+'</td><td style="text-align:center"><span class="cvecount">'+(a.cves||[]).length+'</span></td></tr>';}
   document.getElementById('sbom-results').innerHTML=h+'</tbody></table></div>';}
 async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.asset_id===id);if(!a)return;
   document.getElementById('mtitle').textContent=(a.product||a.asset_id)+' — '+(a.vendor||'');
@@ -1270,7 +648,7 @@ async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.ass
   const src=(a.advisories||[]).map(x=>ADV_LIST.find(y=>String(y.id)===String(x))||{id:x});
   h+='<h4 style="margin:12px 0 4px">Source ICS-CERT advisories ('+src.length+')</h4>';
   if(src.length){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th style="text-align:center">Year</th></tr></thead><tbody>';
-    for(const ad of src)h+='<tr class="clk" onclick="openAdvisory(\\''+ad.id+'\\')"><td class="idcell">'+esc(ad.id)+'</td><td>'+esc(ad.title||'')+'</td><td class="mono" style="text-align:center">'+esc(ad.year||'')+'</td></tr>';
+    for(const ad of src)h+='<tr class="clk" onclick="openAdvisory(\''+ad.id+'\')"><td class="idcell">'+esc(ad.id)+'</td><td>'+esc(ad.title||'')+'</td><td class="mono" style="text-align:center">'+esc(ad.year||'')+'</td></tr>';
     h+='</tbody></table></div>';}else h+='<span class="hint">none</span>';
   h+='<h4 style="margin:14px 0 4px">Components ('+(a.components||[]).length+')</h4><div class="srch-wrap"><table><thead><tr><th>Name</th><th>Version</th><th>Description</th></tr></thead><tbody>';
   for(const c of (a.components||[]))h+='<tr><td>'+esc(c.name||'')+'</td><td class="mono">'+esc(c.version||'')+'</td><td class="hint">'+esc(c.description||'')+'</td></tr>';
@@ -1292,7 +670,7 @@ async function openAdvisory(id){await loadSbomIndex();let a=ADV_LIST.find(x=>Str
   let relArr=Object.values(rel);relArr.sort((x,y)=>(y.exact?1:0)-(x.exact?1:0)||y.cves.length-x.cves.length);const relN=relArr.length;relArr=relArr.slice(0,150);
   h+='<h4 style="margin:12px 0 4px">Related ICS-SBOM assets ('+relN+')</h4>';
   if(relN){h+='<div class="srch-wrap"><table><thead><tr><th>Vendor</th><th>Product</th><th>Match</th></tr></thead><tbody>';
-    for(const r of relArr)h+='<tr class="clk" onclick="openSbom(\\''+r.a.asset_id+'\\')"><td>'+esc(r.a.vendor||'')+'</td><td>'+esc(r.a.product||'')+'</td><td class="mono hint">'+(r.exact?'this advisory':(r.cves.length?esc(r.cves.join(', ')):''))+'</td></tr>';
+    for(const r of relArr)h+='<tr class="clk" onclick="openSbom(\''+r.a.asset_id+'\')"><td>'+esc(r.a.vendor||'')+'</td><td>'+esc(r.a.product||'')+'</td><td class="mono hint">'+(r.exact?'this advisory':(r.cves.length?esc(r.cves.join(', ')):''))+'</td></tr>';
     h+='</tbody></table></div>';}else h+='<span class="hint">No ICS-SBOM asset for this advisory.</span>';
   h+='<h4 style="margin:14px 0 4px">Advisory CVEs ('+cves.length+')</h4>';
   if(cves.length){h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th style="text-align:center">In SBOM assets</th></tr></thead><tbody>';
@@ -1302,212 +680,4 @@ async function openAdvisory(id){await loadSbomIndex();let a=ADV_LIST.find(x=>Str
 if(document.getElementById('sbom-q'))initIcsSbom();
 
 if(document.getElementById('adv-q'))initSource();
-</script></body></html>"""
-
-# ---- page content blocks (split across 3 pages) --------------------------
-ANALYZER_HTML = """<div class="card"><div class="row">
-  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
-  <div><label>Deployment exposure</label><br><select id="exp">
-    <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
-    <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
-    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
-    <button class="primary" onclick="run()">Analyze ▶</button>
-    <button onclick="document.getElementById('file').click()">Upload JSON</button>
-    <button onclick="ex()">Example</button>
-    <div id="fname" class="hint" style="margin-top:6px"></div></div>
-</div><div id="out" style="margin-top:12px"></div></div>
-
-<div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
-<p class="hint" style="margin:0 0 8px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
-<div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
-<div id="cmp-body"></div></div>"""
-
-CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
-
-<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
-<div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
-<div id="adv-year" style="margin-top:14px"></div>
-<div id="adv-ven" style="margin-top:14px"></div></div>
-
-<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
-<div id="year" style="margin-top:12px">loading…</div></div>"""
-
-COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
-<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
-<div id="sa-kpis" class="kpis">loading…</div>
-<div id="sa-charts" style="margin-top:16px"></div>
-<div class="satwo" style="margin-top:16px">
-  <div id="sa-vendors"></div>
-  <div id="sa-devtype"></div>
-</div>
-<div id="sa-cwe" style="margin-top:16px"></div></div>"""
-
-TREE_HTML = """<div class="card" id="vextree" style="display:none">
-<h3 style="margin:0 0 4px">VEX decision tree &mdash; source-uncollectable CVEs <span class="hint" id="tree-count"></span></h3>
-<p class="hint" style="margin:0 0 12px">These CVEs' source cannot be obtained (closed firmware / no OSS code), so VEX is decided by the operational decision tree, branched by each CVE's CVSS attack vector. Answer each question Yes/No; every CVE is walked independently.</p>
-<div id="tree-list"></div></div>"""
-
-# Analyzer + VEX decision tree live on one page (one flow: SBOM -> source-available
-# CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
-_ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
-                  '<p class="sub" style="margin:0 0 18px;white-space:nowrap;max-width:none;overflow-x:auto">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are judged directly; source-uncollectable CVEs continue into '
-                  'the decision tree below.</p>' + ANALYZER_HTML + "\n" + TREE_HTML)
-SOURCE_HTML = """<div class="card">
-<h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
-<p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
-<input id="adv-q" class="srch" oninput="advSearch()" placeholder="e.g. Siemens · ICSA-24 · CVE-2023-… · 2024">
-<div id="adv-results" style="margin-top:12px"><span class="hint">Loading advisories…</span></div></div>
-
-<div class="card">
-<h3 style="margin:0 0 4px">NVD CVE search</h3>
-<p class="hint" style="margin:0 0 10px">Search the corpus CVEs by ID, CWE, vendor, or component — each result links to its NVD detail page.</p>
-<input id="cve-q" class="srch" oninput="cveSearchGo()" placeholder="e.g. CVE-2021-44228 · CWE-416 · OpenSSL · Siemens">
-<div id="cve-results" style="margin-top:12px"></div></div>"""
-
-_ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">ICS-SBOM dataset</h1>
-<p class="hint" style="margin:0 0 16px">CycloneDX SBOMs reverse-built per ICS device from the CISA ICS-CERT corpus — each keyed to its source advisory. Search by vendor, product, advisory ID, or CVE. Click a row to see its source advisories, components, and identified CVEs.</p>
-<div class="card">
-<h3 style="margin:0 0 4px">ICS-SBOM assets <span class="hint" id="sbom-hint"></span></h3>
-<p class="hint" style="margin:0 0 10px">Synthetic asset inventory reverse-built from the CISA ICS-CERT corpus; components and versions reference real OSS but hashes, serials and contacts are placeholders.</p>
-<input id="sbom-q" class="srch" oninput="sbomSearch()" placeholder="e.g. Siemens · SIMATIC · icsa-24 · CVE-2022-0778">
-<div id="sbom-results" style="margin-top:12px"><span class="hint">loading…</span></div></div>
-"""
-
-_VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs get a code-grounded static verdict; source-uncollectable CVEs go through an operational decision tree.</p>
-
-<div class="card">
-<div class="vm-flow">
-  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
-
-  <div class="vm-split">
-    <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>Code VEX</b></div>
-      <div class="vm-step"><b>1. SecureBERT</b> — security-context signal (asset/exposure prose)</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. CodeBERT</b> — vuln/patch diff separability (backport detection)</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>3. sLLM static analyst</b> — root cause / reachability / adversary-controllability (no PoC, no exec)</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>4. Grounding critic</b> — is the verdict supported by the evidence? one ReAct refine</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">Evidence tier: <b>static-analysis-verified</b> (code pair + separable fix + grounded) / <b>static-reasoned</b></div>
-    </div>
-
-    <div class="vm-lane vm-no">
-      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>Decision Tree</b></div>
-      <div class="vm-step"><b>1. In the CVE's affected range?</b> &mdash; no &rarr; not_affected</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. CVSS Attack Vector</b> branches: <span class="mono">N/A</span> &middot; <span class="mono">L</span> &middot; <span class="mono">P</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>3. Deployment exposure</b> &times; reachability<span class="vm-sub">isolated-cell &rarr; control-network &rarr; dmz-routable &rarr; remote-accessible</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>4. Operational context Q&amp;A</b> — perimeter protection, mitigating controls, config/environment gating</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Terminal: <b>not_affected</b> (CSAF/OpenVEX justification) / <b>under_investigation</b></div>
-    </div>
-  </div>
-
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
-</div>
-</div>
-
-<div class="vm-cols">
-  <div class="card">
-    <h3 style="margin:0 0 6px">Source-available path (Code VEX)</h3>
-    <p class="hint" style="margin:0 0 8px">When the vulnerable/patched code pair is obtainable (OSS with a fix commit), the verdict is grounded in the actual code — not just metadata.</p>
-    <ul class="vm-list">
-      <li><b>SecureBERT</b> reads the security/asset context and emits a first VEX signal.</li>
-      <li><b>CodeBERT</b> compares the vulnerable vs patched diff; catches backports (fix already applied) that context alone misses.</li>
-      <li><b>sLLM static analyst</b> reasons over patch diff + CWE + reachability to produce a structured exploitability assessment. <b>No PoC is generated and nothing is executed.</b></li>
-      <li><b>Grounding critic</b> rejects overreach; a verdict must be supported by evidence (e.g. <span class="mono">not_affected</span> needs counter-evidence).</li>
-      <li>Confirmed tier = <b>static-analysis-verified</b>; otherwise <b>static-reasoned</b>.</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3 style="margin:0 0 6px">Source-uncollectable path (Decision Tree)</h3>
-    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so VEX is decided from the deployment's <b>operational context</b> instead of code.</p>
-    <ul class="vm-list">
-      <li>Branch on the <b>CVSS Attack Vector</b> (Network/Adjacent, Local, Physical).</li>
-      <li>Cross with <b>deployment exposure</b> to get reachability (yes / conditional / no).</li>
-      <li>Walk operational questions: perimeter protection, compensating controls, configuration/environment preconditions.</li>
-      <li>Terminals map to CSAF/OpenVEX justifications: <span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>, <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span>, <span class="mono">inline_mitigations_already_exist</span> &hellip; or <b>under_investigation</b>.</li>
-      <li>If the source later becomes obtainable, the case is routed back to the Code VEX path.</li>
-    </ul>
-  </div>
-</div>
-<p class="hint" style="margin:14px 2px 0">Note: SBOM/AAS describe the asset's static composition; the operational inputs above (exposure, reachability, mitigations, exploitation) are supplied separately &mdash; that is what turns identification into a VEX decision. An SSVC-style priority axis (Exploitation via KEV/EPSS, Automatable, safety impact) is planned on top of this tree.</p>
-"""
-
-PAGES = {
-    "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
-    "vex-method": ("VEX Analysis Method", _VEXMETHOD_PAGE),
-    "source": ("ICS-CERT Advisories",
-               '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
-    "corpus": ("Corpus statistics",
-               '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
-    "collectable": ("Source-collectable CVEs",
-                    '<h1 style="margin:0 0 18px">Source-collectable CVEs</h1>' + COLLECTABLE_HTML),
-    "ics-sbom": ("ICS-SBOM dataset", _ICSSBOM_PAGE),
-}
-_NAV = [("analyzer", "index.html", "Analyzer"),
-        ("vex-method", "vex-method.html", "VEX Analysis Method"),
-        ("corpus", "corpus.html", "Corpus"),
-        ("collectable", "collectable.html", "Collectable CVEs"),
-        ("source", "source.html", "ICS-CERT Advisories"),
-        ("ics-sbom", "ics-sbom.html", "ICS-SBOM")]
-
-
-def nav_html(active):
-    tabs = "".join(
-        f'<a class="navtab{" on" if key == active else ""}" href="{href}">{label}</a>'
-        for key, href, label in _NAV)
-    return f'<nav class="nav"><div class="navlabel">Menu</div>{tabs}</nav>'
-
-
-def make_page(active):
-    _sub, content = PAGES[active]
-    return (FRONTEND_TEMPLATE
-            .replace("__VEX_TREE__", json.dumps(VT.TREE, ensure_ascii=False))
-            .replace("__NAV__", nav_html(active))
-            .replace("__CONTENT__", content))
-
-
-app = build_app()
-
-
-def _lan_ip():
-    import socket
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80)); ip = s.getsockname()[0]; s.close()
-        return ip
-    except Exception:
-        return "127.0.0.1"
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8100)
-    # 0.0.0.0 = reachable from other computers on the LAN (use --host 127.0.0.1
-    # to restrict to this machine only).
-    ap.add_argument("--host", default="0.0.0.0")
-    a = ap.parse_args()
-    import uvicorn
-    print(f"ICS-VEXForge API - this machine: http://localhost:{a.port}", flush=True)
-    if a.host == "0.0.0.0":
-        print(f"  other computers on your network: http://{_lan_ip()}:{a.port}", flush=True)
-        print(f"  (allow inbound TCP {a.port} in Windows Firewall the first time)", flush=True)
-    print(f"  REST docs: /docs", flush=True)
-    uvicorn.run(app, host=a.host, port=a.port, log_level="info")
-
-
-if __name__ == "__main__":
-    main()
+</script></body></html>
