@@ -755,7 +755,7 @@ FRONTEND_TEMPLATE = """<!doctype html><html lang="en"><head><meta charset="utf-8
 --line:#25333c;--accent:#38ccd9;--aff:#e5675c;--safe:#43be7c;--und:#e0b24c;
 --mono:ui-monospace,Consolas,monospace;--sans:system-ui,Segoe UI,Roboto,sans-serif}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:18px}
-.layout{display:grid;grid-template-columns:236px minmax(0,1fr);max-width:1720px;margin:0 auto;min-height:100vh}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);max-width:1720px;margin:0 auto;min-height:100vh}
 .side{border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;align-self:start;height:100vh;overflow:auto}
 .main{padding:28px clamp(18px,3vw,48px) 64px;min-width:0}
 .side-brand{display:flex;justify-content:center;margin:4px 0 6px}
@@ -768,7 +768,7 @@ h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-wid
 h3{font-size:18px}.hint{font-size:13px}
 .nav{display:flex;flex-direction:column;gap:3px;margin-top:20px}
 .nav .navlabel{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-weight:700;margin:14px 8px 4px}
-.navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 14px;border-radius:9px;border:1px solid transparent}
+.navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 14px;border-radius:9px;border:1px solid transparent;white-space:nowrap}
 .navtab:hover{color:var(--ink);background:var(--card2)}
 .navtab.on{color:var(--accent);background:var(--card2);border-color:var(--line)}
 @media(max-width:860px){.nav{flex-direction:row;flex-wrap:wrap}.nav .navlabel{display:none}}
@@ -1561,7 +1561,7 @@ PAGES = {
                     '<h1 style="margin:0 0 18px">Source Code Available CVEs</h1>' + COLLECTABLE_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
-_NAV = [("analyzer", "index.html", "Analyzer"),
+_NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
         ("vex-method", "vex-method.html", "VEX Analysis Method"),
         ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
         ("collectable", "collectable.html", "Source Code Available CVEs"),
