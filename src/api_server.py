@@ -813,6 +813,7 @@ async function run(){
   if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
   const d=await r.json();
   if(!d.cves_matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
+  _lastVex=d;
   const bv=d.summary.by_vex||{};
   let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
@@ -826,7 +827,9 @@ async function run(){
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
-  o.innerHTML=h+'</tbody></table>';
+  h+='</tbody></table>';
+  h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
+  o.innerHTML=h;
   renderTreeList(d.cves);
 }
 let _lastSbom=null,_lastExp=null;
@@ -1010,6 +1013,82 @@ function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;
 // per-CVE decision tree: only source-uncollectable CVEs from the SBOM appear,
 // each walked independently (pre-seeded affected-range=yes, source-obtainable=no).
 let _treeState={};
+let _lastVex=null;
+function _canonStatus(s){s=String(s||'');
+  if(s==='LIKELY_AFFECTED')return 'affected';
+  if(s==='LIKELY_NOT_AFFECTED')return 'not_affected';
+  if(s==='UNDER_INVESTIGATION')return 'under_investigation';
+  if(s==='not_affected')return 'not_affected';
+  if(s==='route_to_icsvexforge')return 'under_investigation';
+  if(s.indexOf('likely_affected')===0)return 'affected';
+  if(s==='under_investigation')return 'under_investigation';
+  return 'under_investigation';}
+// map our justification tokens -> OpenVEX / CSAF not_affected justification vocab
+function _ovJust(j){j=String(j||'');
+  if(/component_not_present/.test(j))return 'component_not_present';
+  if(/vulnerable_code_not_present/.test(j))return 'vulnerable_code_not_present';
+  if(/not_in_execute_path|not_reachable|code_not_reachable|requires_configuration|requires_environment/.test(j))return 'vulnerable_code_not_in_execute_path';
+  if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
+  if(/perimeter|mitigat|protected/.test(j))return 'inline_mitigations_already_exist';
+  return 'vulnerable_code_not_in_execute_path';}
+function _vexRows(){
+  const rows=[];
+  for(const f of ((_lastVex&&_lastVex.cves)||[])){
+    let raw=f.final_vex, just=f.justification||'', src='reachability';
+    if(!f.source_collectable && typeof _treeState!=='undefined' && _treeState[f.cve]){
+      const t=classifyTree(_treeState[f.cve].av,_treeState[f.cve].answers);
+      if(t){raw=t.status; just=t.justification||just; src='decision-tree'+(t.complete?'':' (incomplete)');}
+    }
+    rows.push({cve:f.cve,status:_canonStatus(raw),justification:just,component:f.component||'',
+               version:f.version||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,source:src});
+  }
+  return rows;}
+function _sbomProduct(){
+  const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
+  return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
+function _isoNow(){return new Date().toISOString();}
+function _dl(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+function exportOpenVex(){
+  const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
+  const p=_sbomProduct(); const pid=p.purl||('pkg:generic/'+encodeURIComponent(p.name));
+  const stmts=rows.map(r=>{const st={vulnerability:{name:r.cve},
+      products:[{"@id":pid,identifiers:(p.purl?{purl:p.purl}:undefined)}],
+      status:r.status};
+    if(r.status==='not_affected'){st.justification=_ovJust(r.justification);st.impact_statement='ICS-VEXForge: '+(r.justification||'not affected')+' (component: '+r.component+')';}
+    if(r.status==='affected')st.action_statement='Review and remediate: apply vendor update or mitigation for '+r.component+'.';
+    return st;});
+  const doc={"@context":"https://openvex.dev/ns/v0.2.0",
+    "@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/openvex-"+Date.now(),
+    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:_isoNow(),version:1,
+    tooling:"ICS-VEXForge",statements:stmts};
+  _dl('openvex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
+function exportCsaf(){
+  const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
+  const p=_sbomProduct(); const pid=p.ref||'PRODUCT-1'; const now=_isoNow();
+  const buckets={known_affected:[],known_not_affected:[],under_investigation:[]};
+  const vulns=rows.map(r=>{
+    const key=r.status==='affected'?'known_affected':(r.status==='not_affected'?'known_not_affected':'under_investigation');
+    const v={cve:r.cve,product_status:{}};v.product_status[key]=[pid];
+    if(r.status==='not_affected')v.flags=[{label:_ovJust(r.justification),product_ids:[pid]}];
+    const notes=[{category:'other',title:'ICS-VEXForge assessment',
+      text:'status='+r.status+'; justification='+(r.justification||'n/a')+'; component='+r.component+'; basis='+r.source+(r.cvss!=null?('; cvss='+r.cvss):'')}];
+    v.notes=notes;
+    if(r.status==='affected')v.remediations=[{category:'vendor_fix',details:'Apply vendor update or mitigation for '+r.component+'.',product_ids:[pid]}];
+    return v;});
+  const doc={document:{category:'csaf_vex',csaf_version:'2.0',
+      title:'ICS-VEXForge VEX — '+p.name,
+      publisher:{category:'vendor',name:'ICS-VEXForge (Chonnam SSRC)',namespace:'https://kakyung98.github.io/ics-vex-dashboard/'},
+      tracking:{id:'ICSVEXFORGE-'+Date.now(),status:'final',version:'1',
+        initial_release_date:now,current_release_date:now,
+        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],
+        generator:{engine:{name:'ICS-VEXForge',version:'2026.04'}}}},
+    product_tree:{full_product_names:[Object.assign({product_id:pid,name:p.name},
+        p.purl?{product_identification_helper:{purl:p.purl}}:{})]},
+    vulnerabilities:vulns};
+  _dl('csaf-vex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
+
 function renderTreeList(cves){
   const un=(cves||[]).filter(f=>!f.source_collectable);
   const card=document.getElementById('vextree'); if(!card)return;

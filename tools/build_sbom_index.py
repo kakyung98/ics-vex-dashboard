@@ -18,6 +18,12 @@ import os, csv, json, glob
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 RSBOM = os.path.join(BASE, "reverse_sbom")
+# fall back to the user's finalized copy if the primary dir was renamed/emptied
+import glob as _g
+if not _g.glob(os.path.join(RSBOM, "*.json")):
+    _alt = os.path.join(BASE, "(최종)reverse_sbom")
+    if _g.glob(os.path.join(_alt, "*.json")):
+        RSBOM = _alt
 DATA = os.path.join(BASE, "data")
 OUT = os.path.join(BASE, "sbom_index.json")
 
