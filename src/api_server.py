@@ -440,6 +440,11 @@ def vex_for_sbom(sbom, exposure=None):
     # Also honor CVEs embedded in the SBOM's own VDR (vulnerabilities[]), e.g. a
     # reverse_sbom SBOM-CVE whose closed-firmware component has no OSS KB match.
     ref2name = {c.get("bom-ref"): (c.get("name") or "") for c in sbom.get("components", [])}
+    ref2tier = {}
+    for _c in sbom.get("components", []):
+        for _p in (_c.get("properties") or []):
+            if _p.get("name") == "component:source-availability":
+                ref2tier[_c.get("bom-ref")] = _p.get("value")
     _top = (sbom.get("metadata") or {}).get("component") or {}
     if _top.get("bom-ref"):
         ref2name[_top["bom-ref"]] = _top.get("name") or ""
@@ -482,7 +487,9 @@ def vex_for_sbom(sbom, exposure=None):
         by_cve[cid] = {
             "cve": cid, "component": ref2name.get(aff, aff or _top.get("name") or ""),
             "version": "NOASSERTION", "version_pinned": False, "severity": sev, "cvss": score,
-            "source_collectable": bool(STORE.cve_index.get(cid, {}).get("source_available") or cid in STORE.pairs),
+            "source_collectable": (False if ref2tier.get(aff) == "E"
+                                    else True if ref2tier.get(aff) in ("A", "C")
+                                    else bool(STORE.cve_index.get(cid, {}).get("source_available") or cid in STORE.pairs)),
             "av": av, "kev": kev, "epss": epss,
             "exposure": exp, "reachability": reach, "has_code_pair": cid in STORE.pairs,
             "final_vex": status, "justification": just, "basis": basis,
