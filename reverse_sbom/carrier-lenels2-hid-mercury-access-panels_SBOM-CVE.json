@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:a97a660f-72e6-52d8-8df3-880ff87b3259",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:carrier-lenels2-hid-mercury-access-panels",
       "name": "Carrier LenelS2 HID Mercury access panels",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'HID Mercury access panels' by Carrier LenelS2, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Carrier LenelS2",
+      "purl": "pkg:generic/hid-mercury-access-panels@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:carrier-lenels2:hid-mercury-access-panels:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Carrier LenelS2"
       },
+      "supplier": {
+        "name": "Carrier LenelS2"
+      },
+      "tags": [
+        "carrier-lenels2",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2edc9f3c589054b67633d7ff70e4ae3688ee79ca76a43ca6d54fb6f105ebcd27"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-153-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-22-153-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:carrier-lenels2-hid-mercury-access-panels",
+      "dependsOn": [
+        "mod:carrier-lenels2-hid-mercury-access-panels:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:carrier-lenels2-hid-mercury-access-panels:firmware",
       "name": "HID Mercury access panels Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Carrier LenelS2",
+      "manufacturer": {
+        "name": "Carrier LenelS2"
+      },
+      "supplier": {
+        "name": "Carrier LenelS2"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/hid-mercury-access-panels",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

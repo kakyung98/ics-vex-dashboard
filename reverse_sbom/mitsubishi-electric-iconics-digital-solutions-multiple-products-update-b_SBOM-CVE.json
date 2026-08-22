@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:0a811cdd-7537-5a14-beeb-1909e64f7381",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:mitsubishi-electric-iconics-digital-solutions-multiple-products-update-b",
       "name": "Mitsubishi Electric Iconics Digital Solutions Multiple Products (Update B)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Iconics Digital Solutions Multiple Products (Update B)' by Mitsubishi Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Mitsubishi Electric",
+      "purl": "pkg:generic/iconics-digital-solutions-multiple-products-update-b@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:mitsubishi-electric:iconics-digital-solutions-multiple-products-update-b:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Mitsubishi Electric"
       },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "ics",
+        "mitsubishi-electric",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6bdeb9543194dc0e510b50af63bddb3d823af1042bec9a17eb7f62d0ec4e39a5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-217-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-217-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:mitsubishi-electric-iconics-digital-solutions-multiple-products-update-b",
+      "dependsOn": [
+        "mod:mitsubishi-electric-iconics-digital-solutions-multiple-products-update-b:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:mitsubishi-electric-iconics-digital-solutions-multiple-products-update-b:firmware",
       "name": "Iconics Digital Solutions Multiple Products (Upd Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Mitsubishi Electric",
+      "manufacturer": {
+        "name": "Mitsubishi Electric"
+      },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/iconics-digital-solutions-multiple-products-update-b",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

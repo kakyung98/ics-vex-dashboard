@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:31b7626f-67f9-5df3-8847-77cf3363e9ca",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:voltronic-power-and-powershield-ups-monitoring-software",
       "name": "Voltronic Power and PowerShield UPS Monitoring Software",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Power and PowerShield UPS Monitoring Software' by Voltronic, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Voltronic",
+      "purl": "pkg:generic/power-and-powershield-ups-monitoring-software@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:voltronic:power-and-powershield-ups-monitoring-software:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Voltronic"
       },
+      "supplier": {
+        "name": "Voltronic"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware",
+        "voltronic"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a442ba809164bdf1ad6d74265add9d558c2306e1e8ad733fa383a027454202ee"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-182-05"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-182-05"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:voltronic-power-and-powershield-ups-monitoring-software",
+      "dependsOn": [
+        "mod:voltronic-power-and-powershield-ups-monitoring-software:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:voltronic-power-and-powershield-ups-monitoring-software:firmware",
       "name": "Power and PowerShield UPS Monitoring Software Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Voltronic",
+      "manufacturer": {
+        "name": "Voltronic"
+      },
+      "supplier": {
+        "name": "Voltronic"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/power-and-powershield-ups-monitoring-software",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

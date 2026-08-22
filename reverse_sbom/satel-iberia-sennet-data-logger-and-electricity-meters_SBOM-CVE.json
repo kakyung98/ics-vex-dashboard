@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:b9eb4454-fad1-58ef-a2a3-54768c756c24",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:satel-iberia-sennet-data-logger-and-electricity-meters",
       "name": "Satel Iberia SenNet Data Logger and Electricity Meters",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SenNet Data Logger and Electricity Meters' by Satel Iberia, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Satel Iberia",
+      "purl": "pkg:generic/sennet-data-logger-and-electricity-meters@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:satel-iberia:sennet-data-logger-and-electricity-meters:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Satel Iberia"
       },
+      "supplier": {
+        "name": "Satel Iberia"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "satel-iberia",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b90505dddf8ee6b38a156c68a4f95b036c1e7b4a60229383df1d03006993b2f2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-17-131-02"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-17-131-02"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:satel-iberia-sennet-data-logger-and-electricity-meters",
+      "dependsOn": [
+        "mod:satel-iberia-sennet-data-logger-and-electricity-meters:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:satel-iberia-sennet-data-logger-and-electricity-meters:firmware",
       "name": "SenNet Data Logger and Electricity Meters Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Satel Iberia",
+      "manufacturer": {
+        "name": "Satel Iberia"
+      },
+      "supplier": {
+        "name": "Satel Iberia"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/sennet-data-logger-and-electricity-meters",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

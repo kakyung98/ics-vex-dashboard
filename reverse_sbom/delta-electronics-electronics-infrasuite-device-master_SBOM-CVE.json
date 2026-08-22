@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:f783761c-6fe0-5e2a-b6d2-b0a25ddf69e3",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,93 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:delta-electronics-electronics-infrasuite-device-master",
       "name": "Delta Electronics Electronics InfraSuite Device Master",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Electronics InfraSuite Device Master' by Delta Electronics, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Delta Electronics",
+      "purl": "pkg:generic/electronics-infrasuite-device-master@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:delta-electronics:electronics-infrasuite-device-master:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Delta Electronics"
       },
+      "supplier": {
+        "name": "Delta Electronics"
+      },
+      "tags": [
+        "delta-electronics",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e4cc75432a3be7119f884882de7c812150262898f4b8062466e9a63cea8e55bf"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-180-01",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-331-01",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-130-03",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-303-03"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-23-180-01, icsa-23-331-01, icsa-24-130-03, icsa-24-303-03"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +133,38 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:delta-electronics-electronics-infrasuite-device-master",
+      "dependsOn": [
+        "pkg:oss:dotnet"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:dotnet",
       "name": "Microsoft .NET Framework",
       "version": "NOASSERTION",
+      "description": "Managed runtime used by Windows-based supervisory/engineering applications.",
       "scope": "required",
       "publisher": "Microsoft Corporation",
+      "manufacturer": {
+        "name": "Microsoft Corporation"
+      },
+      "supplier": {
+        "name": "Microsoft Corporation"
+      },
+      "tags": [
+        "runtime",
+        "windows"
+      ],
       "cpe": "cpe:2.3:a:microsoft:.net_framework:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/dotnet-framework",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

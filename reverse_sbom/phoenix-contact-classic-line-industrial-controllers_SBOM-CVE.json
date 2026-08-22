@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:c95a96fb-5820-5a06-9f49-9a39acd7bbfd",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:phoenix-contact-classic-line-industrial-controllers",
       "name": "Phoenix Contact Classic Line Industrial Controllers",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Classic Line Industrial Controllers' by Phoenix Contact, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Phoenix Contact",
+      "purl": "pkg:generic/classic-line-industrial-controllers@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:phoenix-contact:classic-line-industrial-controllers:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Phoenix Contact"
       },
+      "supplier": {
+        "name": "Phoenix Contact"
+      },
+      "tags": [
+        "ics",
+        "phoenix-contact",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f44e2bb0b0745c41cfa0163ab242f4d916ecc36c4690b1b9ad20a7e74c85eee9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-22-172-05"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-22-172-05"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:phoenix-contact-classic-line-industrial-controllers",
+      "dependsOn": [
+        "mod:phoenix-contact-classic-line-industrial-controllers:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:phoenix-contact-classic-line-industrial-controllers:firmware",
       "name": "Classic Line Industrial Controllers Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Phoenix Contact",
+      "manufacturer": {
+        "name": "Phoenix Contact"
+      },
+      "supplier": {
+        "name": "Phoenix Contact"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/classic-line-industrial-controllers",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

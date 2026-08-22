@@ -25,6 +25,7 @@ import uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
 from generate_ics_sbom import OSS  # noqa: E402  (OSS 카탈로그: 실제 OSS CVE 대조용)
+from generate_ics_sbom import org, DOC_ORG, det_sha256  # KISA field-def helpers
 
 # OSS 카탈로그에 들어 있으나 실제로는 폐쇄소스인 컴포넌트
 # (소스 확보 불가 -> tier E). tier A(OSS 귀속)로 잘못 분류되던 것 교정.
@@ -209,10 +210,16 @@ def main():
                 if ref not in comps:
                     comps[ref] = {
                         "type": "library", "bom-ref": ref, "name": spec["name"],
-                        "version": "NOASSERTION", "scope": "required",
+                        "version": "NOASSERTION",
+                        "description": spec.get("desc", ""),
+                        "scope": "required",
                         "publisher": spec["publisher"],
+                        "manufacturer": org(spec["publisher"]),
+                        "supplier": org(spec["publisher"]),
+                        "tags": sorted(set(spec.get("tags", []))),
                         "cpe": "cpe:2.3:a:%s:%s:*:*:*:*:*:*:*:*" % (spec["cpe_vendor"], spec["cpe_product"]),
                         "purl": spec["purl"],
+                        "copyright": "NOASSERTION",
                         "licenses": [{"license": {"id": spec["license"]}}],
                         "properties": [
                             {"name": "component:origin", "value": origin},
@@ -226,7 +233,15 @@ def main():
                     comps[ref] = {
                         "type": "firmware", "bom-ref": ref,
                         "name": "%s Vendor Firmware/Application" % prod[:48],
-                        "version": "NOASSERTION", "scope": "required", "publisher": vend,
+                        "version": "NOASSERTION",
+                        "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
+                        "scope": "required", "publisher": vend,
+                        "manufacturer": org(vend),
+                        "supplier": org(vend),
+                        "tags": ["firmware", "vendor-proprietary"],
+                        "purl": "pkg:generic/%s" % slug(prod),
+                        "copyright": "NOASSERTION",
+                        "licenses": [{"license": {"id": "NOASSERTION"}}],
                         "properties": [
                             {"name": "component:origin", "value": "vendor-proprietary"},
                             {"name": "component:source-availability", "value": "E"},
@@ -292,31 +307,63 @@ def main():
         # 최상위 device 컴포넌트 + 문서
         base_platform = "linux" if ("linux_kernel" in d["oss_hits"] or "busybox" in d["oss_hits"]) else (
             "vxworks" if "ipnet" in d["oss_hits"] else "vendor-firmware")
+        advs_sorted = sorted(set(d["advisories"]))
+        primary_adv = advs_sorted[0] if advs_sorted else ""
         top = {
             "type": "device", "bom-ref": dev_ref, "name": "%s %s" % (vend, prod),
-            "version": "NOASSERTION", "publisher": vend,
+            "version": "NOASSERTION",
+            "description": "ICS/OT asset '%s' by %s, reverse-built from CISA ICS-CERT advisory data." % (prod, vend),
+            "scope": "required",
+            "publisher": vend,
+            "purl": "pkg:generic/%s@NOASSERTION" % slug(prod),
+            "copyright": "NOASSERTION",
             "cpe": "cpe:2.3:o:%s:%s:*:*:*:*:*:*:*:*" % (slug(vend), slug(prod)),
-            "manufacturer": {"name": vend},
+            "manufacturer": org(vend),
+            "supplier": org(vend),
+            "tags": sorted(set([base_platform, slug(vend), "ics", "reverse-sbom"])),
+            "hashes": [{"alg": "SHA-256", "content": det_sha256(dev_ref)}],
+            "licenses": [{"license": {"id": "NOASSERTION"}}],
+            "externalReferences": [{"type": "advisory",
+                "url": ["https://www.cisa.gov/news-events/ics-advisories/%s" % a for a in advs_sorted] or
+                       ["https://www.cisa.gov/news-events/ics-advisories"],
+                "comment": "Source CISA ICS-CERT advisories: %s" % (", ".join(advs_sorted) or "NOASSERTION")}],
             "properties": [
                 {"name": "ics:vendor", "value": vend},
                 {"name": "ics:product", "value": prod},
                 {"name": "ics:base-platform", "value": base_platform},
-                {"name": "ics:source-advisories", "value": ",".join(sorted(set(d["advisories"])))},
+                {"name": "ics:source-advisories", "value": ",".join(advs_sorted)},
                 {"name": "dataset:provenance", "value": "cisa-ics-advisory-reverse"},
                 {"name": "dataset:synthetic-inventory", "value": "true"},
             ],
         }
+        dependencies = [{"ref": dev_ref, "dependsOn": [c["bom-ref"] for c in comps.values()]}]
         doc = {
             "bomFormat": "CycloneDX", "specVersion": "1.7",
             "serialNumber": "urn:uuid:%s" % uuid.uuid5(NS, "reverse::" + dev_slug),
             "version": 1,
+            "properties": [
+                {"name": "SBOM_CREATION_DATE", "value": "2026-04-10"},
+                {"name": "SBOM_MODIFY_DATE", "value": "2026-04-10"},
+            ],
             "metadata": {
                 "timestamp": "2026-04-10T00:00:00Z",
                 "lifecycles": [{"phase": "operations"}],
+                "manufacturer": DOC_ORG,
+                "tools": {"components": [{
+                    "type": "application",
+                    "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+                    "name": "ICS-VEX Reverse SBOM Builder",
+                    "version": "2026.04",
+                    "publisher": "Chonnam SSRC — ICS-VEX",
+                    "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+                    "externalReferences": [{"type": "documentation",
+                        "url": ["https://kakyung98.github.io/ics-vex-dashboard/"],
+                        "comment": "ICS-VEXForge web console"}],
+                }]},
+                "distributionConstraints": {"tlp": "CLEAR"},
                 "component": top,
-                "tools": {"components": [{"type": "application",
-                          "name": "ICS-VEX Reverse SBOM Builder", "version": "2026.04"}]},
             },
+            "dependencies": dependencies,
             "components": list(comps.values()),
             "vulnerabilities": vulns,
         }

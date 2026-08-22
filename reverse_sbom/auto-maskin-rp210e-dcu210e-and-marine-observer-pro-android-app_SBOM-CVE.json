@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:84d656e2-8388-593c-a9d1-9de131c64b40",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:auto-maskin-rp210e-dcu210e-and-marine-observer-pro-android-app",
       "name": "Auto-Maskin RP210E, DCU210E, and Marine Observer Pro (Android App)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'RP210E, DCU210E, and Marine Observer Pro (Android App)' by Auto-Maskin, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Auto-Maskin",
+      "purl": "pkg:generic/rp210e-dcu210e-and-marine-observer-pro-android-app@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:auto-maskin:rp210e-dcu210e-and-marine-observer-pro-android-app:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Auto-Maskin"
       },
+      "supplier": {
+        "name": "Auto-Maskin"
+      },
+      "tags": [
+        "auto-maskin",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c86af65f79ace279db5474902e0093ff0cbb097e8626f8df24962a67afdecd0e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-20-051-04"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-20-051-04"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:auto-maskin-rp210e-dcu210e-and-marine-observer-pro-android-app",
+      "dependsOn": [
+        "mod:auto-maskin-rp210e-dcu210e-and-marine-observer-pro-android-app:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:auto-maskin-rp210e-dcu210e-and-marine-observer-pro-android-app:firmware",
       "name": "RP210E, DCU210E, and Marine Observer Pro (Androi Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Auto-Maskin",
+      "manufacturer": {
+        "name": "Auto-Maskin"
+      },
+      "supplier": {
+        "name": "Auto-Maskin"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/rp210e-dcu210e-and-marine-observer-pro-android-app",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

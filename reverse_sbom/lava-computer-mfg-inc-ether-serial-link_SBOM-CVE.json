@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:e1aeee57-71ee-56d5-b158-c4679d0563dc",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:lava-computer-mfg-inc-ether-serial-link",
       "name": "LAVA Computer MFG Inc Ether-Serial Link",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Ether-Serial Link' by LAVA Computer MFG Inc, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "LAVA Computer MFG Inc",
+      "purl": "pkg:generic/ether-serial-link@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:lava-computer-mfg-inc:ether-serial-link:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "LAVA Computer MFG Inc"
       },
+      "supplier": {
+        "name": "LAVA Computer MFG Inc"
+      },
+      "tags": [
+        "ics",
+        "lava-computer-mfg-inc",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b56f90a242a5b463856130a0da17e2b927462b40518e4bbc171de1958afe5a8d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-17-283-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-17-283-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:lava-computer-mfg-inc-ether-serial-link",
+      "dependsOn": [
+        "mod:lava-computer-mfg-inc-ether-serial-link:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:lava-computer-mfg-inc-ether-serial-link:firmware",
       "name": "Ether-Serial Link Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "LAVA Computer MFG Inc",
+      "manufacturer": {
+        "name": "LAVA Computer MFG Inc"
+      },
+      "supplier": {
+        "name": "LAVA Computer MFG Inc"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/ether-serial-link",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:0112265b-78d0-5971-8f1d-7f7a942f3db2",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:cognex-in-sight-explorer-and-in-sight-camera-firmware",
       "name": "Cognex In-Sight Explorer and In-Sight Camera Firmware",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'In-Sight Explorer and In-Sight Camera Firmware' by Cognex, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Cognex",
+      "purl": "pkg:generic/in-sight-explorer-and-in-sight-camera-firmware@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:cognex:in-sight-explorer-and-in-sight-camera-firmware:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Cognex"
       },
+      "supplier": {
+        "name": "Cognex"
+      },
+      "tags": [
+        "cognex",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f66c85aa657614f0f48e6d5fdce566ca25c24fee4b38dfa5f5998157b7d7ca8d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-261-06"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-261-06"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:cognex-in-sight-explorer-and-in-sight-camera-firmware",
+      "dependsOn": [
+        "mod:cognex-in-sight-explorer-and-in-sight-camera-firmware:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:cognex-in-sight-explorer-and-in-sight-camera-firmware:firmware",
       "name": "In-Sight Explorer and In-Sight Camera Firmware Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Cognex",
+      "manufacturer": {
+        "name": "Cognex"
+      },
+      "supplier": {
+        "name": "Cognex"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/in-sight-explorer-and-in-sight-camera-firmware",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:892d3036-55d1-546e-b65c-0e8254461b67",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,91 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:nasa-core-flight-system-cfs-health-amp-safety-hs-application",
       "name": "NASA Core Flight System (cFS) Health &amp; Safety (HS) Application",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Core Flight System (cFS) Health &amp; Safety (HS) Application' by NASA, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "NASA",
+      "purl": "pkg:generic/core-flight-system-cfs-health-amp-safety-hs-application@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:nasa:core-flight-system-cfs-health-amp-safety-hs-application:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "NASA"
       },
+      "supplier": {
+        "name": "NASA"
+      },
+      "tags": [
+        "ics",
+        "nasa",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "24537df3695c028d4ca6dbb7f57b61a60740c76452c5da8c4b20e966bf1a6b0e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-197-03",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-211-06"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-197-03, icsa-26-211-06"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +131,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:nasa-core-flight-system-cfs-health-amp-safety-hs-application",
+      "dependsOn": [
+        "mod:nasa-core-flight-system-cfs-health-amp-safety-hs-application:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:nasa-core-flight-system-cfs-health-amp-safety-hs-application:firmware",
       "name": "Core Flight System (cFS) Health &amp; Safety (HS Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "NASA",
+      "manufacturer": {
+        "name": "NASA"
+      },
+      "supplier": {
+        "name": "NASA"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/core-flight-system-cfs-health-amp-safety-hs-application",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

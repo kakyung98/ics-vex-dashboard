@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:2e4449ec-287c-556f-a445-067ab34827f6",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:hitachi-energy-aff66x",
       "name": "​Hitachi Energy AFF66x",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Energy AFF66x' by ​Hitachi, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "​Hitachi",
+      "purl": "pkg:generic/energy-aff66x@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:hitachi:energy-aff66x:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "​Hitachi"
       },
+      "supplier": {
+        "name": "​Hitachi"
+      },
+      "tags": [
+        "hitachi",
+        "ics",
+        "linux",
+        "reverse-sbom"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ad8dc46de28a9e4e8f3d4d5bc70c7e02dc67aff6fc748e46d16e23cebeded62d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-234-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-23-234-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,46 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:hitachi-energy-aff66x",
+      "dependsOn": [
+        "mod:hitachi-energy-aff66x:firmware",
+        "pkg:oss:linux-kernel",
+        "pkg:oss:ntp"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:hitachi-energy-aff66x:firmware",
       "name": "Energy AFF66x Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "​Hitachi",
+      "manufacturer": {
+        "name": "​Hitachi"
+      },
+      "supplier": {
+        "name": "​Hitachi"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/energy-aff66x",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",
@@ -81,10 +186,23 @@
       "bom-ref": "pkg:oss:linux-kernel",
       "name": "Linux Kernel",
       "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
       "scope": "required",
       "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/linux",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -108,10 +226,23 @@
       "bom-ref": "pkg:oss:ntp",
       "name": "NTP Daemon",
       "version": "NOASSERTION",
+      "description": "Time-synchronization daemon for event-timestamp consistency.",
       "scope": "required",
       "publisher": "Network Time Foundation",
+      "manufacturer": {
+        "name": "Network Time Foundation"
+      },
+      "supplier": {
+        "name": "Network Time Foundation"
+      },
+      "tags": [
+        "ntp",
+        "oss",
+        "time"
+      ],
       "cpe": "cpe:2.3:a:ntp:ntp:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/ntp",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

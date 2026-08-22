@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:dbb18c64-36a3-5f54-b4c3-5e809cf50ee3",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,91 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:aveva-pi-data-archive",
       "name": "AVEVA PI Data Archive",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'PI Data Archive' by AVEVA, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "AVEVA",
+      "purl": "pkg:generic/pi-data-archive@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:aveva:pi-data-archive:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "AVEVA"
       },
+      "supplier": {
+        "name": "AVEVA"
+      },
+      "tags": [
+        "aveva",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "04243c65f6ea9c67648181ad4ae471cdf610222f71d85384e63ef0c3309de17b"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-25-162-07",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-041-03"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-25-162-07, icsa-26-041-03"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +131,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:aveva-pi-data-archive",
+      "dependsOn": [
+        "mod:aveva-pi-data-archive:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:aveva-pi-data-archive:firmware",
       "name": "PI Data Archive Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "AVEVA",
+      "manufacturer": {
+        "name": "AVEVA"
+      },
+      "supplier": {
+        "name": "AVEVA"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/pi-data-archive",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

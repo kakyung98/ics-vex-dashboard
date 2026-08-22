@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:282758db-8392-570a-bc66-d52aba4c2613",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:exacq-technologies-inc-a-subsidiary-of-johnson-controls-johnson-controls-exacq-t",
       "name": "Exacq Technologies, Inc., a subsidiary of Johnson Controls Johnson Controls Exacq Technologies exacqVision",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Johnson Controls Exacq Technologies exacqVision' by Exacq Technologies, Inc., a subsidiary of Johnson Controls, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Exacq Technologies, Inc., a subsidiary of Johnson Controls",
+      "purl": "pkg:generic/johnson-controls-exacq-technologies-exacqvision@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:exacq-technologies-inc-a-subsidiary-of-johnson-controls:johnson-controls-exacq-technologies-exacqvision:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Exacq Technologies, Inc., a subsidiary of Johnson Controls"
       },
+      "supplier": {
+        "name": "Exacq Technologies, Inc., a subsidiary of Johnson Controls"
+      },
+      "tags": [
+        "exacq-technologies-inc-a-subsidiary-of-johnson-controls",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "62db33822cdd2211b06674a96d6fd4f96d1a85d0338af641df69edce71d98880"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-21-077-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-21-077-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:exacq-technologies-inc-a-subsidiary-of-johnson-controls-johnson-controls-exacq-t",
+      "dependsOn": [
+        "mod:exacq-technologies-inc-a-subsidiary-of-johnson-controls-johnson-controls-exacq-t:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:exacq-technologies-inc-a-subsidiary-of-johnson-controls-johnson-controls-exacq-t:firmware",
       "name": "Johnson Controls Exacq Technologies exacqVision Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Exacq Technologies, Inc., a subsidiary of Johnson Controls",
+      "manufacturer": {
+        "name": "Exacq Technologies, Inc., a subsidiary of Johnson Controls"
+      },
+      "supplier": {
+        "name": "Exacq Technologies, Inc., a subsidiary of Johnson Controls"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/johnson-controls-exacq-technologies-exacqvision",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

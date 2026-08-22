@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:2966d422-695b-5c14-bbf8-125de1edf3b5",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:pepperl-fuchs-wirelesshart-gateways",
       "name": "PEPPERL+FUCHS WirelessHART-Gateways",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'WirelessHART-Gateways' by PEPPERL+FUCHS, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "PEPPERL+FUCHS",
+      "purl": "pkg:generic/wirelesshart-gateways@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:pepperl-fuchs:wirelesshart-gateways:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "PEPPERL+FUCHS"
       },
+      "supplier": {
+        "name": "PEPPERL+FUCHS"
+      },
+      "tags": [
+        "ics",
+        "pepperl-fuchs",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "30a64f0297bc6ce2d63a21547a8c393468e90b57ac62be35e082f20d15c616c4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-19-073-03"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-19-073-03"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:pepperl-fuchs-wirelesshart-gateways",
+      "dependsOn": [
+        "mod:pepperl-fuchs-wirelesshart-gateways:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:pepperl-fuchs-wirelesshart-gateways:firmware",
       "name": "WirelessHART-Gateways Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "PEPPERL+FUCHS",
+      "manufacturer": {
+        "name": "PEPPERL+FUCHS"
+      },
+      "supplier": {
+        "name": "PEPPERL+FUCHS"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/wirelesshart-gateways",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

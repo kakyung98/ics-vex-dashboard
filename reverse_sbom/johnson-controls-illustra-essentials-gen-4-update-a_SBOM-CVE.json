@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:92d4c653-3c3d-509e-9f84-71ca33e9538f",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,93 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:johnson-controls-illustra-essentials-gen-4-update-a",
       "name": "Johnson Controls Illustra Essentials Gen 4 (Update A)",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Controls Illustra Essentials Gen 4 (Update A)' by Johnson, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Johnson",
+      "purl": "pkg:generic/controls-illustra-essentials-gen-4-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:johnson:controls-illustra-essentials-gen-4-update-a:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Johnson"
       },
+      "supplier": {
+        "name": "Johnson"
+      },
+      "tags": [
+        "ics",
+        "johnson",
+        "linux",
+        "reverse-sbom"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d90b476f3ff3d3e898fcf3e335bca6f98d88264e35324dc0cbe69c144ea83255"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-179-04",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-179-05",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-179-06",
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-179-07"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-179-04, icsa-24-179-05, icsa-24-179-06, icsa-24-179-07"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +133,39 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:johnson-controls-illustra-essentials-gen-4-update-a",
+      "dependsOn": [
+        "pkg:oss:linux-kernel"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:linux-kernel",
       "name": "Linux Kernel",
       "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
       "scope": "required",
       "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
       "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/linux",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

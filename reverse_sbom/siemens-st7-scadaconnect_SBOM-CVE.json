@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:bff01174-2683-5f16-8664-fea538d0e4ef",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-st7-scadaconnect",
       "name": "Siemens ST7 ScadaConnect",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'ST7 ScadaConnect' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/st7-scadaconnect@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:st7-scadaconnect:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ee11964419c5a631b1b9b6e77364795599852927318954b30d8bb2e648e97af8"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-24-165-04"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-24-165-04"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,42 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-st7-scadaconnect",
+      "dependsOn": [
+        "pkg:oss:libxml2",
+        "mod:siemens-st7-scadaconnect:firmware",
+        "pkg:oss:dotnet",
+        "pkg:oss:tomcat"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:libxml2",
       "name": "libxml2",
       "version": "NOASSERTION",
+      "description": "XML processor used to parse configuration files such as IEC 61850 SCL and PLCopen XML.",
       "scope": "required",
       "publisher": "GNOME Project",
+      "manufacturer": {
+        "name": "GNOME Project"
+      },
+      "supplier": {
+        "name": "GNOME Project"
+      },
+      "tags": [
+        "oss",
+        "parser",
+        "xml"
+      ],
       "cpe": "cpe:2.3:a:xmlsoft:libxml2:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/libxml2",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -90,8 +189,28 @@
       "bom-ref": "mod:siemens-st7-scadaconnect:firmware",
       "name": "ST7 ScadaConnect Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/st7-scadaconnect",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",
@@ -108,10 +227,22 @@
       "bom-ref": "pkg:oss:dotnet",
       "name": "Microsoft .NET Framework",
       "version": "NOASSERTION",
+      "description": "Managed runtime used by Windows-based supervisory/engineering applications.",
       "scope": "required",
       "publisher": "Microsoft Corporation",
+      "manufacturer": {
+        "name": "Microsoft Corporation"
+      },
+      "supplier": {
+        "name": "Microsoft Corporation"
+      },
+      "tags": [
+        "runtime",
+        "windows"
+      ],
       "cpe": "cpe:2.3:a:microsoft:.net_framework:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/dotnet-framework",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -135,10 +266,23 @@
       "bom-ref": "pkg:oss:tomcat",
       "name": "Apache Tomcat",
       "version": "NOASSERTION",
+      "description": "Servlet container serving the web-based supervisory client.",
       "scope": "required",
       "publisher": "Apache Software Foundation",
+      "manufacturer": {
+        "name": "Apache Software Foundation"
+      },
+      "supplier": {
+        "name": "Apache Software Foundation"
+      },
+      "tags": [
+        "java",
+        "oss",
+        "web"
+      ],
       "cpe": "cpe:2.3:a:apache:tomcat:*:*:*:*:*:*:*:*",
       "purl": "pkg:maven/org.apache.tomcat/tomcat",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {

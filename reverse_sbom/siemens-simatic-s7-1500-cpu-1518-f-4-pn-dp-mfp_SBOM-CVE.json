@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:15aaf793-9182-549e-9eca-424f2b01fe08",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:siemens-simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp",
       "name": "Siemens SIMATIC S7-1500 CPU 1518(F)-4 PN/DP MFP",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SIMATIC S7-1500 CPU 1518(F)-4 PN/DP MFP' by Siemens, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Siemens",
+      "purl": "pkg:generic/simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:siemens:simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Siemens"
       },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "reverse-sbom",
+        "siemens"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e91d6783110b9a67360c0355e888e868c4d280ecbb66675b22a929c6fa7c43b2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-04"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-209-04"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,27 +130,40 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:siemens-simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp",
+      "dependsOn": [
+        "pkg:oss:openssh",
+        "mod:siemens-simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "library",
       "bom-ref": "pkg:oss:openssh",
       "name": "OpenSSH",
       "version": "NOASSERTION",
+      "description": "SSH server/client used for remote management and secure file transfer.",
       "scope": "required",
       "publisher": "OpenBSD Project",
+      "manufacturer": {
+        "name": "OpenBSD Project"
+      },
+      "supplier": {
+        "name": "OpenBSD Project"
+      },
+      "tags": [
+        "oss",
+        "remote",
+        "ssh"
+      ],
       "cpe": "cpe:2.3:a:openbsd:openssh:*:*:*:*:*:*:*:*",
       "purl": "pkg:generic/openssh",
+      "copyright": "NOASSERTION",
       "licenses": [
         {
           "license": {
@@ -90,8 +187,28 @@
       "bom-ref": "mod:siemens-simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp:firmware",
       "name": "SIMATIC S7-1500 CPU 1518(F)-4 PN/DP MFP Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/simatic-s7-1500-cpu-1518-f-4-pn-dp-mfp",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",

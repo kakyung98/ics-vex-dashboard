@@ -3,6 +3,16 @@
   "specVersion": "1.7",
   "serialNumber": "urn:uuid:e752181d-4bdb-5933-83db-fe5b408b1b28",
   "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
   "metadata": {
     "timestamp": "2026-04-10T00:00:00Z",
     "lifecycles": [
@@ -10,16 +20,90 @@
         "phase": "operations"
       }
     ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
     "component": {
       "type": "device",
       "bom-ref": "device:industrial-control-links-scadaflex-ii-scada-controllers",
       "name": "Industrial Control Links ScadaFlex II SCADA Controllers",
       "version": "NOASSERTION",
+      "description": "ICS/OT asset 'ScadaFlex II SCADA Controllers' by Industrial Control Links, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
       "publisher": "Industrial Control Links",
+      "purl": "pkg:generic/scadaflex-ii-scada-controllers@NOASSERTION",
+      "copyright": "NOASSERTION",
       "cpe": "cpe:2.3:o:industrial-control-links:scadaflex-ii-scada-controllers:*:*:*:*:*:*:*:*",
       "manufacturer": {
         "name": "Industrial Control Links"
       },
+      "supplier": {
+        "name": "Industrial Control Links"
+      },
+      "tags": [
+        "ics",
+        "industrial-control-links",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2085c0e14bde79a8b8b2771e1e6f0e6b53e11587a2b51ec5b016c68b11c8bfb3"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-096-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-23-096-01"
+        }
+      ],
       "properties": [
         {
           "name": "ics:vendor",
@@ -46,25 +130,44 @@
           "value": "true"
         }
       ]
-    },
-    "tools": {
-      "components": [
-        {
-          "type": "application",
-          "name": "ICS-VEX Reverse SBOM Builder",
-          "version": "2026.04"
-        }
-      ]
     }
   },
+  "dependencies": [
+    {
+      "ref": "device:industrial-control-links-scadaflex-ii-scada-controllers",
+      "dependsOn": [
+        "mod:industrial-control-links-scadaflex-ii-scada-controllers:firmware"
+      ]
+    }
+  ],
   "components": [
     {
       "type": "firmware",
       "bom-ref": "mod:industrial-control-links-scadaflex-ii-scada-controllers:firmware",
       "name": "ScadaFlex II SCADA Controllers Vendor Firmware/Application",
       "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
       "scope": "required",
       "publisher": "Industrial Control Links",
+      "manufacturer": {
+        "name": "Industrial Control Links"
+      },
+      "supplier": {
+        "name": "Industrial Control Links"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/scadaflex-ii-scada-controllers",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
       "properties": [
         {
           "name": "component:origin",
