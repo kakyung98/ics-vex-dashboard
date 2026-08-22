@@ -865,7 +865,7 @@ async function run(){
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
       ? '<span class="hint">source available &middot; code VEX</span>'
-      : '<button class="treebtn" onclick="treeForCve(\\''+f.cve+'\\',\\''+(f.av||'N')+'\\')">Decide via tree &rarr;</button>';
+      : '<span class="hint">source-uncollectable &middot; SSVC + estimation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
       +(function(){var ss=ssvcFor(f.cve);var sd=ssvcDecide(ss);return '<td id="ssvccell-'+f.cve+'"><span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span></td>';})()
@@ -875,7 +875,6 @@ async function run(){
   h+='</tbody></table>';
   h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
   o.innerHTML=h;
-  renderTreeList(d.cves);
 }
 let _lastSbom=null,_lastExp=null;
 async function compareNorm(sbom,exp){
@@ -1063,43 +1062,19 @@ let _vexFields={};   // cve -> {status, justification, remediation, action_state
 const VEX_JUST=[['component_not_present','Component not present'],['vulnerable_code_not_present','Vulnerable code not present'],['vulnerable_code_not_in_execute_path','Vulnerable code not in execute path'],['vulnerable_code_cannot_be_controlled_by_adversary','Vulnerable code cannot be controlled by adversary'],['inline_mitigations_already_exist','Inline mitigations already exist']];
 const VEX_REMED=[['patch_or_firmware_upgrade','Patch or firmware upgrade'],['temporary_mitigation','Temporary mitigation'],['feature_disablement','Feature disablement'],['network_access_restriction','Network access restriction']];
 const VEX_STATUSES=[['affected','affected'],['not_affected','not_affected'],['fixed','fixed'],['under_investigation','under_investigation']];
-// ---- SSVC (CISA Coordinator v2.0.3) ----
+// ---- SSVC (CISA/SEI Deployer tree; System Exposure from deployment context) ----
 const SSVC_EXPL=[['none','none'],['poc','poc'],['active','active']];
+const SSVC_EXPO=[['small','small'],['controlled','controlled'],['open','open']];
 const SSVC_AUTO=[['no','no'],['yes','yes']];
-const SSVC_TECH=[['partial','partial'],['total','total']];
-const SSVC_MW=[['low','low'],['medium','medium'],['high','high']];
-const SSVC_TABLE={
-"none|no|partial|low":"Track","none|no|partial|medium":"Track","none|no|partial|high":"Track",
-"none|no|total|low":"Track","none|no|total|medium":"Track","none|no|total|high":"Track*",
-"none|yes|partial|low":"Track","none|yes|partial|medium":"Track","none|yes|partial|high":"Attend",
-"none|yes|total|low":"Track","none|yes|total|medium":"Track","none|yes|total|high":"Attend",
-"poc|no|partial|low":"Track","poc|no|partial|medium":"Track","poc|no|partial|high":"Track*",
-"poc|no|total|low":"Track","poc|no|total|medium":"Track*","poc|no|total|high":"Attend",
-"poc|yes|partial|low":"Track","poc|yes|partial|medium":"Track","poc|yes|partial|high":"Attend",
-"poc|yes|total|low":"Track","poc|yes|total|medium":"Track*","poc|yes|total|high":"Attend",
-"active|no|partial|low":"Track","active|no|partial|medium":"Track","active|no|partial|high":"Attend",
-"active|no|total|low":"Track","active|no|total|medium":"Attend","active|no|total|high":"Act",
-"active|yes|partial|low":"Attend","active|yes|partial|medium":"Attend","active|yes|partial|high":"Act",
-"active|yes|total|low":"Attend","active|yes|total|medium":"Act","active|yes|total|high":"Act"};
-const SSVC_COL={"Act":"var(--aff)","Attend":"var(--und)","Track*":"var(--und)","Track":"var(--safe)"};
-function ssvcAuto(f){
-  const kev=!!f.kev; let epss=f.epss; epss=(typeof epss==='number')?epss:parseFloat(epss)||0;
-  const expl=kev?'active':(epss>=0.1?'poc':'none');
-  const av=String(f.av||'').toUpperCase();
-  const autom=(av==='N'||av==='A')?'yes':'no';
-  let cv=f.cvss; cv=(typeof cv==='number')?cv:parseFloat(cv);
-  const sev=String(f.severity||'').toLowerCase();
-  const tech=(sev==='critical'||(!isNaN(cv)&&cv>=9))?'total':'partial';
-  return {exploitation:expl,automatable:autom,technical_impact:tech,mission_wellbeing:'medium'};
-}
-function ssvcDecide(p){return SSVC_TABLE[[p.exploitation,p.automatable,p.technical_impact,p.mission_wellbeing].join('|')]||'Track';}
-function ssvcVector(p){const E={none:'N',poc:'P',active:'A'},A={no:'N',yes:'Y'},T={partial:'P',total:'T'},M={low:'L',medium:'M',high:'H'};
-  return 'SSVCv2/E:'+E[p.exploitation]+'/A:'+A[p.automatable]+'/T:'+T[p.technical_impact]+'/M:'+M[p.mission_wellbeing]+'/D:'+ssvcDecide(p);}
-function ssvcFor(cve){
-  const f=((_lastVex&&_lastVex.cves)||[]).find(x=>x.cve===cve)||{};
-  const ov=(_vexFields[cve]||{}).ssvc||{};
-  return Object.assign(ssvcAuto(f),ov);
-}
+const SSVC_HI=[['low','low'],['medium','medium'],['high','high'],['very high','very high']];
+const SSVC_TABLE={"none|small|no|low":"defer","none|small|no|medium":"defer","none|small|no|high":"scheduled","none|small|no|very high":"scheduled","none|small|yes|low":"defer","none|small|yes|medium":"scheduled","none|small|yes|high":"scheduled","none|small|yes|very high":"scheduled","none|controlled|no|low":"defer","none|controlled|no|medium":"scheduled","none|controlled|no|high":"scheduled","none|controlled|no|very high":"scheduled","none|controlled|yes|low":"scheduled","none|controlled|yes|medium":"scheduled","none|controlled|yes|high":"scheduled","none|controlled|yes|very high":"scheduled","none|open|no|low":"defer","none|open|no|medium":"scheduled","none|open|no|high":"scheduled","none|open|no|very high":"scheduled","none|open|yes|low":"scheduled","none|open|yes|medium":"scheduled","none|open|yes|high":"scheduled","none|open|yes|very high":"out-of-cycle","poc|small|no|low":"defer","poc|small|no|medium":"scheduled","poc|small|no|high":"scheduled","poc|small|no|very high":"scheduled","poc|small|yes|low":"scheduled","poc|small|yes|medium":"scheduled","poc|small|yes|high":"scheduled","poc|small|yes|very high":"scheduled","poc|controlled|no|low":"defer","poc|controlled|no|medium":"scheduled","poc|controlled|no|high":"scheduled","poc|controlled|no|very high":"scheduled","poc|controlled|yes|low":"scheduled","poc|controlled|yes|medium":"scheduled","poc|controlled|yes|high":"scheduled","poc|controlled|yes|very high":"out-of-cycle","poc|open|no|low":"scheduled","poc|open|no|medium":"scheduled","poc|open|no|high":"scheduled","poc|open|no|very high":"out-of-cycle","poc|open|yes|low":"scheduled","poc|open|yes|medium":"scheduled","poc|open|yes|high":"out-of-cycle","poc|open|yes|very high":"out-of-cycle","active|small|no|low":"scheduled","active|small|no|medium":"scheduled","active|small|no|high":"out-of-cycle","active|small|no|very high":"out-of-cycle","active|small|yes|low":"scheduled","active|small|yes|medium":"out-of-cycle","active|small|yes|high":"out-of-cycle","active|small|yes|very high":"out-of-cycle","active|controlled|no|low":"scheduled","active|controlled|no|medium":"scheduled","active|controlled|no|high":"out-of-cycle","active|controlled|no|very high":"out-of-cycle","active|controlled|yes|low":"out-of-cycle","active|controlled|yes|medium":"out-of-cycle","active|controlled|yes|high":"out-of-cycle","active|controlled|yes|very high":"out-of-cycle","active|open|no|low":"scheduled","active|open|no|medium":"out-of-cycle","active|open|no|high":"out-of-cycle","active|open|no|very high":"immediate","active|open|yes|low":"out-of-cycle","active|open|yes|medium":"out-of-cycle","active|open|yes|high":"immediate","active|open|yes|very high":"immediate"};
+const SSVC_COL={"immediate":"var(--aff)","out-of-cycle":"var(--und)","scheduled":"var(--und)","defer":"var(--safe)"};
+function _expToSsvc(e){return {'isolated-cell':'small','control-network':'controlled','dmz-routable':'controlled','remote-accessible':'open'}[e]||'controlled';}
+function _deployExp(){var el=document.getElementById('exp');return _expToSsvc((el&&el.value)||(typeof _lastExp!=='undefined'?_lastExp:''));}
+function ssvcAuto(f){var kev=!!f.kev;var epss=f.epss;epss=(typeof epss==='number')?epss:parseFloat(epss)||0;var expl=kev?'active':(epss>=0.1?'poc':'none');var av=String(f.av||'').toUpperCase();var autom=(av==='N'||av==='A')?'yes':'no';return {exploitation:expl,exposure:_deployExp(),automatable:autom,human_impact:'medium'};}
+function ssvcDecide(p){return SSVC_TABLE[[p.exploitation,p.exposure,p.automatable,p.human_impact].join('|')]||'defer';}
+function ssvcVector(p){var E={none:'N',poc:'P',active:'A'},X={small:'S',controlled:'C',open:'O'},A={no:'N',yes:'Y'},H={'low':'L','medium':'M','high':'H','very high':'VH'};return 'SSVCv2/E:'+E[p.exploitation]+'/X:'+X[p.exposure]+'/A:'+A[p.automatable]+'/H:'+H[p.human_impact]+'/P:'+ssvcDecide(p);}
+function ssvcFor(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var ov=(_vexFields[cve]||{}).ssvc||{};return Object.assign(ssvcAuto(f),ov);}
 
 function _remedCsaf(r){return {patch_or_firmware_upgrade:'vendor_fix',temporary_mitigation:'mitigation',feature_disablement:'workaround',network_access_restriction:'mitigation'}[r]||'mitigation';}
 function _canonStatus(s){s=String(s||'');
@@ -1122,10 +1097,6 @@ function _ovJust(j){j=String(j||'');
 function _autoStatus(cve){
   const f=(_lastVex&&_lastVex.cves||[]).find(x=>x.cve===cve)||{};
   let raw=f.final_vex, just=f.justification||'';
-  if(!f.source_collectable && typeof _treeState!=='undefined' && _treeState[cve]){
-    const t=classifyTree(_treeState[cve].av,_treeState[cve].answers);
-    if(t){raw=t.status; just=t.justification||just;}
-  }
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 const EST_OPTS=[['likely_affected','likely_affected'],['likely_not_affected','likely_not_affected'],['likely_fixed','likely_fixed'],['unable_to_determine','unable_to_determine']];
 function _estimationAuto(auto){return {not_affected:'likely_not_affected',affected:'likely_affected',fixed:'likely_fixed',under_investigation:'unable_to_determine'}[auto.status]||'unable_to_determine';}
@@ -1141,7 +1112,7 @@ function _dl(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'appl
   setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
 function _opt(list,cur){return list.map(o=>'<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+esc(o[1])+'</option>').join('');}
 function _fld(id,label,val){return '<label class="vexf"><span class="hint">'+esc(label)+'</span><input id="'+id+'" class="srch" value="'+esc(val||'')+'"></label>';}
-function _ssvcPanel(cve){var p=ssvcFor(cve);var h='<label class="vexf"><span class="hint">Exploitation (auto: KEV/EPSS)</span><select id="vf-e" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_EXPL,p.exploitation)+'</select></label>';h+='<label class="vexf"><span class="hint">Automatable (auto: CVSS AV)</span><select id="vf-a" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_AUTO,p.automatable)+'</select></label>';h+='<label class="vexf"><span class="hint">Technical Impact (auto: CVSS)</span><select id="vf-t" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_TECH,p.technical_impact)+'</select></label>';h+='<label class="vexf"><span class="hint">Mission &amp; Well-being (operator input)</span><select id="vf-m" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_MW,p.mission_wellbeing)+'</select></label>';h+='<div id="vf-ssvc-dec" class="vm-verd" style="margin-top:4px"></div>';return h;}function _ssvcCur(){return {exploitation:_v('vf-e'),automatable:_v('vf-a'),technical_impact:_v('vf-t'),mission_wellbeing:_v('vf-m')};}function ssvcRecalc(){var p=_ssvcCur();var d=ssvcDecide(p);var el=document.getElementById('vf-ssvc-dec');if(el)el.innerHTML='SSVC decision: <b style="color:'+(SSVC_COL[d]||'var(--ink)')+'">'+d+'</b> &middot; <span class="mono hint">'+ssvcVector(p)+'</span>';}
+function _ssvcPanel(cve){var p=ssvcFor(cve);var h='<label class="vexf"><span class="hint">Exploitation (auto: KEV/EPSS)</span><select id="vf-e" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_EXPL,p.exploitation)+'</select></label>';h+='<label class="vexf"><span class="hint">System Exposure (auto: deployment exposure)</span><select id="vf-x" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_EXPO,p.exposure)+'</select></label>';h+='<label class="vexf"><span class="hint">Automatable (auto: CVSS AV)</span><select id="vf-a" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_AUTO,p.automatable)+'</select></label>';h+='<label class="vexf"><span class="hint">Human Impact (safety/mission &mdash; operator input)</span><select id="vf-h" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_HI,p.human_impact)+'</select></label>';h+='<div id="vf-ssvc-dec" class="vm-verd" style="margin-top:4px"></div>';return h;}function _ssvcCur(){return {exploitation:_v('vf-e'),exposure:_v('vf-x'),automatable:_v('vf-a'),human_impact:_v('vf-h')};}function ssvcRecalc(){var p=_ssvcCur();var d=ssvcDecide(p);var el=document.getElementById('vf-ssvc-dec');if(el)el.innerHTML='SSVC priority: <b style="color:'+(SSVC_COL[d]||'var(--ink)')+'">'+d+'</b> &middot; <span class="mono hint">'+ssvcVector(p)+'</span>';}
 function openVexEditor(cve){
   const auto=_autoStatus(cve); const f=Object.assign({},auto,_vexFields[cve]||{});
   document.getElementById('mtitle').textContent='VEX statement — '+cve;
@@ -1414,8 +1385,7 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px;white-space:nowrap;max-width:none;overflow-x:auto">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are judged directly; source-uncollectable CVEs continue into '
-                  'the decision tree below.</p>' + ANALYZER_HTML + "\n" + TREE_HTML)
+                  'Source-available CVEs get a code-grounded VEX; source-uncollectable CVEs stay under_investigation with an estimation and an SSVC priority.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
@@ -1438,7 +1408,7 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">ICS-SBOM dataset</h1>
 """
 
 _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs get a code-grounded static verdict; source-uncollectable CVEs go through an operational decision tree.</p>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs get a code-grounded static verdict; source-uncollectable CVEs are held as <b>under_investigation</b> with an <b>estimation</b> and ranked by an <b>SSVC</b> priority.</p>
 
 <div class="card">
 <div class="vm-flow">
@@ -1463,16 +1433,14 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
     </div>
 
     <div class="vm-lane vm-no">
-      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>Decision Tree</b></div>
-      <div class="vm-step"><b>1. In the CVE's affected range?</b> &mdash; no &rarr; not_affected</div>
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation + SSVC</b></div>
+      <div class="vm-step"><b>1. Status is forced to</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. CVSS Attack Vector</b> branches: <span class="mono">N/A</span> &middot; <span class="mono">L</span> &middot; <span class="mono">P</span></div>
+      <div class="vm-step"><b>2. Estimation sub-field</b>: <span class="mono">likely_affected</span> &middot; <span class="mono">likely_not_affected</span> &middot; <span class="mono">likely_fixed</span> &middot; <span class="mono">unable_to_determine</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>3. Deployment exposure</b> &times; reachability<span class="vm-sub">isolated-cell &rarr; control-network &rarr; dmz-routable &rarr; remote-accessible</span></div>
+      <div class="vm-step"><b>3. SSVC (SEI Deployer)</b> priority<span class="vm-sub">Exploitation (KEV/EPSS) &times; System&nbsp;Exposure &times; Automatable (AV) &times; Human&nbsp;Impact</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>4. Operational context Q&amp;A</b> — perimeter protection, mitigating controls, config/environment gating</div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Terminal: <b>not_affected</b> (CSAF/OpenVEX justification) / <b>under_investigation</b></div>
+      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> + estimation &middot; SSVC: <span class="mono">defer / scheduled / out-of-cycle / immediate</span></div>
     </div>
   </div>
 
@@ -1494,18 +1462,17 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
     </ul>
   </div>
   <div class="card">
-    <h3 style="margin:0 0 6px">Source-uncollectable path (Decision Tree)</h3>
-    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so VEX is decided from the deployment's <b>operational context</b> instead of code.</p>
+    <h3 style="margin:0 0 6px">Source-uncollectable path (under_investigation + SSVC)</h3>
+    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span>; the reader is still given a best-effort <b>estimation</b> and an operational <b>SSVC priority</b>.</p>
     <ul class="vm-list">
-      <li>Branch on the <b>CVSS Attack Vector</b> (Network/Adjacent, Local, Physical).</li>
-      <li>Cross with <b>deployment exposure</b> to get reachability (yes / conditional / no).</li>
-      <li>Walk operational questions: perimeter protection, compensating controls, configuration/environment preconditions.</li>
-      <li>Terminals map to CSAF/OpenVEX justifications: <span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>, <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span>, <span class="mono">inline_mitigations_already_exist</span> &hellip; or <b>under_investigation</b>.</li>
-      <li>If the source later becomes obtainable, the case is routed back to the Code VEX path.</li>
+      <li>Status is always <span class="mono">under_investigation</span> &mdash; a not_affected/affected claim would be unsupported without code.</li>
+      <li><b>estimation</b> sub-field records the leaning: <span class="mono">likely_affected</span>, <span class="mono">likely_not_affected</span>, <span class="mono">likely_fixed</span>, or <span class="mono">unable_to_determine</span>. It is carried into the exported OpenVEX/CSAF document.</li>
+      <li><b>SSVC</b> (SEI <i>Deployer</i> tree) ranks remediation urgency from <b>Exploitation</b> (KEV/EPSS), <b>System Exposure</b> (from the deployment exposure selector), <b>Automatable</b> (CVSS attack vector), and <b>Human Impact</b> &rarr; <span class="mono">defer / scheduled / out-of-cycle / immediate</span>.</li>
+      <li>If the source later becomes obtainable, the case is routed back to the Code VEX path for a grounded verdict.</li>
     </ul>
   </div>
 </div>
-<p class="hint" style="margin:14px 2px 0">Note: SBOM/AAS describe the asset's static composition; the operational inputs above (exposure, reachability, mitigations, exploitation) are supplied separately &mdash; that is what turns identification into a VEX decision. An SSVC-style priority axis (Exploitation via KEV/EPSS, Automatable, safety impact) is planned on top of this tree.</p>
+<p class="hint" style="margin:14px 2px 0">Note: SBOM/AAS describe the asset's static composition; the operational inputs above (exposure, exploitation, automatability, human impact) are supplied separately &mdash; that is what turns identification into a VEX decision and an SSVC priority.</p>
 """
 
 PAGES = {
