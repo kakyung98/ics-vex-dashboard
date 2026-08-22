@@ -771,6 +771,9 @@ h3{font-size:18px}.hint{font-size:13px}
 .navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 14px;border-radius:9px;border:1px solid transparent;white-space:nowrap}
 .navtab:hover{color:var(--ink);background:var(--card2)}
 .navtab.on{color:var(--accent);background:var(--card2);border-color:var(--line)}
+.navtab-main{font-weight:800;color:var(--accent);border-color:var(--accent);background:var(--card2)}
+.navtab-main::before{content:"\2666 ";color:var(--accent)}
+.navtab-main.on{box-shadow:inset 0 0 0 1px var(--accent)}
 @media(max-width:860px){.nav{flex-direction:row;flex-wrap:wrap}.nav .navlabel{display:none}}
 .treepath{display:grid;gap:6px}.treestep{font-size:14px;color:var(--ink2);padding:8px 12px;background:var(--card2);border-radius:8px;border-left:3px solid var(--accent)}
 .treestep b{color:var(--ink)}
@@ -1571,7 +1574,8 @@ _NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
 
 def nav_html(active):
     tabs = "".join(
-        f'<a class="navtab{" on" if key == active else ""}" href="{href}">{label}</a>'
+        f'<a class="navtab{" navtab-main" if key == "analyzer" else ""}'
+        f'{" on" if key == active else ""}" href="{href}">{label}</a>'
         for key, href, label in _NAV)
     return f'<nav class="nav"><div class="navlabel">Menu</div>{tabs}</nav>'
 
