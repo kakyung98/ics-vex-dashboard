@@ -26,6 +26,10 @@ import uuid
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
 from generate_ics_sbom import OSS  # noqa: E402  (OSS 카탈로그: 실제 OSS CVE 대조용)
 
+# OSS 카탈로그에 들어 있으나 실제로는 폐쇄소스인 컴포넌트
+# (소스 확보 불가 -> tier E). tier A(OSS 귀속)로 잘못 분류되던 것 교정.
+CLOSED_OSS = {"codesys_rt", "ipnet", "treck_tcpip", "sqlserver_express", "dotnet"}
+
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 ADV = os.path.join(BASE, "data", "cisa_advisories.json")
 SIG = os.path.join(BASE, "data", "exploit_signals.json")
@@ -199,7 +203,9 @@ def main():
             if oss_key:
                 spec = OSS[oss_key]
                 ref = "pkg:oss:%s" % oss_key.replace("_", "-")
-                tier = "A" if cve in oss_by_cve else "C"
+                is_closed = oss_key in CLOSED_OSS
+                tier = "E" if is_closed else ("A" if cve in oss_by_cve else "C")
+                origin = "vendor-proprietary" if is_closed else "third-party-open-source"
                 if ref not in comps:
                     comps[ref] = {
                         "type": "library", "bom-ref": ref, "name": spec["name"],
@@ -209,7 +215,7 @@ def main():
                         "purl": spec["purl"],
                         "licenses": [{"license": {"id": spec["license"]}}],
                         "properties": [
-                            {"name": "component:origin", "value": "third-party-open-source"},
+                            {"name": "component:origin", "value": origin},
                             {"name": "component:source-availability", "value": tier},
                         ],
                     }

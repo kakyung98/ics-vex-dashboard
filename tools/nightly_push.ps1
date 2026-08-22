@@ -11,6 +11,12 @@ function Log($m) { "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $m" | Out-File -A
 Set-Location $repo
 Log "nightly run start"
 
+# HOLD_PUSH sentinel — while this file exists, isolate all auto-push (system build in progress).
+if (Test-Path (Join-Path $repo "tools\HOLD_PUSH")) {
+    Log "HOLD_PUSH present; auto-push isolated; skip"
+    exit 0
+}
+
 git add -A 2>&1 | Out-Null
 $changes = git status --porcelain
 if ([string]::IsNullOrWhiteSpace($changes)) {
