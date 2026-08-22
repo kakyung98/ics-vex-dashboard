@@ -1,0 +1,250 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:cc01db06-5843-55cc-acfd-b87d29bf8be8",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:schneider-electric-ecostruxure-automation-expert",
+      "name": "Schneider Electric EcoStruxure Automation Expert",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'EcoStruxure Automation Expert' by Schneider Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "purl": "pkg:generic/ecostruxure-automation-expert@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:schneider-electric:ecostruxure-automation-expert:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "schneider-electric",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "89f6489a96f64d3521897e4d27d2e22c0c344159ac6bb61929cb2f340275631e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-078-03"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-078-03"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Schneider Electric"
+        },
+        {
+          "name": "ics:product",
+          "value": "EcoStruxure Automation Expert"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-26-078-03"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:schneider-electric-ecostruxure-automation-expert",
+      "dependsOn": [
+        "mod:schneider-electric-ecostruxure-automation-expert:firmware"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "firmware",
+      "bom-ref": "mod:schneider-electric-ecostruxure-automation-expert:firmware",
+      "name": "EcoStruxure Automation Expert Vendor Firmware/Application",
+      "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/ecostruxure-automation-expert",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:schneider-electric-ecostruxure-automation-expert:CVE-2026-2273",
+      "id": "CVE-2026-2273",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-078-03"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 8.2,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:R/S:C/C:H/I:H/A:H"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "mod:schneider-electric-ecostruxure-automation-expert:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-078-03"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00227"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

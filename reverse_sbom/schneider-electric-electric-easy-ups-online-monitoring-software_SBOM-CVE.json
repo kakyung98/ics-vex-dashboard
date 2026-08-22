@@ -1,0 +1,254 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:e4f360a6-a0e4-5cb3-a287-48db03545392",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:schneider-electric-electric-easy-ups-online-monitoring-software",
+      "name": "Schneider Electric Electric Easy UPS Online Monitoring Software",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Electric Easy UPS Online Monitoring Software' by Schneider Electric, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "purl": "pkg:generic/electric-easy-ups-online-monitoring-software@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:schneider-electric:electric-easy-ups-online-monitoring-software:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "schneider-electric",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "20bb96f6d7cec1f02e6a06d69830dbacbb2d8f23aa4736aea948ec7b80a44cc5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-23-346-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-23-346-01"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Schneider Electric"
+        },
+        {
+          "name": "ics:product",
+          "value": "Electric Easy UPS Online Monitoring Software"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-23-346-01"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:schneider-electric-electric-easy-ups-online-monitoring-software",
+      "dependsOn": [
+        "pkg:oss:net-snmp"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:net-snmp",
+      "name": "Net-SNMP",
+      "version": "NOASSERTION",
+      "description": "SNMP agent that lets a network management system poll device status.",
+      "scope": "required",
+      "publisher": "Net-SNMP Project",
+      "manufacturer": {
+        "name": "Net-SNMP Project"
+      },
+      "supplier": {
+        "name": "Net-SNMP Project"
+      },
+      "tags": [
+        "management",
+        "oss",
+        "snmp"
+      ],
+      "cpe": "cpe:2.3:a:net-snmp:net-snmp:*:*:*:*:*:*:*:*",
+      "purl": "pkg:generic/net-snmp",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:schneider-electric-electric-easy-ups-online-monitoring-software:CVE-2023-6407",
+      "id": "CVE-2023-6407",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-346-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 5.3,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:N/I:L/A:H"
+        }
+      ],
+      "cwes": [
+        22
+      ],
+      "affects": [
+        {
+          "ref": "pkg:oss:net-snmp",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-346-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00238"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:9332b108-a11d-559b-a064-9d58b308888e",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:johnson-controls-inc-johnson-controls-cem-ac2000",
+      "name": "Johnson Controls Inc Johnson Controls CEM AC2000",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Johnson Controls CEM AC2000' by Johnson Controls Inc, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
+      "publisher": "Johnson Controls Inc",
+      "purl": "pkg:generic/johnson-controls-cem-ac2000@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:johnson-controls-inc:johnson-controls-cem-ac2000:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Johnson Controls Inc"
+      },
+      "supplier": {
+        "name": "Johnson Controls Inc"
+      },
+      "tags": [
+        "ics",
+        "johnson-controls-inc",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "fe8d65a87992d73be1124e24189ca5d7518f37708570bef5d737a65e9cec3189"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-26-125-05"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-26-125-05"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Johnson Controls Inc"
+        },
+        {
+          "name": "ics:product",
+          "value": "Johnson Controls CEM AC2000"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-26-125-05"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:johnson-controls-inc-johnson-controls-cem-ac2000",
+      "dependsOn": [
+        "mod:johnson-controls-inc-johnson-controls-cem-ac2000:firmware"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "firmware",
+      "bom-ref": "mod:johnson-controls-inc-johnson-controls-cem-ac2000:firmware",
+      "name": "Johnson Controls CEM AC2000 Vendor Firmware/Application",
+      "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
+      "scope": "required",
+      "publisher": "Johnson Controls Inc",
+      "manufacturer": {
+        "name": "Johnson Controls Inc"
+      },
+      "supplier": {
+        "name": "Johnson Controls Inc"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "purl": "pkg:generic/johnson-controls-cem-ac2000",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:johnson-controls-inc-johnson-controls-cem-ac2000:CVE-2026-21661",
+      "id": "CVE-2026-21661",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-125-05"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "mod:johnson-controls-inc-johnson-controls-cem-ac2000:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-125-05"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00108"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

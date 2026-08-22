@@ -1,0 +1,254 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:4f5f2fd4-7178-5d9b-abed-541564487d87",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:phoenix-contact-fl-nat-smx",
+      "name": "Phoenix Contact FL NAT SMx",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'FL NAT SMx' by Phoenix Contact, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
+      "publisher": "Phoenix Contact",
+      "purl": "pkg:generic/fl-nat-smx@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:phoenix-contact:fl-nat-smx:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Phoenix Contact"
+      },
+      "supplier": {
+        "name": "Phoenix Contact"
+      },
+      "tags": [
+        "ics",
+        "phoenix-contact",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a8ee9f1e19b17247126f50d34b455c8aaef27fe532b1205c9f78977f9b1cfe57"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-19-155-02"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-19-155-02"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Phoenix Contact"
+        },
+        {
+          "name": "ics:product",
+          "value": "FL NAT SMx"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-19-155-02"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:phoenix-contact-fl-nat-smx",
+      "dependsOn": [
+        "pkg:oss:net-snmp"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:net-snmp",
+      "name": "Net-SNMP",
+      "version": "NOASSERTION",
+      "description": "SNMP agent that lets a network management system poll device status.",
+      "scope": "required",
+      "publisher": "Net-SNMP Project",
+      "manufacturer": {
+        "name": "Net-SNMP Project"
+      },
+      "supplier": {
+        "name": "Net-SNMP Project"
+      },
+      "tags": [
+        "management",
+        "oss",
+        "snmp"
+      ],
+      "cpe": "cpe:2.3:a:net-snmp:net-snmp:*:*:*:*:*:*:*:*",
+      "purl": "pkg:generic/net-snmp",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:phoenix-contact-fl-nat-smx:CVE-2019-9744",
+      "id": "CVE-2019-9744",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-19-155-02"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 8.8,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        284
+      ],
+      "affects": [
+        {
+          "ref": "pkg:oss:net-snmp",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-19-155-02"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.01638"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

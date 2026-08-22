@@ -142,6 +142,15 @@ def parse_vector(vec):
 
 
 def main():
+    # authoritative CVSS from NVD (tools/fetch_nvd_cvss_bulk.py) to fill advisory gaps
+    _NVD_CVSS = {}
+    _ncp = os.path.join(BASE, "data", "nvd_cvss.json")
+    if os.path.exists(_ncp):
+        try:
+            _NVD_CVSS = {k: v for k, v in json.load(open(_ncp, encoding="utf-8")).items()
+                         if isinstance(v, dict)}
+        except Exception:
+            _NVD_CVSS = {}
     with open(ADV, encoding="utf-8") as f:
         advisories = [v for v in json.load(f).values() if not v.get("error")]
     signals = {}
@@ -261,14 +270,24 @@ def main():
                 av_src = "advisory-mode"
             sig = signals.get(cve, {})
             score = meta.get("cvss_v3_score")
+            _rsrc, _rvec = "CISA", vec
+            _n = _NVD_CVSS.get(cve) or {}
+            if score is None and _n.get("score") is not None:
+                score = _n["score"]; _rsrc = "NVD"; _rvec = _n.get("vector") or vec
+                if not pv.get("AV") and _n.get("vector"):
+                    _pn = parse_vector(_n["vector"])
+                    if _pn.get("AV"):
+                        pv["AV"] = _pn["AV"]; av_src = "nvd"
             sev = None
             if score is not None:
                 sev = ("critical" if score >= 9 else "high" if score >= 7 else
                        "medium" if score >= 4 else "low")
+                if _rsrc == "NVD" and _n.get("severity"):
+                    sev = _n["severity"]
             ratings = []
             if score is not None:
-                ratings = [{"source": {"name": "CISA"}, "score": score, "severity": sev,
-                            "method": "CVSSv31", "vector": vec or "NOASSERTION"}]
+                ratings = [{"source": {"name": _rsrc}, "score": score, "severity": sev,
+                            "method": "CVSSv31", "vector": _rvec or "NOASSERTION"}]
             cwe_num = None
             m = re.match(r"CWE-(\d+)", meta.get("cwe", "") or "")
             if m:

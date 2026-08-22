@@ -1,0 +1,577 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:365ec582-13ad-5198-a34a-fbae523f9d4f",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:inductive-automation-ignition-vulnerabilities",
+      "name": "Inductive Automation Ignition Vulnerabilities",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Automation Ignition Vulnerabilities' by Inductive, reverse-built from CISA ICS-CERT advisory data.",
+      "scope": "required",
+      "publisher": "Inductive",
+      "purl": "pkg:generic/automation-ignition-vulnerabilities@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:inductive:automation-ignition-vulnerabilities:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Inductive"
+      },
+      "supplier": {
+        "name": "Inductive"
+      },
+      "tags": [
+        "ics",
+        "inductive",
+        "linux",
+        "reverse-sbom"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8416e590420e2e52356f27d5bf439d914059735fb2d7dd793eed62ac86b5d801"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": [
+            "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+          ],
+          "comment": "Source CISA ICS-CERT advisories: icsa-15-090-01"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Inductive"
+        },
+        {
+          "name": "ics:product",
+          "value": "Automation Ignition Vulnerabilities"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "linux"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:inductive-automation-ignition-vulnerabilities",
+      "dependsOn": [
+        "pkg:oss:linux-kernel"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:linux-kernel",
+      "name": "Linux Kernel",
+      "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
+      "scope": "required",
+      "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
+      "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
+      "purl": "pkg:generic/linux",
+      "copyright": "NOASSERTION",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:inductive-automation-ignition-vulnerabilities:CVE-2015-0976",
+      "id": "CVE-2015-0976",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 4.3,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:M/Au:N/C:N/I:P/A:N"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.01119"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:inductive-automation-ignition-vulnerabilities:CVE-2015-0991",
+      "id": "CVE-2015-0991",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 5.0,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:P/I:N/A:N"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.01333"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:inductive-automation-ignition-vulnerabilities:CVE-2015-0992",
+      "id": "CVE-2015-0992",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 2.1,
+          "severity": "low",
+          "method": "CVSSv31",
+          "vector": "AV:L/AC:L/Au:N/C:P/I:N/A:N"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00334"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:inductive-automation-ignition-vulnerabilities:CVE-2015-0993",
+      "id": "CVE-2015-0993",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 6.4,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:N"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.0225"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:inductive-automation-ignition-vulnerabilities:CVE-2015-0994",
+      "id": "CVE-2015-0994",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 4.0,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:S/C:N/I:P/A:N"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.0131"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:inductive-automation-ignition-vulnerabilities:CVE-2015-0995",
+      "id": "CVE-2015-0995",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-15-090-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 5.0,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:P/I:N/A:N"
+        }
+      ],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-15-090-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.01116"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}
