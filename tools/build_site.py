@@ -66,7 +66,6 @@ html = A.FRONTEND_TEMPLATE   # shared shell (head + script) with __NAV__/__CONTE
 for old, new in [
     ("'/api/summary'", "'cve_level.json'"),
     ("'/api/source_available'", "'source_available.json'"),
-    ("'/api/candidates?status=ready'", "'candidates_ready.json'"),
     ("'/api/by_year'", "'by_year.json'"),
     ("'/api/advisories'", "'advisories.json'"),
 ]:

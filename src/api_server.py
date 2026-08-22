@@ -97,9 +97,30 @@ def _load(path, default=None):
     return json.load(open(path, encoding="utf-8")) if os.path.exists(path) else default
 
 
+# Canonical vendor names — merge short/long variants of the same company so they
+# don't split the counts (e.g. "Rockwell" + "Rockwell Automation").
+_VENDOR_CANON = {
+    "rockwell": "Rockwell Automation",
+    "rockwell automation": "Rockwell Automation",
+    "schneider": "Schneider Electric",
+    "schneider electric": "Schneider Electric",
+    "mitsubishi": "Mitsubishi Electric",
+    "mitsubishi electric": "Mitsubishi Electric",
+    "siemens": "Siemens",
+    "siemens ag": "Siemens",
+    "ge": "GE",
+    "general electric": "GE",
+    "honeywell": "Honeywell",
+    "honeywell international": "Honeywell",
+}
+
 def _norm_vendor(v):
-    """Merge whitespace/zero-width duplicates (e.g. '\\u200bSiemens' -> 'Siemens')."""
-    return (v or "").replace("​", "").strip().strip(",").strip() or "Unknown"
+    """Clean whitespace/zero-width duplicates and canonicalize known vendor variants
+    (e.g. '\\u200bSiemens' -> 'Siemens'; 'Rockwell' / 'Rockwell Automation' -> one name)."""
+    v = (v or "").replace("​", "").strip().strip(",").strip()
+    if not v:
+        return "Unknown"
+    return _VENDOR_CANON.get(v.lower(), v)
 
 
 def _canon_cwe(rows):
@@ -139,12 +160,17 @@ class Store:
         self.candidates = _load(os.path.join(RESULTS, "verify_candidates.json"),
                                 {"candidates": []})
         self.code_ev = _load(os.path.join(DATA, "code_evidence.json"), {})
+        # CVEs whose vulnerable source was collected by the source collector
+        # (data/source_snapshots/<CVE>/), from the collector's report.
+        _dp = _load(os.path.join(RESULTS, "data_processor_report.json"), {})
+        self.collected_src = {r.get("cve") for r in (_dp.get("records") or [])
+                              if r.get("status") == "collected" and r.get("cve")}
         self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
         # CISA ICS advisories (the corpus provenance)
         adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
         adv = list(adv_raw.values()) if isinstance(adv_raw, dict) else (adv_raw or [])
         adv_yr = Counter(str(a.get("year")) for a in adv if a.get("year"))
-        adv_ven = Counter(a.get("vendor") for a in adv if a.get("vendor"))
+        adv_ven = Counter(_norm_vendor(a.get("vendor")) for a in adv if a.get("vendor"))
         self.advisories = {
             "total": len(adv),
             "vendors": len(adv_ven),
@@ -306,8 +332,10 @@ class Store:
         _cwe_ctr = Counter(c for c in _a_cwe.values() if c)
         self.tier_a = {
             "total_cves": len(a_worst),
-            "code_collected": sum(1 for w in a_worst.values() if w.get("has_code_pair")),
-            "pending_collection": sum(1 for w in a_worst.values() if not w.get("has_code_pair")),
+            "code_collected": sum(1 for cve, w in a_worst.items()
+                                   if w.get("has_code_pair") or cve in self.collected_src),
+            "pending_collection": sum(1 for cve, w in a_worst.items()
+                                      if not (w.get("has_code_pair") or cve in self.collected_src)),
             "kev": sum(1 for w in a_worst.values() if w.get("kev")),
             "by_vex": dict(Counter(w["final_vex"] for w in a_worst.values())),
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
@@ -940,8 +968,8 @@ async function stats(){
     k.innerHTML+='<div class="kpi"><b>'+(s.total_cves||0).toLocaleString()+'</b><span>unique CVEs</span></div>';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
-    const cand=await(await fetch('/api/candidates?status=ready')).json();
-    document.getElementById('cand').textContent=cand.count+' ready';
+    const sa=await(await fetch('/api/source_available')).json();
+    document.getElementById('cand').textContent=(sa.code_collected||0).toLocaleString()+' CVEs';
   }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
@@ -1236,18 +1264,21 @@ async function initSource(){
   const hint=document.getElementById('adv-hint');if(hint)hint.textContent=ADV_LIST.length.toLocaleString()+' loaded';
   advSearch();
 }
-let _advAll=false;let _advQ=null;
-function advShowAll(){_advAll=true;advSearch();}
-function advShowLess(){_advAll=false;advSearch();document.getElementById('adv-results').scrollIntoView({block:'nearest'});}
+let _advPage=1;let _advQ=null;const ADV_PS=100;
+function advPage(d){_advPage+=d;advSearch();document.getElementById('adv-results').scrollIntoView({block:'nearest'});}
 function advSearch(){
   const q=(document.getElementById('adv-q').value||'').trim().toLowerCase();
-  if(q!==_advQ){_advQ=q;_advAll=false;}
+  if(q!==_advQ){_advQ=q;_advPage=1;}
   let items=ADV_LIST;
   if(q)items=ADV_LIST.filter(a=>String(a.id).toLowerCase().includes(q)||(a.title||'').toLowerCase().includes(q)||(a.vendor||'').toLowerCase().includes(q)||String(a.year).includes(q)||(a.cves||[]).some(c=>String(c).toLowerCase().includes(q)));
-  const total=items.length;const CAP=100;const capped=!_advAll&&total>CAP;if(capped)items=items.slice(0,CAP);
+  const total=items.length;const pages=Math.max(1,Math.ceil(total/ADV_PS));
+  if(_advPage>pages)_advPage=pages;if(_advPage<1)_advPage=1;
+  const start=(_advPage-1)*ADV_PS;items=items.slice(start,start+ADV_PS);
   let meta='<b>'+total.toLocaleString()+'</b> advisor'+(total===1?'y':'ies');
-  if(capped)meta+=' · showing first '+CAP+' <button class="treebtn" onclick="advShowAll()">Show all '+total.toLocaleString()+' &rarr;</button>';
-  else if(_advAll&&total>CAP)meta+=' · showing all <button class="treebtn" onclick="advShowLess()">Show less</button>';
+  if(total>ADV_PS)meta+=' · '+(start+1).toLocaleString()+'&ndash;'+(start+items.length).toLocaleString()
+    +' <button class="treebtn" onclick="advPage(-1)"'+(_advPage<=1?' disabled':'')+'>&larr; Prev</button>'
+    +' <span class="mono">'+_advPage+' / '+pages+'</span> '
+    +'<button class="treebtn" onclick="advPage(1)"'+(_advPage>=pages?' disabled':'')+'>Next &rarr;</button>';
   let h='<div class="srch-meta">'+meta+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th style="text-align:center">Year</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){
@@ -1297,17 +1328,20 @@ async function loadAdvList(){if((ADV_LIST||[]).length){if(!Object.keys(CVE2ADV).
 function buildCve2Sbom(){CVE2SBOM={};ADV2SBOM={};for(const a of SBOM_INDEX){for(const c of (a.cves||[])){(CVE2SBOM[c.id]=CVE2SBOM[c.id]||[]).push(a);}for(const ad of (a.advisories||[])){(ADV2SBOM[ad]=ADV2SBOM[ad]||[]).push(a);}}}
 async function loadSbomIndex(){if(SBOM_INDEX.length)return;const d=await tryJson(['/api/sbom_index','sbom_index.json']);SBOM_INDEX=(d&&d.assets)||[];buildCve2Sbom();}
 async function initIcsSbom(){const el=document.getElementById('sbom-results');if(el)el.innerHTML='<span class="hint">loading…</span>';await loadSbomIndex();await loadAdvList();const h=document.getElementById('sbom-hint');if(h)h.textContent=SBOM_INDEX.length.toLocaleString()+' advisory-grounded SBOMs loaded';sbomSearch();}
-let _sbomAll=false;let _sbomQ=null;
-function sbomShowAll(){_sbomAll=true;sbomSearch();}
-function sbomShowLess(){_sbomAll=false;sbomSearch();document.getElementById('sbom-results').scrollIntoView({block:'nearest'});}
+let _sbomPage=1;let _sbomQ=null;const SBOM_PS=100;
+function sbomPage(d){_sbomPage+=d;sbomSearch();document.getElementById('sbom-results').scrollIntoView({block:'nearest'});}
 function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim().toLowerCase();
-  if(q!==_sbomQ){_sbomQ=q;_sbomAll=false;}
+  if(q!==_sbomQ){_sbomQ=q;_sbomPage=1;}
   let items=SBOM_INDEX;
   if(q)items=SBOM_INDEX.filter(a=>(a.vendor||'').toLowerCase().includes(q)||(a.product||'').toLowerCase().includes(q)||(a.base_platform||'').toLowerCase().includes(q)||(a.advisories||[]).some(x=>x.toLowerCase().includes(q))||(a.cves||[]).some(c=>c.id.toLowerCase().includes(q)));
-  const total=items.length;const CAP=150;const capped=!_sbomAll&&total>CAP;if(capped)items=items.slice(0,CAP);
+  const total=items.length;const pages=Math.max(1,Math.ceil(total/SBOM_PS));
+  if(_sbomPage>pages)_sbomPage=pages;if(_sbomPage<1)_sbomPage=1;
+  const start=(_sbomPage-1)*SBOM_PS;items=items.slice(start,start+SBOM_PS);
   let meta='<b>'+total.toLocaleString()+'</b> SBOM'+(total===1?'':'s');
-  if(capped)meta+=' · showing first '+CAP+' <button class="treebtn" onclick="sbomShowAll()">Show all '+total.toLocaleString()+' &rarr;</button>';
-  else if(_sbomAll&&total>CAP)meta+=' · showing all <button class="treebtn" onclick="sbomShowLess()">Show less</button>';
+  if(total>SBOM_PS)meta+=' · '+(start+1).toLocaleString()+'&ndash;'+(start+items.length).toLocaleString()
+    +' <button class="treebtn" onclick="sbomPage(-1)"'+(_sbomPage<=1?' disabled':'')+'>&larr; Prev</button>'
+    +' <span class="mono">'+_sbomPage+' / '+pages+'</span> '
+    +'<button class="treebtn" onclick="sbomPage(1)"'+(_sbomPage>=pages?' disabled':'')+'>Next &rarr;</button>';
   let h='<div class="srch-meta">'+meta+'</div>';
   h+='<div class="srch-wrap"><table><thead><tr><th>Vendor</th><th>Product</th><th>Advisory</th><th style="text-align:center">Comp</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
   for(const a of items){h+='<tr class="clk" onclick="openSbom(\\''+a.asset_id+'\\')"><td>'+esc(a.vendor||'')+'</td><td>'+esc(a.product||'')+'</td><td class="mono hint">'+(a.advisories||[]).join(', ')+'</td><td class="mono" style="text-align:center">'+a.component_count+'</td><td style="text-align:center"><span class="cvecount">'+(a.cves||[]).length+'</span></td></tr>';}
@@ -1371,7 +1405,7 @@ ANALYZER_HTML = """<div class="card"><div class="row">
 <div id="cmp-body"></div></div>"""
 
 CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">Reproduction candidates: <span id="cand">…</span> ready (code collected)</p></div>
+<p class="hint" style="margin-top:10px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
 
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
@@ -1381,8 +1415,8 @@ CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><di
 <div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
 <div id="year" style="margin-top:12px">loading…</div></div>"""
 
-COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source-code collectable CVEs</h3>
-<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for CodeBERT diff and execution reproduction.</p>
+COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source Code Available CVEs</h3>
+<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for execution-based verification (build &rarr; reproduce &rarr; run).</p>
 <div id="sa-kpis" class="kpis">loading…</div>
 <div id="sa-charts" style="margin-top:16px"></div>
 <div class="satwo" style="margin-top:16px">
@@ -1497,8 +1531,8 @@ PAGES = {
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
     "corpus": ("Corpus statistics",
                '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
-    "collectable": ("Source-collectable CVEs",
-                    '<h1 style="margin:0 0 18px">Source-collectable CVEs</h1>' + COLLECTABLE_HTML),
+    "collectable": ("Source Code Available CVEs",
+                    '<h1 style="margin:0 0 18px">Source Code Available CVEs</h1>' + COLLECTABLE_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
