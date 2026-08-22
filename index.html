@@ -638,10 +638,10 @@ function sbomSearch(){const q=(document.getElementById('sbom-q').value||'').trim
 async function openSbom(id){await loadAdvList();const a=SBOM_INDEX.find(x=>x.asset_id===id);if(!a)return;
   document.getElementById('mtitle').textContent=(a.product||a.asset_id)+' — '+(a.vendor||'');
   const _fp='reverse_sbom/'+encodeURIComponent(a.file||'');
+  const _btn='display:inline-block;padding:7px 14px;border-radius:8px;font-weight:600;text-decoration:none;border:1px solid var(--line)';
   let h='<div class="srch-meta">'+esc(a.vendor||'')+' · '+esc(a.base_platform||'')+' · <span class="mono">'+esc(a.file||'')+'</span></div>';
-  h+='<div style="margin:8px 0 2px;display:flex;gap:8px;flex-wrap:wrap">'
-    +'<a class="treebtn" href="'+_fp+'" target="_blank" rel="noopener">View CycloneDX JSON &#8599;</a>'
-    +'<a class="treebtn" href="'+_fp+'" download="'+esc(a.file||'sbom.json')+'">Download JSON</a></div>';
+  h+='<div style="margin:10px 0 4px">'
+    +'<a href="'+_fp+'" target="_blank" rel="noopener" style="'+_btn+';background:var(--accent);color:#04121b">&#128196; View CycloneDX JSON &#8599;</a></div>';
   const src=(a.advisories||[]).map(x=>ADV_LIST.find(y=>String(y.id)===String(x))||{id:x});
   h+='<h4 style="margin:12px 0 4px">Source ICS-CERT advisories ('+src.length+')</h4>';
   if(src.length){h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th style="text-align:center">Year</th></tr></thead><tbody>';
