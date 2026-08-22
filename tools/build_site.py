@@ -100,7 +100,7 @@ html = html.replace("async function run(){", INJECT + "\nasync function run(){",
 # emit one static file per page (same shared shell/script, different nav+content)
 _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
 html = html.replace("__VEX_TREE__", _tree_json)
-for key, fname in [("analyzer", "index.html"), ("source", "source.html"),
+for key, fname in [("analyzer", "index.html"), ("vex-method", "vex-method.html"), ("source", "source.html"),
                    ("corpus", "corpus.html"), ("collectable", "collectable.html"),
                    ("ics-sbom", "ics-sbom.html")]:
     page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])

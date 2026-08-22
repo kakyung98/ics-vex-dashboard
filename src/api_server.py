@@ -673,6 +673,10 @@ def build_app():
     def index():
         return make_page("analyzer")
 
+    @app.get("/vex-method.html", response_class=HTMLResponse)
+    def vex_method():
+        return make_page("vex-method")
+
     @app.get("/corpus.html", response_class=HTMLResponse)
     def corpus():
         return make_page("corpus")
@@ -792,6 +796,28 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .yval{font-family:var(--mono);font-size:12px;color:var(--ink2);margin-bottom:4px;white-space:nowrap}
 .ybar{width:78%;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px}
 .yr{font-family:var(--mono);font-size:12px;color:var(--ink3);margin-top:6px}
+
+.vm-flow{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vm-box{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 18px;text-align:center;max-width:760px;width:100%;font-weight:600}
+.vm-box .vm-sub,.vm-step .vm-sub{display:block;font-weight:400;color:var(--ink3);font-size:13px;margin-top:3px}
+.vm-in{border-color:var(--accent);color:var(--accent)}
+.vm-dec{background:color-mix(in srgb,var(--und) 14%,transparent);border-color:var(--und);border-radius:26px}
+.vm-out{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.vm-arrow{color:var(--ink3);font-size:20px;line-height:1}
+.vm-mini{color:var(--ink3);font-size:13px;line-height:1}
+.vm-split{display:grid;grid-template-columns:1fr 1fr;gap:22px;width:100%;margin:6px 0}
+.vm-lane{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:5px}
+.vm-yes{background:color-mix(in srgb,var(--safe) 7%,transparent)}
+.vm-no{background:color-mix(in srgb,var(--und) 7%,transparent)}
+.vm-laneh{font-weight:700;margin-bottom:4px;text-align:center}
+.vm-yes .vm-laneh{color:var(--safe)}.vm-no .vm-laneh{color:var(--und)}
+.vm-step{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 12px;width:100%;font-size:14px}
+.vm-verd{border-radius:9px;padding:9px 12px;width:100%;font-size:13.5px;text-align:center}
+.vm-vgreen{background:color-mix(in srgb,var(--safe) 15%,transparent);border:1px solid var(--safe)}
+.vm-vamber{background:color-mix(in srgb,var(--und) 15%,transparent);border:1px solid var(--und)}
+.vm-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.vm-list{margin:0;padding-left:18px}.vm-list li{margin:5px 0;font-size:14.5px}
+@media(max-width:820px){.vm-split,.vm-cols{grid-template-columns:1fr}}
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
@@ -1349,8 +1375,80 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">ICS-SBOM dataset</h1>
 <div id="sbom-results" style="margin-top:12px"><span class="hint">loading…</span></div></div>
 """
 
+_VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs get a code-grounded static verdict; source-uncollectable CVEs go through an operational decision tree.</p>
+
+<div class="card">
+<div class="vm-flow">
+  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
+
+  <div class="vm-split">
+    <div class="vm-lane vm-yes">
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>Code VEX</b></div>
+      <div class="vm-step"><b>1. SecureBERT</b> — security-context signal (asset/exposure prose)</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. CodeBERT</b> — vuln/patch diff separability (backport detection)</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>3. sLLM static analyst</b> — root cause / reachability / adversary-controllability (no PoC, no exec)</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>4. Grounding critic</b> — is the verdict supported by the evidence? one ReAct refine</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vgreen">Evidence tier: <b>static-analysis-verified</b> (code pair + separable fix + grounded) / <b>static-reasoned</b></div>
+    </div>
+
+    <div class="vm-lane vm-no">
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>Decision Tree</b></div>
+      <div class="vm-step"><b>1. In the CVE's affected range?</b> &mdash; no &rarr; not_affected</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. CVSS Attack Vector</b> branches: <span class="mono">N/A</span> &middot; <span class="mono">L</span> &middot; <span class="mono">P</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>3. Deployment exposure</b> &times; reachability<span class="vm-sub">isolated-cell &rarr; control-network &rarr; dmz-routable &rarr; remote-accessible</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>4. Operational context Q&amp;A</b> — perimeter protection, mitigating controls, config/environment gating</div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vamber">Terminal: <b>not_affected</b> (CSAF/OpenVEX justification) / <b>under_investigation</b></div>
+    </div>
+  </div>
+
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
+</div>
+</div>
+
+<div class="vm-cols">
+  <div class="card">
+    <h3 style="margin:0 0 6px">Source-available path (Code VEX)</h3>
+    <p class="hint" style="margin:0 0 8px">When the vulnerable/patched code pair is obtainable (OSS with a fix commit), the verdict is grounded in the actual code — not just metadata.</p>
+    <ul class="vm-list">
+      <li><b>SecureBERT</b> reads the security/asset context and emits a first VEX signal.</li>
+      <li><b>CodeBERT</b> compares the vulnerable vs patched diff; catches backports (fix already applied) that context alone misses.</li>
+      <li><b>sLLM static analyst</b> reasons over patch diff + CWE + reachability to produce a structured exploitability assessment. <b>No PoC is generated and nothing is executed.</b></li>
+      <li><b>Grounding critic</b> rejects overreach; a verdict must be supported by evidence (e.g. <span class="mono">not_affected</span> needs counter-evidence).</li>
+      <li>Confirmed tier = <b>static-analysis-verified</b>; otherwise <b>static-reasoned</b>.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 6px">Source-uncollectable path (Decision Tree)</h3>
+    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so VEX is decided from the deployment's <b>operational context</b> instead of code.</p>
+    <ul class="vm-list">
+      <li>Branch on the <b>CVSS Attack Vector</b> (Network/Adjacent, Local, Physical).</li>
+      <li>Cross with <b>deployment exposure</b> to get reachability (yes / conditional / no).</li>
+      <li>Walk operational questions: perimeter protection, compensating controls, configuration/environment preconditions.</li>
+      <li>Terminals map to CSAF/OpenVEX justifications: <span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>, <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span>, <span class="mono">inline_mitigations_already_exist</span> &hellip; or <b>under_investigation</b>.</li>
+      <li>If the source later becomes obtainable, the case is routed back to the Code VEX path.</li>
+    </ul>
+  </div>
+</div>
+<p class="hint" style="margin:14px 2px 0">Note: SBOM/AAS describe the asset's static composition; the operational inputs above (exposure, reachability, mitigations, exploitation) are supplied separately &mdash; that is what turns identification into a VEX decision. An SSVC-style priority axis (Exploitation via KEV/EPSS, Automatable, safety impact) is planned on top of this tree.</p>
+"""
+
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
+    "vex-method": ("VEX Analysis Method", _VEXMETHOD_PAGE),
     "source": ("ICS-CERT Advisories",
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
     "corpus": ("Corpus statistics",
@@ -1360,6 +1458,7 @@ PAGES = {
     "ics-sbom": ("ICS-SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "Analyzer"),
+        ("vex-method", "vex-method.html", "VEX Analysis Method"),
         ("corpus", "corpus.html", "Corpus"),
         ("collectable", "collectable.html", "Collectable CVEs"),
         ("source", "source.html", "ICS-CERT Advisories"),
