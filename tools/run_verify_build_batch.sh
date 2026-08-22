@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Night batch: CVE-Genie Data Processor + Builder (--run-type build) on Ollama for every
-# CVE in the cache. Sequential, resumable. Build success judged by real markers, NOT
-# main.py's final flag (always False for build-only: "Exploiter response not found").
+# Night batch: source collection + environment build (--run-type build) on Ollama for every
+# CVE in the cache, via the containerized execution-verification engine. Sequential, resumable.
+# Build success is judged by real markers, NOT the engine's final flag (always False for a
+# build-only run: "Exploiter response not found").
 set -u
 ROOT="C:/Users/user/Desktop/ICS-VEX"
-GENIE="C:/Users/user/Desktop/cve-genie"
-CACHE="$GENIE/webapp/data/icsvex_tierA.json"
-LOGDIR="$ROOT/results/genie_build_logs"
-CSV="$ROOT/results/genie_build_batch.csv"
-PS1="$ROOT/tools/run_genie_build.ps1"
+ENGINE="${VERIFY_ENGINE_DIR:-C:/Users/user/Desktop/cve-genie}"
+CACHE="$ENGINE/webapp/data/icsvex_tierA.json"
+LOGDIR="$ROOT/results/verify_build_logs"
+CSV="$ROOT/results/verify_build_batch.csv"
+PS1="$ROOT/tools/run_verify_build.ps1"
 mkdir -p "$LOGDIR"
 [ -f "$CSV" ] || echo "cve,build_ok,critic_ok,seconds,marker" > "$CSV"
 

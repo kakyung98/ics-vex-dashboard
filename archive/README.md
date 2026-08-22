@@ -5,10 +5,10 @@
 
 ## 왜 격리했나
 
-기존 시스템은 CVE-Genie 논문을 따라 sLLM이 PoC를 **생성**하고 샌드박스에서 **실행**해
+기존 시스템은 실행검증 방식(논문 기반)으로 sLLM이 PoC를 **생성**하고 샌드박스에서 **실행**해
 CTF flag로 확정을 내렸다. 이 실행/트리거 경로가 보안 정책에 반복적으로 막혔다. 라이브
 파이프라인은 이제 PoC를 생성·실행하지 않고 **순수 정적분석**으로만 VEX를 판정한다
-(`src/vex_pipeline.py`, `src/vex_infer.py`, `docs/GENIE_STYLE_VEX.md` 참조).
+(`src/vex_pipeline.py`, `src/vex_infer.py`, `docs/STATIC_VEX_LEGACY.md` 참조).
 
 ## 파일
 

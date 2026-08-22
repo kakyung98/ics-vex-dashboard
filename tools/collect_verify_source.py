@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Data Processor — faithful reimplementation of CVE-Genie paper §3.1.1.
+"""Source collector (execution-verification Data Processor).
 
 For each tier-A CVE whose vuln/patched code pair is NOT already collected, this
-does the paper's two Data-Processor jobs:
+does the two data-processing jobs that feed the execution-verification engine:
 
   A1 Source Code Extraction:
      component -> upstream repo + latest-affected version tag ->
@@ -14,19 +14,20 @@ does the paper's two Data-Processor jobs:
      (4) sec_adv[{url,content}]        (advisory URLs filtered by keyword, scraped)
 
 Outputs:
-  cve-genie/webapp/data/icsvex_tierA.json  merged cache the cve-genie Builder reads
+  <engine>/webapp/data/icsvex_tierA.json   merged cache the build stage reads
+                                           (engine dir via $VERIFY_ENGINE_DIR)
   data/source_snapshots/<CVE>/             extracted vulnerable source tree
   results/data_processor_report.json       per-CVE outcome + resolver provenance
 
-vuln/patched code pair is NOT required (user decision): a downloaded source tree
-alone counts as a successful collection. patch_commits/sec_adv are best-effort and,
-when present, feed the KnowledgeBuilder.
+vuln/patched code pair is NOT required: a downloaded source tree alone counts as a
+successful collection. patch_commits/sec_adv are best-effort and, when present,
+feed the knowledge stage.
 
 Usage:
-  python tools/genie_data_processor.py --dry-run        # resolve tags, HEAD archives, no download
-  python tools/genie_data_processor.py --limit 5        # pilot
-  python tools/genie_data_processor.py --only openssl   # one component
-  python tools/genie_data_processor.py                  # all
+  python tools/collect_verify_source.py --dry-run        # resolve tags, HEAD archives, no download
+  python tools/collect_verify_source.py --limit 5        # pilot
+  python tools/collect_verify_source.py --only openssl   # one component
+  python tools/collect_verify_source.py                  # all
 """
 import os, sys, re, json, csv, subprocess, argparse, urllib.request, urllib.error, zipfile, tarfile, io, collections
 
@@ -38,7 +39,9 @@ import collect_code_evidence as C   # osv_commits(), parse_diff()
 
 GH = r"C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin\gh.exe"
 SNAP = os.path.join(BASE, "data", "source_snapshots")
-CACHE_DIR = os.path.join(BASE, "..", "cve-genie", "webapp", "data")
+CACHE_DIR = os.environ.get("VERIFY_ENGINE_DIR")
+CACHE_DIR = (os.path.join(CACHE_DIR, "webapp", "data") if CACHE_DIR
+             else os.path.join(BASE, "..", "cve-genie", "webapp", "data"))
 CACHE = os.path.join(CACHE_DIR, "icsvex_tierA.json")
 REPORT = os.path.join(BASE, "results", "data_processor_report.json")
 CE = os.path.join(BASE, "data", "code_evidence.json")
@@ -346,7 +349,7 @@ def process_one(cve, meta, nvd, dry=False):
 
     entry = {"description": desc, "cwes": cwes, "sw_version": tag or ver,
              "sw_version_wget": sw_url, "patch_commits": commits, "sec_adv": sec}
-    return rec, (entry if is_zip else None)   # cve-genie cache needs a .zip
+    return rec, (entry if is_zip else None)   # engine cache needs a .zip
 
 
 def main():

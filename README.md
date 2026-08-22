@@ -86,7 +86,7 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | OSS 취약/패치 코드 수집 | `tools/collect_code_gh.py` | `data/code_evidence.json` |
 | **라이브 SBOM→VEX 판정** | `src/vex_pipeline.py` | JSON-line 스트림 (컴포넌트↔CVE 식별 + 경로 라우팅) |
 | **전 코퍼스 스윕 (source_class 분류)** | `src/vex_batch.py` | `results/vex_batch.jsonl` + `_summary.json` |
-| **실행검증 대상 선별** | `tools/export_genie_candidates.py` | 소스 확보(저장소+커밋) CVE 목록 |
+| **실행검증 대상 선별** | `tools/export_verify_candidates.py` | 소스 확보(저장소+커밋) CVE 목록 |
 | **실행검증 오케스트레이터** | 빌드→재현→검증 (로컬 Ollama + Docker 격리) | `execution-verified` 판정 로그 |
 | **로컬 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (실행검증 익스플로이터 라우팅용) |
 | **동적 REST API 서비스** | `src/api_server.py` | FastAPI (SBOM→VEX·CPE 정규화·통계·검색·SSVC·VEX 문서 출력) |
@@ -171,7 +171,7 @@ developer→critic 루프(빌더·익스플로이터·검증기 + 각 단계 cri
 4. **실행·검증** — 샌드박스 실행 → 트리거(크래시/새니타이저/assert) 관측 시 확정 (검증기 critic)
 
 **빌드 파일럿 결과(2026-08)**: 소스 확보 CVE 배치에서 환경 재구성 **59/80 빌드 성공**
-(`results/genie_build_batch.csv`). 빌드 성공분이 재현·실행 단계로 진입한다.
+(`results/verify_build_batch.csv`). 빌드 성공분이 재현·실행 단계로 진입한다.
 
 **모델 거부(refusal) 우회 — 역할별 라우팅**: 재현의 병목은 실행 차단이 아니라 익스플로잇
 작성 단계에서의 모델 **거부**였다. 거부-빈발 익스플로이터만 로컬 모델로 라우팅하고
@@ -261,7 +261,7 @@ python tools/collect_code_gh.py           # OSS 취약/패치 실코드 (gh 인�
 python src/build_ground_truth.py          # 증거 계층 결정
 python src/vex_pipeline.py --sbom results/example_sbom.json --exposure control-network
                                           # ← 라이브 SBOM→VEX (식별·라우팅). 소스 확보분은 실행검증으로
-python tools/export_genie_candidates.py   # 실행검증 대상(저장소+커밋 확보) 선별
+python tools/export_verify_candidates.py   # 실행검증 대상(저장소+커밋 확보) 선별
 # 실행검증(빌드→재현→실행): 로컬 Ollama + Docker 격리 샌드박스 오케스트레이터
 python tools/build_site.py                # 정적 웹 콘솔 6페이지 생성 (GitHub Pages)
 ```

@@ -262,9 +262,9 @@ class SllmStaticAnalyst:
 class SllmPoc(SllmStaticAnalyst):
     def gen_poc(self, *_a, **_k):
         raise RuntimeError(
-            "PoC generation is disabled in ICS-VEX static-analysis mode. Use "
-            "assess_exploitability()/adjudicate_vex() — the system decides VEX "
-            "without generating or running any exploit. See docs/GENIE_STYLE_VEX.md.")
+            "PoC generation is disabled in this static-analysis module. Use "
+            "assess_exploitability()/adjudicate_vex() here; execution-based "
+            "verification (build -> reproduce -> run) lives in the tools/ engine.")
 
 
 # ===========================================================================

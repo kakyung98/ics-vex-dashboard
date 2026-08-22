@@ -39,7 +39,7 @@ OSS_REPOS = {
     "spring":     dict(gh="spring-projects/spring-framework", tags=["v{v}"]),
     "linux_kernel": dict(gh="gregkh/linux",             tags=["v{v}"], huge=True,
                        tarball="https://cdn.kernel.org/pub/linux/kernel/v{maj}.x/linux-{v}.tar.gz"),
-    # non-GitHub upstreams (tarball only; cve-genie cache needs a .zip so these stay snapshot-only)
+    # non-GitHub upstreams (tarball only; engine cache needs a .zip so these stay snapshot-only)
     "dnsmasq":    dict(tarball="https://thekelleys.org.uk/dnsmasq/dnsmasq-{v}.tar.gz"),
     "wpa_supplicant": dict(tarball="https://w1.fi/releases/wpa_supplicant-{v}.tar.gz"),
     "ntp":        dict(tarball="https://downloads.ntp.org/ntp/ntp-{v}.tar.gz"),

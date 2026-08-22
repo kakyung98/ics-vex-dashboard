@@ -1,11 +1,16 @@
-# Genie-style SBOM → VEX pipeline (static-analysis edition)
+# Static-analysis SBOM → VEX pipeline (static-analysis edition)
 
-Restructures the ICS-VEX methodology into a CVE-Genie–style **developer + critic**
+> **⚠️ LEGACY.** This documents a superseded design. The live VEX path for
+> source-available CVEs is now **execution-based verification** (build → reproduce
+> → run); see the README and the VEX Analysis Method page. This file is kept for
+> reference/ablation only.
+
+Restructures the ICS-VEX methodology into a static-analysis **developer + critic**
 multi-agent architecture, driven by three models — **SecureBERT**, **CodeBERT**, and
 an **sLLM** (Qwen2.5-Coder-7B + LoRA) — but decides VEX **purely by static analysis**.
 
 > **2026-08 redesign.** The system no longer generates or executes proof-of-concept
-> exploits. The CVE-Genie *Exploiter* (write + run a PoC) and *CTF Verifier*
+> exploits. The execution Exploiter (write + run a PoC) and *CTF Verifier*
 > (execute → capture a flag) are replaced by a **static exploitability analyst** and a
 > **static-evidence grounding critic**. Nothing is built, nothing is triggered,
 > nothing is executed. This removes the execution/trigger path that kept getting
@@ -16,13 +21,13 @@ an **sLLM** (Qwen2.5-Coder-7B + LoRA) — but decides VEX **purely by static ana
 SecureBERT and CodeBERT are **encoders** (classifiers), not agentic LLMs. Only the
 sLLM is generative — and here it is used as a *static analyst*, not an exploit writer.
 The design is a **hybrid**: a deterministic orchestrator routes each finding; the
-sLLM runs a Genie-style developer→critic loop over static evidence; the encoders act
+sLLM runs a Static-analysis developer→critic loop over static evidence; the encoders act
 as specialized signals; and the "verifier" is a grounding check on the static
 evidence rather than an execution oracle.
 
-## Role mapping (CVE-Genie ↔ static ICS-VEX)
+## Role mapping (execution-verification ↔ static ICS-VEX)
 
-| CVE-Genie stage (execution) | Static ICS-VEX implementation |
+| execution-verification stage (execution) | Static ICS-VEX implementation |
 |---|---|
 | Processor / Knowledge Builder | same — CVE desc, CWE, patch diff, advisories, affected versions → structured KB (already static) |
 | Builder (rebuild + run env) | **Presence & Reachability analyzer** — is the component/version present? is the flaw reachable given CVSS AV × deployment exposure? No build, no run. |

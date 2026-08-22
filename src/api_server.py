@@ -136,7 +136,7 @@ class Store:
 
     def refresh(self):
         self.summary = _load(os.path.join(RESULTS, "vex_batch_summary.json"), {})
-        self.candidates = _load(os.path.join(RESULTS, "genie_candidates.json"),
+        self.candidates = _load(os.path.join(RESULTS, "verify_candidates.json"),
                                 {"candidates": []})
         self.code_ev = _load(os.path.join(DATA, "code_evidence.json"), {})
         self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
