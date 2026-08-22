@@ -37,6 +37,14 @@ dump("cve_kb.json", {"components": S.kb_comps})   # CVSS-enriched KB
 dump("advisories_list.json", {"count": len(S.advisories_list),
                               "advisories": S.advisories_list})
 
+# per-advisory full detail (lazy-loaded by the advisory modal)
+_advdir = os.path.join(BASE, "adv")
+os.makedirs(_advdir, exist_ok=True)
+for _aid, _d in S.adv_detail.items():
+    with open(os.path.join(_advdir, _aid + ".json"), "w", encoding="utf-8") as _f:
+        json.dump(_d, _f, ensure_ascii=False, separators=(",", ":"))
+print("wrote %d per-advisory detail files -> adv/" % len(S.adv_detail))
+
 # ---- 2) client-side JS injected in place of the /api/* backend ------------
 INJECT = r"""
 let CVE_INDEX=[], CVE_KB={}, KB_COMPS=[], SRC_OK=new Set();
