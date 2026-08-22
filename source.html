@@ -180,7 +180,7 @@ async function run(){
       : '<button class="treebtn" onclick="treeForCve(\''+f.cve+'\',\''+(f.av||'N')+'\')">Decide via tree &rarr;</button>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'"><span class="badge" style="background:'+c+'22;color:'+c+'">'+L[f.final_vex]+'</span> <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\''+f.cve+'\')">✎ VEX</button></td>'
-      +(function(){var ss=ssvcFor(f.cve);var sd=ssvcDecide(ss);return '<td><span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span></td>';})()
+      +(function(){var ss=ssvcFor(f.cve);var sd=ssvcDecide(ss);return '<td id="ssvccell-'+f.cve+'"><span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span></td>';})()
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
@@ -479,7 +479,7 @@ function saveVexFields(cve){
   else if(st==='affected'){o.remediation=_v('vf-remed');o.action_statement=_v('vf-action');}
   else if(st==='fixed'){o.fixed_version=_v('vf-fixver');o.patch_reference=_v('vf-patch');o.verification_result=_v('vf-verify');}
   else {o.investigation_progress=_v('vf-prog');o.missing_evidence=_v('vf-missing');o.planned_update=_v('vf-plan');}
-  o.ssvc=_ssvcCur(); _vexFields[cve]=o; closeCves();
+  o.ssvc=_ssvcCur(); _vexFields[cve]=o; closeCves(); refreshVexRow(cve);
   const cell=document.getElementById('vexcell-'+cve); if(cell)cell.classList.add('vexset');
 }
 function exportOpenVex(){
@@ -543,8 +543,17 @@ function renderCveTree(cve){
     +'<button class="primary" onclick="treeAnswerFor(\''+cve+'\',true)">Yes</button> <button onclick="treeAnswerFor(\''+cve+'\',false)">No</button></div>';}
   return h;
 }
-function treeAnswerFor(cve,v){const s=_treeState[cve];const r=classifyTree(s.av,s.answers);if(r.pending)s.answers[r.pending]=v;document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);}
-function treeReset(cve){_treeState[cve]={av:_treeState[cve].av,answers:{affected_range:true,source_check:false}};document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);}
+function _statLabel(st){return {affected:'affected',not_affected:'not_affected',under_investigation:'under investigation',fixed:'fixed'}[st]||st;}
+function _statCol(st){return {affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--und)',fixed:'var(--accent)'}[st]||'var(--ink3)';}
+function refreshVexRow(cve){
+  const auto=_autoStatus(cve); const ov=_vexFields[cve]||{}; const st=ov.status||auto.status;
+  const vc=document.getElementById('vexcell-'+cve);
+  if(vc){const col=_statCol(st);vc.innerHTML='<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(st)+'</span> <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\''+cve+'\')">&#9998; VEX</button>';}
+  const sc=document.getElementById('ssvccell-'+cve);
+  if(sc){const ss=ssvcFor(cve);const sd=ssvcDecide(ss);sc.innerHTML='<span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span>';}
+}
+function treeAnswerFor(cve,v){const s=_treeState[cve];const r=classifyTree(s.av,s.answers);if(r.pending)s.answers[r.pending]=v;document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);refreshVexRow(cve);}
+function treeReset(cve){_treeState[cve]={av:_treeState[cve].av,answers:{affected_range:true,source_check:false}};document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);refreshVexRow(cve);}
 function treeForCve(cve,av){const el=document.getElementById('tc-'+cve);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('tc-hi');setTimeout(()=>el.classList.remove('tc-hi'),1600);}}
 
 // ---- Source data: ICS-CERT advisory + NVD CVE search ----
