@@ -1,23 +1,20 @@
 # ICS-VEX — Explainable VEX for Industrial Control Systems
 
 CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋** 위에서,
-**SecureBERT(맥락) + CodeBERT(코드)** 기반 설명가능 VEX 판정 시스템을
-학습·평가하는 엔드투엔드 파이프라인.
+소스코드 확보 여부에 따라 VEX 를 판정하는 엔드투엔드 파이프라인.
 
-> **🛡️ 2026-08 정적분석 전면 개편.** 라이브 판정 파이프라인은 PoC 를 **생성하지도
-> 실행하지도 않는다.** CVE-Genie 의 developer→critic 다중에이전트 구조는 유지하되,
-> Exploiter(PoC 작성·실행)와 CTF Verifier(실행→flag)를 **정적 Exploitability 분석기**와
-> **정적 증거 grounding critic** 으로 치환했다. 신규 확정 tier 는 `static-analysis-verified`.
-> 상세: [`docs/GENIE_STYLE_VEX.md`](docs/GENIE_STYLE_VEX.md). 비활성화된 실행 경로는
-> [`archive/`](archive/) 에 격리(삭제 아님).
+> **🛡️ 2026-08 실행검증 전면 개편.** 소스코드를 확보한 CVE 는 **실제로 빌드하고
+> 재현(reproducer)을 실행**해 판정한다 — 정적 추론이 아니라 **실행 증거**로 확정한다.
+> 취약 버전을 격리 샌드박스에 재구성 → 재현 입력 합성 → 실행해 크래시/새니타이저/assert
+> 트리거 확인. 다중에이전트 **developer→critic 루프**(빌더·익스플로이터·검증기 + 각 단계
+> critic)가 **전부 로컬(Ollama, $0)** 로 돈다. 신규 확정 tier 는 `execution-verified`.
+> 빌드는 되지만 트리거 미도달 시 `build-only` → `under_investigation` 폴백.
 
-> **🔀 하이브리드(정적 트리아지 → 실행 재현).** 실행 검증(execution-verified) ground truth 가
-> 필요한 소수 CVE 를 위해, 정적 배치가 **재현 대상만 선별**해 격리된 CVE-Genie 에 넘기는
-> 하이브리드를 갖춘다: 전 코퍼스 정적 스윕([`src/vex_batch.py`](src/vex_batch.py)) → 재현 후보
-> export([`tools/export_genie_candidates.py`](tools/export_genie_candidates.py)) → 역할별 모델
-> 라우팅으로 CVE-Genie 실행. 재현의 병목이던 **모델 거부(refusal)** 는 거부-빈발 Exploiter 만
-> 로컬 모델([`tools/serve_poc_llm.py`](tools/serve_poc_llm.py))로 라우팅해 우회한다. 상세는
-> 아래 [하이브리드 실행 재현](#하이브리드-정적-트리아지--실행-재현) 절.
+> **🧭 소스 미확보 경로.** 폐쇄 펌웨어 등 소스코드를 얻을 수 없는 CVE 는 코드 근거가
+> 없으므로 상태를 **`under_investigation`** 으로 고정하고, `estimation` 하위필드와
+> **SSVC 우선순위**(SEI Deployer)를 함께 부여한다. 두 경로의 판정 방법은
+> [VEX Analysis Method](https://kakyung98.github.io/ics-vex-dashboard/vex-method.html) 페이지에서
+> 다이어그램으로 볼 수 있다.
 
 > **🔗 라이브 대시보드 (ICS-VEXForge)**: https://kakyung98.github.io/ics-vex-dashboard/
 > SBOM을 올려(붙여넣기·업로드·드래그) CVE·VEX 즉석 분석 + 코퍼스 통계 시각화 (전부 브라우저 내 처리).
@@ -27,7 +24,7 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 > - [ICS Advisories-based CVE Corpus](https://kakyung98.github.io/ics-vex-dashboard/corpus.html) — Target CVE·CISA 어드바이저리·연도별 통계
 > - [Source Code Available CVEs](https://kakyung98.github.io/ics-vex-dashboard/collectable.html) — 소스 수집가능 CVE(CWE/벤더/장비, 클릭 드릴다운)
 > - [ICS-CERT Advisories](https://kakyung98.github.io/ics-vex-dashboard/source.html) — ICS-CERT 어드바이저리·NVD CVE 검색(어드바이저리 원문 표시)
-> - [ICS-SBOM](https://kakyung98.github.io/ics-vex-dashboard/ics-sbom.html) — KISA CycloneDX 스키마 역방향 SBOM 데이터셋(어드바이저리↔장비 링크)
+> - [Synthetic SBOM](https://kakyung98.github.io/ics-vex-dashboard/ics-sbom.html) — KISA CycloneDX 스키마 역방향 SBOM 데이터셋(어드바이저리↔장비 링크)
 
 ---
 
@@ -37,25 +34,27 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 - **출력**: 컴포넌트별 CVE 식별 + VEX 판정(`영향 가능`/`비영향`/`조사 필요`) + 표준 justification + 판정 근거 문장
 - **코드 확보 여부가 경로를 가른다**:
 
-| 상태 | CVE | 경로 | 1차 VEX |
-|---|---|---|---|
-| **취약/패치 코드 쌍 실보유** | 15 (0.13%) | SecureBERT → CodeBERT → sLLM 정적 분석가+critic | 정적 근거 grounded 시 **static-analysis-verified 확정** |
-| 코드 미확보 | 11,321 (99.87%) | SecureBERT → 도달성 → sLLM 정적 분석가 | 도달성 grounded 시 `static-reasoned`, 아니면 `UNDER_INVESTIGATION` |
+| 상태 | 경로 | VEX |
+|---|---|---|
+| **소스코드 확보** | 실행검증: 취약버전 빌드 → 재현(reproducer) 합성 → 실행 → 트리거 확인 | 재현 트리거 시 **`execution-verified` 확정**; 빌드만 되면 `build-only` → `under_investigation` |
+| **코드 미확보** (11,321 · 99.87%) | `under_investigation` 고정 + estimation + SSVC | 코드 근거 없음 → 상태 고정, 추정치·우선순위만 부여 |
 
 > ⚠️ **`tier` 컬럼 주의**: SBOM 속성명이 `component:source-availability` 라서 소스 확보로 읽히지만,
 > 실제로는 **OSS 카탈로그 귀속 여부**일 뿐이다([build_reverse_sbom.py:202](src/build_reverse_sbom.py:202)).
 > `tier=="A"` 110 CVE 중 실제로 코드를 확보한 것은 **15 CVE**.
 > (폐쇄소스 22건 — CODESYS·Interpeak/ipnet·Treck·SQL Server·.NET — 은 OSS 로 오분류돼 있던 것을
 > [build_reverse_sbom.py](src/build_reverse_sbom.py) 의 `CLOSED_OSS` 로 tier E 재분류: 132→110.)
-> 따라서 코드 leg 게이트는 `tier` 가 아니라 `code_evidence_available` 이다.
-> tier A 110 CVE 는 코드를 수집하면 승격 가능한 **확장 후보군**으로만 의미가 있다
-> (`data/vex_dataset_code.jsonl` 로 별도 export).
+> 따라서 실행검증 게이트는 `tier` 가 아니라 `code_evidence_available`(=업스트림 저장소+커밋 확보) 이다.
+> tier A 110 CVE 는 소스를 수집하면 실행검증으로 승격 가능한 **확장 후보군**이다.
 
-  - **SecureBERT** — 보안/자산 텍스트(맥락·노출) 분석. 전 건의 1차 정적 신호
-  - **CodeBERT** — 소스가 있는 건만. 패치 diff 정적 대조(취약 vs 패치 분리도 신호). 실행 없음
-  - **sLLM (정적 분석가)** — 패치 diff·CWE·도달성 신호로 구조화된 취약성 판단 생성 후
-    grounding critic 통과 시 최종 VEX 확정. **PoC 를 생성·실행하지 않는다**
-  - 대조할 코드가 없는 건을 CodeBERT 로 보내지 않는다 — 근거 없는 출력은 오탐만 만든다
+- **실행검증 경로 (소스 확보 CVE)** — 코드가 있으면 정적 추론 대신 **실제 실행**으로 확정한다.
+  다중에이전트 developer→critic 루프가 전부 로컬(Ollama, $0)로 돈다:
+  - **① 업스트림 해석** — 컴포넌트를 저장소+취약 커밋/버전으로 매핑(CVE/NVD 레퍼런스)
+  - **② 환경 재구성 (빌더 + 빌드 critic)** — 취약 버전 clone, 빌드 선행조건 해소, 격리 Docker 샌드박스에서 컴파일
+  - **③ 재현 합성 (익스플로이터)** — CVE 설명·CWE·패치 diff 를 근거로 취약 경로를 타는 입력/PoC 작성
+  - **④ 실행·검증 (검증기 critic)** — 샌드박스에서 실행, 크래시/새니타이저/assert 트리거 관측 시 `affected` 확정.
+    동일 재현을 패치 빌드에 돌려 트리거가 사라지면 `fixed`/`not_affected` 확정 — 모두 `execution-verified`
+  - 빌드는 되나 트리거를 예산 내 도달 못 하면 `build-only` → `under_investigation` 폴백
 
 - **소스 미확보 경로 (결정트리 폐기 → estimation + SSVC)**: 소스코드가 없으면 코드 근거가
   없으므로 상태를 **항상 `under_investigation`** 으로 고정한다(과거의 Yes/No 결정트리는 제거).
@@ -85,10 +84,11 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | 악용신호(KEV·EPSS) | `tools/fetch_exploit_signals.py` | `data/exploit_signals.json` |
 | 역방향 SBOM | `src/build_reverse_sbom.py` | `reverse_sbom/`, `data/findings.csv` (`tier` = 소스 확보 가능성) |
 | OSS 취약/패치 코드 수집 | `tools/collect_code_gh.py` | `data/code_evidence.json` |
-| **정적 VEX 판정 (라이브)** | `src/vex_pipeline.py` | JSON-line 스트림 (SBOM→VEX) |
-| **전 코퍼스 정적 스윕** | `src/vex_batch.py` | `results/vex_batch.jsonl` + `_summary.json` (source_class 분류) |
-| **재현 후보 export (브리지)** | `tools/export_genie_candidates.py` | `results/genie_candidates.json` |
-| **로컬 PoC 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (CVE-Genie Exploiter 라우팅용) |
+| **라이브 SBOM→VEX 판정** | `src/vex_pipeline.py` | JSON-line 스트림 (컴포넌트↔CVE 식별 + 경로 라우팅) |
+| **전 코퍼스 스윕 (source_class 분류)** | `src/vex_batch.py` | `results/vex_batch.jsonl` + `_summary.json` |
+| **실행검증 대상 선별** | `tools/export_genie_candidates.py` | 소스 확보(저장소+커밋) CVE 목록 |
+| **실행검증 오케스트레이터** | 빌드→재현→검증 (로컬 Ollama + Docker 격리) | `execution-verified` 판정 로그 |
+| **로컬 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (실행검증 익스플로이터 라우팅용) |
 | **동적 REST API 서비스** | `src/api_server.py` | FastAPI (SBOM→VEX·CPE 정규화·통계·검색·SSVC·VEX 문서 출력) |
 | **VEX 문서 출력** | `src/api_server.py` (Analyzer) | OpenVEX v0.2.0 · CSAF 2.0(csaf_vex) — status별 필수필드 + estimation + SSVC |
 | ~~소스-불가 CVE 결정트리~~ (폐기) | `src/vex_source_unavailable.py` | Yes/No 트리 제거 → `under_investigation`+estimation+SSVC 로 대체(모듈만 잔존) |
@@ -100,19 +100,18 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | **CodeBERT 코드 leg 검증** | `src/train_codebert.py`, `src/eval_two_model.py` | `results/two_model_metrics.json` |
 | **CodeBERT 취약탐지 파인튜닝** | `src/train_codebert_finetune.py` | `models/codebert-vuln/` |
 
-> **라이브 판정 vs 학습 데이터**: 라이브 SBOM→VEX 판정은 `src/vex_pipeline.py` 가
-> 정적분석으로 수행한다(실행 없음, 신규 확정 tier = `static-analysis-verified`).
-> 학습 데이터셋(`build_ground_truth.py`)은 여전히 과거 `results/exec_verification*.json`
-> 을 읽어 **역사적** execution-verified 5건을 표기하지만, 이 실행 경로는 격리(`archive/`)
-> 되어 더 이상 새 확정을 만들지 않는다.
+> **판정 경로**: 소스코드를 확보한 CVE 는 **실행검증**(빌드→재현→실행)으로 `execution-verified`
+> 를 확정한다. 소스를 얻을 수 없는 CVE 는 `under_investigation` + estimation + SSVC 로 처리한다.
+> 웹 콘솔의 라이브 판정은 식별·라우팅·표시를 담당하고, 실행검증 자체는 로컬 Ollama + Docker
+> 격리 샌드박스에서 오케스트레이터가 수행한다.
 
 ## 주요 결과
 
 ### 데이터셋 구성 (v3, 증거 계층 기반)
 | 증거 계층 | 건수 | 1차 VEX |
 |---|---|---|
-| `execution-verified` (역사적, 격리된 실행 경로) | 5 (0.04%) | **확정** (`LIKELY_AFFECTED`) |
-| `source-available-unverified` | 31 (0.24%) | `UNDER_INVESTIGATION` (정적 판정 대상) |
+| `execution-verified` (빌드→재현→실행 확정) | 5 (0.04%) → 확장중 | **확정** (`affected`/`fixed`) |
+| `source-available-unverified` | 31 (0.24%) | 실행검증 대상 (빌드/재현 파이프라인 투입) |
 | `source-pending` | 2,115 (16.26%) | `UNDER_INVESTIGATION` (OSS 귀속, 코드 미수집) |
 | `source-unavailable` | 10,854 (83.46%) | `UNDER_INVESTIGATION` (폐쇄 펌웨어) |
 
@@ -124,19 +123,15 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | `data/vex_dataset_code.jsonl` | 356 | tier A 확장 후보군 — 코드 leg 실험 |
 | `data/vex_ground_truth.jsonl` | 5 | **실행 검증 확정분 — 진짜 ground truth** |
 
-### 정적 판정 커버리지 (개편 후)
+### 판정 tier (개편 후)
 
-라이브 판정은 실행 없이 정적분석으로 이뤄지므로, 커버리지는 "실행 트리거를 몇 개 작성했나"가
-아니라 **정적 증거가 얼마나 결정적인가**로 정해진다:
+소스코드 확보 여부가 tier 를 가른다 — 확보 시 실행으로 확정하고, 미확보 시 상태를 고정한다:
 
 | tier | 조건 |
 |---|---|
-| `static-analysis-verified` | 취약/패치 코드 쌍 보유 + 패치가 취약본과 정적으로 분리 가능 + critic grounded + 결정적 판정 |
-| `static-reasoned` | 코드 쌍 없음, 그러나 도달성(AV×노출도)+CWE 추론으로 결정적 판정 grounded |
-| `under-investigation` | 정적 증거 부족 |
-
-과거 실행 검증 상한 분석(verifiable-c 101 / blocked-proprietary 21 / blocked-scope 10)과
-CVE별 트리거 수작업은 [`archive/`](archive/) 로 격리됐다 — 정적 경로에서는 더 이상 필요 없다.
+| `execution-verified` | 취약 버전 빌드 성공 + 재현(reproducer) 실행 시 트리거 관측(크래시/새니타이저/assert). 패치 빌드에서 트리거 소멸 시 `fixed`/`not_affected` 확정 |
+| `build-only` | 환경은 빌드됐으나 예산 내 트리거 미도달 → `under_investigation` 폴백 |
+| `under-investigation` | 소스 미확보(코드 근거 없음) → estimation + SSVC 만 부여 |
 
 학습 타깃(`label`) 분포 — 확정 5건 + 2차 추정 13,000건:
 `LIKELY_AFFECTED` 4,334 (33.3%) / `LIKELY_NOT_AFFECTED` 2,676 (20.6%) / `UNDER_INVESTIGATION` 5,995 (46.1%)
@@ -154,41 +149,38 @@ CVE별 트리거 수작업은 [`archive/`](archive/) 로 격리됐다 — 정적
 > | CodeBERT 레퍼런스 매칭 | 0.971 | 유효 (데이터셋 무관, `code_evidence.json` 기반) |
 > | CodeBERT 추상 취약성 분류 | 0.50 (무작위) | 유효 (정직한 음성 결과) |
 
-## 하이브리드: 정적 트리아지 → 실행 재현
+## 실행검증 파이프라인 (소스 확보 CVE)
 
-정적 판정은 전 코퍼스를 싸게 트리아지하지만 "재현된 크래시"의 확실성은 없다. 실행 검증
-ground truth 가 필요한 소수 CVE 를 위해, 정적 배치가 **재현 대상만 선별**해 격리된 CVE-Genie
-로 넘기는 하이브리드를 둔다.
+소스코드를 확보한 CVE 는 정적 추론이 아니라 **실제 빌드·재현·실행**으로 확정한다. 다중에이전트
+developer→critic 루프(빌더·익스플로이터·검증기 + 각 단계 critic)가 전부 로컬(Ollama, $0)에서
+돌고, 빌드/실행은 Docker 격리 샌드박스에서 이뤄진다.
 
-**소스 확보 3분류** (재현 가능성이 여기서 갈린다):
+**소스 확보 3분류** (실행검증 가능성이 여기서 갈린다):
 
 | 부류 | findings | 의미 |
 |---|---|---|
-| `code-available` | 36 (15 CVE) | 취약/패치 코드쌍 실보유 → CodeBERT 정적 diff + **재현 즉시 가능** |
+| `code-available` | 저장소+커밋 확보 | **실행검증 즉시 투입** (빌드→재현→실행) |
 | `oss-attributed` | 2,115 | OSS(tier A/C)지만 코드 미수집 → 수집 시 승격 |
-| `vendor-proprietary` | 10,854 | 폐쇄 펌웨어 → **재현 불가**, 정적 판정에만 |
+| `vendor-proprietary` | 10,854 | 폐쇄 펌웨어 → 실행검증 불가 → `under_investigation`+SSVC |
 
-**흐름**:
-```
-src/vex_batch.py           # 전 13,005건 정적 스윕 (source_class 분류)
-tools/export_genie_candidates.py   # 재현 후보 선별 -> results/genie_candidates.json
-                                   #   ready 15 (repo+commit) / needs-code 1,716
-# CVE-Genie 실행 (Docker, 격리) — Exploiter만 로컬 모델로 라우팅
-tools/serve_poc_llm.py --port 8000 --served-name ics-vex-poc-sllm   # 로컬 PoC 서버
-LOCAL_LLM_BASE_URL=http://host.docker.internal:8000/v1 \
-LOCAL_LLM_MODELS=local-poc=ics-vex-poc-sllm EXPLOITER_MODEL=local-poc \
-  python3 main.py --cve <CVE> --json <data> --run-type build,exploit,verify
-```
+**흐름 (4단계)**:
 
-**모델 거부(refusal) 우회 — 역할별 라우팅**: CVE-Genie 재현의 병목은 실행 차단이 아니라
-클라우드 모델이 익스플로잇 작성 단계에서 **거부**하는 것이었다. 거부-빈발 Exploiter 만
-로컬 모델(`poc-sllm-lora`, 거부 안 함)로 라우팅하고 추론-무거운 나머지 역할은 능력 모델을
-유지한다(`cve-genie/src/agents/model_routing.py`, env 기반, 미설정 시 업스트림과 동일).
+1. **업스트림 해석** — CVE→저장소·취약 커밋/버전·빌드 선행조건 (데이터 프로세서)
+2. **환경 재구성** — 취약 버전 clone → 선행조건 해소 → Docker 샌드박스 컴파일 (빌더 + 빌드 critic)
+3. **재현 합성** — CWE·패치 diff 근거로 취약 경로를 타는 입력/PoC (익스플로이터)
+4. **실행·검증** — 샌드박스 실행 → 트리거(크래시/새니타이저/assert) 관측 시 확정 (검증기 critic)
 
-> **검증 결과(2026-08, CVE-2024-4340)**: 역할별 라우팅 **동작 확인**(Exploiter=로컬 $0,
-> 나머지=o3/o4-mini), **거부 문제 해소**(로컬 모델이 PoC 정상 생성). 단 7B 로컬 모델은
-> Exploit Critic 이 요구하는 실행-증거 수준을 만족 못 해 재현은 실패 — 16GB→7B 능력 한계.
-> 실제 재현엔 Exploiter 를 클라우드 32~70B 로 올리는 것이 유일한 길(라우팅은 env 만 교체).
+**빌드 파일럿 결과(2026-08)**: 소스 확보 CVE 배치에서 환경 재구성 **59/80 빌드 성공**
+(`results/genie_build_batch.csv`). 빌드 성공분이 재현·실행 단계로 진입한다.
+
+**모델 거부(refusal) 우회 — 역할별 라우팅**: 재현의 병목은 실행 차단이 아니라 익스플로잇
+작성 단계에서의 모델 **거부**였다. 거부-빈발 익스플로이터만 로컬 모델로 라우팅하고
+(`tools/serve_poc_llm.py`), 추론-무거운 나머지 역할은 능력 모델(로컬 32B)로 유지한다 —
+전부 env 기반 라우팅이라 모델 교체는 환경변수만 바꾸면 된다.
+
+> **능력 한계 메모**: 7B 로컬 모델은 검증기 critic 이 요구하는 실행-증거 수준을 만족 못 해
+> 재현이 실패했다. 재현 단계는 로컬 32B 이상(또는 필요 시 더 큰 모델)로 올리는 것이 관건이며,
+> 빌드 단계는 14B 로도 안정적이다.
 
 ## 웹 콘솔 — ICS-VEXForge
 
@@ -211,12 +203,12 @@ python tools/build_site.py             # 정적 6페이지 + 데이터 JSON 재�
 
 | 페이지 | 내용 |
 |---|---|
-| **Analyzer** (`/`) | SBOM 붙여넣기·업로드·드래그 → 컴포넌트별 CVE·VEX. **소스확보 가능** CVE 는 코드 VEX, **소스 수집불가** CVE 는 `under_investigation`+**estimation**+**SSVC**. CPE 정규화(RO) 비교, **VEX 문서(OpenVEX/CSAF) 출력** 포함 |
+| **Analyzer** (`/`) | SBOM 붙여넣기·업로드·드래그 → 컴포넌트별 CVE·VEX. **소스확보** CVE 는 실행검증(빌드→재현→실행, `execution-verified`), **소스 미확보** CVE 는 `under_investigation`+**estimation**+**SSVC**. CPE 정규화(RO) 비교, **VEX 문서(OpenVEX/CSAF) 출력** 포함 |
 | **VEX Analysis Method** (`/vex-method.html`) | 소스 확보/미확보 두 경로의 판정 방법을 다이어그램으로 설명 |
 | **ICS Advisories-based CVE Corpus** (`/corpus.html`) | Target CVE·CISA 어드바이저리·연도별 통계 |
 | **Source Code Available CVEs** (`/collectable.html`) | 소스 수집가능 CVE(CWE/벤더/장비, 그래프 클릭 드릴다운) |
 | **ICS-CERT Advisories** (`/source.html`) | **ICS-CERT 어드바이저리 검색**(어드바이저리 원문 표시) + **NVD CVE 검색**(코퍼스, 각 NVD 링크) |
-| **ICS-SBOM** (`/ics-sbom.html`) | KISA CycloneDX 스키마 역방향 SBOM 데이터셋 열람(어드바이저리↔장비 정확 링크) |
+| **Synthetic SBOM** (`/ics-sbom.html`) | KISA CycloneDX 스키마 역방향 SBOM 데이터셋 열람(어드바이저리↔장비 정확 링크) |
 
 **REST 엔드포인트** (`GET /docs` Swagger)
 
@@ -242,8 +234,8 @@ Exposure 입력으로 흘러간다. 두 값 모두 **VEX 출력 문서(OpenVEX v
 
 주요 기능: **CVSS 를 "점수(등급)" 로 통일** 표시(NVD API 2.0 재수집으로 코퍼스 97% 커버),
 통계 그래프 클릭 → 관련 CVE(NVD 링크), 스크롤·sticky 헤더 결과 테이블. 배포는 Python 이
-도는 어디든 가능(VPS·Render·Railway). 전체 3-모델 라이브 판정이 필요하면
-`src/vex_pipeline.py`(SecureBERT+CodeBERT+sLLM)를 쓴다.
+도는 어디든 가능(VPS·Render·Railway). 소스 확보 CVE 의 실행검증(빌드→재현→실행)은 로컬
+Ollama + Docker 격리 샌드박스에서 별도 오케스트레이터가 수행한다.
 
 ## 도메인 적응 (모델 튜닝)
 
@@ -266,35 +258,36 @@ python tools/fetch_cisa_advisories.py     # ~25분 (3,765건 크롤)
 python tools/fetch_exploit_signals.py     # ~5분 (KEV·EPSS)
 python src/build_reverse_sbom.py          # findings.csv + tier(소스 확보 가능성)
 python tools/collect_code_gh.py           # OSS 취약/패치 실코드 (gh 인증 필요)
-python src/build_ground_truth.py          # 증거 계층 결정 (역사적 exec 결과 포함)
-python src/save_vex_model.py              # SecureBERT VexModel 저장 (정적 판정용)
+python src/build_ground_truth.py          # 증거 계층 결정
 python src/vex_pipeline.py --sbom results/example_sbom.json --exposure control-network
-                                          # ← 라이브 정적 VEX 판정 (PoC·실행 없음)
-python src/train_eval_vex.py              # SecureBERT 맥락 leg (GPU 권장)
-python src/eval_two_model.py              # CodeBERT 코드 leg (tier A 만)
-python src/train_securebert_dapt.py       # ICS 도메인 적응
+                                          # ← 라이브 SBOM→VEX (식별·라우팅). 소스 확보분은 실행검증으로
+python tools/export_genie_candidates.py   # 실행검증 대상(저장소+커밋 확보) 선별
+# 실행검증(빌드→재현→실행): 로컬 Ollama + Docker 격리 샌드박스 오케스트레이터
+python tools/build_site.py                # 정적 웹 콘솔 6페이지 생성 (GitHub Pages)
+```
+
+> 아래는 별도의 **인코더 연구 leg**(도메인 적응 실험)로, VEX 판정 경로와 무관하다:
+
+```bash
+python src/train_securebert_dapt.py       # SecureBERT ICS 도메인 적응(DAPT)
 python src/train_codebert_finetune.py     # CodeBERT 취약탐지 파인튜닝
-python tools/build_site.py                # 정적 웹 콘솔 4페이지 생성 (GitHub Pages)
 ```
 
 ## 한계
 
-1. **정적 확정은 실행 확정보다 근거가 약하다** — 라이브 판정은 실행 없이 정적 증거
-   (코드 diff 분리도, 도달성 grounding, critic 합의)에 기반하므로, 재현된 크래시가 주는
-   확실성은 없다. `static-analysis-verified` 는 "정적으로 결정적"일 뿐 실증이 아니다.
-   과거 실행 확정 5건은 격리된 역사적 tier 로만 남는다.
-2. **학습 타깃은 확정값이 아니라 추정치** — 모델이 배우는 `label` 의 99.96%는
-   AV × 노출도로 계산한 2차 추정이다. 성능 지표는 "VEX 판정 능력"이 아니라
-   "산문에서 잠재 속성(AV·노출도)을 복원하는 능력"에 가깝다.
+1. **실행검증은 소스 확보 CVE 에만 가능하다** — 코퍼스의 99.87%는 소스를 얻을 수 없어
+   실행 확정을 만들 수 없고 `under_investigation`+estimation+SSVC 로만 처리된다. 실행검증의
+   확실성은 강하지만 커버리지는 소수(소스 확보분)에 국한된다.
+2. **재현 합성이 모델 능력에 좌우된다** — 빌드는 14B 로컬 모델로도 안정적이나(59/80 성공),
+   재현·실행 단계는 더 큰 모델을 요구한다. 재현 미도달분은 `build-only`→`under_investigation`
+   폴백이라, 실행검증 확정 수는 모델·예산에 비례한다.
 3. **버전 대조 불가** — SBOM 전 컴포넌트가 `NOASSERTION`. 어떤 CVE 도 해당 장비가
    취약본을 쓰는지 확인할 수 없어, ICS 안전 우선 원칙으로 취약본을 가정한다
    (`version_unconfirmed: true`).
 4. **합성 배치 맥락** — 장비↔CVE↔CWE↔CVSS만 실데이터. 노출도는 합성(`exposure_synthetic: true`).
-   정적 도달성 판단이 이 합성값에 의존하므로, 절대 정확도는 검증 불가하다.
-5. **정적 코드 신호의 한계** — CodeBERT 패치-diff 신호는 취약/패치 코드 쌍을 확보한 CVE
-   에만 적용되고(대부분 OSS 컴포넌트), 배포된 실제 코드가 아니라 참조 diff 를 비교한다.
-   폐쇄 펌웨어는 정적 코드 leg 에 오르지 못하고 도달성·맥락 신호로만 판정된다.
-6. **추상 취약탐지 난제** — 파인튜닝해도 교차프로젝트 ~65~70%가 상한
+   SSVC 의 System Exposure 입력이 이 합성값에 의존하므로, 절대 우선순위는 검증 대상이다.
+5. **소스 미확보 경로는 추정** — 폐쇄 펌웨어는 실행검증에 오르지 못하고 estimation(추정치)과
+   SSVC 우선순위만 부여된다. estimation 은 VEX 진술이 아니라 참고용 추정이다.
 
 ## 데이터 출처 / 라이선스
 
