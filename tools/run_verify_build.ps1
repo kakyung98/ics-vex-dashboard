@@ -9,7 +9,7 @@ param([Parameter(Mandatory=$true)][string]$Cve)
 $ErrorActionPreference = "Stop"
 $engine = if ($env:VERIFY_ENGINE_DIR) { $env:VERIFY_ENGINE_DIR } else { "C:\Users\user\Desktop\cve-genie" }
 $image  = if ($env:VERIFY_ENGINE_IMAGE) { $env:VERIFY_ENGINE_IMAGE } else { "cve-genie:latest" }
-$model = "qwen2.5:14b"
+$model = if ($env:VERIFY_BUILD_MODEL) { $env:VERIFY_BUILD_MODEL } else { "qwen2.5:14b" }
 $ollamaV1 = "http://host.docker.internal:11434/v1"
 $cache = "$engine\webapp\data\icsvex_tierA.json"
 
