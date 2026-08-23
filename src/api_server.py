@@ -165,6 +165,18 @@ class Store:
         _dp = _load(os.path.join(RESULTS, "data_processor_report.json"), {})
         self.collected_src = {r.get("cve") for r in (_dp.get("records") or [])
                               if r.get("status") == "collected" and r.get("cve")}
+        # execution-verification results (per-CVE build/exploit/verify outcomes + evidence)
+        import glob as _glob
+        _vf = os.path.join(RESULTS, "verify_full")
+        _recs = []
+        for _p in sorted(_glob.glob(os.path.join(_vf, "CVE-*.json"))):
+            _r = _load(_p, None)
+            if _r:
+                _recs.append(_r)
+        _order = {"execution-verified": 0, "exploit-generated": 1, "build-only": 2, "failed": 3}
+        _recs.sort(key=lambda r: (_order.get(r.get("outcome"), 9), r.get("cve", "")))
+        self.verify = {"summary": _load(os.path.join(_vf, "_summary.json"), {}),
+                       "records": _recs}
         self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
         # CISA ICS advisories (the corpus provenance)
         adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
@@ -616,6 +628,22 @@ def build_app():
         """Compact index of the synthetic ICS-SBOM dataset (assets + components + CVEs)."""
         return STORE.sbom_index
 
+    @app.get("/api/verify_results")
+    def verify_results():
+        """Per-CVE execution-verification outcomes + evidence pointers (build/exploit/verify)."""
+        return STORE.verify
+
+    @app.get("/results/verify_evidence/{cve}/run.log")
+    def verify_evidence_log(cve: str):
+        """Serve a raw execution-verification run log (parity with static hosting)."""
+        from fastapi.responses import FileResponse
+        if not re.fullmatch(r"CVE-\d{4}-\d+", cve):
+            raise HTTPException(400, "bad cve")
+        path = os.path.join(BASE, "results", "verify_evidence", cve, "run.log")
+        if not os.path.isfile(path):
+            raise HTTPException(404, "log not found")
+        return FileResponse(path, media_type="text/plain")
+
     @app.get("/reverse_sbom/{name}")
     def reverse_sbom_file(name: str):
         """Serve a raw CycloneDX SBOM-CVE file (parity with GitHub Pages static hosting)."""
@@ -1052,6 +1080,35 @@ async function sourceAvail(){
     document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
+const EV_COL={'execution-verified':'var(--aff)','exploit-generated':'#e08d5b','build-only':'var(--und)','failed':'var(--ink3)'};
+async function execVerify(){
+  const box=document.getElementById('ev-results');if(!box)return;
+  try{
+    const d=await tryJson(['/api/verify_results','verify_results.json']);
+    const recs=(d&&d.records)||[];const s=(d&&d.summary)||{};
+    const bo=(s.by_outcome)||{};
+    document.getElementById('ev-hint').textContent=recs.length?recs.length+' CVEs run':'';
+    document.getElementById('ev-kpis').innerHTML=
+      '<div class="kpi"><b style="color:'+EV_COL['execution-verified']+'">'+(bo['execution-verified']||0)+'</b><span>execution-verified</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['exploit-generated']+'">'+(bo['exploit-generated']||0)+'</b><span>exploit-generated</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['build-only']+'">'+(bo['build-only']||0)+'</b><span>build-only</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['failed']+'">'+(bo['failed']||0)+'</b><span>build failed</span></div>';
+    if(!recs.length){box.innerHTML='<span class="hint">no runs yet.</span>';return;}
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Outcome</th><th style="text-align:center">Build</th><th style="text-align:center">Exploit</th><th style="text-align:center">Verify</th><th style="text-align:center">Time</th><th>Evidence</th></tr></thead><tbody>';
+    const ck=v=>v?'&#10003;':'&#8211;';
+    for(const r of recs){const c=EV_COL[r.outcome]||'var(--ink3)';const st=r.stages||{};
+      const log=(r.evidence&&r.evidence.run_log)||'';
+      const secs=r.seconds?(r.seconds>=60?Math.round(r.seconds/60)+'m':r.seconds+'s'):'';
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+r.cve+'" target="_blank" rel="noopener">'+r.cve+'</a></td>'
+        +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+esc(r.outcome)+'</span></td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.build)+'</td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.exploit)+'</td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.verify)+'</td>'
+        +'<td class="mono hint" style="text-align:center">'+secs+'</td>'
+        +'<td>'+(log?'<a class="mono" href="'+esc(log)+'" target="_blank" rel="noopener">run log &#8599;</a>':'<span class="hint">&#8211;</span>')+'</td></tr>';}
+    box.innerHTML=h+'</tbody></table></div>';
+  }catch(e){box.innerHTML='<span class="err">verification results unavailable</span>';}
+}
 function yearBars(y,noteTotal,noteLabel){
   const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
   const pre=keys.filter(k=>k<2010).reduce((a,k)=>a+y[k],0);
@@ -1323,6 +1380,7 @@ if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
+if(document.getElementById('ev-kpis'))execVerify();
 // ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
 let SBOM_INDEX=[], CVE2SBOM={};
 let CVE2ADV={};
@@ -1451,7 +1509,11 @@ COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source Code A
   <div id="sa-vendors"></div>
   <div id="sa-devtype"></div>
 </div>
-<div id="sa-cwe" style="margin-top:16px"></div></div>"""
+<div id="sa-cwe" style="margin-top:16px"></div></div>
+<div class="card"><h3 style="margin:0 0 4px">Execution verification <span class="hint" id="ev-hint"></span></h3>
+<p class="hint" style="margin:0 0 12px">Per-CVE results from running each collected source through the engine (rebuild the vulnerable version &rarr; reproduce &rarr; run). Click a row's log to see the real run evidence.</p>
+<div id="ev-kpis" class="kpis">loading…</div>
+<div id="ev-results" style="margin-top:14px"></div></div>"""
 
 TREE_HTML = """<div class="card" id="vextree" style="display:none">
 <h3 style="margin:0 0 4px">VEX decision tree &mdash; source-uncollectable CVEs <span class="hint" id="tree-count"></span></h3>

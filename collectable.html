@@ -134,6 +134,10 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <div id="sa-devtype"></div>
 </div>
 <div id="sa-cwe" style="margin-top:16px"></div></div>
+<div class="card"><h3 style="margin:0 0 4px">Execution verification <span class="hint" id="ev-hint"></span></h3>
+<p class="hint" style="margin:0 0 12px">Per-CVE results from running each collected source through the engine (rebuild the vulnerable version &rarr; reproduce &rarr; run). Click a row's log to see the real run evidence.</p>
+<div id="ev-kpis" class="kpis">loading…</div>
+<div id="ev-results" style="margin-top:14px"></div></div>
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
 </main>
@@ -322,6 +326,35 @@ async function sourceAvail(){
     dt+='</tbody></table><div class="hint" style="margin-top:5px">One CVE can span multiple types (shared component).</div>';
     document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
+}
+const EV_COL={'execution-verified':'var(--aff)','exploit-generated':'#e08d5b','build-only':'var(--und)','failed':'var(--ink3)'};
+async function execVerify(){
+  const box=document.getElementById('ev-results');if(!box)return;
+  try{
+    const d=await tryJson(['/api/verify_results','verify_results.json']);
+    const recs=(d&&d.records)||[];const s=(d&&d.summary)||{};
+    const bo=(s.by_outcome)||{};
+    document.getElementById('ev-hint').textContent=recs.length?recs.length+' CVEs run':'';
+    document.getElementById('ev-kpis').innerHTML=
+      '<div class="kpi"><b style="color:'+EV_COL['execution-verified']+'">'+(bo['execution-verified']||0)+'</b><span>execution-verified</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['exploit-generated']+'">'+(bo['exploit-generated']||0)+'</b><span>exploit-generated</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['build-only']+'">'+(bo['build-only']||0)+'</b><span>build-only</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['failed']+'">'+(bo['failed']||0)+'</b><span>build failed</span></div>';
+    if(!recs.length){box.innerHTML='<span class="hint">no runs yet.</span>';return;}
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Outcome</th><th style="text-align:center">Build</th><th style="text-align:center">Exploit</th><th style="text-align:center">Verify</th><th style="text-align:center">Time</th><th>Evidence</th></tr></thead><tbody>';
+    const ck=v=>v?'&#10003;':'&#8211;';
+    for(const r of recs){const c=EV_COL[r.outcome]||'var(--ink3)';const st=r.stages||{};
+      const log=(r.evidence&&r.evidence.run_log)||'';
+      const secs=r.seconds?(r.seconds>=60?Math.round(r.seconds/60)+'m':r.seconds+'s'):'';
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+r.cve+'" target="_blank" rel="noopener">'+r.cve+'</a></td>'
+        +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+esc(r.outcome)+'</span></td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.build)+'</td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.exploit)+'</td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.verify)+'</td>'
+        +'<td class="mono hint" style="text-align:center">'+secs+'</td>'
+        +'<td>'+(log?'<a class="mono" href="'+esc(log)+'" target="_blank" rel="noopener">run log &#8599;</a>':'<span class="hint">&#8211;</span>')+'</td></tr>';}
+    box.innerHTML=h+'</tbody></table></div>';
+  }catch(e){box.innerHTML='<span class="err">verification results unavailable</span>';}
 }
 function yearBars(y,noteTotal,noteLabel){
   const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
@@ -594,6 +627,7 @@ if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
+if(document.getElementById('ev-kpis'))execVerify();
 // ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
 let SBOM_INDEX=[], CVE2SBOM={};
 let CVE2ADV={};
