@@ -32,6 +32,7 @@ dump("by_year.json", {"total_cves": sum(S.by_year.values()), "by_year": S.by_yea
 dump("advisories.json", S.advisories)
 ready = [c for c in S.candidates.get("candidates", []) if c.get("status") == "ready"]
 dump("candidates_ready.json", {"count": len(ready)})
+dump("verify_results.json", S.verify)
 dump("cve_index.json", list(S.cve_index.values()))
 dump("cve_kb.json", {"components": S.kb_comps})   # CVSS-enriched KB
 dump("advisories_list.json", {"count": len(S.advisories_list),

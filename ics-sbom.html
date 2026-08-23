@@ -322,6 +322,35 @@ async function sourceAvail(){
     document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
+const EV_COL={'execution-verified':'var(--aff)','exploit-generated':'#e08d5b','build-only':'var(--und)','failed':'var(--ink3)'};
+async function execVerify(){
+  const box=document.getElementById('ev-results');if(!box)return;
+  try{
+    const d=await tryJson(['/api/verify_results','verify_results.json']);
+    const recs=(d&&d.records)||[];const s=(d&&d.summary)||{};
+    const bo=(s.by_outcome)||{};
+    document.getElementById('ev-hint').textContent=recs.length?recs.length+' CVEs run':'';
+    document.getElementById('ev-kpis').innerHTML=
+      '<div class="kpi"><b style="color:'+EV_COL['execution-verified']+'">'+(bo['execution-verified']||0)+'</b><span>execution-verified</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['exploit-generated']+'">'+(bo['exploit-generated']||0)+'</b><span>exploit-generated</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['build-only']+'">'+(bo['build-only']||0)+'</b><span>build-only</span></div>'+
+      '<div class="kpi"><b style="color:'+EV_COL['failed']+'">'+(bo['failed']||0)+'</b><span>build failed</span></div>';
+    if(!recs.length){box.innerHTML='<span class="hint">no runs yet.</span>';return;}
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Outcome</th><th style="text-align:center">Build</th><th style="text-align:center">Exploit</th><th style="text-align:center">Verify</th><th style="text-align:center">Time</th><th>Evidence</th></tr></thead><tbody>';
+    const ck=v=>v?'&#10003;':'&#8211;';
+    for(const r of recs){const c=EV_COL[r.outcome]||'var(--ink3)';const st=r.stages||{};
+      const log=(r.evidence&&r.evidence.run_log)||'';
+      const secs=r.seconds?(r.seconds>=60?Math.round(r.seconds/60)+'m':r.seconds+'s'):'';
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+r.cve+'" target="_blank" rel="noopener">'+r.cve+'</a></td>'
+        +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+esc(r.outcome)+'</span></td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.build)+'</td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.exploit)+'</td>'
+        +'<td class="mono" style="text-align:center">'+ck(st.verify)+'</td>'
+        +'<td class="mono hint" style="text-align:center">'+secs+'</td>'
+        +'<td>'+(log?'<a class="mono" href="'+esc(log)+'" target="_blank" rel="noopener">run log &#8599;</a>':'<span class="hint">&#8211;</span>')+'</td></tr>';}
+    box.innerHTML=h+'</tbody></table></div>';
+  }catch(e){box.innerHTML='<span class="err">verification results unavailable</span>';}
+}
 function yearBars(y,noteTotal,noteLabel){
   const keys=Object.keys(y).map(Number).sort((a,b)=>a-b);
   const pre=keys.filter(k=>k<2010).reduce((a,k)=>a+y[k],0);
@@ -593,6 +622,7 @@ if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
+if(document.getElementById('ev-kpis'))execVerify();
 // ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
 let SBOM_INDEX=[], CVE2SBOM={};
 let CVE2ADV={};
