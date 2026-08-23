@@ -134,6 +134,10 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <div id="sa-devtype"></div>
 </div>
 <div id="sa-cwe" style="margin-top:16px"></div></div>
+<div class="card"><h3 style="margin:0 0 4px">Engine coverage <span class="hint" id="cov-hint"></span></h3>
+<p class="hint" style="margin:0 0 12px">Of the source-collectable CVEs, how many can be run through the execution-verification engine, and why the rest cannot.</p>
+<div id="cov-kpis" class="kpis">loading…</div>
+<div id="cov-why" style="margin-top:14px"></div></div>
 <div class="card"><h3 style="margin:0 0 4px">Execution verification <span class="hint" id="ev-hint"></span></h3>
 <p class="hint" style="margin:0 0 12px">Per-CVE results from running each collected source through the engine (rebuild the vulnerable version &rarr; reproduce &rarr; run). Click a row's log to see the real run evidence.</p>
 <div id="ev-kpis" class="kpis">loading…</div>
@@ -326,6 +330,31 @@ async function sourceAvail(){
     dt+='</tbody></table><div class="hint" style="margin-top:5px">One CVE can span multiple types (shared component).</div>';
     document.getElementById('sa-devtype').innerHTML=dt;
   }catch(e){document.getElementById('sa-kpis').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
+}
+const COV_REASON={'linux kernel':'Linux kernel — full-source build infeasible in the sandbox (hundreds of MB, multi-hour compile).','no source tag':'Upstream release tag/source no longer obtainable from the repository.','download failed':'Upstream source download failed (no reachable archive).','no engine source':'No buildable source archive could be resolved for the affected version.'};
+async function coverage(){
+  const box=document.getElementById('cov-why');if(!box)return;
+  try{
+    const d=await tryJson(['/api/verify_coverage','verify_coverage.json']);
+    if(!d||!d.total_collectable){box.innerHTML='<span class="hint">coverage unavailable</span>';return;}
+    document.getElementById('cov-hint').textContent=d.total_collectable+' source-collectable';
+    document.getElementById('cov-kpis').innerHTML=
+      '<div class="kpi"><b>'+d.total_collectable+'</b><span>collectable CVEs</span></div>'+
+      '<div class="kpi"><b style="color:var(--safe)">'+d.attemptable+'</b><span>engine-attemptable</span></div>'+
+      '<div class="kpi"><b style="color:var(--und)">'+d.not_doable+'</b><span>not doable</span></div>';
+    const by=d.by_reason||{};
+    let h='<div class="ct">Why '+d.not_doable+' cannot run <span class="hint">(source unobtainable / build infeasible)</span></div>';
+    const mx=Math.max(1,...Object.values(by));
+    h+='<div class="cwe" style="margin-bottom:10px">';
+    for(const k of Object.keys(by))
+      h+='<div class="cwerow"><span>'+esc(k)+'</span><span class="cwebar"><i style="width:'+(100*by[k]/mx)+'%;background:var(--und)"></i></span><b>'+by[k]+'</b></div>';
+    h+='</div>';
+    h+='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Component</th><th>Reason</th></tr></thead><tbody>';
+    for(const x of (d.excluded||[]))
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+x.cve+'" target="_blank" rel="noopener">'+x.cve+'</a></td><td class="hint">'+esc(x.component||'')+'</td><td class="hint">'+esc(x.reason||COV_REASON[x.category]||x.category)+'</td></tr>';
+    h+='</tbody></table></div>';
+    box.innerHTML=h;
+  }catch(e){box.innerHTML='<span class="err">coverage unavailable</span>';}
 }
 const EV_COL={'execution-verified':'var(--aff)','exploit-generated':'#e08d5b','build-only':'var(--und)','failed':'var(--ink3)'};
 async function execVerify(){
@@ -627,6 +656,7 @@ if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
+if(document.getElementById('cov-kpis'))coverage();
 if(document.getElementById('ev-kpis'))execVerify();
 // ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
 let SBOM_INDEX=[], CVE2SBOM={};

@@ -254,8 +254,10 @@ def scrape_advisories(cve, nvd, limit=3):
             out.append({"url": u, "content": txt[:4000]})
     return out
 
-def load_targets():
-    """The tier-A CVEs missing a code pair, with component + latest affected version."""
+def load_targets(include_have=False):
+    """The tier-A CVEs missing a code pair, with component + latest affected version.
+    include_have=True also includes CVEs that already have a code_evidence pair (so they
+    can be given an engine cache entry / full source for the build stage)."""
     ce = json.load(open(CE, encoding="utf-8")) if os.path.exists(CE) else {}
     have = {k for k, v in ce.items() if isinstance(v, dict) and v.get("vuln_code")}
     rows = list(csv.DictReader(open(FIND, encoding="utf-8-sig")))
@@ -264,7 +266,7 @@ def load_targets():
     for r in rows:
         if r["cve"] not in cwe_of and r.get("cwe"):
             cwe_of[r["cve"]] = r["cwe"]
-    miss = tierA - have
+    miss = tierA if include_have else (tierA - have)
     cve_cv = collections.defaultdict(lambda: collections.defaultdict(list))
     for comp, spec in OSS.items():
         for ver, cl in spec["versions"]:
@@ -358,10 +360,12 @@ def main():
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--only", default=None, help="restrict to one component key")
     ap.add_argument("--cve", default=None, help="one CVE id")
+    ap.add_argument("--include-collected", action="store_true",
+                    help="also process tier-A CVEs that already have a code_evidence pair")
     a = ap.parse_args()
 
     nvd = json.load(open(NVD, encoding="utf-8")) if os.path.exists(NVD) else {}
-    tgts = load_targets()
+    tgts = load_targets(include_have=a.include_collected)
     items = sorted(tgts.items())
     if a.only:
         items = [(c, m) for c, m in items if m["component"] == a.only]
