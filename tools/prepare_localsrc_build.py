@@ -51,14 +51,19 @@ def main():
         if not tops:
             print("skip (empty snapshot):", cve); continue
         top = tops[0]
-        out_zip = os.path.join(LOCALSRC, cve + ".zip")
+        # engine derives project_name = url.split("//")[1].split("/")[2], i.e. it assumes a
+        # GitHub-style path .../<owner>/<repo>/...  -> mirror that depth so [2] = project.
+        proj = top.rsplit("-", 1)[0]
+        subdir = os.path.join(LOCALSRC, proj, proj)
+        os.makedirs(subdir, exist_ok=True)
+        out_zip = os.path.join(subdir, cve + ".zip")
         zip_dir(os.path.join(snap, top), top, out_zip)
         meta = NVD.get(cve, {})
         cache[cve] = {
             "description": meta.get("description", ""),
             "cwes": [{"id": c, "value": c} for c in meta.get("cwes", [])],
             "sw_version": top,
-            "sw_version_wget": f"http://host.docker.internal:{PORT}/{cve}.zip",
+            "sw_version_wget": f"http://host.docker.internal:{PORT}/{proj}/{proj}/{cve}.zip",
             "patch_commits": [],
             "sec_adv": [],
         }
