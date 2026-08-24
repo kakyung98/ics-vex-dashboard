@@ -114,6 +114,11 @@ _VENDOR_CANON = {
     "honeywell international": "Honeywell",
 }
 
+# CVEs that are OSS-attributed (tier A) but whose affected-version source is NOT
+# actually obtainable, so they should not count as "source-collectable".
+# goahead 3.6.5: the upstream release tag was removed from embedthis/goahead.
+UNCOLLECTABLE_CVES = {"CVE-2017-17562", "CVE-2019-5096", "CVE-2019-5097"}
+
 def _norm_vendor(v):
     """Clean whitespace/zero-width duplicates and canonicalize known vendor variants
     (e.g. '\\u200bSiemens' -> 'Siemens'; 'Rockwell' / 'Rockwell Automation' -> one name)."""
@@ -302,7 +307,7 @@ class Store:
                 "cvss": self.cvss.get(cve),
                 "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
                 "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
-                "source_available": any(r.get("tier") == "A" for r in rows),
+                "source_available": any(r.get("tier") == "A" for r in rows) and cve not in UNCOLLECTABLE_CVES,
                 "has_code_pair": cve in self.pairs,
                 "vendors": sorted({_norm_vendor(r.get("vendor")) for r in rows}),
                 "device_types": sorted({_device_type(r.get("device")) for r in rows}),
@@ -332,6 +337,8 @@ class Store:
         a_worst = {}
         ven_cves, dtype_cves = defaultdict(set), defaultdict(set)
         for cve, rows in self.by_cve.items():
+            if cve in UNCOLLECTABLE_CVES:
+                continue
             a_rows = [r for r in rows if r.get("tier") == "A"]
             if not a_rows:
                 continue
