@@ -20,11 +20,15 @@ if (-not (Test-Path $cache)) { throw "cache not found: $cache" }
 docker run --rm `
   --add-host host.docker.internal:host-gateway `
   -v "$engine\src\agents:/src/agents" `
+  -v "$engine\src\toolbox:/src/toolbox" `
+  -v "$engine\src\main.py:/src/main.py" `
   -v "$engine\webapp\data:/data" `
   -v "$engine\webapp\shared:/shared" `
   -v "//var/run/docker.sock:/var/run/docker.sock" `
   -w /src `
   -e MODEL=ollama14 `
+  -e TIMEOUT=2700 `
+  -e EXPLOIT_TIMEOUT=3600 `
   -e LOCAL_LLM_BASE_URL=$v1 `
   -e LOCAL_LLM_API_KEY=ollama `
   -e "LOCAL_LLM_MODELS=ollama14=$build,ollama32=$exploit" `
