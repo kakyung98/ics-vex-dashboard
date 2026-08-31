@@ -126,13 +126,19 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </aside>
 <main class="main">
 <h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. The path splits on one question — <b>can the vulnerable source code be obtained?</b> Source-available CVEs are confirmed by <b>execution</b>: the affected version is rebuilt and a reproducer is run against it, yielding an <b>execution-verified</b> verdict. Source-uncollectable CVEs are held as <b>under_investigation</b> with an <b>estimation</b> and ranked by an <b>SSVC</b> priority.</p>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or <b>execution</b> (the affected version is rebuilt and a reproducer is run against it). Anything else is held as <b>under_investigation</b> with an <b>estimation</b> and an <b>SSVC</b> priority. <b>Deployment context never sets status</b> — no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
 
 <div class="card">
 <div class="vm-flow">
   <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
   <div class="vm-arrow">&darr;</div>
   <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
   <div class="vm-arrow">&darr;</div>
   <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
 
@@ -168,6 +174,16 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </div>
 
 <div class="vm-cols">
+  <div class="card">
+    <h3 style="margin:0 0 6px">SBOM-evidence path (<span class="mono">component_not_present</span>)</h3>
+    <p class="hint" style="margin:0 0 8px">The only CISA justification that needs no source code and no version comparison — which matters, because this corpus records every component version as <span class="mono">NOASSERTION</span>.</p>
+    <ul class="vm-list">
+      <li><b>Component absence</b>: an advisory names a component this SBOM does not contain &rarr; <span class="mono">not_affected</span>, evidenced by the SBOM itself.</li>
+      <li><b>Model absence</b>: CISA splits verdicts by product model inside one advisory (ICSA-25-191-06 marks SIPROTEC 5 CP300 affected, CP200 not). <span class="mono">tools/inject_product_variants.py</span> lifts <span class="mono">product_tree</span> into the SBOM so those variants exist as components; an asset whose model is absent from the affected list is <span class="mono">not_affected</span>.</li>
+      <li><b>Measured</b>: against the 18 labelled pairs in <span class="mono">data/gt_icsa</span> — model-level recall <b>1.000</b>, precision 0.291, and <b>10/10</b> on pairs CISA itself labelled <span class="mono">component_not_present</span>. The 8 misses all require source-level reachability.</li>
+      <li>The evaluation withholds <span class="mono">known_not_affected</span> and <span class="mono">flags[].label</span> from its inputs, so the derivation is independent rather than a restatement of the label.</li>
+    </ul>
+  </div>
   <div class="card">
     <h3 style="margin:0 0 6px">Source-available path (execution-based verification)</h3>
     <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is <b>confirmed by execution</b> — the affected version is actually built and a reproducer is run against it. This is the strongest VEX evidence, not metadata inference.</p>
