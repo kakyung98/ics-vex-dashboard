@@ -28,8 +28,81 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 
 ---
 
+## 왜 필요한가 — 공개 ICS 생태계에 VEX 는 사실상 없다
+
+동기를 추정이 아니라 **전수조사**로 확인했다. CISA 공식 CSAF 저장소
+([cisagov/CSAF](https://github.com/cisagov/CSAF), 전체 커밋 이력 963개)를 clone 해
+OT 어드바이저리 **3,893건을 전부 파싱**한 결과(2026-08-31 기준):
+
+| 항목 | 건수 | 비율 |
+|---|---|---|
+| `document.category == "csaf_vex"` | **0** | **0%** |
+| `document.category == "csaf_security_advisory"` | 3,893 | 100% |
+| `known_affected` | 3,890 | 99.9% |
+| `fixed` | 134 | 3.4% |
+| `known_not_affected` | 25 | 0.64% |
+| **`flags` (CISA justification)** | **12** | **0.31%** |
+| `under_investigation` | 0 | 0% |
+
+> 같은 저장소의 **IT** 어드바이저리에는 `csaf_vex` 문서가 89건 있다.
+> **CISA 는 IT 에는 VEX 프로파일을 쓰고 OT 에는 한 건도 쓰지 않는다.**
+
+**벤더별** (OT, `flags` 사용):
+
+| 벤더 | OT 어드바이저리 | `flags` | `known_not_affected` |
+|---|---|---|---|
+| Siemens | 965 | **11 (1.1%)** | 14 |
+| Rockwell | 252 | 0 | 0 |
+| Schneider | 233 | 0 | 5 |
+| Mitsubishi / Delta / Advantech / GE / Moxa / AVEVA / ABB / Hitachi | 631 | 0 | 2 |
+
+**사용된 justification 은 전부 코드·빌드 축이다:**
+
+```
+component_not_present                              10
+vulnerable_code_not_in_execute_path                 5
+vulnerable_code_not_present                         4
+vulnerable_code_cannot_be_controlled_by_adversary    0   <- 환경 기반
+inline_mitigations_already_exist                     0   <- 환경 기반
+```
+
+→ 실제 ICS 생태계가 `not_affected` 에 동원한 근거는 **100% 소스코드/빌드 사실**이며,
+배치 환경을 근거로 삼은 사례는 **0건**이다. 이 프로젝트가 코드 축을 status 로,
+운영 맥락을 SSVC 우선순위로 분리하는 근거가 여기에 있다.
+
+### `flags` 는 언제부터 나왔나 (커밋 이력 추적)
+
+| 시점 | 사건 |
+|---|---|
+| 2023-09-07 | cisagov/CSAF 저장소 개설 |
+| **2024-08-22** | **OT 최초** `flags` — `icsa-24-235-03` (Mobotix), 발행과 동시 |
+| 2024-11-27 | IT 쪽 `csaf_vex` 프로파일 최초 등장 |
+| **2025-06-12** | **소급 백필** — 기존 어드바이저리 2건에 같은 날 `flags` 추가 |
+| 2025-08-14 / 2026-01-15 / 2026-05-14 | 추가 백필 (각 1건) |
+| 2026-02-12 이후 | 신규 발행 시점에 `flags` 동반 (2026년 5건 전부) |
+
+2010–2023 의 OT 어드바이저리 2,155 건에는 `flags` 가 **한 건도 없다**.
+연도별 채택률: **2024 년 3/409 (0.7%) → 2025 년 4/482 (0.8%) → 2026 년 5/345 (1.4%)**.
+
+> 주의 — CSAF 에는 `justification` 이라는 필드명이 없다.
+> CISA justification 이 들어가는 자리는 **`vulnerabilities[].flags[].label`** 이다
+> (OpenVEX 는 `justification`, CycloneDX 는 `analysis.justification`).
+> `flags` 는 VEX 프로파일 전용이 아니라 CSAF 공통 필드라 일반 어드바이저리에도 실릴 수 있고,
+> CISA 의 HTML 어드바이저리 페이지에는 렌더링되지 않는다 — 그래서 찾기 어렵다.
+
+**대표 사례** — [ICSA-25-191-06](https://www.cisa.gov/news-events/ics-advisories/icsa-25-191-06) /
+[SSA-904646](https://cert-portal.siemens.com/productcert/csaf/ssa-904646.json) (CVE-2025-40742, CWE-598):
+SIPROTEC 5 64 개 모델을 **CP300/CP100 = affected 44 / CP200 = not_affected 20** 으로 가르고,
+20 개 전부에 `component_not_present` 를 붙였다. 판정 기준은 **하드웨어 세대·컴포넌트 구성**이지
+고객 환경이 아니다. 다만 Siemens 는 *어떤* 컴포넌트가 없는지는 밝히지 않는다 —
+**주장이지 검증 가능한 증거가 아니다.** 이 빈칸이 본 시스템의 기여점이다.
+(Siemens 자체 포털 원본에도 `flags` 가 그대로 있으므로 CISA 가 덧붙인 것이 아니다.)
+
+---
+
 ## 무엇인가
 
+- **축**: **ICSA 어드바이저리** — ICSA 1건 = SBOM 1개 = VEX 문서 1개 (CISA CSAF 와 동일 축)
 - **입력**: CycloneDX SBOM (ICS 자산의 소프트웨어 명세)
 - **출력**: 컴포넌트별 CVE 식별 + VEX 판정(`영향 가능`/`비영향`/`조사 필요`) + 표준 justification + 판정 근거 문장
 - **코드 확보 여부가 경로를 가른다**:
@@ -37,6 +110,7 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 | 상태 | 경로 | VEX |
 |---|---|---|
 | **소스코드 확보** | 실행검증: 취약버전 빌드 → 재현(reproducer) 합성 → 실행 → 트리거 확인 | 재현 트리거 시 **`execution-verified` 확정**; 빌드만 되면 `build-only` → `under_investigation` |
+| **SBOM 근거** | VDR/권고가 지목한 컴포넌트가 SBOM 에 부재 | `not_affected` + **`component_not_present`** 확정 (버전 대조 불필요 → `NOASSERTION` 이어도 성립) |
 | **코드 미확보** (11,321 · 99.87%) | `under_investigation` 고정 + estimation + SSVC | 코드 근거 없음 → 상태 고정, 추정치·우선순위만 부여 |
 
 > ⚠️ **`tier` 컬럼 주의**: SBOM 속성명이 `component:source-availability` 라서 소스 확보로 읽히지만,
@@ -65,11 +139,70 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
     (배치 노출도) × Automatable(CVSS AV) × Human Impact → `defer`/`scheduled`/`out-of-cycle`/`immediate`.
     트리의 운영 맥락(노출도)을 SSVC 입력으로 흘려보내 우선순위화에 재사용한다.
 
+### 축 = ICSA 어드바이저리 (2026-08 개편)
+
+CISA 는 **ICSA 1건당 CSAF 문서 1개**를 발행한다. 본 시스템도 같은 축을 쓴다:
+
+```
+ICSA 1건  ->  역방향 SBOM 1개 (reverse_sbom/<icsa-id>_SBOM-CVE.json)  ->  VEX 문서 1개
+```
+
+| 축 | 개수 | 성격 |
+|---|---|---|
+| ICSA 어드바이저리 (수집) | **3,767** | 2010–2026 전량 |
+| → CVE 포함 = SBOM 생성 | **3,695** | **문서 축** — VEX 1개씩 |
+| ICSA × CVE = statement | **13,025** | **판정 축** — VEX statement 와 1:1 |
+| 고유 CVE | 11,336 | 취약점 모집단 |
+
+ICSA 당 statement 는 **중앙값 1개, 최대 490개**다. 그래서 CVE 단위 worst-case 집계
+(어느 한 자산이 affected 면 CVE 전체가 affected)는 폐기했다 — VEX 는 product × vulnerability
+단위이며, 같은 CVE 가 제품에 따라 갈리는 것이 VEX 의 존재 이유다.
+
+부수 효과로 파일명이 자연 유일키(ICSA id)가 되어, 이전에 제품명 표기 차이
+("SiPass integrated" vs "SiPass Integrated")로 **SBOM 이 조용히 덮어써지며 장비 50대와
+그 CVE 가 유실되던 버그**가 원리적으로 사라졌다.
+
+### CISA 원본 CSAF 와의 대조 (`tools/compare_cisa_csaf.py`)
+
+축이 ICSA 이므로 우리 산출물과 CISA 원본이 파일 단위로 대응한다:
+
+```bash
+git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF
+python tools/compare_cisa_csaf.py --csaf-repo /tmp/CSAF
+```
+
+현재 결과:
+
+```
+우리 ICSA        : 3695
+CISA OT CSAF     : 3893
+대조 가능 ICSA   : 3664
+CISA 문서 프로파일: {'csaf_security_advisory': 3664}    <- csaf_vex 0건
+
+CISA 가 justification 을 남긴 ICSA : 12
+대조된 (ICSA, CVE) 쌍              : 18
+우리도 not_affected                : 0 (0%)
+```
+
+**이 0% 는 숨기지 않는다.** 원인이 구조적이기 때문이다 — 우리 SBOM 은 어드바이저리에서
+*역으로* 구성되므로, 어드바이저리가 언급한 컴포넌트만 들어 있다. 즉 "그 컴포넌트가 없다"는
+사실을 담을 수 없어 `component_not_present` 가 원리적으로 발화하지 않는다.
+게다가 CISA 는 같은 ICSA 안에서 **제품 모델별로** 판정을 가르는데(SIPROTEC 5: CP300 44개
+affected / CP200 20개 not_affected), 우리 역방향 SBOM 에는 **모델 변형 단위가 없다.**
+
+→ 이 18 쌍이 현재 시스템의 **외부 정답지이자 미달 지점**이다. 좁히려면 CISA CSAF 의
+`product_tree` 를 역방향 SBOM 에 주입해 모델 변형 단위를 만들어야 한다.
+
 ## ⚠️ 데이터 성격 (정직한 고지)
 
 - **진짜**: 장비↔CVE↔CWE↔CVSS 매핑은 CISA ICS-CERT 공식 (3,765 어드바이저리, 11,336 CVE), KEV·EPSS 실신호, OSS 취약/패치 실코드(34 CVE, GitHub 픽스 커밋)
 - **합성**: 장비 주변 컴포넌트 인벤토리, 배치 노출도(`exposure_synthetic: true` 로 표시)
 - **추정**: 학습 타깃 `label` 의 99.96% 는 확정 판정이 아니라 **AV 기반 2차 추정치**다.
+  이 추정치는 **VEX status 로 승격되지 않는다** — 배치 노출도는 CISA justification 5종 중
+  어느 것의 근거도 아니고(`cannot_be_controlled_by_adversary` 는 taint 근거를,
+  `inline_mitigations_already_exist` 는 제품 내부 완화를 요구한다), 여기의 노출도는 합성값이다.
+  따라서 코퍼스 통계는 **증거 기반 status** 와 **추정치** 를 분리해 표시한다
+  (증거 기반: `under_investigation` 11,335 / `affected` 1 / `not_affected` 0).
   실행 검증으로 확정된 건은 5건(0.04%, zlib CVE-2018-25032)뿐이다.
   주석자 불일치 노이즈(10%)는 이 추정치에만 적용하며, 확정 건은 흔들지 않는다.
 - **SBOM 이 모든 컴포넌트 버전을 `NOASSERTION` 으로 기록**하므로 버전 범위 대조는 불가능하다.
