@@ -19,6 +19,7 @@ CVE 배치 규칙(A~E 소스등급 라우팅):
 import csv
 import json
 import os
+import hashlib
 import re
 import sys
 import uuid
@@ -87,9 +88,48 @@ def device_identity(adv):
     return vend, prod
 
 
+# 장비 키 정규화 — 같은 제품이 표기만 달라 서로 다른 장비로 갈리는 것을 막는다.
+# 예: "SiPass integrated" vs "SiPass Integrated",
+#     "SIMATIC WinCC Vulnerabilities (UPDATE A)" vs "... (Update A)",
+#     "WebAccess/SCADA" vs "WebAccess SCADA".
+# 이 정규화가 없으면 두 항목이 별개 장비로 집계됐다가 slug() 단계에서
+# 같은 파일명으로 충돌해 한쪽 SBOM 이 덮어써진다(장비 50대·해당 CVE 유실).
+def device_key(vend, prod):
+    k = re.sub(r"[^0-9a-z]+", " ", (prod or "").lower()).strip()
+    return (norm_vendor(vend or "").lower(), k)
+
+
 # ---------------------------------------------------------------------------
 # OSS 귀속 (CVE -> OSS 컴포넌트)
 # ---------------------------------------------------------------------------
+# CISA/CSAF justification -> CycloneDX analysis.justification 어휘
+_CDX_JUST = {
+    "component_not_present": "code_not_present",
+    "vulnerable_code_not_present": "code_not_present",
+    "vulnerable_code_not_in_execute_path": "code_not_reachable",
+    "vulnerable_code_cannot_be_controlled_by_adversary": "requires_configuration",
+    "inline_mitigations_already_exist": "protected_by_mitigating_control",
+}
+
+
+def load_upstream_vex():
+    """CISA 원본 CSAF 가 이미 판정한 건을 읽는다 (data/gt_icsa/manifest.json).
+
+    ICSA -> {cve: [label, ...]}. CISA/벤더가 `vulnerabilities[].flags[].label` 로
+    justification 을 명시한 어드바이저리만 들어 있다(공개 OT 코퍼스 전체에서 12건).
+    우리가 유도한 판정이 아니라 **상류(upstream) 주장**이므로 출처를 반드시 표시해
+    자체 판정과 섞이지 않게 한다.
+    """
+    p = os.path.join(BASE, "data", "gt_icsa", "manifest.json")
+    if not os.path.exists(p):
+        return {}
+    try:
+        man = json.load(open(p, encoding="utf-8"))
+    except Exception:
+        return {}
+    return {r["advisory_id"]: r.get("flags", {}) for r in man.get("tier1", []) if r.get("flags")}
+
+
 def build_oss_index():
     by_cve = {}
     for key, spec in OSS.items():
@@ -159,17 +199,26 @@ def main():
             signals = json.load(f)
 
     oss_by_cve, oss_names, oss_rx = build_oss_index()
+    upstream = load_upstream_vex()
+    if upstream:
+        print("upstream VEX (CISA CSAF flags): %d advisories / %d CVEs"
+              % (len(upstream), sum(len(v) for v in upstream.values())))
     os.makedirs(OUT_SBOM, exist_ok=True)
     os.makedirs(OUT_DATA, exist_ok=True)
 
-    # 장비별로 어드바이저리 그룹핑
-    devices = {}   # (vendor, product) -> {vendor, product, advisories[], vulns{cve:meta}}
+    # --- 축: ICSA 어드바이저리 ---
+    # CISA 는 ICSA 1건당 CSAF 문서 1개를 발행한다. 우리 산출물도 같은 축을 쓰면
+    # 어드바이저리 단위로 CISA 원본 CSAF 와 1:1 대조가 가능해진다
+    # (cisagov/CSAF 의 csaf_files/OT/white/<year>/<icsa-id>.json).
+    # 부수 효과로 advisory_id 가 자연 유일키라 파일명 충돌도 원천 소멸한다.
+    devices = {}   # advisory_id -> {advisory_id, vendor, product, advisories[], vulns{cve:meta}}
     for adv in advisories:
-        if not adv.get("cves"):
-            continue
+        # CVE 가 없는 어드바이저리(Stuxnet 완화 권고, 벤더 계정 주의 등)도 SBOM 을 만든다.
+        # 축을 ICSA 전량으로 맞춰야 CISA CSAF 와 파일 단위로 빠짐없이 대응한다.
+        # 이런 SBOM 은 vulnerabilities[] 가 비고 statement 도 0건이 된다.
         vend, prod = device_identity(adv)
-        key = (vend, prod)
-        d = devices.setdefault(key, {"vendor": vend, "product": prod,
+        key = adv["advisory_id"]
+        d = devices.setdefault(key, {"advisory_id": key, "vendor": vend, "product": prod,
                                      "advisories": [], "vulns": {}, "oss_hits": set()})
         d["advisories"].append(adv["advisory_id"])
         # OSS 텍스트 탐지 (어드바이저리 단위)
@@ -194,13 +243,22 @@ def main():
                 m2["source_advisory"] = adv["advisory_id"]
                 m2["adv_oss"] = sorted(adv_oss)
                 m2["adv_mode_av"] = adv_mode_av
+                # 상류(CISA CSAF)가 이미 justification 을 명시한 CVE 는 그대로 싣는다.
+                up = (upstream.get(adv["advisory_id"]) or {}).get(cve)
+                if up:
+                    m2["upstream_vex"] = {"status": "not_affected",
+                                          "justification": up[0],
+                                          "source": "cisa-csaf",
+                                          "advisory": adv["advisory_id"]}
                 d["vulns"][cve] = m2
 
     findings = []
     dev_rows = []
     n_written = 0
-    for (vend, prod), d in sorted(devices.items()):
-        dev_slug = slug(vend + "-" + prod)
+    for _key, d in sorted(devices.items()):
+        vend, prod = d["vendor"], d["product"]
+        # 파일명 = ICSA id. 자연 유일키이므로 충돌·덮어쓰기가 원리적으로 불가능하다.
+        dev_slug = slug(d["advisory_id"])
         dev_ref = "device:%s" % dev_slug
 
         # 컴포넌트 구성: OSS(귀속) + 벤더모듈(잔여)
@@ -309,8 +367,15 @@ def main():
                     {"name": "signal:kev", "value": str(bool(sig.get("kev"))).lower()},
                     {"name": "signal:epss", "value": str(sig.get("epss")) if sig.get("epss") is not None else "NA"},
                 ],
-                "analysis": {"state": "in_triage",
-                             "detail": "Identified from CISA ICS advisory. VEX adjudication pending."},
+                "analysis": ({"state": "not_affected",
+                              "justification": _CDX_JUST.get(
+                                  meta["upstream_vex"]["justification"], "code_not_reachable"),
+                              "detail": ("Asserted by CISA CSAF %s as %s (upstream VEX, not derived here)."
+                                         % (meta["upstream_vex"]["advisory"],
+                                            meta["upstream_vex"]["justification"]))}
+                             if meta.get("upstream_vex") else
+                             {"state": "in_triage",
+                              "detail": "Identified from CISA ICS advisory. VEX adjudication pending."}),
             })
 
             findings.append({
@@ -321,6 +386,10 @@ def main():
                 "pr": pv.get("PR", ""), "ui": pv.get("UI", ""),
                 "kev": bool(sig.get("kev")), "epss": sig.get("epss") if sig.get("epss") is not None else "",
                 "source_advisory": meta.get("source_advisory", ""),
+                # 상류(CISA CSAF) 가 명시한 판정 — 우리가 유도한 것이 아니다
+                "upstream_status": (meta.get("upstream_vex") or {}).get("status", ""),
+                "upstream_justification": (meta.get("upstream_vex") or {}).get("justification", ""),
+                "upstream_source": (meta.get("upstream_vex") or {}).get("source", ""),
             })
 
         # 최상위 device 컴포넌트 + 문서
@@ -331,7 +400,8 @@ def main():
         top = {
             "type": "device", "bom-ref": dev_ref, "name": "%s %s" % (vend, prod),
             "version": "NOASSERTION",
-            "description": "ICS/OT asset '%s' by %s, reverse-built from CISA ICS-CERT advisory data." % (prod, vend),
+            "description": ("ICS/OT asset '%s' by %s, reverse-built from CISA ICS-CERT advisory %s."
+                            % (prod, vend, primary_adv)),
             "scope": "required",
             "publisher": vend,
             "purl": "pkg:generic/%s@NOASSERTION" % slug(prod),
@@ -341,6 +411,13 @@ def main():
             "supplier": org(vend),
             "tags": sorted(set([base_platform, slug(vend), "ics", "reverse-sbom"])),
             "hashes": [{"alg": "SHA-256", "content": det_sha256(dev_ref)}],
+            # CISA 원본 CSAF 와 1:1 대조하기 위한 키.
+            # cisagov/CSAF: csaf_files/OT/white/<year>/<advisory_id>.json
+            "externalReferences": [{
+                "type": "advisories",
+                "url": "https://www.cisa.gov/news-events/ics-advisories/%s" % primary_adv,
+                "comment": "source ICS-CERT advisory (%s)" % primary_adv,
+            }],
             "licenses": [{"license": {"id": "NOASSERTION"}}],
             "externalReferences": [{"type": "advisory",
                 "url": ["https://www.cisa.gov/news-events/ics-advisories/%s" % a for a in advs_sorted] or
@@ -400,7 +477,8 @@ def main():
 
     # findings.csv
     ff = ["device", "vendor", "product", "cve", "component", "tier", "arm", "cwe",
-          "cvss_v3_score", "severity", "av", "av_source", "ac", "pr", "ui", "kev", "epss", "source_advisory"]
+          "cvss_v3_score", "severity", "av", "av_source", "ac", "pr", "ui", "kev", "epss", "source_advisory",
+          "upstream_status", "upstream_justification", "upstream_source"]
     with open(os.path.join(OUT_DATA, "findings.csv"), "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=ff)
         w.writeheader()
