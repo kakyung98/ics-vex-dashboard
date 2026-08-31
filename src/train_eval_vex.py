@@ -88,14 +88,22 @@ def load_dataset():
 # SecureBERT 문장 임베딩 (frozen, 캐시)
 # ---------------------------------------------------------------------------
 def encode_sentences(recs):
+    # 캐시는 문장 텍스트로 키를 잡는다. 데이터셋이 바뀌면 일부만 남는데, 예전에는
+    # 존재 여부만 보고 통째로 반환해 누락 문장이 조용히 빠졌다. 전량을 덮을 때만 쓴다.
+    need = {s["text"] for r in recs for s in r["sentences"]}
     if os.path.exists(EMB_CACHE):
         d = np.load(EMB_CACHE, allow_pickle=True)
-        return {k: v for k, v in zip(d["keys"], d["emb"])}
+        cached = {k: v for k, v in zip(d["keys"], d["emb"])}
+        missing = need - set(map(str, cached))
+        if not missing:
+            return cached
+        print("  embedding cache covers %d/%d sentences (%d missing) — recomputing"
+              % (len(need) - len(missing), len(need), len(missing)), flush=True)
     from transformers import AutoTokenizer, AutoModel
     print("  loading SecureBERT ...", flush=True)
     tok = AutoTokenizer.from_pretrained("ehsanaghaei/SecureBERT")
     model = AutoModel.from_pretrained("ehsanaghaei/SecureBERT").to(DEVICE).eval()
-    uniq = sorted({s["text"] for r in recs for s in r["sentences"]})
+    uniq = sorted(need)
     print("  unique sentences: %d" % len(uniq), flush=True)
     emb = {}
     B = 128
