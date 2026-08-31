@@ -125,8 +125,15 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab" href="vex-method.html">VEX Analysis Method</a><a class="navtab on" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
-<h1 style="margin:0 0 18px">Corpus statistics</h1><div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
+<h1 style="margin:0 0 18px">Corpus statistics</h1><div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— what one row means at each level</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
+<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per statement (ICSA × CVE)</span></h3><div id="kpis" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">A status other than <span class="mono">under investigation</span> requires code or SBOM evidence: an execution-verified result, or a CISA justification (<span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>). Deployment context never sets status here.</p>
+<p class="hint" style="margin-top:6px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
+<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this corpus most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
+<div class="card"><h3 style="margin:0 0 8px">Reachability estimation <span class="hint" style="font-weight:400">— not a VEX assertion</span></h3><div id="kpis-est" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">CVSS Attack Vector × deployment exposure. The exposure values in this corpus are <b>synthetic</b> (<span class="mono">exposure_synthetic: true</span>), so these counts are a modelling signal for prioritisation (SSVC), not a claim about any real asset. They are never emitted as a VEX <span class="mono">not_affected</span>.</p></div>
 
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
@@ -159,8 +166,9 @@ function roRatio(a,b){a=(a||'').toLowerCase();b=(b||'').toLowerCase();const t=a.
 function cveIdsFor(comp,ver){if(!comp)return [];const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}return cves.map(cv=>cv.id);}
 function roBest(name){const n=(name||'').toLowerCase();let best=null,br=0,bs=null;for(const c of KB_COMPS){for(const s of [c.name,c.cpe_product,c.key].filter(Boolean)){const r=roRatio(n,s);if(r>br){br=r;best=c;bs=s;}}}return [best,Math.round(br*1000)/1000,bs];}
 function compareNormJs(sbom,exp,th){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rows=[];const ex=new Set(),nm=new Set();for(const [name,ver] of comps){const exact=CVE_KB[name.toLowerCase()];const exIds=cveIdsFor(exact,ver);exIds.forEach(x=>ex.add(x));const rb=roBest(name),nc=rb[0],ratio=rb[1],ms=rb[2];const normalized=ratio>=th?nc:null;const nmIds=cveIdsFor(normalized,ver);nmIds.forEach(x=>nm.add(x));rows.push({component:name,version:ver||'(unpinned)',exact_match:exact?exact.name:null,normalized_match:normalized?normalized.name:null,best_match:nc?nc.name:null,matched_string:ms,ro_ratio:ratio,matched_by_normalization:!!(normalized&&!exact),exact_cve_count:exIds.length,normalized_cve_count:nmIds.length});}const both=[...ex].filter(x=>nm.has(x)).sort();const onlyE=[...ex].filter(x=>!nm.has(x)).sort();const onlyN=[...nm].filter(x=>!ex.has(x)).sort();return {threshold:th,components:comps.length,normalization:rows,comparison:{exact_total:ex.size,normalized_total:nm.size,both:both,only_exact:onlyE,only_normalized:onlyN}};}
-function reachability(av,exp){const t={'isolated-cell':0,'control-network':1,'dmz-routable':2,'remote-accessible':3}[exp];if(!av)return 'unknown';if(av==='N')return t===0?'no':(t===1?'conditional':'yes');if(av==='A')return t===0?'no':(t<=2?'conditional':'yes');if(av==='L')return 'conditional';if(av==='P')return 'no';return 'conditional';}
-function computeVex(sbom,exp){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(const [name,ver] of comps){const comp=CVE_KB[name.toLowerCase()];if(!comp)continue;const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}for(const cv of cves){const av=cv.av||'N';const reach=reachability(av,exp);let status=reach==='yes'?'LIKELY_AFFECTED':(reach==='no'?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION');const row={cve:cv.id,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,reachability:reach,final_vex:status,evidence_tier:(status==='UNDER_INVESTIGATION'?'under-investigation':'static-reasoned')};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const reach=av?reachability(av,exp):'unknown';let status=reach==='yes'?'LIKELY_AFFECTED':(reach==='no'?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION');byCve[cid]={cve:cid,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',reachability:reach,final_vex:status,evidence_tier:(status==='UNDER_INVESTIGATION'?'under-investigation':'static-reasoned'),from_vdr:true};}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
+function reachability(av,exp){const t={'isolated-cell':0,'control-network':1,'dmz-routable':2,'remote-accessible':3}[exp];if(!av)return 'unknown';if(av==='N')return t===0?'no':(t===1?'conditional':'yes');if(av==='A')return t===0?'no':(t<=2?'conditional':'yes');if(av==='L')return 'conditional';if(av==='P')return 'conditional';return 'conditional';}
+function EST_OF(reach){return reach==='yes'?'likely_affected':(reach==='no'?'likely_not_affected':'unable_to_determine');}
+function computeVex(sbom,exp){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(const [name,ver] of comps){const comp=CVE_KB[name.toLowerCase()];if(!comp)continue;const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}for(const cv of cves){const av=cv.av||'N';const reach=reachability(av,exp);const status='UNDER_INVESTIGATION';const estimation=EST_OF(reach);const row={cve:cv.id,estimation:estimation,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,reachability:reach,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const reach=av?reachability(av,exp):'unknown';const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;const estimation=absent?null:EST_OF(reach);byCve[cid]={cve:cid,estimation:estimation,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',reachability:reach,final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
 function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='reachability')return r.reachability===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,reachability:r.reachability,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url}))};}
 
 async function run(){
@@ -191,7 +199,7 @@ async function run(){
 }
 let _lastSbom=null,_lastExp=null;
 async function compareNorm(sbom,exp){
-  _lastSbom=sbom;_lastExp=exp;
+  _lastSbom=sbom;_lastExp=exp;_pidMap=null;
   const th=parseFloat((document.getElementById('ro-th')||{}).value||0.7);
   let d=null;
   d=compareNormJs(sbom,exp,th);
@@ -248,11 +256,38 @@ if(_ta){   // analyzer page only
   window.addEventListener('drop',e=>e.preventDefault());
 }
 async function stats(){
-  try{const s=await(await fetch('cve_level.json')).json();const v=s.by_vex||{};
+  try{const s=await(await fetch('cve_level.json')).json();
+    const v=s.by_vex_statement||s.by_vex||{}, e=s.by_estimation||{}, ax=s.axes||{};
+    // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
+    const ak=document.getElementById('kpis-axes');
+    if(ak){ak.innerHTML='';
+      const AX=[['advisories_collected','ICS advisories','collected 2010–2026'],
+                ['advisories_with_cves','SBOMs (one per ICSA)','one VEX document each'],
+                ['statements','VEX statements','ICSA × CVE — the judgement unit'],
+                ['cves','unique CVEs','vulnerability population']];
+      for(const [key,lab,sub] of AX)
+        ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';
+      if(ax.statements_per_advisory_median!=null)
+        ak.innerHTML+='<div class="kpi"><b>'+ax.statements_per_advisory_median+' / '+(ax.statements_per_advisory_max||0).toLocaleString()+'</b><span>statements per ICSA<br><span class="hint" style="font-size:11px">median / max</span></span></div>';}
+    // 판정 — statement 단위. worst-case 로 CVE 에 뭉개지 않는다.
     const k=document.getElementById('kpis');k.innerHTML='';
-    k.innerHTML+='<div class="kpi"><b>'+(s.total_cves||0).toLocaleString()+'</b><span>unique CVEs</span></div>';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
+    const bj=s.by_justification||{};const bjk=Object.keys(bj);
+    if(bjk.length)k.innerHTML+='<div class="kpi"><b style="color:'+C.LIKELY_NOT_AFFECTED+'">'+bjk.map(j=>bj[j]).reduce((a,b)=>a+b,0).toLocaleString()+'</b><span>with CISA justification<br><span class="hint" style="font-size:11px">'+bjk.join(', ')+'</span></span></div>';
+    // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
+    const ek=document.getElementById('kpis-est');
+    if(ek){ek.innerHTML='';
+      const EL={likely_affected:'likely affected',likely_not_affected:'likely not affected',unable_to_determine:'unable to determine'};
+      const EC={likely_affected:C.LIKELY_AFFECTED,likely_not_affected:C.LIKELY_NOT_AFFECTED,unable_to_determine:C.UNDER_INVESTIGATION};
+      for(const key of ['likely_affected','likely_not_affected','unable_to_determine'])
+        ek.innerHTML+='<div class="kpi"><b style="color:'+EC[key]+'">'+(e[key]||0).toLocaleString()+'</b><span>'+EL[key]+'</span></div>';}
+    const sk=document.getElementById('kpis-src');
+    if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
+      const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
+      const SC={'code-available':C.LIKELY_AFFECTED,'oss-attributed':C.UNDER_INVESTIGATION,'vendor-proprietary':'var(--ink3)'};
+      for(const key of ['code-available','oss-attributed','vendor-proprietary'])
+        sk.innerHTML+='<div class="kpi"><b style="color:'+SC[key]+'">'+(sc[key]||0).toLocaleString()+'</b><span>'+SL[key]+'</span></div>';}
     const sa=await(await fetch('source_available.json')).json();
     document.getElementById('cand').textContent=(sa.code_collected||0).toLocaleString()+' CVEs';
   }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
@@ -454,25 +489,60 @@ function _canonStatus(s){s=String(s||'');
   if(s==='under_investigation')return 'under_investigation';
   if(s==='fixed')return 'fixed';
   return 'under_investigation';}
+// CISA justification 은 근거가 있을 때만 붙인다. 매칭되지 않으면 null 을 돌려주고,
+// 호출부는 not_affected 를 포기하고 under_investigation 으로 내린다.
+// 배치 환경(perimeter/segmentation/firewall)은 어떤 justification 의 근거도 아니므로
+// 여기서 매핑하지 않는다 — 그런 주장은 토폴로지가 바뀌면 조용히 거짓이 된다.
 function _ovJust(j){j=String(j||'');
+  if(!j)return null;
   if(/component_not_present/.test(j))return 'component_not_present';
   if(/vulnerable_code_not_present/.test(j))return 'vulnerable_code_not_present';
-  if(/not_in_execute_path|not_reachable|code_not_reachable|requires_configuration|requires_environment/.test(j))return 'vulnerable_code_not_in_execute_path';
+  if(/not_in_execute_path/.test(j))return 'vulnerable_code_not_in_execute_path';
   if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
-  if(/perimeter|mitigat|protected/.test(j))return 'inline_mitigations_already_exist';
-  return 'vulnerable_code_not_in_execute_path';}
+  if(/inline_mitigations_already_exist/.test(j))return 'inline_mitigations_already_exist';
+  return null;}
+// not_affected 로 내보내도 되는지: 유효한 justification 이 있어야만 허용한다.
+function _justOrNull(r){
+  if(r.justification&&VEX_JUST.some(x=>x[0]===r.justification))return r.justification;
+  return _ovJust(r.justification);}
+function _effStatus(r){
+  if(r.status==='not_affected'&&!_justOrNull(r))return 'under_investigation';
+  return r.status;}
 function _autoStatus(cve){
   const f=(_lastVex&&_lastVex.cves||[]).find(x=>x.cve===cve)||{};
   let raw=f.final_vex, just=f.justification||'';
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 const EST_OPTS=[['likely_affected','likely_affected'],['likely_not_affected','likely_not_affected'],['likely_fixed','likely_fixed'],['unable_to_determine','unable_to_determine']];
 function _estimationAuto(auto){return {not_affected:'likely_not_affected',affected:'likely_affected',fixed:'likely_fixed',under_investigation:'unable_to_determine'}[auto.status]||'unable_to_determine';}
-function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable){return {status:'under_investigation',estimation:(ov.estimation||_estimationAuto(auto)),source_collectable:false};}return {status:(ov.status||auto.status),estimation:null,source_collectable:true};}
+function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',estimation:(ov.estimation||f.estimation||_estimationAuto(auto)),source_collectable:false};}return {status:(ov.status||auto.status),estimation:null,source_collectable:true};}
 function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est=rs.estimation?(' <span class="hint" title="estimation (source-uncollectable)">est: '+rs.estimation+'</span>'):'';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\''+cve+'\')">&#9998; VEX</button>';}
 function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.estimation=rs.estimation;r.source_collectable=rs.source_collectable;const ss=Object.assign(ssvcAuto(f),ov.ssvc||{});r.ssvc=ss;r.ssvc_decision=ssvcDecide(ss);r.ssvc_vector=ssvcVector(ss);rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
+// VEX 진술의 대상은 제품 전체가 아니라 컴포넌트다. SBOM 컴포넌트마다 안정적인
+// CSAF product_id 를 부여해, flags/product_status 가 "어느 컴포넌트인지" 를 담게 한다.
+let _pidMap=null;
+function _componentPids(){
+  if(_pidMap)return _pidMap;
+  _pidMap={byName:{},list:[]};
+  const comps=((_lastSbom&&_lastSbom.components)||[]);
+  comps.forEach((c,i)=>{
+    const nm=(c.name||'').trim(); if(!nm||_pidMap.byName[nm.toLowerCase()])return;
+    const pid='CSAFPID-'+String(i+1).padStart(4,'0');
+    _pidMap.byName[nm.toLowerCase()]=pid;
+    const ver=(c.version||'').trim();
+    _pidMap.list.push({product_id:pid,
+      name:nm+(ver&&ver!=='NOASSERTION'?(' '+ver):''),
+      purl:c.purl||''});});
+  return _pidMap;}
+function _pidFor(component){
+  const m=_componentPids(); const k=String(component||'').trim().toLowerCase();
+  return (k&&m.byName[k])||null;}
+// 같은 SBOM 이면 같은 문서 ID 를 쓴다 (재실행마다 새 ID 가 나오면 추적성이 없다).
+function _docId(name){let h=0;const t='ICSVEXFORGE|'+name;
+  for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}
+  return 'ICSVEXFORGE-'+(h>>>0).toString(16).toUpperCase();}
 function _isoNow(){return new Date().toISOString();}
 function _dl(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
@@ -519,39 +589,85 @@ function saveVexFields(cve){
   o.ssvc=_ssvcCur(); _vexFields[cve]=o; closeCves(); refreshVexRow(cve);
 }function exportOpenVex(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
-  const p=_sbomProduct(); const pid=p.purl||('pkg:generic/'+encodeURIComponent(p.name));
-  const stmts=rows.map(r=>{const st={vulnerability:{name:r.cve},
-      products:[Object.assign({"@id":pid},p.purl?{identifiers:{purl:p.purl}}:{})],
-      status:r.status};
-    if(r.status==='not_affected'){st.justification=r.justification&&VEX_JUST.some(j=>j[0]===r.justification)?r.justification:_ovJust(r.justification);if(r.action_statement)st.impact_statement=r.action_statement;}
-    else if(r.status==='affected'){st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||'Apply vendor update or mitigation for '+r.component+'.');}
-    else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('fixed in '+r.fixed_version);if(r.patch_reference)bits.push('patch: '+r.patch_reference);if(r.verification_result)bits.push('verified: '+r.verification_result);if(bits.length)st.impact_statement=bits.join('; ');}
-    else {const bits=[];if(r.investigation_progress)bits.push('progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('missing: '+r.missing_evidence);if(r.planned_update)bits.push('planned: '+r.planned_update);if(bits.length)st.impact_statement=bits.join('; ');}
-    if(r.estimation)st.estimation=r.estimation;
-    st.ssvc={decision:r.ssvc_decision,vector:r.ssvc_vector};
+  const p=_sbomProduct(); const now=_isoNow();
+  const stmts=rows.map(r=>{
+    const cpid=_pidFor(r.component);
+    const prodId=cpid?('pkg:generic/'+encodeURIComponent(r.component)):(p.purl||('pkg:generic/'+encodeURIComponent(p.name)));
+    const st={vulnerability:{name:r.cve},
+      products:[Object.assign({"@id":prodId},p.purl&&!cpid?{identifiers:{purl:p.purl}}:{})],
+      timestamp:now,
+      status:_effStatus(r)};
+    // status_notes 는 OpenVEX 스펙 필드다. 비표준 필드를 statement 에 직접 달지 않는다.
+    const sn=[];
+    if(r.status==='not_affected'&&st.status==='not_affected'){
+      st.justification=_justOrNull(r);
+      if(r.action_statement)st.impact_statement=r.action_statement;}
+    else if(st.status==='affected'){
+      st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||('Apply vendor update or mitigation for '+r.component+'.'));}
+    else if(st.status==='fixed'){
+      const bits=[];if(r.fixed_version)bits.push('fixed in '+r.fixed_version);if(r.patch_reference)bits.push('patch: '+r.patch_reference);if(r.verification_result)bits.push('verified: '+r.verification_result);
+      if(bits.length)st.impact_statement=bits.join('; ');}
+    else{
+      if(r.status==='not_affected')sn.push('downgraded from not_affected: no CISA justification could be evidenced');
+      if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
+      if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
+      if(r.planned_update)sn.push('planned: '+r.planned_update);}
+    if(r.estimation)sn.push('estimation: '+r.estimation+' (not a VEX assertion)');
+    sn.push('SSVC '+r.ssvc_decision+' | '+r.ssvc_vector);
+    if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
-  const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/openvex-"+Date.now(),
-    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:_isoNow(),version:1,tooling:"ICS-VEXForge",statements:stmts};
+  const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/"+_docId(p.name),
+    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:now,version:1,tooling:"ICS-VEXForge",statements:stmts};
   _dl('openvex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
 function exportCsaf(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
   const p=_sbomProduct(); const pid=p.ref||'PRODUCT-1'; const now=_isoNow();
   const B2C={affected:'known_affected',not_affected:'known_not_affected',fixed:'fixed',under_investigation:'under_investigation'};
+  const used={};
   const vulns=rows.map(r=>{
-    const v={cve:r.cve,product_status:{}};v.product_status[B2C[r.status]]=[pid];
-    const notes=[{category:'other',title:'ICS-VEXForge assessment',text:'status='+r.status+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
-    if(r.status==='not_affected'){const j=r.justification&&VEX_JUST.some(x=>x[0]===r.justification)?r.justification:_ovJust(r.justification);v.flags=[{label:j,product_ids:[pid]}];if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
-    else if(r.status==='affected'){v.remediations=[{category:_remedCsaf(r.remediation),details:(r.action_statement||('Apply '+(r.remediation||'patch_or_firmware_upgrade')+' for '+r.component)),product_ids:[pid]}];}
-    else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('Fixed version: '+r.fixed_version);if(r.patch_reference)bits.push('Patch reference: '+r.patch_reference);if(r.verification_result)bits.push('Verification: '+r.verification_result);if(bits.length)notes.push({category:'details',title:'Fix',text:bits.join(' | ')});if(r.fixed_version)v.remediations=[{category:'vendor_fix',details:'Fixed in '+r.fixed_version+(r.patch_reference?(' ('+r.patch_reference+')'):''),product_ids:[pid]}];}
-    else {const bits=[];if(r.investigation_progress)bits.push('Progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);if(r.planned_update)bits.push('Planned update: '+r.planned_update);if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
-    if(r.estimation)notes.push({category:'other',title:'estimation',text:r.estimation});
-    v.threats=[{category:'impact',details:'SSVC '+r.ssvc_decision+' | '+r.ssvc_vector,product_ids:[pid]}];
+    const st=_effStatus(r);
+    // 진술 대상은 컴포넌트. 매칭되는 컴포넌트가 없을 때만 제품 전체로 떨어진다.
+    const cpid=_pidFor(r.component)||pid; used[cpid]=1;
+    const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
+    const notes=[{category:'other',title:'ICS-VEXForge assessment',
+      text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
+    if(st==='not_affected'){
+      // CSAF 는 justification 을 flags[].label 로 싣는다. 근거 없이는 여기 오지 않는다.
+      v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
+      if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
+    else if(st==='affected'){
+      v.remediations=[{category:_remedCsaf(r.remediation),
+        details:(r.action_statement||('Apply '+(r.remediation||'patch_or_firmware_upgrade')+' for '+r.component)),product_ids:[cpid]}];}
+    else if(st==='fixed'){
+      const bits=[];if(r.fixed_version)bits.push('Fixed version: '+r.fixed_version);if(r.patch_reference)bits.push('Patch reference: '+r.patch_reference);if(r.verification_result)bits.push('Verification: '+r.verification_result);
+      if(bits.length)notes.push({category:'details',title:'Fix',text:bits.join(' | ')});
+      if(r.fixed_version)v.remediations=[{category:'vendor_fix',details:'Fixed in '+r.fixed_version+(r.patch_reference?(' ('+r.patch_reference+')'):''),product_ids:[cpid]}];}
+    else{
+      const bits=[];
+      if(r.status==='not_affected')bits.push('Downgraded from not_affected: no CISA justification could be evidenced');
+      if(r.investigation_progress)bits.push('Progress: '+r.investigation_progress);
+      if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);
+      if(r.planned_update)bits.push('Planned update: '+r.planned_update);
+      if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
+    if(r.estimation)notes.push({category:'other',title:'estimation',
+      text:r.estimation+' — reachability estimate, not a VEX assertion'});
+    // threats.category=impact 는 "악용 시 영향" 자리다. SSVC 우선순위를 여기 실으면
+    // known_not_affected 의 근거로 오인될 수 있으므로 notes 로 뺀다.
+    notes.push({category:'other',title:'SSVC',text:r.ssvc_decision+' | '+r.ssvc_vector});
+    if(r.kev)v.threats=[{category:'exploit_status',details:'Listed in CISA KEV (known exploited)',product_ids:[cpid]}];
     v.notes=notes; return v;});
+  const comps=_componentPids().list.filter(c=>used[c.product_id]);
+  const fpn=[Object.assign({product_id:pid,name:p.name},p.purl?{product_identification_helper:{purl:p.purl}}:{})]
+    .concat(comps.map(c=>Object.assign({product_id:c.product_id,name:c.name},
+      c.purl?{product_identification_helper:{purl:c.purl}}:{})));
   const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
-      publisher:{category:'vendor',name:'ICS-VEXForge (Chonnam SSRC)',namespace:'https://kakyung98.github.io/ics-vex-dashboard/'},
-      tracking:{id:'ICSVEXFORGE-'+Date.now(),status:'final',version:'1',initial_release_date:now,current_release_date:now,
-        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.04'}}}},
-    product_tree:{full_product_names:[Object.assign({product_id:pid,name:p.name},p.purl?{product_identification_helper:{purl:p.purl}}:{})]},
+      // 우리는 제품 공급자가 아니다. vendor 로 발행하면 공급자 사칭이 된다.
+      publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
+        namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
+        issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
+      tracking:{id:_docId(p.name),status:'final',version:'1',initial_release_date:now,current_release_date:now,
+        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.08'}}}},
+    product_tree:{full_product_names:fpn},
     vulnerabilities:vulns};
   _dl('csaf-vex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
 
