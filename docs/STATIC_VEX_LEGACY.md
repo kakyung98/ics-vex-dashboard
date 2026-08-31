@@ -1,9 +1,27 @@
 # Static-analysis SBOM → VEX pipeline (static-analysis edition)
 
-> **⚠️ LEGACY.** This documents a superseded design. The live VEX path for
-> source-available CVEs is now **execution-based verification** (build → reproduce
-> → run); see the README and the VEX Analysis Method page. This file is kept for
-> reference/ablation only.
+> **⚠️ LEGACY — DO NOT IMPLEMENT.** This documents a superseded design, kept for
+> reference/ablation only. Two things in it are now considered **defects**, not
+> alternatives:
+>
+> 1. **The "Presence & Reachability" gate (CVSS AV × deployment exposure) is gone.**
+>    It emitted `not_affected` whenever the attack vector could not traverse the
+>    deployment tier. No CISA justification accepts deployment context as its basis:
+>    `vulnerable_code_cannot_be_controlled_by_adversary` requires taint evidence and
+>    `inline_mitigations_already_exist` requires a mitigation *inside the product*.
+>    A verdict resting on network position also turns false the moment the topology
+>    changes, silently. Reachability now feeds only the `estimation` sub-field and
+>    the SSVC priority — never the VEX status.
+>    Empirically this is also what the ecosystem does: across all 3,706 public ICSA
+>    CSAF advisories, the two environment-based justifications are used **zero** times.
+>
+> 2. **`static-analysis-verified` is not an evidence tier.** Static reasoning without
+>    code is an estimate. The live tiers are `upstream-asserted` (vendor/CISA already
+>    published it), `sbom-evidenced` (`component_not_present`), and
+>    `execution-verified` (built and triggered); everything else is
+>    `under_investigation`.
+>
+> The live design is in the README and the VEX Analysis Method page.
 
 Restructures the ICS-VEX methodology into a static-analysis **developer + critic**
 multi-agent architecture, driven by three models — **SecureBERT**, **CodeBERT**, and
