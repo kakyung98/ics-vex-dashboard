@@ -37,7 +37,11 @@ NOT_AFFECTED = "LIKELY_NOT_AFFECTED"
 UNDER_INV = "UNDER_INVESTIGATION"
 
 
-def tier_for(status, has_pair):
+def tier_for(status, has_pair, route=None):
+    if route == "execution-verified":
+        return "execution-verified"
+    if route == "upstream-cisa-csaf":
+        return "upstream-asserted"
     if status in (AFFECTED, NOT_AFFECTED):
         # code-pair findings could reach static-analysis-verified once CodeBERT
         # confirms the fix is separable; the deterministic sweep stays conservative.
@@ -47,6 +51,8 @@ def tier_for(status, has_pair):
 
 def run(limit=None, use_securebert=False, progress_every=1000):
     import build_ground_truth as G
+    # 실행 검증으로 확정된 CVE 맵. 파일에 항목이 늘면 자동으로 반영된다.
+    EXEC_MAP = G.load_exec_verification()
 
     code_cves = G.load_code_available()
     pairs = set()
@@ -96,19 +102,35 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                             else "oss-attributed" if tier in ("A", "C")
                             else "vendor-proprietary")
 
-            # --- presence + reachability gate (static, deterministic) ---
-            if reach == "no":
-                status = NOT_AFFECTED
-                just = ("vulnerable_code_cannot_be_controlled_by_adversary")
-                vocab = "csaf-openvex"
-                basis = ("AV:P requires hands-on hardware access" if av == "P"
-                         else "AV:%s unreachable at exposure '%s'" % (av, exposure))
-                conf = 0.72
-                route = "presence-reachability"
-            else:
-                status, just, vocab, basis, conf, reach = G.estimate(
-                    av, exposure, av_source, tier, kev)
-                route = "presence-reachability->deterministic-estimate"
+            # --- 도달성 게이트 (추정 전용) ---
+            # 배치 노출도로 not_affected 를 확정하지 않는다: CISA justification 5종 중
+            # 어느 것도 배치 환경을 근거로 인정하지 않으며, 여기의 exposure 는 합성값이다.
+            # 상태는 UNDER_INVESTIGATION 으로 고정하고 도달성은 estimation 으로 흘린다.
+            status, just, vocab, basis, conf, reach, estimation = G.estimate(
+                av, exposure, av_source, tier, kev)
+            route = "presence-reachability->deterministic-estimate"
+
+            # --- 상류(CISA CSAF) 판정 우선 ---
+            # CISA/벤더가 이미 justification 을 명시한 건은 그대로 채택한다.
+            # 우리가 유도한 판정이 아니므로 route/evidence_tier 로 출처를 분리해 둔다
+            # (자체 판정 성능 평가 시 반드시 제외해야 한다).
+            _uj = (r.get("upstream_justification") or "").strip()
+            if _uj:
+                status, just, vocab = NOT_AFFECTED, _uj, "csaf-openvex"
+                basis = ("asserted by %s as %s (upstream VEX, not derived here)"
+                         % (r.get("upstream_source") or "cisa-csaf", _uj))
+                conf, estimation = 1.0, None
+                route = "upstream-cisa-csaf"
+
+            # --- 실행 증거 우선 ---
+            # 샌드박스에서 실제로 트리거를 관측한 CVE 는 추정을 건너뛰고 확정한다.
+            _ex = EXEC_MAP.get(cve)
+            if _ex:
+                _st, _bs = G.exec_verdict(_ex)
+                if _st:
+                    status, just, vocab = _st, None, None
+                    basis, conf, estimation = _bs, 0.99, None
+                    route = "execution-verified"
 
             sb_signal = None
             if sv is not None:
@@ -118,14 +140,14 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 sb_signal = {"label": pred["label"],
                              "probs": {k: round(v, 3) for k, v in pred["probs"].items()}}
 
-            et = tier_for(status, has_pair)
+            et = tier_for(status, has_pair, route)
             rec = {
                 "cve": cve, "device": device, "vendor": vendor, "product": product,
                 "cwe": cwe, "av": av, "sev": sev, "kev": kev, "epss": epss,
                 "tier": tier, "source_class": source_class,
                 "exposure": exposure, "exposure_synthetic": True,
                 "reachability": reach, "has_code_pair": has_pair,
-                "final_vex": status, "justification": just,
+                "final_vex": status, "justification": just, "estimation": estimation,
                 "justification_vocabulary": vocab, "basis": basis,
                 "estimate_confidence": conf, "evidence_tier": et, "route": route,
             }

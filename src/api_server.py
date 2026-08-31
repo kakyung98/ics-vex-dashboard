@@ -316,11 +316,19 @@ class Store:
             }
         # CVE-level view (unique CVEs, worst-case verdict across assets)
         rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-        cve_worst, cve_tier = {}, {}
+        erank = {"likely_affected": 3, "unable_to_determine": 2, "likely_not_affected": 1}
+        srank_src = {"code-available": 3, "oss-attributed": 2, "vendor-proprietary": 1}
+        cve_worst, cve_tier, cve_est, cve_src = {}, {}, {}, {}
         for cve, rows in self.by_cve.items():
             w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
             cve_worst[cve] = w["final_vex"]
             cve_tier[cve] = w.get("evidence_tier")
+            # 추정치는 별도 집계 — VEX status 와 같은 칸에 섞지 않는다.
+            ew = max(rows, key=lambda r: erank.get(r.get("estimation") or "", 0))
+            cve_est[cve] = ew.get("estimation") or "unable_to_determine"
+            # under_investigation 이 왜 그렇게 많은지를 설명하는 축
+            sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
+            cve_src[cve] = sw.get("source_class") or "vendor-proprietary"
         # unique CVE count by CVE-ID year
         yr = Counter()
         for cve in cve_worst:
@@ -328,10 +336,35 @@ class Store:
             if len(parts) >= 2 and parts[1].isdigit():
                 yr[int(parts[1])] += 1
         self.by_year = {str(y): yr[y] for y in sorted(yr)}
+        # 축 4층: 출처(권고) / 문서(장비=SBOM) / 진술(장비x CVE) / 취약점(고유 CVE)
+        _fi = [r for rows in self.by_cve.values() for r in rows]
+        _dev = {r.get("device") for r in _fi if r.get("device")}
+        _fin_vex = Counter(r["final_vex"] for r in _fi)
+        _fin_just = Counter(r.get("justification") for r in _fi if r.get("justification"))
+        _per_dev = Counter(r.get("device") for r in _fi if r.get("device"))
+        _med = (sorted(_per_dev.values())[len(_per_dev) // 2] if _per_dev else 0)
         self.cve_level = {
+            "axes": {
+                # 축 = ICSA 어드바이저리. CISA 가 ICSA 1건당 CSAF 1개를 발행하므로
+                # 우리 SBOM/VEX 도 같은 축을 써서 1:1 대조가 가능하다.
+                "advisories_collected": self.advisories.get("total", 0),
+                "advisories_with_cves": len(_dev),
+                "statements": len(_fi),
+                "cves": len(cve_worst),
+                "statements_per_advisory_median": _med,
+                "statements_per_advisory_max": (max(_per_dev.values()) if _per_dev else 0),
+            },
+            # VEX 진술 단위 판정 — worst-case 로 뭉개지 않은 원본
+            "by_vex_statement": dict(_fin_vex),
+            "by_justification": dict(_fin_just),
             "total_cves": len(cve_worst),
             "by_vex": dict(Counter(cve_worst.values())),
             "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
+            # 합성 노출도 기반 추정치. VEX 진술이 아니다.
+            "by_estimation": dict(Counter(cve_est.values())),
+            "by_source_class": dict(Counter(cve_src.values())),
+            "estimation_note": ("reachability estimate from CVSS AV x synthetic deployment "
+                                "exposure — not a VEX assertion"),
         }
         # tier-A = OSS-attributed, source-code collectable (the "110" after closed-source reclass)
         a_worst = {}
@@ -462,12 +495,10 @@ def vex_for_sbom(sbom, exposure=None):
             exp = exposure or G.exposure_for(comp["name"])
             reach = G.reachability(av, exp)
             has_pair = cv["id"] in STORE.pairs
-            if reach == "no":
-                status, just = NOT_AFFECTED, "vulnerable_code_cannot_be_controlled_by_adversary"
-                basis = "AV:P physical access" if av == "P" else f"AV:{av} unreachable at '{exp}'"
-            else:
-                status, just, _v, basis, _c, reach = G.estimate(
-                    av, exp, "per-cve", "A" if has_pair else "C", bool(cv.get("kev")))
+            # 배치 노출도로는 VEX status 를 확정하지 않는다 (CISA justification 5종 중
+            # 배치 환경을 근거로 인정하는 항목이 없다). 도달성은 estimation 으로만 흐른다.
+            status, just, _v, basis, _c, reach, estimation = G.estimate(
+                av, exp, "per-cve", "A" if has_pair else "C", bool(cv.get("kev")))
             tier = ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
                     else "under-investigation")
             row = {
@@ -480,6 +511,7 @@ def vex_for_sbom(sbom, exposure=None):
                 "av": av, "kev": bool(cv.get("kev")), "epss": cv.get("epss"),
                 "exposure": exp, "reachability": reach, "has_code_pair": has_pair,
                 "final_vex": status, "justification": just, "basis": basis,
+                "estimation": estimation,
                 "evidence_tier": tier,
             }
             prev = by_cve.get(cv["id"])
@@ -519,15 +551,20 @@ def vex_for_sbom(sbom, exposure=None):
         kev = str(props.get("signal:kev", "")).lower() == "true"
         aff = ((v.get("affects") or [{}])[0] or {}).get("ref")
         exp = exposure or G.exposure_for(_top.get("name") or ref2name.get(aff, "") or "device")
-        if av:
-            reach = G.reachability(av, exp)
-            if reach == "no":
-                status, just = NOT_AFFECTED, "vulnerable_code_cannot_be_controlled_by_adversary"
-                basis = "AV:P physical access" if av == "P" else f"AV:{av} unreachable at '{exp}'"
-            else:
-                status, just, _v, basis, _c, reach = G.estimate(av, exp, "per-cve", "C", kev)
+        # --- component_not_present 레인 ---
+        # VDR 이 지목한 컴포넌트가 이 SBOM 의 컴포넌트 목록에 없다면, 그 부재 자체가
+        # CISA justification `component_not_present` 의 근거다. 버전 대조가 필요 없어
+        # 컴포넌트 버전이 NOASSERTION 이어도 성립하는 유일한 확정 경로다.
+        if aff and aff not in ref2name:
+            status, just = NOT_AFFECTED, "component_not_present"
+            basis = ("the affected component is not present in this SBOM "
+                     f"(VDR ref '{aff}' has no matching component entry)")
+            reach, estimation = "n/a", None
+        elif av:
+            status, just, _v, basis, _c, reach, estimation = G.estimate(av, exp, "per-cve", "C", kev)
         else:
             status, just, basis, reach = UNDER_INV, None, "no CVSS attack vector in the source advisory", "unknown"
+            estimation = "unable_to_determine"
         try:
             epss = float(props["signal:epss"]) if props.get("signal:epss") not in (None, "NA", "") else None
         except (TypeError, ValueError):
@@ -541,7 +578,10 @@ def vex_for_sbom(sbom, exposure=None):
             "av": av, "kev": kev, "epss": epss,
             "exposure": exp, "reachability": reach, "has_code_pair": cid in STORE.pairs,
             "final_vex": status, "justification": just, "basis": basis,
-            "evidence_tier": ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED) else "under-investigation"),
+            "estimation": estimation,
+            "evidence_tier": ("sbom-evidenced" if just == "component_not_present"
+                              else "static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
+                              else "under-investigation"),
             "from_vdr": True,
         }
     cves = sorted(by_cve.values(),
@@ -960,7 +1000,7 @@ async function run(){
 }
 let _lastSbom=null,_lastExp=null;
 async function compareNorm(sbom,exp){
-  _lastSbom=sbom;_lastExp=exp;
+  _lastSbom=sbom;_lastExp=exp;_pidMap=null;
   const th=parseFloat((document.getElementById('ro-th')||{}).value||0.7);
   let d=null;
   try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,exposure:exp,threshold:th})});if(r.ok)d=await r.json();}catch(e){}
@@ -1017,11 +1057,38 @@ if(_ta){   // analyzer page only
   window.addEventListener('drop',e=>e.preventDefault());
 }
 async function stats(){
-  try{const s=await(await fetch('/api/summary')).json();const v=s.by_vex||{};
+  try{const s=await(await fetch('/api/summary')).json();
+    const v=s.by_vex_statement||s.by_vex||{}, e=s.by_estimation||{}, ax=s.axes||{};
+    // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
+    const ak=document.getElementById('kpis-axes');
+    if(ak){ak.innerHTML='';
+      const AX=[['advisories_collected','ICS advisories','collected 2010–2026'],
+                ['advisories_with_cves','SBOMs (one per ICSA)','one VEX document each'],
+                ['statements','VEX statements','ICSA × CVE — the judgement unit'],
+                ['cves','unique CVEs','vulnerability population']];
+      for(const [key,lab,sub] of AX)
+        ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';
+      if(ax.statements_per_advisory_median!=null)
+        ak.innerHTML+='<div class="kpi"><b>'+ax.statements_per_advisory_median+' / '+(ax.statements_per_advisory_max||0).toLocaleString()+'</b><span>statements per ICSA<br><span class="hint" style="font-size:11px">median / max</span></span></div>';}
+    // 판정 — statement 단위. worst-case 로 CVE 에 뭉개지 않는다.
     const k=document.getElementById('kpis');k.innerHTML='';
-    k.innerHTML+='<div class="kpi"><b>'+(s.total_cves||0).toLocaleString()+'</b><span>unique CVEs</span></div>';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
+    const bj=s.by_justification||{};const bjk=Object.keys(bj);
+    if(bjk.length)k.innerHTML+='<div class="kpi"><b style="color:'+C.LIKELY_NOT_AFFECTED+'">'+bjk.map(j=>bj[j]).reduce((a,b)=>a+b,0).toLocaleString()+'</b><span>with CISA justification<br><span class="hint" style="font-size:11px">'+bjk.join(', ')+'</span></span></div>';
+    // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
+    const ek=document.getElementById('kpis-est');
+    if(ek){ek.innerHTML='';
+      const EL={likely_affected:'likely affected',likely_not_affected:'likely not affected',unable_to_determine:'unable to determine'};
+      const EC={likely_affected:C.LIKELY_AFFECTED,likely_not_affected:C.LIKELY_NOT_AFFECTED,unable_to_determine:C.UNDER_INVESTIGATION};
+      for(const key of ['likely_affected','likely_not_affected','unable_to_determine'])
+        ek.innerHTML+='<div class="kpi"><b style="color:'+EC[key]+'">'+(e[key]||0).toLocaleString()+'</b><span>'+EL[key]+'</span></div>';}
+    const sk=document.getElementById('kpis-src');
+    if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
+      const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
+      const SC={'code-available':C.LIKELY_AFFECTED,'oss-attributed':C.UNDER_INVESTIGATION,'vendor-proprietary':'var(--ink3)'};
+      for(const key of ['code-available','oss-attributed','vendor-proprietary'])
+        sk.innerHTML+='<div class="kpi"><b style="color:'+SC[key]+'">'+(sc[key]||0).toLocaleString()+'</b><span>'+SL[key]+'</span></div>';}
     const sa=await(await fetch('/api/source_available')).json();
     document.getElementById('cand').textContent=(sa.code_collected||0).toLocaleString()+' CVEs';
   }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
@@ -1223,25 +1290,60 @@ function _canonStatus(s){s=String(s||'');
   if(s==='under_investigation')return 'under_investigation';
   if(s==='fixed')return 'fixed';
   return 'under_investigation';}
+// CISA justification 은 근거가 있을 때만 붙인다. 매칭되지 않으면 null 을 돌려주고,
+// 호출부는 not_affected 를 포기하고 under_investigation 으로 내린다.
+// 배치 환경(perimeter/segmentation/firewall)은 어떤 justification 의 근거도 아니므로
+// 여기서 매핑하지 않는다 — 그런 주장은 토폴로지가 바뀌면 조용히 거짓이 된다.
 function _ovJust(j){j=String(j||'');
+  if(!j)return null;
   if(/component_not_present/.test(j))return 'component_not_present';
   if(/vulnerable_code_not_present/.test(j))return 'vulnerable_code_not_present';
-  if(/not_in_execute_path|not_reachable|code_not_reachable|requires_configuration|requires_environment/.test(j))return 'vulnerable_code_not_in_execute_path';
+  if(/not_in_execute_path/.test(j))return 'vulnerable_code_not_in_execute_path';
   if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
-  if(/perimeter|mitigat|protected/.test(j))return 'inline_mitigations_already_exist';
-  return 'vulnerable_code_not_in_execute_path';}
+  if(/inline_mitigations_already_exist/.test(j))return 'inline_mitigations_already_exist';
+  return null;}
+// not_affected 로 내보내도 되는지: 유효한 justification 이 있어야만 허용한다.
+function _justOrNull(r){
+  if(r.justification&&VEX_JUST.some(x=>x[0]===r.justification))return r.justification;
+  return _ovJust(r.justification);}
+function _effStatus(r){
+  if(r.status==='not_affected'&&!_justOrNull(r))return 'under_investigation';
+  return r.status;}
 function _autoStatus(cve){
   const f=(_lastVex&&_lastVex.cves||[]).find(x=>x.cve===cve)||{};
   let raw=f.final_vex, just=f.justification||'';
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 const EST_OPTS=[['likely_affected','likely_affected'],['likely_not_affected','likely_not_affected'],['likely_fixed','likely_fixed'],['unable_to_determine','unable_to_determine']];
 function _estimationAuto(auto){return {not_affected:'likely_not_affected',affected:'likely_affected',fixed:'likely_fixed',under_investigation:'unable_to_determine'}[auto.status]||'unable_to_determine';}
-function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable){return {status:'under_investigation',estimation:(ov.estimation||_estimationAuto(auto)),source_collectable:false};}return {status:(ov.status||auto.status),estimation:null,source_collectable:true};}
+function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',estimation:(ov.estimation||f.estimation||_estimationAuto(auto)),source_collectable:false};}return {status:(ov.status||auto.status),estimation:null,source_collectable:true};}
 function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est=rs.estimation?(' <span class="hint" title="estimation (source-uncollectable)">est: '+rs.estimation+'</span>'):'';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
 function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.estimation=rs.estimation;r.source_collectable=rs.source_collectable;const ss=Object.assign(ssvcAuto(f),ov.ssvc||{});r.ssvc=ss;r.ssvc_decision=ssvcDecide(ss);r.ssvc_vector=ssvcVector(ss);rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
+// VEX 진술의 대상은 제품 전체가 아니라 컴포넌트다. SBOM 컴포넌트마다 안정적인
+// CSAF product_id 를 부여해, flags/product_status 가 "어느 컴포넌트인지" 를 담게 한다.
+let _pidMap=null;
+function _componentPids(){
+  if(_pidMap)return _pidMap;
+  _pidMap={byName:{},list:[]};
+  const comps=((_lastSbom&&_lastSbom.components)||[]);
+  comps.forEach((c,i)=>{
+    const nm=(c.name||'').trim(); if(!nm||_pidMap.byName[nm.toLowerCase()])return;
+    const pid='CSAFPID-'+String(i+1).padStart(4,'0');
+    _pidMap.byName[nm.toLowerCase()]=pid;
+    const ver=(c.version||'').trim();
+    _pidMap.list.push({product_id:pid,
+      name:nm+(ver&&ver!=='NOASSERTION'?(' '+ver):''),
+      purl:c.purl||''});});
+  return _pidMap;}
+function _pidFor(component){
+  const m=_componentPids(); const k=String(component||'').trim().toLowerCase();
+  return (k&&m.byName[k])||null;}
+// 같은 SBOM 이면 같은 문서 ID 를 쓴다 (재실행마다 새 ID 가 나오면 추적성이 없다).
+function _docId(name){let h=0;const t='ICSVEXFORGE|'+name;
+  for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}
+  return 'ICSVEXFORGE-'+(h>>>0).toString(16).toUpperCase();}
 function _isoNow(){return new Date().toISOString();}
 function _dl(name,obj){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click();
@@ -1288,39 +1390,85 @@ function saveVexFields(cve){
   o.ssvc=_ssvcCur(); _vexFields[cve]=o; closeCves(); refreshVexRow(cve);
 }function exportOpenVex(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
-  const p=_sbomProduct(); const pid=p.purl||('pkg:generic/'+encodeURIComponent(p.name));
-  const stmts=rows.map(r=>{const st={vulnerability:{name:r.cve},
-      products:[Object.assign({"@id":pid},p.purl?{identifiers:{purl:p.purl}}:{})],
-      status:r.status};
-    if(r.status==='not_affected'){st.justification=r.justification&&VEX_JUST.some(j=>j[0]===r.justification)?r.justification:_ovJust(r.justification);if(r.action_statement)st.impact_statement=r.action_statement;}
-    else if(r.status==='affected'){st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||'Apply vendor update or mitigation for '+r.component+'.');}
-    else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('fixed in '+r.fixed_version);if(r.patch_reference)bits.push('patch: '+r.patch_reference);if(r.verification_result)bits.push('verified: '+r.verification_result);if(bits.length)st.impact_statement=bits.join('; ');}
-    else {const bits=[];if(r.investigation_progress)bits.push('progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('missing: '+r.missing_evidence);if(r.planned_update)bits.push('planned: '+r.planned_update);if(bits.length)st.impact_statement=bits.join('; ');}
-    if(r.estimation)st.estimation=r.estimation;
-    st.ssvc={decision:r.ssvc_decision,vector:r.ssvc_vector};
+  const p=_sbomProduct(); const now=_isoNow();
+  const stmts=rows.map(r=>{
+    const cpid=_pidFor(r.component);
+    const prodId=cpid?('pkg:generic/'+encodeURIComponent(r.component)):(p.purl||('pkg:generic/'+encodeURIComponent(p.name)));
+    const st={vulnerability:{name:r.cve},
+      products:[Object.assign({"@id":prodId},p.purl&&!cpid?{identifiers:{purl:p.purl}}:{})],
+      timestamp:now,
+      status:_effStatus(r)};
+    // status_notes 는 OpenVEX 스펙 필드다. 비표준 필드를 statement 에 직접 달지 않는다.
+    const sn=[];
+    if(r.status==='not_affected'&&st.status==='not_affected'){
+      st.justification=_justOrNull(r);
+      if(r.action_statement)st.impact_statement=r.action_statement;}
+    else if(st.status==='affected'){
+      st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||('Apply vendor update or mitigation for '+r.component+'.'));}
+    else if(st.status==='fixed'){
+      const bits=[];if(r.fixed_version)bits.push('fixed in '+r.fixed_version);if(r.patch_reference)bits.push('patch: '+r.patch_reference);if(r.verification_result)bits.push('verified: '+r.verification_result);
+      if(bits.length)st.impact_statement=bits.join('; ');}
+    else{
+      if(r.status==='not_affected')sn.push('downgraded from not_affected: no CISA justification could be evidenced');
+      if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
+      if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
+      if(r.planned_update)sn.push('planned: '+r.planned_update);}
+    if(r.estimation)sn.push('estimation: '+r.estimation+' (not a VEX assertion)');
+    sn.push('SSVC '+r.ssvc_decision+' | '+r.ssvc_vector);
+    if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
-  const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/openvex-"+Date.now(),
-    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:_isoNow(),version:1,tooling:"ICS-VEXForge",statements:stmts};
+  const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/"+_docId(p.name),
+    author:"ICS-VEXForge (Chonnam SSRC)",role:"Document Creator",timestamp:now,version:1,tooling:"ICS-VEXForge",statements:stmts};
   _dl('openvex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
 function exportCsaf(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
   const p=_sbomProduct(); const pid=p.ref||'PRODUCT-1'; const now=_isoNow();
   const B2C={affected:'known_affected',not_affected:'known_not_affected',fixed:'fixed',under_investigation:'under_investigation'};
+  const used={};
   const vulns=rows.map(r=>{
-    const v={cve:r.cve,product_status:{}};v.product_status[B2C[r.status]]=[pid];
-    const notes=[{category:'other',title:'ICS-VEXForge assessment',text:'status='+r.status+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
-    if(r.status==='not_affected'){const j=r.justification&&VEX_JUST.some(x=>x[0]===r.justification)?r.justification:_ovJust(r.justification);v.flags=[{label:j,product_ids:[pid]}];if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
-    else if(r.status==='affected'){v.remediations=[{category:_remedCsaf(r.remediation),details:(r.action_statement||('Apply '+(r.remediation||'patch_or_firmware_upgrade')+' for '+r.component)),product_ids:[pid]}];}
-    else if(r.status==='fixed'){const bits=[];if(r.fixed_version)bits.push('Fixed version: '+r.fixed_version);if(r.patch_reference)bits.push('Patch reference: '+r.patch_reference);if(r.verification_result)bits.push('Verification: '+r.verification_result);if(bits.length)notes.push({category:'details',title:'Fix',text:bits.join(' | ')});if(r.fixed_version)v.remediations=[{category:'vendor_fix',details:'Fixed in '+r.fixed_version+(r.patch_reference?(' ('+r.patch_reference+')'):''),product_ids:[pid]}];}
-    else {const bits=[];if(r.investigation_progress)bits.push('Progress: '+r.investigation_progress);if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);if(r.planned_update)bits.push('Planned update: '+r.planned_update);if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
-    if(r.estimation)notes.push({category:'other',title:'estimation',text:r.estimation});
-    v.threats=[{category:'impact',details:'SSVC '+r.ssvc_decision+' | '+r.ssvc_vector,product_ids:[pid]}];
+    const st=_effStatus(r);
+    // 진술 대상은 컴포넌트. 매칭되는 컴포넌트가 없을 때만 제품 전체로 떨어진다.
+    const cpid=_pidFor(r.component)||pid; used[cpid]=1;
+    const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
+    const notes=[{category:'other',title:'ICS-VEXForge assessment',
+      text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
+    if(st==='not_affected'){
+      // CSAF 는 justification 을 flags[].label 로 싣는다. 근거 없이는 여기 오지 않는다.
+      v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
+      if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
+    else if(st==='affected'){
+      v.remediations=[{category:_remedCsaf(r.remediation),
+        details:(r.action_statement||('Apply '+(r.remediation||'patch_or_firmware_upgrade')+' for '+r.component)),product_ids:[cpid]}];}
+    else if(st==='fixed'){
+      const bits=[];if(r.fixed_version)bits.push('Fixed version: '+r.fixed_version);if(r.patch_reference)bits.push('Patch reference: '+r.patch_reference);if(r.verification_result)bits.push('Verification: '+r.verification_result);
+      if(bits.length)notes.push({category:'details',title:'Fix',text:bits.join(' | ')});
+      if(r.fixed_version)v.remediations=[{category:'vendor_fix',details:'Fixed in '+r.fixed_version+(r.patch_reference?(' ('+r.patch_reference+')'):''),product_ids:[cpid]}];}
+    else{
+      const bits=[];
+      if(r.status==='not_affected')bits.push('Downgraded from not_affected: no CISA justification could be evidenced');
+      if(r.investigation_progress)bits.push('Progress: '+r.investigation_progress);
+      if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);
+      if(r.planned_update)bits.push('Planned update: '+r.planned_update);
+      if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
+    if(r.estimation)notes.push({category:'other',title:'estimation',
+      text:r.estimation+' — reachability estimate, not a VEX assertion'});
+    // threats.category=impact 는 "악용 시 영향" 자리다. SSVC 우선순위를 여기 실으면
+    // known_not_affected 의 근거로 오인될 수 있으므로 notes 로 뺀다.
+    notes.push({category:'other',title:'SSVC',text:r.ssvc_decision+' | '+r.ssvc_vector});
+    if(r.kev)v.threats=[{category:'exploit_status',details:'Listed in CISA KEV (known exploited)',product_ids:[cpid]}];
     v.notes=notes; return v;});
+  const comps=_componentPids().list.filter(c=>used[c.product_id]);
+  const fpn=[Object.assign({product_id:pid,name:p.name},p.purl?{product_identification_helper:{purl:p.purl}}:{})]
+    .concat(comps.map(c=>Object.assign({product_id:c.product_id,name:c.name},
+      c.purl?{product_identification_helper:{purl:c.purl}}:{})));
   const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
-      publisher:{category:'vendor',name:'ICS-VEXForge (Chonnam SSRC)',namespace:'https://kakyung98.github.io/ics-vex-dashboard/'},
-      tracking:{id:'ICSVEXFORGE-'+Date.now(),status:'final',version:'1',initial_release_date:now,current_release_date:now,
-        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.04'}}}},
-    product_tree:{full_product_names:[Object.assign({product_id:pid,name:p.name},p.purl?{product_identification_helper:{purl:p.purl}}:{})]},
+      // 우리는 제품 공급자가 아니다. vendor 로 발행하면 공급자 사칭이 된다.
+      publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
+        namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
+        issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
+      tracking:{id:_docId(p.name),status:'final',version:'1',initial_release_date:now,current_release_date:now,
+        revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.08'}}}},
+    product_tree:{full_product_names:fpn},
     vulnerabilities:vulns};
   _dl('csaf-vex-'+(p.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase())+'.json',doc);}
 
@@ -1529,8 +1677,15 @@ ANALYZER_HTML = """<div class="card"><div class="row">
 <div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
 <div id="cmp-body"></div></div>"""
 
-CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Target CVE</h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
+CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— what one row means at each level</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
+<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per statement (ICSA × CVE)</span></h3><div id="kpis" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">A status other than <span class="mono">under investigation</span> requires code or SBOM evidence: an execution-verified result, or a CISA justification (<span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>). Deployment context never sets status here.</p>
+<p class="hint" style="margin-top:6px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
+<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this corpus most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
+<div class="card"><h3 style="margin:0 0 8px">Reachability estimation <span class="hint" style="font-weight:400">— not a VEX assertion</span></h3><div id="kpis-est" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">CVSS Attack Vector × deployment exposure. The exposure values in this corpus are <b>synthetic</b> (<span class="mono">exposure_synthetic: true</span>), so these counts are a modelling signal for prioritisation (SSVC), not a claim about any real asset. They are never emitted as a VEX <span class="mono">not_affected</span>.</p></div>
 
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
