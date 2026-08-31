@@ -19,7 +19,7 @@ Run
   python src/api_server.py --port 8100
   # or:  uvicorn src.api_server:app --port 8100
 The VEX computation here is the deterministic static leg (component match ->
-CVSS AV x exposure reachability); it needs no GPU/models, so the service starts
+evidence tiers); it needs no GPU/models, so the service starts
 instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
 """
 import os, sys, json, argparse, difflib, csv, re
@@ -27,7 +27,7 @@ from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(BASE, "src"))
-import build_ground_truth as G  # reachability(), exposure_for(), CWE_NAME
+import build_ground_truth as G  # exposure_for(), CWE_NAME
 import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 
 # Official MITRE CWE names (Title Case). Covers every CWE shown in the
@@ -302,7 +302,7 @@ class Store:
             ev = self.code_ev.get(cve) or {}
             repo = ev.get("repo")
             self.cve_index[cve] = {
-                "cve": cve, "vex": w["final_vex"], "reachability": w.get("reachability"),
+                "cve": cve, "vex": w["final_vex"],
                 "severity": sev if sev in srank else "unrated",
                 "cvss": self.cvss.get(cve),
                 "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
@@ -316,16 +316,12 @@ class Store:
             }
         # CVE-level view (unique CVEs, worst-case verdict across assets)
         rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-        erank = {"likely_affected": 3, "unable_to_determine": 2, "likely_not_affected": 1}
         srank_src = {"code-available": 3, "oss-attributed": 2, "vendor-proprietary": 1}
-        cve_worst, cve_tier, cve_est, cve_src = {}, {}, {}, {}
+        cve_worst, cve_tier, cve_src = {}, {}, {}
         for cve, rows in self.by_cve.items():
             w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
             cve_worst[cve] = w["final_vex"]
             cve_tier[cve] = w.get("evidence_tier")
-            # 추정치는 별도 집계 — VEX status 와 같은 칸에 섞지 않는다.
-            ew = max(rows, key=lambda r: erank.get(r.get("estimation") or "", 0))
-            cve_est[cve] = ew.get("estimation") or "unable_to_determine"
             # under_investigation 이 왜 그렇게 많은지를 설명하는 축
             sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
             cve_src[cve] = sw.get("source_class") or "vendor-proprietary"
@@ -360,11 +356,7 @@ class Store:
             "total_cves": len(cve_worst),
             "by_vex": dict(Counter(cve_worst.values())),
             "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
-            # 합성 노출도 기반 추정치. VEX 진술이 아니다.
-            "by_estimation": dict(Counter(cve_est.values())),
             "by_source_class": dict(Counter(cve_src.values())),
-            "estimation_note": ("reachability estimate from CVSS AV x synthetic deployment "
-                                "exposure — not a VEX assertion"),
         }
         # tier-A = OSS-attributed, source-code collectable (the "110" after closed-source reclass)
         a_worst = {}
@@ -392,7 +384,6 @@ class Store:
             "kev": sum(1 for w in a_worst.values() if w.get("kev")),
             "by_vex": dict(Counter(w["final_vex"] for w in a_worst.values())),
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
-            "by_reachability": dict(Counter(w.get("reachability") for w in a_worst.values())),
             "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
                         _cwe_ctr.most_common()],
             "cwe_other": {"count": 0, "types": 0},
@@ -493,12 +484,10 @@ def vex_for_sbom(sbom, exposure=None):
         for cv in cves:
             av = cv.get("av", "N")
             exp = exposure or G.exposure_for(comp["name"])
-            reach = G.reachability(av, exp)
             has_pair = cv["id"] in STORE.pairs
-            # 배치 노출도로는 VEX status 를 확정하지 않는다 (CISA justification 5종 중
-            # 배치 환경을 근거로 인정하는 항목이 없다). 도달성은 estimation 으로만 흐른다.
-            status, just, _v, basis, _c, reach, estimation = G.estimate(
-                av, exp, "per-cve", "A" if has_pair else "C", bool(cv.get("kev")))
+            # 증거가 없으면 under_investigation. 배치 맥락으로 추정하지 않는다.
+            status, just = UNDER_INV, None
+            basis = "no code evidence collected for this component"
             tier = ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
                     else "under-investigation")
             row = {
@@ -509,9 +498,8 @@ def vex_for_sbom(sbom, exposure=None):
                     STORE.cve_index.get(cv["id"], {}).get("source_available")
                     or cv["id"] in STORE.pairs),
                 "av": av, "kev": bool(cv.get("kev")), "epss": cv.get("epss"),
-                "exposure": exp, "reachability": reach, "has_code_pair": has_pair,
+                "exposure": exp, "has_code_pair": has_pair,
                 "final_vex": status, "justification": just, "basis": basis,
-                "estimation": estimation,
                 "evidence_tier": tier,
             }
             prev = by_cve.get(cv["id"])
@@ -559,12 +547,10 @@ def vex_for_sbom(sbom, exposure=None):
             status, just = NOT_AFFECTED, "component_not_present"
             basis = ("the affected component is not present in this SBOM "
                      f"(VDR ref '{aff}' has no matching component entry)")
-            reach, estimation = "n/a", None
-        elif av:
-            status, just, _v, basis, _c, reach, estimation = G.estimate(av, exp, "per-cve", "C", kev)
         else:
-            status, just, basis, reach = UNDER_INV, None, "no CVSS attack vector in the source advisory", "unknown"
-            estimation = "unable_to_determine"
+            status, just = UNDER_INV, None
+            basis = ("no code evidence collected for this component" if av
+                     else "no CVSS attack vector in the source advisory")
         try:
             epss = float(props["signal:epss"]) if props.get("signal:epss") not in (None, "NA", "") else None
         except (TypeError, ValueError):
@@ -576,9 +562,8 @@ def vex_for_sbom(sbom, exposure=None):
                                     else True if ref2tier.get(aff) in ("A", "C")
                                     else bool(STORE.cve_index.get(cid, {}).get("source_available") or cid in STORE.pairs)),
             "av": av, "kev": kev, "epss": epss,
-            "exposure": exp, "reachability": reach, "has_code_pair": cid in STORE.pairs,
+            "exposure": exp, "has_code_pair": cid in STORE.pairs,
             "final_vex": status, "justification": just, "basis": basis,
-            "estimation": estimation,
             "evidence_tier": ("sbom-evidenced" if just == "component_not_present"
                               else "static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
                               else "under-investigation"),
@@ -624,7 +609,7 @@ def build_app():
     @app.get("/api/cves")
     def cves_by(dim: str, value: str, scope: str = "corpus", limit: int = 400):
         """Related CVEs for a chart selection (drill-down).
-        dim: cwe|vendor|device_type|year|vex|reachability|severity ; scope: corpus|source_available."""
+        dim: cwe|vendor|device_type|year|vex|severity ; scope: corpus|source_available."""
         srank = {"critical": 4, "high": 3, "medium": 2, "low": 1, "unrated": 0}
         vrank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
 
@@ -636,7 +621,6 @@ def build_app():
             if dim == "device_type":    return value in r["device_types"]
             if dim == "year":           return str(r["year"]) == str(value)
             if dim == "vex":            return r["vex"] == value
-            if dim == "reachability":   return r["reachability"] == value
             if dim == "severity":       return r["severity"] == value
             return False
 
@@ -646,7 +630,7 @@ def build_app():
         return {"dim": dim, "value": value, "scope": scope, "count": len(hits),
                 "cves": [{"cve": r["cve"], "vex": r["vex"], "severity": r["severity"],
                           "cvss": r.get("cvss"),
-                          "kev": r["kev"], "reachability": r["reachability"],
+                          "kev": r["kev"],
                           "vendor": ", ".join(r["vendors"][:2]), "component": r["component"],
                           "cwe": r["cwe"], "has_code_pair": r["has_code_pair"],
                           "repo_url": r["repo_url"]} for r in hits[:limit]]}
@@ -987,13 +971,13 @@ async function run(){
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
       ? '<span class="hint">source available &middot; execution-verified VEX</span>'
-      : '<span class="hint">source-uncollectable &middot; SSVC + estimation</span>';
+      : '<span class="hint">source-uncollectable &middot; SSVC priority</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
       +(function(){var ss=ssvcFor(f.cve);var sd=ssvcDecide(ss);return '<td id="ssvccell-'+f.cve+'"><span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span></td>';})()
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
-      +'<td class="mono hint">'+f.reachability+'</td><td>'+nextcol+'</td></tr>';}
+      +'<td>'+nextcol+'</td></tr>';}
   h+='</tbody></table>';
   h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
   o.innerHTML=h;
@@ -1058,7 +1042,7 @@ if(_ta){   // analyzer page only
 }
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();
-    const v=s.by_vex_statement||s.by_vex||{}, e=s.by_estimation||{}, ax=s.axes||{};
+    const v=s.by_vex_statement||s.by_vex||{}, ax=s.axes||{};
     // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
@@ -1077,12 +1061,6 @@ async function stats(){
     const bj=s.by_justification||{};const bjk=Object.keys(bj);
     if(bjk.length)k.innerHTML+='<div class="kpi"><b style="color:'+C.LIKELY_NOT_AFFECTED+'">'+bjk.map(j=>bj[j]).reduce((a,b)=>a+b,0).toLocaleString()+'</b><span>with CISA justification<br><span class="hint" style="font-size:11px">'+bjk.join(', ')+'</span></span></div>';
     // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
-    const ek=document.getElementById('kpis-est');
-    if(ek){ek.innerHTML='';
-      const EL={likely_affected:'likely affected',likely_not_affected:'likely not affected',unable_to_determine:'unable to determine'};
-      const EC={likely_affected:C.LIKELY_AFFECTED,likely_not_affected:C.LIKELY_NOT_AFFECTED,unable_to_determine:C.UNDER_INVESTIGATION};
-      for(const key of ['likely_affected','likely_not_affected','unable_to_determine'])
-        ek.innerHTML+='<div class="kpi"><b style="color:'+EC[key]+'">'+(e[key]||0).toLocaleString()+'</b><span>'+EL[key]+'</span></div>';}
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
       const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
@@ -1094,7 +1072,6 @@ async function stats(){
   }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
-const REC={yes:'var(--aff)',conditional:'var(--und)',no:'var(--safe)',unknown:'var(--ink3)'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 async function openCves(dim,value,scope,label){
   document.getElementById('mtitle').textContent=label;
@@ -1107,7 +1084,7 @@ async function openCves(dim,value,scope,label){
     for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
       h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>'
         +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
-        +'<td class="mono" style="text-align:center" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td><td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td><td class="mono hint">'+esc(f.reachability)+'</td>'
+        +'<td class="mono" style="text-align:center" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td><td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td>'
         +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
         +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener">repo</a>':'')+'</td></tr>';}
     document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
@@ -1135,7 +1112,7 @@ async function sourceAvail(){
     document.getElementById('sa-charts').innerHTML=
       '<div class="chart"><div class="ct">VEX verdict</div>'+bar(s.by_vex,['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'],C,t,'vex','source_available',{LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under inv'})+'</div>'+
       '<div class="chart"><div class="ct">CVSS severity</div>'+bar(s.by_severity,['critical','high','medium','low','unrated'],SEVC,t,'severity','source_available')+'</div>'+
-      '<div class="chart"><div class="ct">Reachability</div>'+bar(s.by_reachability,['yes','conditional','no','unknown'],REC,t,'reachability','source_available')+'</div>';
+      '';
     let cwe='<div class="ct">CWE types <span class="hint">click to list CVEs · '+t+' collectable CVEs total</span></div><div class="cwe">';
     const mx=Math.max(...s.top_cwe.map(x=>x.count));
     for(const x of s.top_cwe)cwe+='<div class="cwerow clk" title="'+x.cwe+' '+esc(x.name||'')+'" onclick="openCves(\\'cwe\\',\\''+x.cwe+'\\',\\'source_available\\',\\''+x.cwe+' '+esc(x.name||'')+' — CVEs\\')">'+
@@ -1313,11 +1290,9 @@ function _autoStatus(cve){
   const f=(_lastVex&&_lastVex.cves||[]).find(x=>x.cve===cve)||{};
   let raw=f.final_vex, just=f.justification||'';
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
-const EST_OPTS=[['likely_affected','likely_affected'],['likely_not_affected','likely_not_affected'],['likely_fixed','likely_fixed'],['unable_to_determine','unable_to_determine']];
-function _estimationAuto(auto){return {not_affected:'likely_not_affected',affected:'likely_affected',fixed:'likely_fixed',under_investigation:'unable_to_determine'}[auto.status]||'unable_to_determine';}
-function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',estimation:(ov.estimation||f.estimation||_estimationAuto(auto)),source_collectable:false};}return {status:(ov.status||auto.status),estimation:null,source_collectable:true};}
-function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est=rs.estimation?(' <span class="hint" title="estimation (source-uncollectable)">est: '+rs.estimation+'</span>'):'';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
-function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.estimation=rs.estimation;r.source_collectable=rs.source_collectable;const ss=Object.assign(ssvcAuto(f),ov.ssvc||{});r.ssvc=ss;r.ssvc_decision=ssvcDecide(ss);r.ssvc_vector=ssvcVector(ss);rows.push(r);}return rows;}
+function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',source_collectable:false};}return {status:(ov.status||auto.status),source_collectable:true};}
+function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est='';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
+function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;const ss=Object.assign(ssvcAuto(f),ov.ssvc||{});r.ssvc=ss;r.ssvc_decision=ssvcDecide(ss);r.ssvc_vector=ssvcVector(ss);rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
@@ -1356,7 +1331,7 @@ function openVexEditor(cve){
   document.getElementById('mtitle').textContent='VEX statement — '+cve;
   let h='<div class="srch-meta">'+esc(f.component)+' · auto status: <b>'+esc(auto.status)+'</b>'+(auto.cvss!=null?(' · CVSS '+auto.cvss):'')+'</div>';
   var _unc=!(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{}).source_collectable;
-  if(_unc){h+='<div class="srch-meta">Source-uncollectable &rarr; status is <b>under_investigation</b>; set the estimation below.</div>';}
+  if(_unc){h+='<div class="srch-meta">Source-uncollectable &rarr; status is <b>under_investigation</b>. Record what is missing and what would settle it.</div>';}
   else{h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\\''+cve+'\\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';}
   h+='<div id="vf-body">'+_vexEditorBody(cve,f)+'</div>';
   h+='<div style="border-top:1px solid var(--line);margin:14px 0 8px"></div><div class="srch-meta">SSVC priority (CISA Coordinator)</div>';h+=_ssvcPanel(cve);h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\\''+cve+'\\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
@@ -1364,7 +1339,7 @@ function openVexEditor(cve){
 function _vexEditorBody(cve,f){
   f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
   var _uncb=!(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{}).source_collectable;
-  if(_uncb){return '<label class="vexf"><span class="hint">Estimation (VEX sub-field)</span><select id="vf-est" class="srch">'+_opt(EST_OPTS,(f.estimation||_estimationAuto(_autoStatus(cve))))+'</select></label>'+_fld('vf-prog','Investigation progress',f.investigation_progress)+_fld('vf-missing','Missing evidence',f.missing_evidence)+_fld('vf-plan','Planned update',f.planned_update);}
+  if(_uncb){return _fld('vf-prog','Investigation progress',f.investigation_progress)+_fld('vf-missing','Missing evidence',f.missing_evidence)+_fld('vf-plan','Planned update',f.planned_update);}
   const st=f.status;
   if(st==='not_affected')
     return '<label class="vexf"><span class="hint">Justification (flags)</span><select id="vf-just" class="srch">'+_opt(VEX_JUST,f.justification&&VEX_JUST.some(j=>j[0]===f.justification)?f.justification:_ovJust(f.justification))+'</select></label>'
@@ -1381,12 +1356,12 @@ function _v(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 function saveVexFields(cve){
   var _unc=!(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{}).source_collectable;
   var o;
-  if(_unc){o={status:'under_investigation',estimation:_v('vf-est'),investigation_progress:_v('vf-prog'),missing_evidence:_v('vf-missing'),planned_update:_v('vf-plan')};}
+  if(_unc){o={status:'under_investigation',investigation_progress:_v('vf-prog'),missing_evidence:_v('vf-missing'),planned_update:_v('vf-plan')};}
   else{var st=_v('vf-status');o={status:st};
     if(st==='not_affected'){o.justification=_v('vf-just');o.action_statement=_v('vf-impact');}
     else if(st==='affected'){o.remediation=_v('vf-remed');o.action_statement=_v('vf-action');}
     else if(st==='fixed'){o.fixed_version=_v('vf-fixver');o.patch_reference=_v('vf-patch');o.verification_result=_v('vf-verify');}
-    else{o.investigation_progress=_v('vf-prog');o.missing_evidence=_v('vf-missing');o.planned_update=_v('vf-plan');o.estimation=_v('vf-est');}}
+    else{o.investigation_progress=_v('vf-prog');o.missing_evidence=_v('vf-missing');o.planned_update=_v('vf-plan');}}
   o.ssvc=_ssvcCur(); _vexFields[cve]=o; closeCves(); refreshVexRow(cve);
 }function exportOpenVex(){
   const rows=_vexRows(); if(!rows.length){alert('Run an analysis first.');return;}
@@ -1413,7 +1388,6 @@ function saveVexFields(cve){
       if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
       if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
       if(r.planned_update)sn.push('planned: '+r.planned_update);}
-    if(r.estimation)sn.push('estimation: '+r.estimation+' (not a VEX assertion)');
     sn.push('SSVC '+r.ssvc_decision+' | '+r.ssvc_vector);
     if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
@@ -1450,8 +1424,6 @@ function exportCsaf(){
       if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);
       if(r.planned_update)bits.push('Planned update: '+r.planned_update);
       if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
-    if(r.estimation)notes.push({category:'other',title:'estimation',
-      text:r.estimation+' — reachability estimate, not a VEX assertion'});
     // threats.category=impact 는 "악용 시 영향" 자리다. SSVC 우선순위를 여기 실으면
     // known_not_affected 의 근거로 오인될 수 있으므로 notes 로 뺀다.
     notes.push({category:'other',title:'SSVC',text:r.ssvc_decision+' | '+r.ssvc_vector});
@@ -1684,9 +1656,6 @@ CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span 
 <p class="hint" style="margin-top:6px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
 <div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this corpus most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">Reachability estimation <span class="hint" style="font-weight:400">— not a VEX assertion</span></h3><div id="kpis-est" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">CVSS Attack Vector × deployment exposure. The exposure values in this corpus are <b>synthetic</b> (<span class="mono">exposure_synthetic: true</span>), so these counts are a modelling signal for prioritisation (SSVC), not a claim about any real asset. They are never emitted as a VEX <span class="mono">not_affected</span>.</p></div>
-
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
 <div id="adv-year" style="margin-top:14px"></div>
@@ -1722,7 +1691,7 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are confirmed by execution (build &rarr; reproduce &rarr; run); source-uncollectable CVEs stay under_investigation with an estimation and an SSVC priority.</p>' + ANALYZER_HTML)
+                  'Source-available CVEs are confirmed by execution (build &rarr; reproduce &rarr; run); source-uncollectable CVEs stay under_investigation with an SSVC priority.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
@@ -1745,7 +1714,7 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 """
 
 _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or <b>execution</b> (the affected version is rebuilt and a reproducer is run against it). Anything else is held as <b>under_investigation</b> with an <b>estimation</b> and an <b>SSVC</b> priority. <b>Deployment context never sets status</b> — no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or <b>execution</b> (the affected version is rebuilt and a reproducer is run against it). Anything else is held as <b>under_investigation</b> and ranked by an <b>SSVC</b> priority. <b>Deployment context never sets status</b> — no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
 
 <div class="card">
 <div class="vm-flow">
@@ -1779,11 +1748,11 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
       <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation + SSVC</b></div>
       <div class="vm-step"><b>1. Status is forced to</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. Estimation sub-field</b>: <span class="mono">likely_affected</span> &middot; <span class="mono">likely_not_affected</span> &middot; <span class="mono">likely_fixed</span> &middot; <span class="mono">unable_to_determine</span></div>
+      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>3. SSVC (SEI Deployer)</b> priority<span class="vm-sub">Exploitation (KEV/EPSS) &times; System&nbsp;Exposure &times; Automatable (AV) &times; Human&nbsp;Impact</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> + estimation &middot; SSVC: <span class="mono">defer / scheduled / out-of-cycle / immediate</span></div>
+      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> &middot; SSVC: <span class="mono">defer / scheduled / out-of-cycle / immediate</span></div>
     </div>
   </div>
 
@@ -1816,10 +1785,9 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
   </div>
   <div class="card">
     <h3 style="margin:0 0 6px">Source-uncollectable path (under_investigation + SSVC)</h3>
-    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span>; the reader is still given a best-effort <b>estimation</b> and an operational <b>SSVC priority</b>.</p>
+    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span> and ranked by an operational <b>SSVC priority</b>. No reachability estimate is emitted — the deployment exposure in this corpus is synthetic, and a number derived from it is not a claim about any real asset.</p>
     <ul class="vm-list">
       <li>Status is always <span class="mono">under_investigation</span> &mdash; a not_affected/affected claim would be unsupported without code.</li>
-      <li><b>estimation</b> sub-field records the leaning: <span class="mono">likely_affected</span>, <span class="mono">likely_not_affected</span>, <span class="mono">likely_fixed</span>, or <span class="mono">unable_to_determine</span>. It is carried into the exported OpenVEX/CSAF document.</li>
       <li><b>SSVC</b> (SEI <i>Deployer</i> tree) ranks remediation urgency from <b>Exploitation</b> (KEV/EPSS), <b>System Exposure</b> (from the deployment exposure selector), <b>Automatable</b> (CVSS attack vector), and <b>Human Impact</b> &rarr; <span class="mono">defer / scheduled / out-of-cycle / immediate</span>.</li>
       <li>If the source later becomes obtainable, the case is routed into the execution-based verification path for a confirmed verdict.</li>
     </ul>
