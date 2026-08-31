@@ -117,13 +117,6 @@ JUSTIFY_AFFECTED = {
 }
 
 EXPOSURES = ["isolated-cell", "control-network", "dmz-routable", "remote-accessible"]
-EXP_TIER = {e: i for i, e in enumerate(EXPOSURES)}
-
-# AV=P(물리 접근)를 도달 불가로 볼지 여부.
-# 무인 변전소·원격 펌프장 등에서는 물리 접근이 현실적 위협이므로
-# 표준 VEX 는 이를 자동으로 not_affected 로 인정하지 않는다.
-# False 로 두면 AV=P 는 확정 대신 UNDER_INVESTIGATION 으로 남는다.
-TREAT_PHYSICAL_AS_UNREACHABLE = False
 
 # 노출도 패러프레이즈 풀 (의미 동일, 표현 다양)
 EXP_POOL = {
@@ -358,22 +351,6 @@ def exposure_for(device):
     return EXPOSURES[-1]
 
 
-def reachability(av, exposure):
-    """CVSS Attack Vector x 배치 노출도 -> 공격자 도달 가능성."""
-    if not av:
-        return "unknown"
-    t = EXP_TIER[exposure]
-    if av == "N":
-        return "no" if t == 0 else ("conditional" if t == 1 else "yes")
-    if av == "A":
-        return "no" if t == 0 else ("conditional" if t <= 2 else "yes")
-    if av == "L":
-        return "conditional"
-    if av == "P":
-        return "no" if TREAT_PHYSICAL_AS_UNREACHABLE else "conditional"
-    return "conditional"
-
-
 # ------------------------------------------------------ 1차 판정 (증거 기반)
 
 def exec_verdict(exec_rec):
@@ -449,80 +426,15 @@ def adjudicate(tier, has_code, exec_rec, version_asserted, upstream=None):
 
 # ------------------------------------------- 2차 추정 (AV x 노출도, 확정 불가시)
 
-# 추정 어휘 — CSAF/OpenVEX 의 VEX status 가 아니다.
-EST_AFFECTED = "likely_affected"
-EST_NOT_AFFECTED = "likely_not_affected"
-EST_UNKNOWN = "unable_to_determine"
-
-# 추정치를 학습 타깃(3-class)으로 환원하는 매핑. VEX 문서에는 쓰지 않는다.
-EST2LABEL = {EST_AFFECTED: AFFECTED, EST_NOT_AFFECTED: NOT_AFFECTED, EST_UNKNOWN: UNDER_INV}
-
-
-def estimate(av, exposure, av_source, tier, kev):
-    """1차가 UNDER_INVESTIGATION 일 때의 상태 *추정*.
-
-    CVSS Attack Vector x 배치 노출도로 도달성을 계산한다.
-
-    ── 이 함수는 VEX status 를 만들지 않는다 ──
-    배치 노출도는 CISA VEX justification 5종 중 어느 것의 근거도 될 수 없다:
-      - vulnerable_code_cannot_be_controlled_by_adversary 는 taint(입력 도달) 근거를,
-      - inline_mitigations_already_exist 는 *제품 내부* 완화를 요구한다.
-    방화벽/세그먼트 같은 배치 환경은 둘 다 아니며, 토폴로지가 바뀌면 조용히 거짓이 된다.
-    게다가 이 파이프라인의 exposure 는 합성값(structured.exposure_synthetic=True)이다.
-    따라서 상태는 항상 UNDER_INVESTIGATION 으로 고정하고, 도달성은
-    estimation 하위필드와 SSVC 우선순위로만 흘려보낸다.
-
-    반환: (status, justification, vocabulary, basis, confidence, reach, estimation)
-    """
-    reach = reachability(av, exposure)
-
-    if reach == "unknown":
-        return (UNDER_INV, None, None,
-                "attack vector not stated in the source advisory", 0.20, reach, EST_UNKNOWN)
-
-    if reach == "yes":
-        estimation = EST_AFFECTED
-        basis = "AV:%s reaches the asset at exposure tier '%s'" % (av, exposure)
-    elif reach == "no":
-        estimation = EST_NOT_AFFECTED
-        basis = ("AV:%s cannot traverse to an asset at exposure tier '%s' "
-                 "(synthetic exposure — estimation only, not a VEX justification)"
-                 % (av, exposure))
-    else:
-        estimation = EST_UNKNOWN
-        basis = "AV:%s is conditionally reachable at exposure tier '%s'" % (av, exposure)
-
-    # 신뢰도: AV 출처가 CVE 단위인지 권고문 일괄인지가 가장 큰 요인
-    conf = 0.78 if av_source == "per-cve" else 0.55
-    if reach == "conditional":
-        conf -= 0.18
-    if tier == "A":
-        conf += 0.06          # 코드가 있으면 후속 확정 여지가 있어 추정도 더 신뢰
-    elif tier == "E":
-        conf -= 0.05          # 폐쇄 펌웨어는 컴포넌트 구성 자체가 불확실
-    if kev and estimation == EST_AFFECTED:
-        conf += 0.05          # 실제 악용 사례가 도달성 추정을 보강
-    conf = round(min(0.92, max(0.15, conf)), 3)
-    return (UNDER_INV, None, None, basis, conf, reach, estimation)
-
-
-# ---------------------------------------------------- 주석자 불일치 (추정에만)
-
-ADJ = {AFFECTED: UNDER_INV, NOT_AFFECTED: UNDER_INV}
-
-
-def annotator_noise(label, device, cve, reach, sev, epss):
-    """사람 주석자 불일치(k≈0.85) 시뮬레이션 — 추정치에만 적용한다.
-    실행 검증으로 확정된 건은 사실이므로 흔들지 않는다.
-    안전하지 않은 AFFECTED<->NOT_AFFECTED 직접 전이는 만들지 않는다."""
-    boundary = (reach in ("conditional", "unknown") or sev == "medium"
-                or (epss is not None and 0.3 <= epss <= 0.6))
-    p = 0.16 if boundary else 0.04
-    if (h("noise", device, cve) % 1000) / 1000.0 >= p:
-        return label
-    if label == UNDER_INV:
-        return AFFECTED if (h("nd", device, cve) % 2) else NOT_AFFECTED
-    return ADJ.get(label, label)
+# 도달성 추정(CVSS AV x 배치 노출도)은 제거되었다.
+#
+# 근거 — 이 파이프라인의 exposure 는 전량 합성값(rnd.choice)이었고, 도달성은
+# VEX status 의 근거가 될 수 없으므로 estimation 하위필드로만 흘려보내고 있었다.
+# 그러나 합성 입력에서 나온 추정치는 어떤 실제 자산에 대한 주장도 아니어서,
+# 화면에 숫자로 노출되는 순간 오해를 부른다. 그래서 축 자체를 걷어냈다.
+#
+# 운영 맥락은 SSVC 로만 들어간다 — 그쪽의 System Exposure 는 합성값이 아니라
+# 사용자가 배치 환경을 직접 고른 값이다.
 
 
 # -------------------------------------------------------------- 텍스트 렌더링
@@ -530,7 +442,6 @@ def annotator_noise(label, device, cve, reach, sev, epss):
 # 학습 타깃(label)을 인과적으로 결정하는 문장 종류만 정답 근거로 표시한다.
 # kev / epss / severity 는 어느 경로에서도 상태를 바꾸지 않으므로 제외한다.
 DRIVER_EXEC = {"exec_affected", "exec_not_affected"}
-DRIVER_ESTIMATE = {"av", "exposure"}
 # 1차 상태(vex_status)를 결정하는 문장 — primary_rationale_ids 용.
 # 확정 건은 실행 검증 문장이, 미확정 건은 소스 확보 불가 문장이 근거다.
 DRIVER_PRIMARY = ({"src_unavailable", "src_pending", "src_available", "version_unknown"}
@@ -623,21 +534,9 @@ def main():
             # 대조할 코드가 실제로 있어야만 코드 leg(CodeBERT->sLLM)로 보낸다.
             route = ROUTE_CODE if has_code else ROUTE_CONTEXT_ONLY
 
-            if status == UNDER_INV:
-                (_st, est_just, est_vocab, est_basis, est_conf,
-                 reach, est_status) = estimate(av, exposure, av_source, tier, kev)
-                # 학습 타깃은 2차 추정치를 3-class 로 환원한 값.
-                # est_status 자체는 likely_* 어휘이며 VEX 문서에는 싣지 않는다.
-                _est_label = EST2LABEL.get(est_status, UNDER_INV)
-                clean_label = _est_label
-                label = annotator_noise(_est_label, device, cve, reach, sev, epss)
-                gold_kinds = DRIVER_ESTIMATE
-            else:
-                reach = reachability(av, exposure)
-                est_status = est_just = est_vocab = est_basis = None
-                est_conf = None
-                clean_label = label = status      # 확정값에는 노이즈를 넣지 않는다
-                gold_kinds = DRIVER_EXEC
+            # 학습 타깃은 증거 기반 상태 그 자체다. 추정으로 라벨을 만들지 않는다.
+            clean_label = label = status
+            gold_kinds = DRIVER_EXEC
 
             sents = render(device, vendor, product, cve, cwe, av, sev, epss, kev,
                            exposure, has_code, oss_attributed, exec_rec,
@@ -665,26 +564,19 @@ def main():
                 "route_stages": ROUTE_STAGES[route],
                 "route_terminal_model": "codebert" if route == ROUTE_CODE else "securebert",
 
-                # --- 2차: AV 기반 추정 (1차가 UNDER_INVESTIGATION 인 경우만) ---
-                "estimated_status": est_status,
-                "estimated_justification": est_just,
-                "estimated_justification_vocabulary": est_vocab,
-                "estimate_basis": est_basis,
-                "estimate_confidence": est_conf,
-
                 # --- 학습 타깃 ---
                 "label": label,                      # 확정값 우선, 없으면 2차 추정치
                 "clean_label": clean_label,          # 주석자 노이즈 적용 전
                 "label_source": ("upstream-cisa-csaf" if ev_tier == "upstream-asserted"
                                  else "execution" if ev_tier == "execution-verified"
-                                 else "av-estimate"),
+                                 else "evidence-tier"),
 
                 "sentences": sents,
                 "gold_rationale_ids": [s["id"] for s in sents if s["kind"] in gold_kinds],
                 "primary_rationale_ids": [s["id"] for s in sents if s["kind"] in DRIVER_PRIMARY],
 
                 "structured": {
-                    "av": av, "av_source": av_source, "exposure": exposure, "reach": reach,
+                    "av": av, "av_source": av_source, "exposure": exposure,
                     "kev": kev, "epss": epss, "severity": sev,
                     "version_asserted": version_asserted,
                     "source_availability": tier,

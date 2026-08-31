@@ -8,14 +8,13 @@ vex_pipeline.py --no-sllm: the per-finding sLLM analyst is meant for interactive
 SBOM subsets (a 7B analyst+critic pass over all ~13k findings would take many
 hours), so the batch uses the deterministic static legs:
 
-  presence + reachability gate  (CVSS AV x deployment exposure)
   -> SecureBERT context signal  (optional, --securebert; batched)
   -> deterministic adjudication (build_ground_truth.estimate)
   -> evidence tier              (static-reasoned / under-investigation)
 
 Outputs:
   results/vex_batch.jsonl          one verdict per finding
-  results/vex_batch_summary.json   distributions (by VEX / tier / reachability / CWE)
+  results/vex_batch_summary.json   distributions (by VEX / tier / CWE)
 
 Run:
   python src/vex_batch.py                 # fast deterministic sweep (all findings)
@@ -71,11 +70,11 @@ def run(limit=None, use_securebert=False, progress_every=1000):
         rows = rows[:limit]
     total = len(rows)
 
-    by_vex, by_tier, by_reach, by_cwe_vex = Counter(), Counter(), Counter(), {}
+    by_vex, by_tier, by_cwe_vex = Counter(), Counter(), {}
     # source-availability class drives which pipeline legs apply:
     #   code-available     -> code pair collected -> CodeBERT patch-diff eligible
-    #   oss-attributed     -> OSS (tier A/C) but no code collected -> context+reach only
-    #   vendor-proprietary -> tier E closed firmware -> context+reach only
+    #   oss-attributed     -> OSS (tier A/C) but no code collected
+    #   vendor-proprietary -> tier E closed firmware
     by_class_vex = {"code-available": Counter(), "oss-attributed": Counter(),
                     "vendor-proprietary": Counter()}
     by_class_n = Counter()
@@ -94,7 +93,6 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 epss = None
 
             exposure = G.exposure_for(device)
-            reach = G.reachability(av, exposure)
             has_pair = cve in pairs
             if has_pair:
                 n_pair += 1
@@ -102,13 +100,12 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                             else "oss-attributed" if tier in ("A", "C")
                             else "vendor-proprietary")
 
-            # --- 도달성 게이트 (추정 전용) ---
-            # 배치 노출도로 not_affected 를 확정하지 않는다: CISA justification 5종 중
-            # 어느 것도 배치 환경을 근거로 인정하지 않으며, 여기의 exposure 는 합성값이다.
-            # 상태는 UNDER_INVESTIGATION 으로 고정하고 도달성은 estimation 으로 흘린다.
-            status, just, vocab, basis, conf, reach, estimation = G.estimate(
-                av, exposure, av_source, tier, kev)
-            route = "presence-reachability->deterministic-estimate"
+            # 증거가 없으면 상태는 under_investigation 이다. 배치 맥락으로 추정하지 않는다.
+            status, just, vocab = UNDER_INV, None, None
+            basis = ("no code evidence collected for this component"
+                     if av else "no CVSS attack vector in the source advisory")
+            conf = None
+            route = "no-evidence"
 
             # --- 상류(CISA CSAF) 판정 우선 ---
             # CISA/벤더가 이미 justification 을 명시한 건은 그대로 채택한다.
@@ -119,7 +116,7 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 status, just, vocab = NOT_AFFECTED, _uj, "csaf-openvex"
                 basis = ("asserted by %s as %s (upstream VEX, not derived here)"
                          % (r.get("upstream_source") or "cisa-csaf", _uj))
-                conf, estimation = 1.0, None
+                conf = 1.0
                 route = "upstream-cisa-csaf"
 
             # --- 실행 증거 우선 ---
@@ -129,7 +126,7 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 _st, _bs = G.exec_verdict(_ex)
                 if _st:
                     status, just, vocab = _st, None, None
-                    basis, conf, estimation = _bs, 0.99, None
+                    basis, conf = _bs, 0.99
                     route = "execution-verified"
 
             sb_signal = None
@@ -146,8 +143,8 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 "cwe": cwe, "av": av, "sev": sev, "kev": kev, "epss": epss,
                 "tier": tier, "source_class": source_class,
                 "exposure": exposure, "exposure_synthetic": True,
-                "reachability": reach, "has_code_pair": has_pair,
-                "final_vex": status, "justification": just, "estimation": estimation,
+                "has_code_pair": has_pair,
+                "final_vex": status, "justification": just,
                 "justification_vocabulary": vocab, "basis": basis,
                 "estimate_confidence": conf, "evidence_tier": et, "route": route,
             }
@@ -157,7 +154,6 @@ def run(limit=None, use_securebert=False, progress_every=1000):
 
             by_vex[status] += 1
             by_tier[et] += 1
-            by_reach[reach] += 1
             by_class_vex[source_class][status] += 1
             by_class_n[source_class] += 1
             if cwe:
@@ -175,7 +171,6 @@ def run(limit=None, use_securebert=False, progress_every=1000):
         "securebert": bool(use_securebert),
         "by_vex": dict(by_vex),
         "by_tier": dict(by_tier),
-        "by_reachability": dict(by_reach),
         "by_source_class": {k: {"n": by_class_n[k], **dict(by_class_vex[k])}
                             for k in ("code-available", "oss-attributed",
                                       "vendor-proprietary")},
@@ -197,7 +192,6 @@ def main():
     print("findings :", s["total_findings"], "| code pairs:", s["code_pair_findings"])
     print("by VEX   :", s["by_vex"])
     print("by tier  :", s["by_tier"])
-    print("by reach :", s["by_reachability"])
     print("by source-class:")
     for k, c in s["by_source_class"].items():
         print("   %-20s n=%-6d %s" % (k, c["n"], {x: c[x] for x in c if x != "n"}))
