@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-21-021-04",
       "dependsOn": [
-        "mod:icsa-21-021-04:firmware"
+        "mod:icsa-21-021-04:firmware",
+        "variant:mitsubishi-electric-melfa-fr-series-vers-all",
+        "variant:mitsubishi-electric-melfa-cr-series-vers-all",
+        "variant:mitsubishi-electric-melfa-assista-vers-all"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mitsubishi-electric-melfa-fr-series-vers-all",
+      "name": "Mitsubishi Electric MELFA FR Series vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mitsubishi-electric-melfa-cr-series-vers-all",
+      "name": "Mitsubishi Electric MELFA CR Series vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mitsubishi-electric-melfa-assista-vers-all",
+      "name": "Mitsubishi Electric MELFA ASSISTA vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-21-021-04:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:mitsubishi-electric-melfa-fr-series-vers-all"
+        },
+        {
+          "ref": "variant:mitsubishi-electric-melfa-cr-series-vers-all"
+        },
+        {
+          "ref": "variant:mitsubishi-electric-melfa-assista-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.02744"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

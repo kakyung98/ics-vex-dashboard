@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-22-179-04",
       "dependsOn": [
-        "mod:icsa-22-179-04:firmware"
+        "mod:icsa-22-179-04:firmware",
+        "variant:motorola-solutions-ace-ip-gateway-cpu-4600-vers-all",
+        "variant:motorola-solutions-moscad-ip-gateway-ipgw-vers-all"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:motorola-solutions-ace-ip-gateway-cpu-4600-vers-all",
+      "name": "Motorola Solutions ACE IP gateway (CPU 4600) vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:motorola-solutions-moscad-ip-gateway-ipgw-vers-all",
+      "name": "Motorola Solutions MOSCAD IP gateway (IPGW) vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-22-179-04:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:motorola-solutions-ace-ip-gateway-cpu-4600-vers-all"
+        },
+        {
+          "ref": "variant:motorola-solutions-moscad-ip-gateway-ipgw-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.00777"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

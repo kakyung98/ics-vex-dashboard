@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-14-135-04",
       "dependsOn": [
-        "pkg:oss:openssl"
+        "pkg:oss:openssl",
+        "variant:unified-automation-c-based-opc-ua-sdk-v1-4-0-windows",
+        "variant:unified-automation-ansi-c-based-opc-ua-sdk-v1-4-0-windows"
       ]
     }
   ],
@@ -180,6 +182,42 @@
           "value": "C"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:unified-automation-c-based-opc-ua-sdk-v1-4-0-windows",
+      "name": "Unified Automation C++ based OPC UA SDK V1.4.0_Windows",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:unified-automation-ansi-c-based-opc-ua-sdk-v1-4-0-windows",
+      "name": "Unified Automation ANSI C based OPC UA SDK V1.4.0_Windows",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "pkg:oss:openssl",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:unified-automation-c-based-opc-ua-sdk-v1-4-0-windows"
+        },
+        {
+          "ref": "variant:unified-automation-ansi-c-based-opc-ua-sdk-v1-4-0-windows"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.99999"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-16-019-01",
       "dependsOn": [
-        "mod:icsa-16-019-01:firmware"
+        "mod:icsa-16-019-01:firmware",
+        "variant:siemens-ozw672-v6-00",
+        "variant:siemens-ozw772-v6-00"
       ]
     }
   ],
@@ -176,6 +178,42 @@
         {
           "name": "component:source-availability",
           "value": "E"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ozw672-v6-00",
+      "name": "Siemens OZW672 <V6.00",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ozw772-v6-00",
+      "name": "Siemens OZW772 <V6.00",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ]
     }
@@ -267,13 +305,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-16-019-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-ozw672-v6-00"
+        },
+        {
+          "ref": "variant:siemens-ozw772-v6-00"
         }
       ],
       "properties": [
@@ -304,6 +339,18 @@
         {
           "name": "signal:epss",
           "value": "0.01233"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

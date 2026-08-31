@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-12-032-01",
       "dependsOn": [
-        "mod:icsa-12-032-01:firmware"
+        "mod:icsa-12-032-01:firmware",
+        "variant:ge-proficy-historian-4-5",
+        "variant:ge-proficy-hmi-scada-cimplicity-with-proficy-historian-4-5-or-prior-installed-8-",
+        "variant:ge-proficy-hmi-scada-ifix-with-proficy-historian-4-5-or-prior-installed-5-5-5-0-"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:ge-proficy-historian-4-5",
+      "name": "GE Proficy Historian <=4.5",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:ge-proficy-hmi-scada-cimplicity-with-proficy-historian-4-5-or-prior-installed-8-",
+      "name": "GE Proficy HMI/SCADA–CIMPLICITY with Proficy Historian 4.5 or prior installed 8.2",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:ge-proficy-hmi-scada-ifix-with-proficy-historian-4-5-or-prior-installed-5-5-5-0-",
+      "name": "GE Proficy HMI/SCADA–iFIX with Proficy Historian 4.5 or prior installed 5.5|5.0|5.1",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +259,13 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-12-032-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:ge-proficy-historian-4-5"
+        },
+        {
+          "ref": "variant:ge-proficy-hmi-scada-cimplicity-with-proficy-historian-4-5-or-prior-installed-8-"
+        },
+        {
+          "ref": "variant:ge-proficy-hmi-scada-ifix-with-proficy-historian-4-5-or-prior-installed-5-5-5-0-"
         }
       ],
       "properties": [
@@ -239,6 +296,18 @@
         {
           "name": "signal:epss",
           "value": "0.04953"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

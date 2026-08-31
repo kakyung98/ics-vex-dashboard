@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-25-148-01",
       "dependsOn": [
-        "mod:icsa-25-148-01:firmware"
+        "mod:icsa-25-148-01:firmware",
+        "variant:siemens-sipass-integrated-ac5102-acc-g2-vers-all",
+        "variant:siemens-sipass-integrated-acc-ap-vers-all"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-sipass-integrated-ac5102-acc-g2-vers-all",
+      "name": "Siemens SiPass integrated AC5102 (ACC-G2) vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-sipass-integrated-acc-ap-vers-all",
+      "name": "Siemens SiPass integrated ACC-AP vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-25-148-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-sipass-integrated-ac5102-acc-g2-vers-all"
+        },
+        {
+          "ref": "variant:siemens-sipass-integrated-acc-ap-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.00146"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

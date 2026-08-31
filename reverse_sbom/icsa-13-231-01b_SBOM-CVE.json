@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-13-231-01b",
       "dependsOn": [
-        "mod:icsa-13-231-01b:firmware"
+        "mod:icsa-13-231-01b:firmware",
+        "variant:sixnet-sixnet-udr-2-0",
+        "variant:sixnet-sixnet-rtu-firmware-4-8"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:sixnet-sixnet-udr-2-0",
+      "name": "Sixnet Sixnet UDR <2.0",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:sixnet-sixnet-rtu-firmware-4-8",
+      "name": "Sixnet Sixnet RTU firmware <4.8",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-13-231-01b:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:sixnet-sixnet-udr-2-0"
+        },
+        {
+          "ref": "variant:sixnet-sixnet-rtu-firmware-4-8"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.03937"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {
