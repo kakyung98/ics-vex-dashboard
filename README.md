@@ -11,8 +11,9 @@ CISA ICS 어드바이저리에서 **역방향으로 구축한 SBOM 데이터셋*
 > 빌드는 되지만 트리거 미도달 시 `build-only` → `under_investigation` 폴백.
 
 > **🧭 소스 미확보 경로.** 폐쇄 펌웨어 등 소스코드를 얻을 수 없는 CVE 는 코드 근거가
-> 없으므로 상태를 **`under_investigation`** 으로 고정하고, `estimation` 하위필드와
-> **SSVC 우선순위**(SEI Deployer)를 함께 부여한다. 두 경로의 판정 방법은
+> 없으므로 상태를 **`under_investigation`** 으로 고정하고 **SSVC 우선순위**(SEI Deployer)만
+> 부여한다. 도달성 추정(AV × 노출도)은 폐기했다 — 이 코퍼스의 노출도는 합성값이라
+> 어떤 실제 자산에 대한 주장도 아니었다. 두 경로의 판정 방법은
 > [VEX Analysis Method](https://kakyung98.github.io/ics-vex-dashboard/vex-method.html) 페이지에서
 > 다이어그램으로 볼 수 있다.
 
@@ -111,7 +112,7 @@ SIPROTEC 5 64 개 모델을 **CP300/CP100 = affected 44 / CP200 = not_affected 2
 |---|---|---|
 | **소스코드 확보** | 실행검증: 취약버전 빌드 → 재현(reproducer) 합성 → 실행 → 트리거 확인 | 재현 트리거 시 **`execution-verified` 확정**; 빌드만 되면 `build-only` → `under_investigation` |
 | **SBOM 근거** | VDR/권고가 지목한 컴포넌트가 SBOM 에 부재 | `not_affected` + **`component_not_present`** 확정 (버전 대조 불필요 → `NOASSERTION` 이어도 성립) |
-| **코드 미확보** (11,321 · 99.87%) | `under_investigation` 고정 + estimation + SSVC | 코드 근거 없음 → 상태 고정, 추정치·우선순위만 부여 |
+| **코드 미확보** (13,002 · 99.82%) | `under_investigation` 고정 + SSVC | 코드 근거 없음 → 상태 고정, 우선순위만 부여 |
 
 > ⚠️ **`tier` 컬럼 주의**: SBOM 속성명이 `component:source-availability` 라서 소스 확보로 읽히지만,
 > 실제로는 **OSS 카탈로그 귀속 여부**일 뿐이다([build_reverse_sbom.py:202](src/build_reverse_sbom.py:202)).
@@ -130,11 +131,9 @@ SIPROTEC 5 64 개 모델을 **CP300/CP100 = affected 44 / CP200 = not_affected 2
     동일 재현을 패치 빌드에 돌려 트리거가 사라지면 `fixed`/`not_affected` 확정 — 모두 `execution-verified`
   - 빌드는 되나 트리거를 예산 내 도달 못 하면 `build-only` → `under_investigation` 폴백
 
-- **소스 미확보 경로 (결정트리 폐기 → estimation + SSVC)**: 소스코드가 없으면 코드 근거가
+- **소스 미확보 경로 (결정트리·도달성 추정 모두 폐기 → SSVC)**: 소스코드가 없으면 코드 근거가
   없으므로 상태를 **항상 `under_investigation`** 으로 고정한다(과거의 Yes/No 결정트리는 제거).
   대신 두 가지를 함께 싣는다:
-  - **`estimation` 하위필드** — `likely_affected` / `likely_not_affected` / `likely_fixed` /
-    `unable_to_determine`. VEX 진술이 아니라 추정치이며, 출력 문서(OpenVEX/CSAF)에 반영된다.
   - **SSVC 우선순위** — SEI **Deployer** 트리(72행): Exploitation(KEV/EPSS) × System Exposure
     (배치 노출도) × Automatable(CVSS AV) × Human Impact → `defer`/`scheduled`/`out-of-cycle`/`immediate`.
     트리의 운영 맥락(노출도)을 SSVC 입력으로 흘려보내 우선순위화에 재사용한다.
@@ -249,16 +248,14 @@ OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`
 
 ## ⚠️ 데이터 성격 (정직한 고지)
 
-- **진짜**: 장비↔CVE↔CWE↔CVSS 매핑은 CISA ICS-CERT 공식 (3,765 어드바이저리, 11,336 CVE), KEV·EPSS 실신호, OSS 취약/패치 실코드(34 CVE, GitHub 픽스 커밋)
+- **진짜**: 장비↔CVE↔CWE↔CVSS 매핑은 CISA ICS-CERT 공식 (3,767 어드바이저리, 11,336 CVE), KEV·EPSS 실신호, OSS 취약/패치 실코드(34 CVE, GitHub 픽스 커밋)
 - **합성**: 장비 주변 컴포넌트 인벤토리, 배치 노출도(`exposure_synthetic: true` 로 표시)
-- **추정**: 학습 타깃 `label` 의 99.96% 는 확정 판정이 아니라 **AV 기반 2차 추정치**다.
-  이 추정치는 **VEX status 로 승격되지 않는다** — 배치 노출도는 CISA justification 5종 중
-  어느 것의 근거도 아니고(`cannot_be_controlled_by_adversary` 는 taint 근거를,
-  `inline_mitigations_already_exist` 는 제품 내부 완화를 요구한다), 여기의 노출도는 합성값이다.
-  따라서 코퍼스 통계는 **증거 기반 status** 와 **추정치** 를 분리해 표시한다
-  (증거 기반: `under_investigation` 11,335 / `affected` 1 / `not_affected` 0).
-  실행 검증으로 확정된 건은 5건(0.04%, zlib CVE-2018-25032)뿐이다.
-  주석자 불일치 노이즈(10%)는 이 추정치에만 적용하며, 확정 건은 흔들지 않는다.
+- **[제거됨] 추정 라벨**: 이전 판의 학습 타깃은 99.8% 가 `AV × 합성 노출도` 로 만든
+  추정치였다. 그 축을 전부 걷어냈다 — 합성 입력에서 나온 숫자는 어떤 실제 자산에 대한
+  주장도 아니어서, 화면에 노출되는 순간 오해를 부른다. 현재 `label` 은 증거 기반 status
+  그 자체이며(`UNDER_INVESTIGATION` 13,002 / `LIKELY_NOT_AFFECTED` 18 / `LIKELY_AFFECTED` 5),
+  3-class 분류 학습은 더 이상 성립하지 않는다. 상세는 [`RESULTS.md`](RESULTS.md) §7.
+
 - **SBOM 이 모든 컴포넌트 버전을 `NOASSERTION` 으로 기록**하므로 버전 범위 대조는 불가능하다.
   이 사실 자체가 `UNDER_INVESTIGATION` 의 주요 근거로 문장에 반영된다.
 - 평가 수치는 **실세계 정확도가 아니라** 파이프라인 정합성·학습가능성 검증. 상세 한계는 [`RESULTS.md`](RESULTS.md) 참조
@@ -277,8 +274,8 @@ OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`
 | **실행검증 오케스트레이터** | 빌드→재현→검증 (로컬 Ollama + Docker 격리) | `execution-verified` 판정 로그 |
 | **로컬 모델 서버** | `tools/serve_poc_llm.py` | OpenAI 호환 엔드포인트 (실행검증 익스플로이터 라우팅용) |
 | **동적 REST API 서비스** | `src/api_server.py` | FastAPI (SBOM→VEX·CPE 정규화·통계·검색·SSVC·VEX 문서 출력) |
-| **VEX 문서 출력** | `src/api_server.py` (Analyzer) | OpenVEX v0.2.0 · CSAF 2.0(csaf_vex) — status별 필수필드 + estimation + SSVC |
-| ~~소스-불가 CVE 결정트리~~ (폐기) | `src/vex_source_unavailable.py` | Yes/No 트리 제거 → `under_investigation`+estimation+SSVC 로 대체(모듈만 잔존) |
+| **VEX 문서 출력** | `src/api_server.py` (Analyzer) | OpenVEX v0.2.0 · CSAF 2.0(csaf_vex) — status별 필수필드 + SSVC |
+| ~~소스-불가 CVE 결정트리~~ (폐기) | `src/vex_source_unavailable.py` | Yes/No 트리 제거 → `under_investigation`+SSVC 로 대체(모듈만 잔존) |
 | **정적 사이트 생성 (6페이지)** | `tools/build_site.py` | `index`·`vex-method`·`corpus`·`collectable`·`source`·`ics-sbom.html` + 데이터 JSON |
 | ~~검증 스펙/실행 검증~~ (격리) | `archive/*` | 과거 `results/exec_verification*.json` (역사적 근거로만 유지) |
 | **Ground Truth (증거 계층)** | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
@@ -288,7 +285,7 @@ OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`
 | **CodeBERT 취약탐지 파인튜닝** | `src/train_codebert_finetune.py` | `models/codebert-vuln/` |
 
 > **판정 경로**: 소스코드를 확보한 CVE 는 **실행검증**(빌드→재현→실행)으로 `execution-verified`
-> 를 확정한다. 소스를 얻을 수 없는 CVE 는 `under_investigation` + estimation + SSVC 로 처리한다.
+> 를 확정한다. 소스를 얻을 수 없는 CVE 는 `under_investigation` + SSVC 로 처리한다.
 > 웹 콘솔의 라이브 판정은 식별·라우팅·표시를 담당하고, 실행검증 자체는 로컬 Ollama + Docker
 > 격리 샌드박스에서 오케스트레이터가 수행한다.
 
@@ -306,7 +303,7 @@ OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`
 
 | 파일 | 건수 | 용도 |
 |---|---|---|
-| `data/vex_dataset.jsonl` | 13,005 | 전체 — SecureBERT 학습 |
+| `data/vex_dataset.jsonl` | 13,025 | 전체 (statement = ICSA × CVE) |
 | `data/vex_dataset_code.jsonl` | 356 | tier A 확장 후보군 — 코드 leg 실험 |
 | `data/vex_ground_truth.jsonl` | 5 | **실행 검증 확정분 — 진짜 ground truth** |
 
@@ -318,10 +315,14 @@ OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`
 |---|---|
 | `execution-verified` | 취약 버전 빌드 성공 + 재현(reproducer) 실행 시 트리거 관측(크래시/새니타이저/assert). 패치 빌드에서 트리거 소멸 시 `fixed`/`not_affected` 확정 |
 | `build-only` | 환경은 빌드됐으나 예산 내 트리거 미도달 → `under_investigation` 폴백 |
-| `under-investigation` | 소스 미확보(코드 근거 없음) → estimation + SSVC 만 부여 |
+| `under-investigation` | 소스 미확보(코드 근거 없음) → SSVC 우선순위만 부여 |
 
-학습 타깃(`label`) 분포 — 확정 5건 + 2차 추정 13,000건:
-`LIKELY_AFFECTED` 4,334 (33.3%) / `LIKELY_NOT_AFFECTED` 2,676 (20.6%) / `UNDER_INVESTIGATION` 5,995 (46.1%)
+학습 타깃(`label`) = **증거 기반 status 그 자체** (추정 라벨 폐기):
+`UNDER_INVESTIGATION` 13,002 (99.82%) / `LIKELY_NOT_AFFECTED` 18 (0.14%) / `LIKELY_AFFECTED` 5 (0.04%)
+
+> 이 분포로는 **3-class 분류 학습이 성립하지 않는다.** 이전 판의 3-class 분포는 99.8% 가
+> `AV × 합성 노출도` 추정치였고, 그 축을 폐기하면서 함께 사라졌다. 폐기 경위와 이전 수치는
+> [`RESULTS.md`](RESULTS.md) §7 에 이력으로 남겼다.
 
 > ⚠️ **아래 모델 성능 수치는 v2 데이터셋(규칙 오라클 + 합성 음성증거) 기준이며 무효다.**
 > v3 는 라벨 생성 로직이 근본적으로 바뀌었으므로 `train_eval_vex.py` /
@@ -390,7 +391,7 @@ python tools/build_site.py             # 정적 6페이지 + 데이터 JSON 재�
 
 | 페이지 | 내용 |
 |---|---|
-| **Analyzer** (`/`) | SBOM 붙여넣기·업로드·드래그 → 컴포넌트별 CVE·VEX. **소스확보** CVE 는 실행검증(빌드→재현→실행, `execution-verified`), **소스 미확보** CVE 는 `under_investigation`+**estimation**+**SSVC**. CPE 정규화(RO) 비교, **VEX 문서(OpenVEX/CSAF) 출력** 포함 |
+| **Analyzer** (`/`) | SBOM 붙여넣기·업로드·드래그 → 컴포넌트별 CVE·VEX. **소스확보** CVE 는 실행검증(빌드→재현→실행, `execution-verified`), **소스 미확보** CVE 는 `under_investigation`+**SSVC**. CPE 정규화(RO) 비교, **VEX 문서(OpenVEX/CSAF) 출력** 포함 |
 | **VEX Analysis Method** (`/vex-method.html`) | 소스 확보/미확보 두 경로의 판정 방법을 다이어그램으로 설명 |
 | **ICS Advisories-based CVE Corpus** (`/corpus.html`) | Target CVE·CISA 어드바이저리·연도별 통계 |
 | **Source Code Available CVEs** (`/collectable.html`) | 소스 수집가능 CVE(CWE/벤더/장비, 그래프 클릭 드릴다운) |
@@ -407,17 +408,16 @@ python tools/build_site.py             # 정적 6페이지 + 데이터 JSON 재�
 | `POST /api/vex` | `{sbom, exposure}` → 컴포넌트별 CVE + 라이브 VEX(임베디드 VDR 포함) |
 | `POST /api/vex_compare` | **CPE 정규화(Ratcliff–Obershelp) vs 정확매칭 CVE 비교** |
 
-**소스 미확보 CVE — SSVC + estimation** (과거 Yes/No 결정트리는 폐기) — 소스코드를 확보할 수
-없는 CVE 는 코드 근거가 없으므로 상태를 **`under_investigation`** 으로 고정하고, ① `estimation`
-하위필드(`likely_affected`/`likely_not_affected`/`likely_fixed`/`unable_to_determine`)와 ② **SSVC
-우선순위**(SEI Deployer: Exploitation×System Exposure×Automatable×Human Impact →
-`defer`/`scheduled`/`out-of-cycle`/`immediate`)를 함께 부여한다. 배치 노출도가 SSVC 의 System
-Exposure 입력으로 흘러간다. 두 값 모두 **VEX 출력 문서(OpenVEX v0.2.0 / CSAF 2.0)** 에 반영된다.
+**소스 미확보 CVE — SSVC 우선순위** (과거 Yes/No 결정트리와 AV×노출도 추정은 모두 폐기) —
+소스코드를 확보할 수 없는 CVE 는 코드 근거가 없으므로 상태를 **`under_investigation`** 으로
+고정하고, **SSVC**(SEI Deployer 트리: Exploitation(KEV/EPSS) × System Exposure × Automatable ×
+Human Impact)로 우선순위만 부여한다. SSVC 의 System Exposure 는 합성값이 아니라 사용자가
+실제 배치 환경을 고르는 값이므로, 운영 맥락은 이 경로로만 들어간다.
 
 **VEX 문서 출력** — Analyzer 에서 판정을 마치면 컴포넌트별 VEX 를 **OpenVEX v0.2.0** 과
 **CSAF 2.0(csaf_vex)** 두 포맷으로 내려받는다. status 별 필수필드를 채워 넣는다:
 `not_affected`→justification, `affected`→remediation, `fixed`→status_notes,
-`under_investigation`→estimation/status_notes.
+`under_investigation`→status_notes(조사 진행·부족 증거·예정 갱신).
 
 주요 기능: **CVSS 를 "점수(등급)" 로 통일** 표시(NVD API 2.0 재수집으로 코퍼스 97% 커버),
 통계 그래프 클릭 → 관련 CVE(NVD 링크), 스크롤·sticky 헤더 결과 테이블. 배포는 Python 이
@@ -441,7 +441,7 @@ Ollama + Docker 격리 샌드박스에서 별도 오케스트레이터가 수행
 
 ```bash
 pip install torch transformers datasets scikit-learn numpy
-python tools/fetch_cisa_advisories.py     # ~25분 (3,765건 크롤)
+python tools/fetch_cisa_advisories.py     # ~25분 (3,767건 크롤)
 python tools/fetch_exploit_signals.py     # ~5분 (KEV·EPSS)
 python src/build_reverse_sbom.py          # findings.csv + tier(소스 확보 가능성)
 python tools/collect_code_gh.py           # OSS 취약/패치 실코드 (gh 인증 필요)
@@ -463,7 +463,7 @@ python src/train_codebert_finetune.py     # CodeBERT 취약탐지 파인튜닝
 ## 한계
 
 1. **실행검증은 소스 확보 CVE 에만 가능하다** — 코퍼스의 99.87%는 소스를 얻을 수 없어
-   실행 확정을 만들 수 없고 `under_investigation`+estimation+SSVC 로만 처리된다. 실행검증의
+   실행 확정을 만들 수 없고 `under_investigation`+SSVC 로만 처리된다. 실행검증의
    확실성은 강하지만 커버리지는 소수(소스 확보분)에 국한된다.
 2. **재현 합성이 모델 능력에 좌우된다** — 빌드는 14B 로컬 모델로도 안정적이나(59/80 성공),
    재현·실행 단계는 더 큰 모델을 요구한다. 재현 미도달분은 `build-only`→`under_investigation`
@@ -473,8 +473,9 @@ python src/train_codebert_finetune.py     # CodeBERT 취약탐지 파인튜닝
    (`version_unconfirmed: true`).
 4. **합성 배치 맥락** — 장비↔CVE↔CWE↔CVSS만 실데이터. 노출도는 합성(`exposure_synthetic: true`).
    SSVC 의 System Exposure 입력이 이 합성값에 의존하므로, 절대 우선순위는 검증 대상이다.
-5. **소스 미확보 경로는 추정** — 폐쇄 펌웨어는 실행검증에 오르지 못하고 estimation(추정치)과
-   SSVC 우선순위만 부여된다. estimation 은 VEX 진술이 아니라 참고용 추정이다.
+5. **소스 미확보 경로는 미확정** — 폐쇄 펌웨어는 실행검증에 오르지 못하고 SSVC 우선순위만
+   부여된다. 도달성 추정은 폐기했다: 이 코퍼스의 노출도가 합성값이라 그 숫자가 어떤 실제
+   자산에 대한 주장도 아니었기 때문이다.
 
 ## 데이터 출처 / 라이선스
 
