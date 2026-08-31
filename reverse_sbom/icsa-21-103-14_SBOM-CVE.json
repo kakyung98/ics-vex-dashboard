@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-21-103-14",
       "dependsOn": [
-        "mod:icsa-21-103-14:firmware"
+        "mod:icsa-21-103-14:firmware",
+        "variant:siemens-nucleus-net-vers-all",
+        "variant:siemens-nucleus-readystart-v3-v2013-08",
+        "variant:siemens-nucleus-source-code-including-affected-dns-modules"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-nucleus-net-vers-all",
+      "name": "Siemens Nucleus NET vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-nucleus-readystart-v3-v2013-08",
+      "name": "Siemens Nucleus ReadyStart V3 <V2013.08",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-nucleus-source-code-including-affected-dns-modules",
+      "name": "Siemens Nucleus Source Code including_affected_DNS_modules",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-21-103-14:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-nucleus-net-vers-all"
+        },
+        {
+          "ref": "variant:siemens-nucleus-readystart-v3-v2013-08"
+        },
+        {
+          "ref": "variant:siemens-nucleus-source-code-including-affected-dns-modules"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.00751"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

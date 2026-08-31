@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-23-262-03",
       "dependsOn": [
-        "mod:icsa-23-262-03:firmware"
+        "mod:icsa-23-262-03:firmware",
+        "variant:omron-sysmac-studio-1-54",
+        "variant:omron-nx-io-configurator-1-22"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:omron-sysmac-studio-1-54",
+      "name": "Omron Sysmac Studio <= 1.54",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:omron-nx-io-configurator-1-22",
+      "name": "Omron NX-IO Configurator <= 1.22",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-23-262-03:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:omron-sysmac-studio-1-54"
+        },
+        {
+          "ref": "variant:omron-nx-io-configurator-1-22"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.10395"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

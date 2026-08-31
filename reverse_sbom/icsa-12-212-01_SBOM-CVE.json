@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-12-212-01",
       "dependsOn": [
-        "mod:icsa-12-212-01:firmware"
+        "mod:icsa-12-212-01:firmware",
+        "variant:iconics-genesis32-v9-22",
+        "variant:iconics-bizviz-v9-22"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:iconics-genesis32-v9-22",
+      "name": "ICONICS Genesis32 <=V9.22",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:iconics-bizviz-v9-22",
+      "name": "ICONICS BizViz <=V9.22",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-12-212-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:iconics-genesis32-v9-22"
+        },
+        {
+          "ref": "variant:iconics-bizviz-v9-22"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.0021"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

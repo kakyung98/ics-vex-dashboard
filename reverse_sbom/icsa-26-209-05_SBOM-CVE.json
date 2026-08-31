@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-26-209-05",
       "dependsOn": [
-        "mod:icsa-26-209-05:firmware"
+        "mod:icsa-26-209-05:firmware",
+        "variant:mikrotik-routeros-vers-all",
+        "variant:mikrotik-cloud-hosted-router-vers-all"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mikrotik-routeros-vers-all",
+      "name": "MikroTik RouterOS vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mikrotik-cloud-hosted-router-vers-all",
+      "name": "MikroTik Cloud Hosted Router vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-26-209-05:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:mikrotik-routeros-vers-all"
+        },
+        {
+          "ref": "variant:mikrotik-cloud-hosted-router-vers-all"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.00233"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

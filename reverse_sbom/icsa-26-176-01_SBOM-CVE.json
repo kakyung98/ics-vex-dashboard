@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-26-176-01",
       "dependsOn": [
-        "mod:icsa-26-176-01:firmware"
+        "mod:icsa-26-176-01:firmware",
+        "variant:yokogawa-fast-tools-r9-01-r10-04",
+        "variant:yokogawa-collaborative-information-server-ci-server-r1-01-r1-04"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:yokogawa-fast-tools-r9-01-r10-04",
+      "name": "Yokogawa FAST/TOOLS >=R9.01|<=R10.04",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:yokogawa-collaborative-information-server-ci-server-r1-01-r1-04",
+      "name": "Yokogawa Collaborative Information Server (CI Server) >=R1.01|<=R1.04",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -192,13 +230,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-26-176-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:yokogawa-fast-tools-r9-01-r10-04"
+        },
+        {
+          "ref": "variant:yokogawa-collaborative-information-server-ci-server-r1-01-r1-04"
         }
       ],
       "properties": [
@@ -229,6 +264,18 @@
         {
           "name": "signal:epss",
           "value": "0.00217"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

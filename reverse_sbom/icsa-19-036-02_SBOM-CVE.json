@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-19-036-02",
       "dependsOn": [
-        "pkg:oss:net-snmp"
+        "pkg:oss:net-snmp",
+        "variant:rockwell-automation-compactlogix-1768-eweb-2-005",
+        "variant:rockwell-automation-1756-eweb-includes-1756-ewebk-5-001"
       ]
     }
   ],
@@ -180,6 +182,42 @@
           "value": "C"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:rockwell-automation-compactlogix-1768-eweb-2-005",
+      "name": "Rockwell Automation CompactLogix 1768-EWEB <= 2.005",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:rockwell-automation-1756-eweb-includes-1756-ewebk-5-001",
+      "name": "Rockwell Automation 1756-EWEB (includes 1756-EWEBK) <= 5.001",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -206,13 +244,10 @@
       ],
       "affects": [
         {
-          "ref": "pkg:oss:net-snmp",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:rockwell-automation-compactlogix-1768-eweb-2-005"
+        },
+        {
+          "ref": "variant:rockwell-automation-1756-eweb-includes-1756-ewebk-5-001"
         }
       ],
       "properties": [
@@ -243,6 +278,18 @@
         {
           "name": "signal:epss",
           "value": "0.03185"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

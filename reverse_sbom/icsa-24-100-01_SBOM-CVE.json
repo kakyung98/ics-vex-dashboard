@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-24-100-01",
       "dependsOn": [
-        "mod:icsa-24-100-01:firmware"
+        "mod:icsa-24-100-01:firmware",
+        "variant:subnet-solutions-inc-powersystem-server-4-07-00",
+        "variant:subnet-solutions-inc-substation-server-2021-4-07-00"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:subnet-solutions-inc-powersystem-server-4-07-00",
+      "name": "Subnet Solutions Inc. PowerSYSTEM Server <=4.07.00",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:subnet-solutions-inc-substation-server-2021-4-07-00",
+      "name": "Subnet Solutions Inc. Substation Server 2021 <=4.07.00",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-24-100-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:subnet-solutions-inc-powersystem-server-4-07-00"
+        },
+        {
+          "ref": "variant:subnet-solutions-inc-substation-server-2021-4-07-00"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.00256"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

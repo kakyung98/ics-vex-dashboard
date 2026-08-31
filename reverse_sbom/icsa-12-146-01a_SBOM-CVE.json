@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-12-146-01a",
       "dependsOn": [
-        "mod:icsa-12-146-01a:firmware"
+        "mod:icsa-12-146-01a:firmware",
+        "variant:siemens-ros-3-2-x",
+        "variant:siemens-ros-3-3-x"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ros-3-2-x",
+      "name": "Siemens ROS <=3.2.x",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ros-3-3-x",
+      "name": "Siemens ROS >=3.3.x",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-12-146-01a:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-ros-3-2-x"
+        },
+        {
+          "ref": "variant:siemens-ros-3-3-x"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.49395"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

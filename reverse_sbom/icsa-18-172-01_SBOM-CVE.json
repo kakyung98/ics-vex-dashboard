@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-18-172-01",
       "dependsOn": [
-        "mod:icsa-18-172-01:firmware"
+        "mod:icsa-18-172-01:firmware",
+        "variant:delta-electronics-commgr-1-08",
+        "variant:delta-electronics-dvpsimulator-eh2-eh3-es2-ss2",
+        "variant:delta-electronics-ahsim-5x0-ahsim-5x0-ahsim-5x1"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:delta-electronics-commgr-1-08",
+      "name": "Delta Electronics COMMGR <=1.08",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:delta-electronics-dvpsimulator-eh2-eh3-es2-ss2",
+      "name": "Delta Electronics DVPSimulator EH2 | EH3 | ES2 | SS2",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:delta-electronics-ahsim-5x0-ahsim-5x0-ahsim-5x1",
+      "name": "Delta Electronics AHSIM_5x0 AHSIM_5x0 | AHSIM_5x1",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-18-172-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:delta-electronics-commgr-1-08"
+        },
+        {
+          "ref": "variant:delta-electronics-dvpsimulator-eh2-eh3-es2-ss2"
+        },
+        {
+          "ref": "variant:delta-electronics-ahsim-5x0-ahsim-5x0-ahsim-5x1"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.68957"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

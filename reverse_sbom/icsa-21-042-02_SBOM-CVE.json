@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-21-042-02",
       "dependsOn": [
-        "mod:icsa-21-042-02:firmware"
+        "mod:icsa-21-042-02:firmware",
+        "variant:rockwell-automation-driveexecutive-5-13",
+        "variant:rockwell-automation-drives-aop-4-12"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:rockwell-automation-driveexecutive-5-13",
+      "name": "Rockwell Automation DriveExecutive <=5.13",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:rockwell-automation-drives-aop-4-12",
+      "name": "Rockwell Automation Drives AOP <=4.12",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-21-042-02:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:rockwell-automation-driveexecutive-5-13"
+        },
+        {
+          "ref": "variant:rockwell-automation-drives-aop-4-12"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.00434"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

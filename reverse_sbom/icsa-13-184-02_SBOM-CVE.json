@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-13-184-02",
       "dependsOn": [
-        "mod:icsa-13-184-02:firmware"
+        "mod:icsa-13-184-02:firmware",
+        "variant:monroe-electronics-dasdec-i-vers-all",
+        "variant:monroe-electronics-dasdec-ii-vers-all"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:monroe-electronics-dasdec-i-vers-all",
+      "name": "Monroe Electronics DASDEC-I vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:monroe-electronics-dasdec-ii-vers-all",
+      "name": "Monroe Electronics DASDEC-II vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-13-184-02:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:monroe-electronics-dasdec-i-vers-all"
+        },
+        {
+          "ref": "variant:monroe-electronics-dasdec-ii-vers-all"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.13446"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

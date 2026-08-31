@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-24-228-10",
       "dependsOn": [
-        "mod:icsa-24-228-10:firmware"
+        "mod:icsa-24-228-10:firmware",
+        "variant:aveva-historian-server-2023-r2",
+        "variant:aveva-historian-server-2023-2023-p03",
+        "variant:aveva-historian-server-2020-2020-r2-sp1-p01"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:aveva-historian-server-2023-r2",
+      "name": "AVEVA Historian Server 2023_R2",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:aveva-historian-server-2023-2023-p03",
+      "name": "AVEVA Historian Server >=2023|<2023_P03",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:aveva-historian-server-2020-2020-r2-sp1-p01",
+      "name": "AVEVA Historian Server >=2020|<2020_R2_SP1_P01",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -194,13 +251,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-24-228-10:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:aveva-historian-server-2023-r2"
+        },
+        {
+          "ref": "variant:aveva-historian-server-2023-2023-p03"
+        },
+        {
+          "ref": "variant:aveva-historian-server-2020-2020-r2-sp1-p01"
         }
       ],
       "properties": [
@@ -231,6 +288,18 @@
         {
           "name": "signal:epss",
           "value": "0.00423"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

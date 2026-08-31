@@ -136,7 +136,8 @@
     {
       "ref": "device:icsa-25-135-04",
       "dependsOn": [
-        "mod:icsa-25-135-04:firmware"
+        "mod:icsa-25-135-04:firmware",
+        "variant:siemens-desigo-cc-vers-all"
       ]
     }
   ],
@@ -178,6 +179,24 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-desigo-cc-vers-all",
+      "name": "Siemens Desigo CC vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +223,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-25-135-04:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-desigo-cc-vers-all"
+        },
+        {
+          "ref": "variant:siemens-desigo-cc-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +257,18 @@
         {
           "name": "signal:epss",
           "value": "0.00551"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

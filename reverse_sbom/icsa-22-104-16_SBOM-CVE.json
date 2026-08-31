@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-22-104-16",
       "dependsOn": [
-        "mod:icsa-22-104-16:firmware"
+        "mod:icsa-22-104-16:firmware",
+        "variant:siemens-simatic-pcs-neo-administration-console-v3-1-sp1",
+        "variant:siemens-sinetplan-vers-all",
+        "variant:siemens-tia-portal-15-15-1-16-17"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-pcs-neo-administration-console-v3-1-sp1",
+      "name": "Siemens SIMATIC PCS neo (Administration Console) <V3.1_SP1",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-sinetplan-vers-all",
+      "name": "Siemens SINETPLAN vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-tia-portal-15-15-1-16-17",
+      "name": "Siemens TIA Portal 15|15.1|16|17",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-22-104-16:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-simatic-pcs-neo-administration-console-v3-1-sp1"
+        },
+        {
+          "ref": "variant:siemens-sinetplan-vers-all"
+        },
+        {
+          "ref": "variant:siemens-tia-portal-15-15-1-16-17"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.01409"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

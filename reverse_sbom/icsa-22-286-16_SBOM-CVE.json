@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-22-286-16",
       "dependsOn": [
-        "mod:icsa-22-286-16:firmware"
+        "mod:icsa-22-286-16:firmware",
+        "variant:siemens-cerberus-dms-vers-all",
+        "variant:siemens-desigo-cc-vers-all",
+        "variant:siemens-desigo-cc-compact-vers-all"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-cerberus-dms-vers-all",
+      "name": "Siemens Cerberus DMS vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-desigo-cc-vers-all",
+      "name": "Siemens Desigo CC vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-desigo-cc-compact-vers-all",
+      "name": "Siemens Desigo CC Compact vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-22-286-16:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-cerberus-dms-vers-all"
+        },
+        {
+          "ref": "variant:siemens-desigo-cc-vers-all"
+        },
+        {
+          "ref": "variant:siemens-desigo-cc-compact-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.01199"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

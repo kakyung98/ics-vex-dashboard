@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-16-348-04",
       "dependsOn": [
-        "mod:icsa-16-348-04:firmware"
+        "mod:icsa-16-348-04:firmware",
+        "variant:siemens-simatic-wincc-7-2",
+        "variant:siemens-simatic-pcs-7-8-0-sp1"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-wincc-7-2",
+      "name": "Siemens SIMATIC WinCC <7.2",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-pcs-7-8-0-sp1",
+      "name": "Siemens SIMATIC PCS 7 <8.0_SP1",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-16-348-04:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-simatic-wincc-7-2"
+        },
+        {
+          "ref": "variant:siemens-simatic-pcs-7-8-0-sp1"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.0142"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-18-198-03",
       "dependsOn": [
-        "mod:icsa-18-198-03:firmware"
+        "mod:icsa-18-198-03:firmware",
+        "variant:pepperl-fuchs-visunet-rm-vers-all",
+        "variant:pepperl-fuchs-box-thin-client-btc-vers-all",
+        "variant:pepperl-fuchs-visunet-pc-vers-all"
       ]
     }
   ],
@@ -176,6 +179,60 @@
         {
           "name": "component:source-availability",
           "value": "E"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:pepperl-fuchs-visunet-rm-vers-all",
+      "name": "PEPPERL+FUCHS VisuNet RM vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:pepperl-fuchs-box-thin-client-btc-vers-all",
+      "name": "PEPPERL+FUCHS Box Thin Client BTC vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:pepperl-fuchs-visunet-pc-vers-all",
+      "name": "PEPPERL+FUCHS VisuNet PC vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ]
     }
@@ -269,13 +326,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-18-198-03:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:pepperl-fuchs-visunet-rm-vers-all"
+        },
+        {
+          "ref": "variant:pepperl-fuchs-box-thin-client-btc-vers-all"
+        },
+        {
+          "ref": "variant:pepperl-fuchs-visunet-pc-vers-all"
         }
       ],
       "properties": [
@@ -306,6 +363,18 @@
         {
           "name": "signal:epss",
           "value": "0.8226"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

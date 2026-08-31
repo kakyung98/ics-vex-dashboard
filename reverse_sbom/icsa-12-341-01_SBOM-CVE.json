@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-12-341-01",
       "dependsOn": [
-        "mod:icsa-12-341-01:firmware"
+        "mod:icsa-12-341-01:firmware",
+        "variant:ge-proficy-hmi-scada-cimplicity-4-01",
+        "variant:ge-proficy-process-systems-with-cimplicity-vers-all"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:ge-proficy-hmi-scada-cimplicity-4-01",
+      "name": "GE Proficy HMI/SCADA – CIMPLICITY >=4.01",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:ge-proficy-process-systems-with-cimplicity-vers-all",
+      "name": "GE Proficy Process Systems with CIMPLICITY vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -202,13 +240,10 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "mod:icsa-12-341-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:ge-proficy-hmi-scada-cimplicity-4-01"
+        },
+        {
+          "ref": "variant:ge-proficy-process-systems-with-cimplicity-vers-all"
         }
       ],
       "properties": [
@@ -239,6 +274,18 @@
         {
           "name": "signal:epss",
           "value": "0.01151"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

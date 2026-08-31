@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-22-172-04",
       "dependsOn": [
-        "mod:icsa-22-172-04:firmware"
+        "mod:icsa-22-172-04:firmware",
+        "variant:phoenix-contact-multiprog-vers-all",
+        "variant:phoenix-contact-proconos-vers-all",
+        "variant:phoenix-contact-proconos-eclr-vers-all"
       ]
     }
   ],
@@ -178,6 +181,60 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:phoenix-contact-multiprog-vers-all",
+      "name": "Phoenix Contact MULTIPROG vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:phoenix-contact-proconos-vers-all",
+      "name": "Phoenix Contact ProConoS vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:phoenix-contact-proconos-eclr-vers-all",
+      "name": "Phoenix Contact ProConoS eCLR vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-22-172-04:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:phoenix-contact-multiprog-vers-all"
+        },
+        {
+          "ref": "variant:phoenix-contact-proconos-vers-all"
+        },
+        {
+          "ref": "variant:phoenix-contact-proconos-eclr-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.01081"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-12-205-02",
       "dependsOn": [
-        "mod:icsa-12-205-02:firmware"
+        "mod:icsa-12-205-02:firmware",
+        "variant:siemens-simatic-step-7-v5-5-service-pack-1-v5-5-1-equivalent",
+        "variant:siemens-simatic-pcs-7-v7-1-sp3"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-step-7-v5-5-service-pack-1-v5-5-1-equivalent",
+      "name": "Siemens SIMATIC STEP 7 <V5.5_Service_Pack_1_V5.5.1_equivalent",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-pcs-7-v7-1-sp3",
+      "name": "Siemens SIMATIC PCS 7 <=V7.1_SP3",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-12-205-02:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:siemens-simatic-step-7-v5-5-service-pack-1-v5-5-1-equivalent"
+        },
+        {
+          "ref": "variant:siemens-simatic-pcs-7-v7-1-sp3"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.00455"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

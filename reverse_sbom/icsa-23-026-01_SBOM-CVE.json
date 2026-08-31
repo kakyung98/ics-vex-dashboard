@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-23-026-01",
       "dependsOn": [
-        "mod:icsa-23-026-01:firmware"
+        "mod:icsa-23-026-01:firmware",
+        "variant:delta-electronics-cncsoft-1-01-34",
+        "variant:delta-electronics-running-screeneditor-1-01-5"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:delta-electronics-cncsoft-1-01-34",
+      "name": "Delta Electronics CNCSoft < 1.01.34",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:delta-electronics-running-screeneditor-1-01-5",
+      "name": "Delta Electronics Running ScreenEditor <= 1.01.5",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-23-026-01:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:delta-electronics-cncsoft-1-01-34"
+        },
+        {
+          "ref": "variant:delta-electronics-running-screeneditor-1-01-5"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.05322"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

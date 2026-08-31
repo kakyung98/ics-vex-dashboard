@@ -136,7 +136,10 @@
     {
       "ref": "device:icsa-26-160-01",
       "dependsOn": [
-        "pkg:oss:net-snmp"
+        "pkg:oss:net-snmp",
+        "variant:schneider-electric-connexium-managed-switches-vers-all",
+        "variant:schneider-electric-modicon-managed-switches-vers-all",
+        "variant:schneider-electric-modicon-redundancy-switches-vers-all"
       ]
     }
   ],
@@ -180,6 +183,60 @@
           "value": "C"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-connexium-managed-switches-vers-all",
+      "name": "Schneider Electric Connexium Managed Switches vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-modicon-managed-switches-vers-all",
+      "name": "Schneider Electric Modicon Managed Switches vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-modicon-redundancy-switches-vers-all",
+      "name": "Schneider Electric Modicon Redundancy Switches vers:all/*",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +261,13 @@
       "cwes": [],
       "affects": [
         {
-          "ref": "pkg:oss:net-snmp",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:schneider-electric-connexium-managed-switches-vers-all"
+        },
+        {
+          "ref": "variant:schneider-electric-modicon-managed-switches-vers-all"
+        },
+        {
+          "ref": "variant:schneider-electric-modicon-redundancy-switches-vers-all"
         }
       ],
       "properties": [
@@ -241,6 +298,18 @@
         {
           "name": "signal:epss",
           "value": "0.14859"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {

@@ -193,6 +193,60 @@ affected / CP200 20개 not_affected), 우리 역방향 SBOM 에는 **모델 변�
 → 이 18 쌍이 현재 시스템의 **외부 정답지이자 미달 지점**이다. 좁히려면 CISA CSAF 의
 `product_tree` 를 역방향 SBOM 에 주입해 모델 변형 단위를 만들어야 한다.
 
+### 모델 변형 단위 — `product_tree` 주입과 독립 유도 평가
+
+역방향 SBOM 은 ICSA 1건을 장비 1대로 뭉갠다. 그런데 CISA/벤더는 같은 ICSA 안에서
+**모델별로** 판정을 가른다 — `icsa-25-191-06` 은 SIPROTEC 5 **CP300 44개 affected /
+CP200 20개 not_affected**. 모델 단위가 없으면 이 분기를 표현조차 못 한다.
+
+`tools/inject_product_variants.py` 가 CISA CSAF 의 `product_tree` 를 SBOM 에 주입한다:
+
+```
+SBOM 1,937개에 모델 변형 24,380개 주입, 취약점 6,721건을 영향 모델로 한정
+icsa-25-191-06: 컴포넌트 1개 -> 65개 (모델 64 + 장비 1), CVE-2025-40742 -> affects 44 모델
+```
+
+#### 무엇이 입력이고 무엇이 정답인가
+
+`tools/eval_variant_derivation.py` 는 순환을 막기 위해 입력을 엄격히 제한한다.
+
+| | 항목 | 사용 |
+|---|---|---|
+| **입력** | `product_tree` (모델 목록) | 허용 — 권고문에 적힌 공개 정보 |
+| **입력** | `product_status.known_affected` | 허용 — 모든 자산소유자가 권고문에서 읽는 정보 |
+| **정답** | `product_status.known_not_affected` | **금지** |
+| **정답** | `vulnerabilities[].flags[].label` | **금지** |
+
+유도 규칙은 자산소유자가 실제로 하는 추론 그대로다:
+**내 모델이 이 CVE 의 영향 목록에 없다 → `not_affected`, 근거는 `component_not_present`.**
+
+#### 결과
+
+```
+모델 단위 (product_id)        TP 278 / FP 676 / FN 0
+                              precision 0.291 | recall 1.000 | F1 0.451
+(ICSA, CVE) 쌍 단위           justification 까지 일치 10/18
+```
+
+**recall 1.000** — CISA 가 `not_affected` 로 선언한 모델을 **하나도 놓치지 않는다**.
+
+**precision 0.291** 의 FP 676건은 전부 *CISA 가 아예 열거하지 않은* 모델이다.
+`known_not_affected` 를 입력에서 뺐으므로 "영향 없음"과 "언급 안 됨"을 구별할 수 없다.
+이것은 알고리즘의 결함이 아니라 **공개 데이터의 상한**이다.
+
+**justification 10/18 의 분포가 결과를 해석해 준다:**
+
+| 정답 label | 쌍 | 우리 일치 |
+|---|---|---|
+| `component_not_present` | 10 | **10 / 10** |
+| `vulnerable_code_not_in_execute_path` | 5 | 0 / 5 |
+| `vulnerable_code_not_present` | 3 | 0 / 3 |
+
+즉 **제품 구조로 판정되는 건은 전부 맞히고, 소스코드 분석이 필요한 건은 전부 틀린다.**
+후자 8건은 어느 컴포넌트인지조차 공개되지 않은 벤더 독점 코드다 — 18쌍 중
+OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`(libcurl) **단 1건**이다.
+공개 데이터만으로 도달 가능한 경계가 정확히 여기다.
+
 ## ⚠️ 데이터 성격 (정직한 고지)
 
 - **진짜**: 장비↔CVE↔CWE↔CVSS 매핑은 CISA ICS-CERT 공식 (3,765 어드바이저리, 11,336 CVE), KEV·EPSS 실신호, OSS 취약/패치 실코드(34 CVE, GitHub 픽스 커밋)

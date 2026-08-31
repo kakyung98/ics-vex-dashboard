@@ -136,7 +136,9 @@
     {
       "ref": "device:icsa-18-212-02",
       "dependsOn": [
-        "mod:icsa-18-212-02:firmware"
+        "mod:icsa-18-212-02:firmware",
+        "variant:johnson-controls-inc-bcpro-bcm-3-0-2",
+        "variant:johnson-controls-inc-metasys-system-8-0"
       ]
     }
   ],
@@ -178,6 +180,42 @@
           "value": "E"
         }
       ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:johnson-controls-inc-bcpro-bcm-3-0-2",
+      "name": "Johnson Controls Inc BCPro (BCM) < 3.0.2",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:johnson-controls-inc-metasys-system-8-0",
+      "name": "Johnson Controls Inc Metasys System <= 8.0",
+      "version": "NOASSERTION",
+      "scope": "required",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
     }
   ],
   "vulnerabilities": [
@@ -204,13 +242,10 @@
       ],
       "affects": [
         {
-          "ref": "mod:icsa-18-212-02:firmware",
-          "versions": [
-            {
-              "version": "NOASSERTION",
-              "status": "affected"
-            }
-          ]
+          "ref": "variant:johnson-controls-inc-bcpro-bcm-3-0-2"
+        },
+        {
+          "ref": "variant:johnson-controls-inc-metasys-system-8-0"
         }
       ],
       "properties": [
@@ -241,6 +276,18 @@
         {
           "name": "signal:epss",
           "value": "0.0078"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
         }
       ],
       "analysis": {
