@@ -25,18 +25,25 @@ while IFS= read -r cve; do
   [ -z "$cve" ] && continue
   if grep -q "^$cve," "$CSV" 2>/dev/null; then echo "skip (done): $cve"; continue; fi
   log="$LOGDIR/$cve.log"
-  echo "=== $(date '+%m-%d %H:%M:%S') full-run $cve ==="
-  t0=$(date +%s)
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1" "$cve" > "$log" 2>&1
-  t1=$(date +%s); dt=$((t1-t0))
-
-  build_ok=0; exploit_ok=0; verify_ok=0
-  grep -qa "Critic accepted the repo build" "$log" && build_ok=1
-  { grep -qa "Critic accepted the exploit" "$log" || grep -qa "Exploit Script Created" "$log"; } && exploit_ok=1
-  # verify success = verifier phase reports success True (and not a timeout)
-  if grep -qaE "verifier.*'success': 'True'|CTF.*[Ss]uccess|flag captured" "$log" \
-     && ! grep -qa "Timeout expired during phase: verifier" "$log"; then verify_ok=1; fi
-
+  # 일시장애(LLM 빈응답/포맷오류/인프라 연결거부)는 진짜 빌드 실패가 아니므로 재시도한다.
+  MAX_TRIES="${RETRY_TRIES:-3}"
+  attempt=0; build_ok=0; exploit_ok=0; verify_ok=0; dt=0
+  while :; do
+    attempt=$((attempt+1))
+    echo "=== $(date '+%m-%d %H:%M:%S') full-run $cve (attempt $attempt/$MAX_TRIES) ==="
+    t0=$(date +%s)
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS1" "$cve" > "$log" 2>&1
+    t1=$(date +%s); dt=$((t1-t0))
+    build_ok=0; exploit_ok=0; verify_ok=0
+    grep -qa "Critic accepted the repo build" "$log" && build_ok=1
+    { grep -qa "Critic accepted the exploit" "$log" || grep -qa "Exploit Script Created" "$log"; } && exploit_ok=1
+    if grep -qaE "verifier.*'success': 'True'|CTF.*[Ss]uccess|flag captured" "$log" && ! grep -qa "Timeout expired during phase: verifier" "$log"; then verify_ok=1; fi
+    [ $build_ok -eq 1 ] && break
+    if [ $attempt -lt $MAX_TRIES ] && grep -qaE "Empty Response From LLM|Connection refused|Network is unreachable|list index out of range|NoneType. object is not subscriptable|Output format is not correct" "$log"; then
+      echo "  transient failure — retrying ($cve)"; sleep 5; continue
+    fi
+    break
+  done
   if [ $verify_ok -eq 1 ]; then outcome="execution-verified"
   elif [ $exploit_ok -eq 1 ]; then outcome="exploit-generated"
   elif [ $build_ok -eq 1 ]; then outcome="build-only"
