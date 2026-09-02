@@ -183,6 +183,8 @@ class Store:
         self.verify = {"summary": _load(os.path.join(_vf, "_summary.json"), {}),
                        "records": _recs}
         self.verify_coverage = _load(os.path.join(RESULTS, "verify_coverage.json"), {})
+        # Published VEX ground truth: the 12 CISA-labelled ICSA (18 ICSA x CVE pairs).
+        self.gt_icsa = _load(os.path.join(DATA, "gt_icsa", "manifest.json"), {"tier1": [], "tier2": []})
         self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
         # CISA ICS advisories (the corpus provenance)
         adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
@@ -339,14 +341,23 @@ class Store:
         _fin_just = Counter(r.get("justification") for r in _fi if r.get("justification"))
         _per_dev = Counter(r.get("device") for r in _fi if r.get("device"))
         _med = (sorted(_per_dev.values())[len(_per_dev) // 2] if _per_dev else 0)
+        # CVE-centric: a CVE can get different verdicts on different products.
+        _per_cve = defaultdict(set)
+        for r in _fi:
+            _per_cve[r["cve"]].add(r["final_vex"])
+        _cve_split = sum(1 for v in _per_cve.values() if len(v) > 1)
+        _cve_prod = Counter(r["cve"] for r in _fi)
+        _cve_prod_med = (sorted(_cve_prod.values())[len(_cve_prod) // 2] if _cve_prod else 0)
         self.cve_level = {
             "axes": {
-                # 축 = ICSA 어드바이저리. CISA 가 ICSA 1건당 CSAF 1개를 발행하므로
-                # 우리 SBOM/VEX 도 같은 축을 써서 1:1 대조가 가능하다.
-                "advisories_collected": self.advisories.get("total", 0),
-                "advisories_with_cves": len(_dev),
-                "statements": len(_fi),
+                # VEX 는 취약점(CVE) 단위 진술이므로 CVE 를 기준 축으로 둔다.
                 "cves": len(cve_worst),
+                "statements": len(_fi),
+                "advisories_with_cves": len(_dev),
+                "advisories_collected": self.advisories.get("total", 0),
+                "cve_split": _cve_split,            # 제품에 따라 판정이 갈리는 CVE 수
+                "products_per_cve_median": _cve_prod_med,
+                "products_per_cve_max": (max(_cve_prod.values()) if _cve_prod else 0),
                 "statements_per_advisory_median": _med,
                 "statements_per_advisory_max": (max(_per_dev.values()) if _per_dev else 0),
             },
@@ -670,6 +681,40 @@ def build_app():
         """Coverage over the source-collectable CVEs: attemptable vs not-doable + reasons."""
         return STORE.verify_coverage
 
+    @app.get("/api/published_vex")
+    def published_vex():
+        """The only public ICS VEX ground truth: CISA-labelled ICSA justifications
+        (12 advisories, 18 ICSA x CVE pairs), keyed to CVE."""
+        man = STORE.gt_icsa
+        pairs, ldist, vendors = [], {}, {}
+        for r in man.get("tier1", []):
+            aid = r.get("advisory_id")
+            title = r.get("title", "")
+            vendor = title.split()[0] if title else "?"
+            vendors[vendor] = vendors.get(vendor, 0) + 1
+            for cve, labels in (r.get("flags") or {}).items():
+                for lab in labels:
+                    ldist[lab] = ldist.get(lab, 0) + 1
+                pairs.append({
+                    "advisory": aid, "cve": cve,
+                    "title": title,
+                    "justification": labels[0] if labels else None,
+                    "labels": labels,
+                    "url": r.get("cisa_url"),
+                    "release": r.get("current_release_date") or r.get("initial_release_date"),
+                })
+        pairs.sort(key=lambda x: x["cve"])
+        return {
+            "advisories": len(man.get("tier1", [])),
+            "pairs": len(pairs),
+            "label_instances": sum(ldist.values()),
+            "by_justification": ldist,
+            "by_vendor": vendors,
+            "note": ("The entire public ICS VEX label set. All justifications are "
+                     "code/build-based; no environment-based justification appears."),
+            "rows": pairs,
+        }
+
     @app.get("/results/verify_evidence/{cve}/run.log")
     def verify_evidence_log(cve: str):
         """Serve a raw execution-verification run log (parity with static hosting)."""
@@ -795,6 +840,10 @@ def build_app():
     @app.get("/collectable.html", response_class=HTMLResponse)
     def collectable():
         return make_page("collectable")
+
+    @app.get("/published-vex.html", response_class=HTMLResponse)
+    def published_vex_page():
+        return make_page("published-vex")
 
     @app.get("/source.html", response_class=HTMLResponse)
     def source():
@@ -1046,14 +1095,14 @@ async function stats(){
     // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
-      const AX=[['advisories_collected','ICS advisories','collected 2010–2026'],
-                ['advisories_with_cves','SBOMs (one per ICSA)','one VEX document each'],
-                ['statements','VEX statements','ICSA × CVE — the judgement unit'],
-                ['cves','unique CVEs','vulnerability population']];
+      const AX=[['cves','unique CVEs','the VEX judgement axis'],
+                ['statements','judgements','CVE × product (a CVE can split)'],
+                ['advisories_with_cves','products (SBOMs)','one per ICSA'],
+                ['advisories_collected','ICS advisories','source, 2010–2026']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';
-      if(ax.statements_per_advisory_median!=null)
-        ak.innerHTML+='<div class="kpi"><b>'+ax.statements_per_advisory_median+' / '+(ax.statements_per_advisory_max||0).toLocaleString()+'</b><span>statements per ICSA<br><span class="hint" style="font-size:11px">median / max</span></span></div>';}
+      if(ax.cve_split!=null)
+        ak.innerHTML+='<div class="kpi"><b>'+(ax.cve_split||0).toLocaleString()+'</b><span>CVEs that split<br><span class="hint" style="font-size:11px">different verdict across products</span></span></div>';}
     // 판정 — statement 단위. worst-case 로 CVE 에 뭉개지 않는다.
     const k=document.getElementById('kpis');k.innerHTML='';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
@@ -1534,12 +1583,45 @@ async function cveSearchRun(){
   out.innerHTML=h+'</tbody></table></div>';
 }
 
+const PVJUST_COL={component_not_present:'var(--safe)','vulnerable_code_not_present':'#37b24d','vulnerable_code_not_in_execute_path':'#69db7c','vulnerable_code_cannot_be_controlled_by_adversary':'var(--und)',inline_mitigations_already_exist:'var(--und)'};
+async function publishedVex(){
+  const box=document.getElementById('pv-rows');if(!box)return;
+  try{
+    const d=await tryJson(['/api/published_vex','published_vex.json']);
+    const rows=(d&&d.rows)||[];const bj=(d&&d.by_justification)||{};
+    const hint=document.getElementById('pv-hint');
+    if(hint)hint.textContent=d?(d.advisories+' advisories · '+d.pairs+' (ICSA×CVE) pairs'):'';
+    document.getElementById('pv-kpis').innerHTML=
+      '<div class="kpi"><b>'+(d.advisories||0)+'</b><span>advisories (documents)</span></div>'+
+      '<div class="kpi"><b>'+(d.pairs||0)+'</b><span>ICSA × CVE pairs</span></div>'+
+      '<div class="kpi"><b>'+(d.label_instances||0)+'</b><span>label instances<br><span class="hint" style="font-size:11px">one CVE may carry 2 labels</span></span></div>'+
+      '<div class="kpi"><b style="color:var(--und)">0</b><span>environment-based<br><span class="hint" style="font-size:11px">all labels are code/build</span></span></div>';
+    // justification distribution
+    let ch='<div class="ct">Justification distribution (label instances)</div>';
+    const tot=Object.values(bj).reduce((a,b)=>a+b,0)||1;
+    for(const k of Object.keys(bj).sort((a,b)=>bj[b]-bj[a])){
+      const w=Math.round(bj[k]/tot*100);const c=PVJUST_COL[k]||'var(--ink3)';
+      ch+='<div style="margin:4px 0"><span class="mono" style="font-size:12px">'+esc(k)+'</span> <b>'+bj[k]+'</b>'+
+          '<div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+w+'%;background:'+c+'"></div></div></div>';}
+    document.getElementById('pv-charts').innerHTML=ch;
+    // rows table
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>Product</th><th>Justification</th></tr></thead><tbody>';
+    for(const r of rows){const c=PVJUST_COL[r.justification]||'var(--ink3)';
+      const labs=(r.labels||[]).map(l=>'<span class="badge" style="background:'+((PVJUST_COL[l]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[l]||'var(--ink3)'))+'">'+esc(l)+'</span>').join(' ');
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+esc(r.cve)+'" target="_blank" rel="noopener">'+esc(r.cve)+'</a></td>'+
+         '<td class="mono hint">'+(r.url?('<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.advisory)+'</a>'):esc(r.advisory))+'</td>'+
+         '<td class="hint">'+esc((r.title||'').replace(/^[A-Za-z]+ /,''))+'</td>'+
+         '<td>'+labs+'</td></tr>';}
+    box.innerHTML=h+'</tbody></table></div>';
+  }catch(e){box.innerHTML='<span class="err">published VEX unavailable</span>';}
+}
 if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
 if(document.getElementById('cov-kpis'))coverage();
 if(document.getElementById('ev-kpis'))execVerify();
+if(document.getElementById('pv-kpis'))publishedVex();
 // ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
 let SBOM_INDEX=[], CVE2SBOM={};
 let CVE2ADV={};
@@ -1649,9 +1731,9 @@ ANALYZER_HTML = """<div class="card"><div class="row">
 <div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
 <div id="cmp-body"></div></div>"""
 
-CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— what one row means at each level</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
+CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement axis</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per statement (ICSA × CVE)</span></h3><div id="kpis" class="kpis hint">loading…</div>
+<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per CVE × product (a CVE may resolve differently on different products)</span></h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">A status other than <span class="mono">under investigation</span> requires code or SBOM evidence: an execution-verified result, or a CISA justification (<span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>). Deployment context never sets status here.</p>
 <p class="hint" style="margin-top:6px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
 <div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
@@ -1672,15 +1754,13 @@ COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source Code A
   <div id="sa-vendors"></div>
   <div id="sa-devtype"></div>
 </div>
-<div id="sa-cwe" style="margin-top:16px"></div></div>
-<div class="card"><h3 style="margin:0 0 4px">Engine coverage <span class="hint" id="cov-hint"></span></h3>
-<p class="hint" style="margin:0 0 12px">Of the source-collectable CVEs, how many can be run through the execution-verification engine, and why the rest cannot.</p>
-<div id="cov-kpis" class="kpis">loading…</div>
-<div id="cov-why" style="margin-top:14px"></div></div>
-<div class="card"><h3 style="margin:0 0 4px">Execution verification <span class="hint" id="ev-hint"></span></h3>
-<p class="hint" style="margin:0 0 12px">Per-CVE results from running each collected source through the engine (rebuild the vulnerable version &rarr; reproduce &rarr; run). Click a row's log to see the real run evidence.</p>
-<div id="ev-kpis" class="kpis">loading…</div>
-<div id="ev-results" style="margin-top:14px"></div></div>"""
+<div id="sa-cwe" style="margin-top:16px"></div></div>"""
+
+PUBLISHED_VEX_HTML = """<div class="card"><h3 style="margin:0 0 4px">Published VEX ground truth <span class="hint" id="pv-hint"></span></h3>
+<p class="hint" style="margin:0 0 12px">The entire public ICS VEX label set: across all 3,984 files in CISA's CSAF repository, only these advisories carry a <span class="mono">vulnerabilities[].flags[].label</span> justification. Keyed to CVE — the VEX judgment unit.</p>
+<div id="pv-kpis" class="kpis">loading…</div>
+<div id="pv-charts" style="margin-top:16px"></div>
+<div id="pv-rows" style="margin-top:16px"></div></div>"""
 
 TREE_HTML = """<div class="card" id="vextree" style="display:none">
 <h3 style="margin:0 0 4px">VEX decision tree &mdash; source-uncollectable CVEs <span class="hint" id="tree-count"></span></h3>
@@ -1805,12 +1885,15 @@ PAGES = {
                '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
     "collectable": ("Source Code Available CVEs",
                     '<h1 style="margin:0 0 18px">Source Code Available CVEs</h1>' + COLLECTABLE_HTML),
+    "published-vex": ("Published VEX (CISA)",
+                      '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
         ("vex-method", "vex-method.html", "VEX Analysis Method"),
         ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
         ("collectable", "collectable.html", "Source Code Available CVEs"),
+        ("published-vex", "published-vex.html", "Published VEX (CISA)"),
         ("source", "source.html", "ICS-CERT Advisories"),
         ("ics-sbom", "ics-sbom.html", "Synthetic SBOM")]
 
