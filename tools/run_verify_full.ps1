@@ -25,6 +25,7 @@ docker run --rm `
   --add-host host.docker.internal:host-gateway `
   -v "$engine\src\agents:/src/agents" `
   -v "$engine\src\toolbox:/src/toolbox" `
+  -v "$engine\src\prompts:/src/prompts" `
   -v "$engine\src\main.py:/src/main.py" `
   -v "$engine\webapp\data:/data" `
   -v "$engine\webapp\shared:/shared" `
