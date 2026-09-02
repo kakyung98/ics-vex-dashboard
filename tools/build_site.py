@@ -126,6 +126,7 @@ _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
 html = html.replace("__VEX_TREE__", _tree_json)
 for key, fname in [("analyzer", "index.html"), ("vex-method", "vex-method.html"), ("source", "source.html"),
                    ("corpus", "corpus.html"), ("collectable", "collectable.html"),
+                   ("published-vex", "published-vex.html"),
                    ("ics-sbom", "ics-sbom.html")]:
     page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])
     open(os.path.join(BASE, fname), "w", encoding="utf-8").write(page)
