@@ -31,7 +31,6 @@ dump("source_available.json", S.tier_a)
 dump("by_year.json", {"total_cves": sum(S.by_year.values()), "by_year": S.by_year})
 dump("advisories.json", S.advisories)
 ready = [c for c in S.candidates.get("candidates", []) if c.get("status") == "ready"]
-dump("candidates_ready.json", {"count": len(ready)})
 dump("verify_results.json", S.verify)
 dump("verify_coverage.json", S.verify_coverage)
 dump("cve_index.json", list(S.cve_index.values()))
@@ -110,5 +109,5 @@ sz = lambda n: os.path.getsize(os.path.join(BASE, n)) / 1024
 print("wrote pages: index.html corpus.html collectable.html + json:")
 for n in ["index.html", "source.html", "corpus.html", "collectable.html",
           "cve_index.json", "cve_level.json", "source_available.json", "by_year.json",
-          "advisories.json", "advisories_list.json", "candidates_ready.json", "cve_kb.json"]:
+          "advisories.json", "advisories_list.json", "cve_kb.json"]:
     print("  %-24s %.0f KB" % (n, sz(n)))

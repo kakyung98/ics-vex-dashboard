@@ -277,7 +277,7 @@ OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`
 | **VEX 문서 출력** | `src/api_server.py` (Analyzer) | OpenVEX v0.2.0 · CSAF 2.0(csaf_vex) — status별 필수필드 + SSVC |
 | ~~소스-불가 CVE 결정트리~~ (폐기) | `src/vex_source_unavailable.py` | Yes/No 트리 제거 → `under_investigation`+SSVC 로 대체(모듈만 잔존) |
 | **정적 사이트 생성 (6페이지)** | `tools/build_site.py` | `index`·`vex-method`·`corpus`·`collectable`·`source`·`ics-sbom.html` + 데이터 JSON |
-| ~~검증 스펙/실행 검증~~ (격리) | `archive/*` | 과거 `results/exec_verification*.json` (역사적 근거로만 유지) |
+| 실행 검증 결과 (역사적 근거) | `results/exec_verification*.json` | zlib 파일럿 등 초기 확정 건 |
 | **Ground Truth (증거 계층)** | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | SecureBERT 학습·평가 | `src/train_eval_vex.py` | `results/metrics.json` |
 | **SecureBERT ICS 도메인 적응(DAPT)** | `src/train_securebert_dapt.py` | `models/ics-securebert/`, `results/dapt_metrics.json` |
