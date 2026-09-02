@@ -45,14 +45,18 @@ def main():
         expl = load_json(os.path.join(conv, "exploiter.json")) or {}
         crit = load_json(os.path.join(conv, "exploit_critic.json")) or {}
         veri = load_json(os.path.join(conv, "ctf_verifier.json")) or {}
+        _runlog = os.path.join(EVID, cve, "run.log")
+        _logtxt = open(_runlog, encoding="utf-8", errors="ignore").read() if os.path.exists(_runlog) else ""
         poc = expl.get("poc") or expl.get("exploit") or ""
         if isinstance(poc, (dict, list)):
             poc = json.dumps(poc, ensure_ascii=False, indent=2)
         poc = (poc or "").strip()
         crit_ok = str(crit.get("decision", crit.get("success", ""))).lower() in ("yes", "true", "accepted")
         crit_analysis = crit.get("analysis") or crit.get("reason") or ""
-        veri_ok = str(veri.get("success", "")).lower() in ("yes", "true")
-        veri_reason = veri.get("reason", "")
+        # 최종 판정은 Validator 단계(run.log)가 권위. ctf_verifier.json 은 에이전트 중간산출물.
+        import re as _re
+        veri_ok = bool(_re.search(r"Results:\s*\{'success':\s*'True'", _logtxt)) and                   ("CVE reproduced" in _logtxt or "Flag found" in _logtxt)
+        veri_reason = "CVE reproduced (execution-verified)" if veri_ok else                       (veri.get("reason","") or "not reproduced")
         tier = outcomes.get(cve, "")
 
         wrote = ""
