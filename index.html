@@ -122,7 +122,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main on" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab" href="vex-method.html">VEX Analysis Method</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
+  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main on" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab" href="vex-method.html">VEX Analysis Method</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
 <h1 style="margin:0 0 2px">ICS-VEXForge</h1><p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. Source-available CVEs are confirmed by execution (build &rarr; reproduce &rarr; run); source-uncollectable CVEs stay under_investigation with an SSVC priority.</p><div class="card"><div class="row">
@@ -258,14 +258,14 @@ async function stats(){
     // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
-      const AX=[['advisories_collected','ICS advisories','collected 2010–2026'],
-                ['advisories_with_cves','SBOMs (one per ICSA)','one VEX document each'],
-                ['statements','VEX statements','ICSA × CVE — the judgement unit'],
-                ['cves','unique CVEs','vulnerability population']];
+      const AX=[['cves','unique CVEs','the VEX judgement axis'],
+                ['statements','judgements','CVE × product (a CVE can split)'],
+                ['advisories_with_cves','products (SBOMs)','one per ICSA'],
+                ['advisories_collected','ICS advisories','source, 2010–2026']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';
-      if(ax.statements_per_advisory_median!=null)
-        ak.innerHTML+='<div class="kpi"><b>'+ax.statements_per_advisory_median+' / '+(ax.statements_per_advisory_max||0).toLocaleString()+'</b><span>statements per ICSA<br><span class="hint" style="font-size:11px">median / max</span></span></div>';}
+      if(ax.cve_split!=null)
+        ak.innerHTML+='<div class="kpi"><b>'+(ax.cve_split||0).toLocaleString()+'</b><span>CVEs that split<br><span class="hint" style="font-size:11px">different verdict across products</span></span></div>';}
     // 판정 — statement 단위. worst-case 로 CVE 에 뭉개지 않는다.
     const k=document.getElementById('kpis');k.innerHTML='';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
@@ -746,12 +746,45 @@ async function cveSearchRun(){
   out.innerHTML=h+'</tbody></table></div>';
 }
 
+const PVJUST_COL={component_not_present:'var(--safe)','vulnerable_code_not_present':'#37b24d','vulnerable_code_not_in_execute_path':'#69db7c','vulnerable_code_cannot_be_controlled_by_adversary':'var(--und)',inline_mitigations_already_exist:'var(--und)'};
+async function publishedVex(){
+  const box=document.getElementById('pv-rows');if(!box)return;
+  try{
+    const d=await tryJson(['/api/published_vex','published_vex.json']);
+    const rows=(d&&d.rows)||[];const bj=(d&&d.by_justification)||{};
+    const hint=document.getElementById('pv-hint');
+    if(hint)hint.textContent=d?(d.advisories+' advisories · '+d.pairs+' (ICSA×CVE) pairs'):'';
+    document.getElementById('pv-kpis').innerHTML=
+      '<div class="kpi"><b>'+(d.advisories||0)+'</b><span>advisories (documents)</span></div>'+
+      '<div class="kpi"><b>'+(d.pairs||0)+'</b><span>ICSA × CVE pairs</span></div>'+
+      '<div class="kpi"><b>'+(d.label_instances||0)+'</b><span>label instances<br><span class="hint" style="font-size:11px">one CVE may carry 2 labels</span></span></div>'+
+      '<div class="kpi"><b style="color:var(--und)">0</b><span>environment-based<br><span class="hint" style="font-size:11px">all labels are code/build</span></span></div>';
+    // justification distribution
+    let ch='<div class="ct">Justification distribution (label instances)</div>';
+    const tot=Object.values(bj).reduce((a,b)=>a+b,0)||1;
+    for(const k of Object.keys(bj).sort((a,b)=>bj[b]-bj[a])){
+      const w=Math.round(bj[k]/tot*100);const c=PVJUST_COL[k]||'var(--ink3)';
+      ch+='<div style="margin:4px 0"><span class="mono" style="font-size:12px">'+esc(k)+'</span> <b>'+bj[k]+'</b>'+
+          '<div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+w+'%;background:'+c+'"></div></div></div>';}
+    document.getElementById('pv-charts').innerHTML=ch;
+    // rows table
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>Product</th><th>Justification</th></tr></thead><tbody>';
+    for(const r of rows){const c=PVJUST_COL[r.justification]||'var(--ink3)';
+      const labs=(r.labels||[]).map(l=>'<span class="badge" style="background:'+((PVJUST_COL[l]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[l]||'var(--ink3)'))+'">'+esc(l)+'</span>').join(' ');
+      h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+esc(r.cve)+'" target="_blank" rel="noopener">'+esc(r.cve)+'</a></td>'+
+         '<td class="mono hint">'+(r.url?('<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.advisory)+'</a>'):esc(r.advisory))+'</td>'+
+         '<td class="hint">'+esc((r.title||'').replace(/^[A-Za-z]+ /,''))+'</td>'+
+         '<td>'+labs+'</td></tr>';}
+    box.innerHTML=h+'</tbody></table></div>';
+  }catch(e){box.innerHTML='<span class="err">published VEX unavailable</span>';}
+}
 if(document.getElementById('kpis'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
 if(document.getElementById('cov-kpis'))coverage();
 if(document.getElementById('ev-kpis'))execVerify();
+if(document.getElementById('pv-kpis'))publishedVex();
 // ---- ICS-SBOM dataset + advisory<->SBOM cross-reference ----
 let SBOM_INDEX=[], CVE2SBOM={};
 let CVE2ADV={};

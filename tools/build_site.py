@@ -33,6 +33,31 @@ dump("advisories.json", S.advisories)
 ready = [c for c in S.candidates.get("candidates", []) if c.get("status") == "ready"]
 dump("verify_results.json", S.verify)
 dump("verify_coverage.json", S.verify_coverage)
+
+
+def _published_vex(store):
+    man = getattr(store, "gt_icsa", {"tier1": []})
+    rows, ldist, vendors = [], {}, {}
+    for r in man.get("tier1", []):
+        title = r.get("title", "")
+        vendor = title.split()[0] if title else "?"
+        vendors[vendor] = vendors.get(vendor, 0) + 1
+        for cve, labels in (r.get("flags") or {}).items():
+            for lab in labels:
+                ldist[lab] = ldist.get(lab, 0) + 1
+            rows.append({"advisory": r.get("advisory_id"), "cve": cve, "title": title,
+                         "justification": labels[0] if labels else None, "labels": labels,
+                         "url": r.get("cisa_url"),
+                         "release": r.get("current_release_date") or r.get("initial_release_date")})
+    rows.sort(key=lambda x: x["cve"])
+    return {"advisories": len(man.get("tier1", [])), "pairs": len(rows),
+            "label_instances": sum(ldist.values()), "by_justification": ldist,
+            "by_vendor": vendors, "rows": rows,
+            "note": ("The entire public ICS VEX label set. All justifications are "
+                     "code/build-based; no environment-based justification appears.")}
+
+
+dump("published_vex.json", _published_vex(S))
 dump("cve_index.json", list(S.cve_index.values()))
 dump("cve_kb.json", {"components": S.kb_comps})   # CVSS-enriched KB
 dump("advisories_list.json", {"count": len(S.advisories_list),
