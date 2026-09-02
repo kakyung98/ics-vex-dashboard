@@ -1,0 +1,212 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Q2 (in-execute-path) via a static call graph over a collected source tree.
+
+For a CVE whose source is in data/source_snapshots/<CVE>/, build a C/C++ call
+graph with tree-sitter, then check whether the vulnerable function (from the fix
+commit) is reachable from the component's public entry points.
+
+  reachable    -> Q2 does NOT clear not_affected (stays a candidate for fuzzing)
+  unreachable  -> not_affected / vulnerable_code_not_in_execute_path
+
+This is the cheap static filter that runs before fuzzing. It does not prove the
+path executes at runtime (that is what fuzzing confirms), only that a call chain
+exists in the source.
+
+Usage:
+  python tools/callgraph_reach.py <CVE> [--target func1,func2] [--json out.json]
+  python tools/callgraph_reach.py --all
+"""
+import argparse
+import json
+import os
+import re
+from collections import defaultdict, deque
+
+BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SNAP = os.path.join(BASE, "data", "source_snapshots")
+CE = os.path.join(BASE, "data", "code_evidence.json")
+
+import tree_sitter_c
+import tree_sitter_cpp
+from tree_sitter import Language, Parser
+
+C_LANG = Language(tree_sitter_c.language())
+CPP_LANG = Language(tree_sitter_cpp.language())
+EXT_C = {".c", ".h"}
+EXT_CPP = {".cc", ".cpp", ".cxx", ".hpp", ".hh"}
+SKIP = ("test", "example", "examples", "fuzz", ".git", "doc", "docs")
+
+
+def _parser(ext):
+    return Parser(CPP_LANG if ext in EXT_CPP else C_LANG)
+
+
+def _funcname(node, src):
+    decl = node.child_by_field_name("declarator")
+    seen = 0
+    while decl is not None and decl.type != "function_declarator" and seen < 6:
+        d = decl.child_by_field_name("declarator")
+        if d is None:
+            for c in decl.children:
+                if c.type in ("function_declarator", "identifier", "pointer_declarator",
+                              "parenthesized_declarator"):
+                    d = c
+                    break
+        decl = d
+        seen += 1
+    if decl is None:
+        return None
+    idn = decl.child_by_field_name("declarator") if decl.type == "function_declarator" else decl
+    q = [idn] if idn else []
+    while q:
+        n = q.pop()
+        if n is None:
+            continue
+        if n.type in ("identifier", "field_identifier"):
+            return src[n.start_byte:n.end_byte].decode("utf-8", "ignore")
+        q.extend(n.children)
+    return None
+
+
+def _calls_in(node, src):
+    out = set()
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        if n.type == "call_expression":
+            fn = n.child_by_field_name("function")
+            if fn is not None and fn.type in ("identifier", "field_identifier"):
+                out.add(src[fn.start_byte:fn.end_byte].decode("utf-8", "ignore"))
+        stack.extend(n.children)
+    return out
+
+
+def build_graph(root):
+    defs = defaultdict(set)
+    defined = set()
+    files = 0
+    for dp, _dn, fns in os.walk(root):
+        low = dp.replace("\\", "/").lower()
+        if any(("/" + s) in low for s in SKIP):
+            continue
+        for fn in fns:
+            ext = os.path.splitext(fn)[1].lower()
+            if ext not in EXT_C and ext not in EXT_CPP:
+                continue
+            p = os.path.join(dp, fn)
+            try:
+                src = open(p, "rb").read()
+            except OSError:
+                continue
+            if len(src) > 2_000_000:
+                continue
+            files += 1
+            tree = _parser(ext).parse(src)
+            stack = [tree.root_node]
+            while stack:
+                n = stack.pop()
+                if n.type == "function_definition":
+                    name = _funcname(n, src)
+                    body = n.child_by_field_name("body")
+                    if name and body is not None:
+                        defined.add(name)
+                        defs[name] |= _calls_in(body, src)
+                stack.extend(n.children)
+    return defs, defined, files
+
+
+def reachable_from(entries, defs):
+    seen, q = set(entries), deque(entries)
+    while q:
+        f = q.popleft()
+        for c in defs.get(f, ()):
+            if c not in seen:
+                seen.add(c)
+                q.append(c)
+    return seen
+
+
+def analyze(cve, targets):
+    root = os.path.join(SNAP, cve)
+    sub = [os.path.join(root, d) for d in os.listdir(root)] if os.path.isdir(root) else []
+    src_root = next((s for s in sub if os.path.isdir(s)), root)
+    defs, defined, nfiles = build_graph(src_root)
+    if not defined:
+        return {"cve": cve, "status": "no-source", "files": nfiles}
+
+    called = set().union(*defs.values()) if defs else set()
+    entries = {f for f in defined if f not in called} | ({"main"} & defined)
+    if not entries:
+        entries = set(defined)
+    reach = reachable_from(entries, defs)
+
+    tgt_present = [t for t in targets if t in defined]
+    tgt_reach = [t for t in tgt_present if t in reach]
+    if not tgt_present:
+        verdict = "target-not-found"
+    elif tgt_reach:
+        verdict = "reachable"
+    else:
+        verdict = "unreachable"
+    return {"cve": cve, "status": "ok", "files": nfiles, "functions": len(defined),
+            "entry_points": len(entries), "targets": targets,
+            "targets_present": tgt_present, "targets_reachable": tgt_reach,
+            "verdict": verdict,
+            "justification": ("vulnerable_code_not_in_execute_path"
+                              if verdict == "unreachable" else None)}
+
+
+def targets_for(cve, ce, override):
+    if override:
+        return [t.strip() for t in override.split(",") if t.strip()]
+    v = ce.get(cve, {})
+    names = set()
+    for blob in (v.get("vuln_code"), v.get("patched_code")):
+        if blob:
+            for m in re.finditer(r"([A-Za-z_][A-Za-z0-9_]{2,})\s*\(", blob):
+                names.add(m.group(1))
+    return sorted(names)[:12]
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("cve", nargs="?")
+    ap.add_argument("--target", default="")
+    ap.add_argument("--all", action="store_true")
+    ap.add_argument("--json", default="")
+    a = ap.parse_args()
+    ce = json.load(open(CE, encoding="utf-8")) if os.path.exists(CE) else {}
+
+    cves = ([d for d in sorted(os.listdir(SNAP)) if os.path.isdir(os.path.join(SNAP, d))]
+            if a.all else [a.cve])
+    out = a.json or os.path.join(BASE, "results", "callgraph_reach.json")
+    # resume: skip CVEs already in the output file (survives shutdowns)
+    results = []
+    if a.all and os.path.exists(out):
+        try:
+            results = json.load(open(out, encoding="utf-8"))
+        except Exception:
+            results = []
+    done = {r.get("cve") for r in results}
+    for cve in cves:
+        if cve in done:
+            continue
+        try:
+            r = analyze(cve, targets_for(cve, ce, a.target))
+        except Exception as e:
+            r = {"cve": cve, "status": "error", "error": str(e)[:150]}
+        results.append(r)
+        v = r.get("verdict", r.get("status"))
+        print("%-20s %-18s files=%s funcs=%s tgt=%s/reach=%s" % (
+            cve, v, r.get("files", "-"), r.get("functions", "-"),
+            len(r.get("targets_present", []) or []), len(r.get("targets_reachable", []) or [])), flush=True)
+        json.dump(results, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)  # checkpoint each CVE
+    from collections import Counter
+    dist = Counter(r.get("verdict", r.get("status")) for r in results)
+    print("\n== verdicts ==", dict(dist))
+    print("-> %s" % out)
+
+
+if __name__ == "__main__":
+    main()

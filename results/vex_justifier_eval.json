@@ -1,0 +1,18 @@
+{
+  "model": "Qwen2.5-Coder-7B-Instruct + QLoRA (r=16, a=32), 1 epoch, 12k subsample",
+  "train_rows": 23538,
+  "held_out_status": {
+    "n": 800,
+    "unparsable": 41,
+    "affected": { "precision": 0.963, "recall": 0.823, "f1": 0.888, "tp": 340, "fp": 13, "fn": 73 },
+    "not_affected": { "precision": 0.837, "recall": 0.966, "f1": 0.897, "tp": 374, "fp": 73, "fn": 13 },
+    "macro_f1": 0.892,
+    "accuracy": 0.892
+  },
+  "cisa_gold": {
+    "n": 18,
+    "status_not_affected_correct": 15,
+    "justification_label_exact_match": 0,
+    "note": "Corpus teaches Q1 (presence) only; the real CISA labels are dominated by component_not_present and vulnerable_code_not_in_execute_path, which require whole-program/SBOM context the function-level training data does not carry. Status is right 15/18; the specific CISA label is not reproduced."
+  }
+}
