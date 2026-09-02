@@ -1091,19 +1091,16 @@ if(_ta){   // analyzer page only
 }
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();
-    const v=s.by_vex_statement||s.by_vex||{}, ax=s.axes||{};
-    // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
+    const v=s.by_vex||{}, ax=s.axes||{};
+    // 축 카드 — CVE 가 VEX 판정 단위. 제품/statement 축은 표시하지 않는다.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
-      const AX=[['cves','unique CVEs','the VEX judgement axis'],
-                ['statements','judgements','CVE × product (a CVE can split)'],
-                ['advisories_with_cves','products (SBOMs)','one per ICSA'],
-                ['advisories_collected','ICS advisories','source, 2010–2026']];
+      const AX=[['cves','unique CVEs','the VEX judgement unit'],
+                ['advisories_collected','ICS advisories','source, 2010–2026'],
+                ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
-        ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';
-      if(ax.cve_split!=null)
-        ak.innerHTML+='<div class="kpi"><b>'+(ax.cve_split||0).toLocaleString()+'</b><span>CVEs that split<br><span class="hint" style="font-size:11px">different verdict across products</span></span></div>';}
-    // 판정 — statement 단위. worst-case 로 CVE 에 뭉개지 않는다.
+        ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
+    // 판정 — CVE 단위.
     const k=document.getElementById('kpis');k.innerHTML='';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
@@ -1731,9 +1728,9 @@ ANALYZER_HTML = """<div class="card"><div class="row">
 <div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
 <div id="cmp-body"></div></div>"""
 
-CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement axis</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
+CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per CVE × product (a CVE may resolve differently on different products)</span></h3><div id="kpis" class="kpis hint">loading…</div>
+<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per CVE</span></h3><div id="kpis" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">A status other than <span class="mono">under investigation</span> requires code or SBOM evidence: an execution-verified result, or a CISA justification (<span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>). Deployment context never sets status here.</p>
 <p class="hint" style="margin-top:6px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
 <div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
