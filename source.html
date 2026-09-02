@@ -249,19 +249,16 @@ if(_ta){   // analyzer page only
 }
 async function stats(){
   try{const s=await(await fetch('cve_level.json')).json();
-    const v=s.by_vex_statement||s.by_vex||{}, ax=s.axes||{};
-    // 축 카드 — 권고(출처) / 장비(문서) / statement(진술) / CVE(모집단)
+    const v=s.by_vex||{}, ax=s.axes||{};
+    // 축 카드 — CVE 가 VEX 판정 단위. 제품/statement 축은 표시하지 않는다.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
-      const AX=[['cves','unique CVEs','the VEX judgement axis'],
-                ['statements','judgements','CVE × product (a CVE can split)'],
-                ['advisories_with_cves','products (SBOMs)','one per ICSA'],
-                ['advisories_collected','ICS advisories','source, 2010–2026']];
+      const AX=[['cves','unique CVEs','the VEX judgement unit'],
+                ['advisories_collected','ICS advisories','source, 2010–2026'],
+                ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
-        ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';
-      if(ax.cve_split!=null)
-        ak.innerHTML+='<div class="kpi"><b>'+(ax.cve_split||0).toLocaleString()+'</b><span>CVEs that split<br><span class="hint" style="font-size:11px">different verdict across products</span></span></div>';}
-    // 판정 — statement 단위. worst-case 로 CVE 에 뭉개지 않는다.
+        ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
+    // 판정 — CVE 단위.
     const k=document.getElementById('kpis');k.innerHTML='';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
