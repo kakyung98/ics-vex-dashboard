@@ -119,6 +119,33 @@ The seed dataset for this classifier is built by
 code pairs) with the 18 CISA-labelled ICSA justifications held out as the gold
 eval set (`data/vex_justify_eval.jsonl`).
 
+#### Fine-tuned judge — baseline results
+
+To learn Q1 at scale, the seed is enlarged into a 23,538-row, class-balanced
+C/C++ VEX-judgment corpus (`tools/build_vexc_dataset.py`, from DiverseVul,
+PrimeVul, CVEfixes-C, BigVul, and the project seed; published as the
+[`vexc-instruct`](https://github.com/kakyung98/vexc-instruct) dataset) and a
+**Qwen2.5-Coder-7B-Instruct** model is QLoRA fine-tuned on it
+(`tools/train_vex_justifier.py`; r=16, α=32, 1 epoch, 12k subsample). Evaluated
+greedily by `tools/eval_vex_justifier.py`:
+
+| Split | Metric | Score |
+|---|---|---|
+| Held-out test (n=800, never trained) | `affected` F1 | 0.888 |
+| | `not_affected` F1 | 0.897 |
+| | **macro-F1 / accuracy** | **0.892 / 0.892** |
+| CISA gold (n=18, real published) | `not_affected` status correct | 15 / 18 |
+| | justification **label** exact match | 0 / 18 |
+
+The honest reading: the corpus teaches **Q1 (is the vulnerable construct
+present?)** well — hence ~0.89 F1 on status — but the real CISA labels are
+dominated by `component_not_present` and `vulnerable_code_not_in_execute_path`,
+which need whole-program / SBOM context the function-level data does not carry.
+The judge gets the *status* right on 15 of 18 real cases yet never reproduces the
+exact CISA *label*. That is exactly why Q2 (reachability) and Q3 (adversary
+control) are handled by program analysis (`tools/callgraph_reach.py` and a
+fuzzing track), not by the model alone.
+
 ---
 
 ## Comparison against the only public ground truth

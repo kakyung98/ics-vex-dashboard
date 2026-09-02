@@ -18,20 +18,20 @@ import json, os, sys, random
 import torch
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-TRAIN_FILES = [os.path.join(BASE, "data", "vex_justify_seed.jsonl"),
-               os.path.join(BASE, "data", "vulnfix_justify.jsonl")]
+TRAIN_FILES = [os.path.join(BASE, "data", "vex_train_full.jsonl")]
 ADAPTER = os.path.join(BASE, "models", "vex-justifier-lora")
 SAMPLES = os.path.join(BASE, "results", "vex_justifier_samples.txt")
-MODEL_ID = os.environ.get("POC_BASE_MODEL", "Qwen/Qwen2.5-Coder-14B-Instruct")
+MODEL_ID = os.environ.get("POC_BASE_MODEL", "unsloth/Qwen2.5-Coder-14B-Instruct-bnb-4bit")
 SEED = 20260416
-MAXLEN = int(os.environ.get("MAXLEN", "1536"))
-EPOCHS = float(os.environ.get("EPOCHS", "2"))
+MAXLEN = int(os.environ.get("MAXLEN", "1024"))
+EPOCHS = float(os.environ.get("EPOCHS", "1"))
 SYS = ("You are a VEX analyst judging whether an ICS/OT product is affected by a "
        "vulnerability, using the CISA justification questions. Answer only with the "
        "requested JSON object.")
 
 
 def load_rows():
+    cap = int(os.environ.get("SUBSAMPLE", "12000"))
     rows = []
     for p in TRAIN_FILES:
         if os.path.exists(p):
@@ -39,6 +39,9 @@ def load_rows():
                 l = l.strip()
                 if l:
                     rows.append(json.loads(l))
+    if cap and len(rows) > cap:
+        random.Random(SEED).shuffle(rows)
+        rows = rows[:cap]
     return rows
 
 
@@ -66,26 +69,36 @@ def main():
 
     train_ds = Dataset.from_list([to_text(r) for r in rows])
 
-    bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
-                             bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True)
-    print("loading base (4-bit): %s ..." % MODEL_ID, flush=True)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_ID, quantization_config=bnb,
-                                                 device_map="auto", torch_dtype=torch.bfloat16)
+    pre4bit = "4bit" in MODEL_ID.lower() or "bnb-4bit" in MODEL_ID.lower()
+    print("loading base%s: %s ..." % (" (pre-quantized 4-bit)" if pre4bit else " (4-bit)", MODEL_ID), flush=True)
+    if pre4bit:
+        # already NF4-quantized (unsloth); load as-is, do not re-apply bnb config
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, device_map="auto",
+                                                     torch_dtype=torch.bfloat16)
+    else:
+        bnb = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
+                                 bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True)
+        model = AutoModelForCausalLM.from_pretrained(MODEL_ID, quantization_config=bnb,
+                                                     device_map="auto", torch_dtype=torch.bfloat16)
     model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
     model.config.use_cache = False
     lora = LoraConfig(r=16, lora_alpha=32, lora_dropout=0.05, bias="none", task_type="CAUSAL_LM",
                       target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
                                       "gate_proj", "up_proj", "down_proj"])
     args = SFTConfig(output_dir=ADAPTER, per_device_train_batch_size=1,
-                     gradient_accumulation_steps=16, num_train_epochs=EPOCHS,
-                     learning_rate=2e-4, bf16=True, logging_steps=10, save_strategy="no",
+                     gradient_accumulation_steps=4, num_train_epochs=EPOCHS,
+                     learning_rate=2e-4, bf16=True, logging_steps=10,
+                     save_strategy="steps", save_steps=100, save_total_limit=2,
                      report_to=[], max_length=MAXLEN, packing=False,
                      dataset_text_field="text", gradient_checkpointing=True,
                      optim="paged_adamw_8bit")
     trainer = SFTTrainer(model=model, args=args, train_dataset=train_ds,
                          peft_config=lora, processing_class=tok)
-    print("training ...", flush=True)
-    trainer.train()
+    import glob as _g
+    _ckpts = _g.glob(os.path.join(ADAPTER, "checkpoint-*"))
+    _resume = bool(_ckpts)
+    print("training ... (resume=%s)" % _resume, flush=True)
+    trainer.train(resume_from_checkpoint=_resume)
     trainer.save_model(ADAPTER); tok.save_pretrained(ADAPTER)
     print("adapter saved: %s" % ADAPTER, flush=True)
 
