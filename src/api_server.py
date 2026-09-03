@@ -326,7 +326,12 @@ class Store:
             cve_tier[cve] = w.get("evidence_tier")
             # under_investigation 이 왜 그렇게 많은지를 설명하는 축
             sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
-            cve_src[cve] = sw.get("source_class") or "vendor-proprietary"
+            sc = sw.get("source_class") or "vendor-proprietary"
+            # 실제로 소스를 수집한 CVE 는 'code obtained' 로 승격한다 —
+            # 사전 분류 태그가 아니라 "수집 완료" 사실을 반영해 위/아래 패널을 일치시킨다.
+            if cve in self.collected_src or cve in self.pairs:
+                sc = "code-available"
+            cve_src[cve] = sc
         # unique CVE count by CVE-ID year
         yr = Counter()
         for cve in cve_worst:
