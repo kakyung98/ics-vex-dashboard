@@ -26,6 +26,7 @@ from collections import defaultdict, deque
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(BASE, "data", "source_snapshots")
 CE = os.path.join(BASE, "data", "code_evidence.json")
+VF = os.path.join(BASE, "data", "vuln_funcs.json")  # tools/extract_vuln_funcs.py output
 
 import tree_sitter_c
 import tree_sitter_cpp
@@ -157,9 +158,16 @@ def analyze(cve, targets):
                               if verdict == "unreachable" else None)}
 
 
+_VULN_FUNCS = json.load(open(VF, encoding="utf-8")) if os.path.exists(VF) else {}
+
+
 def targets_for(cve, ce, override):
     if override:
         return [t.strip() for t in override.split(",") if t.strip()]
+    # precise enclosing-function names (extract_vuln_funcs.py) take priority
+    if cve in _VULN_FUNCS:
+        return list(_VULN_FUNCS[cve])
+    # fallback: crude identifier scrape from the hunk blob (noisy)
     v = ce.get(cve, {})
     names = set()
     for blob in (v.get("vuln_code"), v.get("patched_code")):
