@@ -1105,22 +1105,14 @@ async function stats(){
                 ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
-    // 판정 — CVE 단위.
-    const k=document.getElementById('kpis');k.innerHTML='';
-    for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
-      k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
-    // 'with CISA justification' 타일 제거 — per-CVE 카드와 분모(진술 단위)가 달라 혼동을 준다.
-    // justification 분포는 Published VEX (CISA) 페이지에 그대로 있다.
-    // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
+    // 'VEX verdict — per CVE' 카드는 제거됨. source-code reachability 축만 표시한다.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
       const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
       const SC={'code-available':C.LIKELY_AFFECTED,'oss-attributed':C.UNDER_INVESTIGATION,'vendor-proprietary':'var(--ink3)'};
       for(const key of ['code-available','oss-attributed','vendor-proprietary'])
         sk.innerHTML+='<div class="kpi"><b style="color:'+SC[key]+'">'+(sc[key]||0).toLocaleString()+'</b><span>'+SL[key]+'</span></div>';}
-    const sa=await(await fetch('/api/source_available')).json();
-    document.getElementById('cand').textContent=(sa.code_collected||0).toLocaleString()+' CVEs';
-  }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
+  }catch(e){const sk=document.getElementById('kpis-src');if(sk)sk.innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -1617,7 +1609,7 @@ async function publishedVex(){
     box.innerHTML=h+'</tbody></table></div>';
   }catch(e){box.innerHTML='<span class="err">published VEX unavailable</span>';}
 }
-if(document.getElementById('kpis'))stats();
+if(document.getElementById('kpis-axes'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
@@ -1735,9 +1727,6 @@ ANALYZER_HTML = """<div class="card"><div class="row">
 
 CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">VEX verdict <span class="hint" style="font-weight:400">— per CVE</span></h3><div id="kpis" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">A status other than <span class="mono">under investigation</span> requires code or SBOM evidence: an execution-verified result, or a CISA justification (<span class="mono">component_not_present</span>, <span class="mono">vulnerable_code_not_present</span>, <span class="mono">vulnerable_code_not_in_execute_path</span>). Deployment context never sets status here.</p>
-<p class="hint" style="margin-top:6px">Source collected (execution-verification ready): <span id="cand">…</span></p></div>
 <div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this corpus most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>

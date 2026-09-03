@@ -256,22 +256,14 @@ async function stats(){
                 ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
-    // 판정 — CVE 단위.
-    const k=document.getElementById('kpis');k.innerHTML='';
-    for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
-      k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
-    // 'with CISA justification' 타일 제거 — per-CVE 카드와 분모(진술 단위)가 달라 혼동을 준다.
-    // justification 분포는 Published VEX (CISA) 페이지에 그대로 있다.
-    // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
+    // 'VEX verdict — per CVE' 카드는 제거됨. source-code reachability 축만 표시한다.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
       const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
       const SC={'code-available':C.LIKELY_AFFECTED,'oss-attributed':C.UNDER_INVESTIGATION,'vendor-proprietary':'var(--ink3)'};
       for(const key of ['code-available','oss-attributed','vendor-proprietary'])
         sk.innerHTML+='<div class="kpi"><b style="color:'+SC[key]+'">'+(sc[key]||0).toLocaleString()+'</b><span>'+SL[key]+'</span></div>';}
-    const sa=await(await fetch('source_available.json')).json();
-    document.getElementById('cand').textContent=(sa.code_collected||0).toLocaleString()+' CVEs';
-  }catch(e){document.getElementById('kpis').innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
+  }catch(e){const sk=document.getElementById('kpis-src');if(sk)sk.innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -768,7 +760,7 @@ async function publishedVex(){
     box.innerHTML=h+'</tbody></table></div>';
   }catch(e){box.innerHTML='<span class="err">published VEX unavailable</span>';}
 }
-if(document.getElementById('kpis'))stats();
+if(document.getElementById('kpis-axes'))stats();
 if(document.getElementById('adv-kpis'))advisories();
 if(document.getElementById('year'))yearChart();
 if(document.getElementById('sa-kpis'))sourceAvail();
