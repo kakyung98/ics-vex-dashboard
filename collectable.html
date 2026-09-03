@@ -260,8 +260,8 @@ async function stats(){
     const k=document.getElementById('kpis');k.innerHTML='';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
-    const bj=s.by_justification||{};const bjk=Object.keys(bj);
-    if(bjk.length)k.innerHTML+='<div class="kpi"><b style="color:'+C.LIKELY_NOT_AFFECTED+'">'+bjk.map(j=>bj[j]).reduce((a,b)=>a+b,0).toLocaleString()+'</b><span>with CISA justification <span class="hint" style="font-size:11px">(per ICSA&times;CVE pair)</span><br><span class="hint" style="font-size:11px">'+bjk.join(', ')+'</span></span></div>';
+    // 'with CISA justification' 타일 제거 — per-CVE 카드와 분모(진술 단위)가 달라 혼동을 준다.
+    // justification 분포는 Published VEX (CISA) 페이지에 그대로 있다.
     // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
