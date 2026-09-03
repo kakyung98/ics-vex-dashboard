@@ -9,10 +9,5 @@
     "macro_f1": 0.892,
     "accuracy": 0.892
   },
-  "cisa_gold": {
-    "n": 18,
-    "status_not_affected_correct": 15,
-    "justification_label_exact_match": 0,
-    "note": "Corpus teaches Q1 (presence) only; the real CISA labels are dominated by component_not_present and vulnerable_code_not_in_execute_path, which require whole-program/SBOM context the function-level training data does not carry. Status is right 15/18; the specific CISA label is not reproduced."
-  }
+  "note_on_cisa_flags": "The 18 published CISA ICSA flags are NOT used as a scored benchmark. They are vendor assertions about proprietary product builds and the product source is not obtainable, so a code-level judge cannot be evaluated against them: with no source to feed, the model only emits its default lean, so any such number measures nothing. The only honest metric is the held-out F1 above, on code-grounded patch pairs. Public ICS VEX flags exist in only 12 advisories / 18 CVEs total."
 }
