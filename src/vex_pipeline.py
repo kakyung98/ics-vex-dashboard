@@ -3,8 +3,8 @@
 """[LEGACY] SBOM -> VEX pipeline, static-analysis edition (no build, no execution).
 
 NOTE: the live VEX path for source-available CVEs is now execution-based
-verification (build -> reproduce -> run); see tools/collect_verify_source.py and
-tools/run_verify_full.ps1. This static pipeline is retained for reference/ablation
+verification (build -> reproduce -> run); its results are preserved under
+results/verify_full/. This static pipeline is retained for reference/ablation
 only. It decides VEX purely by static analysis: nothing is built or executed and
 the verdict is gated by a static-evidence grounding critic.
 
