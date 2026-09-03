@@ -172,14 +172,13 @@ async function run(){
   const bv=d.summary.by_vex||{};
   let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
-  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>SSVC</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
+  h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
-      ? '<span class="hint">source available &middot; execution-verified VEX</span>'
-      : '<span class="hint">source-uncollectable &middot; SSVC priority</span>';
+      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q4</span>'
+      : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
-      +(function(){var ss=ssvcFor(f.cve);var sd=ssvcDecide(ss);return '<td id="ssvccell-'+f.cve+'"><span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span></td>';})()
       +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td>'+nextcol+'</td></tr>';}
@@ -486,7 +485,7 @@ function _autoStatus(cve){
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',source_collectable:false};}return {status:(ov.status||auto.status),source_collectable:true};}
 function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est='';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\''+cve+'\')">&#9998; VEX</button>';}
-function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;const ss=Object.assign(ssvcAuto(f),ov.ssvc||{});r.ssvc=ss;r.ssvc_decision=ssvcDecide(ss);r.ssvc_vector=ssvcVector(ss);rows.push(r);}return rows;}
+function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
@@ -528,8 +527,8 @@ function openVexEditor(cve){
   if(_unc){h+='<div class="srch-meta">Source-uncollectable &rarr; status is <b>under_investigation</b>. Record what is missing and what would settle it.</div>';}
   else{h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\''+cve+'\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';}
   h+='<div id="vf-body">'+_vexEditorBody(cve,f)+'</div>';
-  h+='<div style="border-top:1px solid var(--line);margin:14px 0 8px"></div><div class="srch-meta">SSVC priority (CISA Coordinator)</div>';h+=_ssvcPanel(cve);h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\''+cve+'\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
-  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');ssvcRecalc();}
+  h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\''+cve+'\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
+  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
 function _vexEditorBody(cve,f){
   f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
   var _uncb=!(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{}).source_collectable;
@@ -582,7 +581,6 @@ function saveVexFields(cve){
       if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
       if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
       if(r.planned_update)sn.push('planned: '+r.planned_update);}
-    sn.push('SSVC '+r.ssvc_decision+' | '+r.ssvc_vector);
     if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
   const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/"+_docId(p.name),
@@ -618,9 +616,6 @@ function exportCsaf(){
       if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);
       if(r.planned_update)bits.push('Planned update: '+r.planned_update);
       if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
-    // threats.category=impact 는 "악용 시 영향" 자리다. SSVC 우선순위를 여기 실으면
-    // known_not_affected 의 근거로 오인될 수 있으므로 notes 로 뺀다.
-    notes.push({category:'other',title:'SSVC',text:r.ssvc_decision+' | '+r.ssvc_vector});
     if(r.kev)v.threats=[{category:'exploit_status',details:'Listed in CISA KEV (known exploited)',product_ids:[cpid]}];
     v.notes=notes; return v;});
   const comps=_componentPids().list.filter(c=>used[c.product_id]);
@@ -669,8 +664,6 @@ function refreshVexRow(cve){
   const auto=_autoStatus(cve); const ov=_vexFields[cve]||{}; const st=ov.status||auto.status;
   const vc=document.getElementById('vexcell-'+cve);
   if(vc){vc.innerHTML=_vexCellInner(cve);}
-  const sc=document.getElementById('ssvccell-'+cve);
-  if(sc){const ss=ssvcFor(cve);const sd=ssvcDecide(ss);sc.innerHTML='<span class="badge" title="'+ssvcVector(ss)+'" style="background:'+(SSVC_COL[sd]||'var(--ink3)')+'22;color:'+(SSVC_COL[sd]||'var(--ink3)')+'">'+sd+'</span>';}
 }
 function treeAnswerFor(cve,v){const s=_treeState[cve];const r=classifyTree(s.av,s.answers);if(r.pending)s.answers[r.pending]=v;document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);refreshVexRow(cve);}
 function treeReset(cve){_treeState[cve]={av:_treeState[cve].av,answers:{affected_range:true,source_check:false}};document.getElementById('tc-'+cve).innerHTML=renderCveTree(cve);refreshVexRow(cve);}
