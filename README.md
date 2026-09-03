@@ -232,10 +232,16 @@ not, and the vendor's flag for it is an assertion we cannot verify.**
 
 ## Execution-verification campaign (source-available CVEs)
 
-For CVEs whose source can be obtained, we run a containerized
+For CVEs whose source can be obtained, we ran a containerized
 build → exploit → verify pipeline with a **local model (Ollama, $0)** and Docker
 sandboxing. All 106 source-available CVEs were run (the 88 that built plus an
 18-CVE expansion of prior build failures and never-attempted CVEs).
+
+> This campaign is **complete and closed**. Its full evidence is preserved in this
+> repository (`results/verify_full/`, `results/verify_evidence/`,
+> `results/verify_full_summary.csv`), but the batch runners that drove the external
+> container engine have been removed — re-running the campaign from this repository
+> alone is not possible. Everything downstream reads the preserved results.
 
 ```
 execution-verified   2   a generated PoC actually reproduced the flaw
@@ -293,7 +299,7 @@ logs.
 | 4. Reverse SBOMs | `src/build_reverse_sbom.py` | `reverse_sbom/*.json`, `data/findings.csv` |
 | 5. Inject model variants | `tools/inject_product_variants.py` | `product_tree` variants in SBOMs |
 | 6. Collect OSS code | `tools/collect_code_gh.py` | `data/code_evidence.json` |
-| 7. Execution verify | `tools/run_verify_full.ps1`, `tools/exec_verify_c.sh` | `results/verify_full/*.json` |
+| 7. Execution verify | `tools/exec_verify_c.sh` (ASan build/trigger) | `results/exec_verification_c.json` |
 | 8. Batch judgment | `src/vex_batch.py` | `results/vex_batch.jsonl` |
 | 9. Ground truth | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | 10. Compare / evaluate | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | console reports |
@@ -390,5 +396,7 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
 ## Data sources / license
 
 CISA ICS-CERT advisories and CISA CSAF (public). OSS vulnerable/patched code from
-upstream GitHub fix commits. Execution-verification corpus attribution per its
-Apache-2.0 source is retained in `tools/fetch_verify_corpus.py`.
+upstream GitHub fix commits. The execution-verification campaign's CVE corpus
+came from a public Apache-2.0 reproduction dataset
+([BUseclab/cve-genie](https://github.com/BUseclab/cve-genie), Ullah et al.),
+attribution retained here.
