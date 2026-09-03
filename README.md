@@ -5,9 +5,11 @@ An end-to-end pipeline that takes an **SBOM of an ICS/OT asset** and produces a
 **CISA justification** and a rationale — grounded in code and build evidence,
 never in synthetic deployment context.
 
-> **Live dashboard (ICS-VEXForge):** https://kakyung98.github.io/ics-vex-dashboard/
-> Paste/upload an SBOM to get per-component CVE + VEX analysis, browse the
-> corpus, and export OpenVEX / CSAF 2.0 documents — all in the browser.
+> **Dashboard (ICS-VEXForge)** — run it locally with `python src/api_server.py
+> --port 8100`, then open http://127.0.0.1:8100/. Paste/upload an SBOM to get
+> per-component CVE + VEX analysis, browse the corpus, and export OpenVEX /
+> CSAF 2.0 documents — all in the browser. (This repository is private, so the
+> GitHub Pages site is not published.)
 
 ---
 
