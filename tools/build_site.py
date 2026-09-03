@@ -19,9 +19,15 @@ import api_server as A          # reuses api_server.STORE (built on import) + FR
 
 S = A.STORE
 
+# 정적 사이트 산출물(HTML + JSON + adv/)은 site/ 로 모은다 (루트 정리).
+# 상대경로 fetch/링크가 site/ 안에서 자기완결적으로 해석된다.
+# 주의: 런타임 서버(api_server)가 읽는 sbom_index.json 은 루트에 그대로 둔다.
+SITE = os.path.join(BASE, "site")
+os.makedirs(SITE, exist_ok=True)
+
 
 def dump(name, obj):
-    json.dump(obj, open(os.path.join(BASE, name), "w", encoding="utf-8"),
+    json.dump(obj, open(os.path.join(SITE, name), "w", encoding="utf-8"),
               ensure_ascii=False, separators=(",", ":"))
 
 
@@ -64,7 +70,7 @@ dump("advisories_list.json", {"count": len(S.advisories_list),
                               "advisories": S.advisories_list})
 
 # per-advisory full detail (lazy-loaded by the advisory modal)
-_advdir = os.path.join(BASE, "adv")
+_advdir = os.path.join(SITE, "adv")
 os.makedirs(_advdir, exist_ok=True)
 for _aid, _d in S.adv_detail.items():
     with open(os.path.join(_advdir, _aid + ".json"), "w", encoding="utf-8") as _f:
@@ -129,10 +135,10 @@ for key, fname in [("analyzer", "index.html"), ("vex-method", "vex-method.html")
                    ("published-vex", "published-vex.html"),
                    ("ics-sbom", "ics-sbom.html")]:
     page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])
-    open(os.path.join(BASE, fname), "w", encoding="utf-8").write(page)
+    open(os.path.join(SITE, fname), "w", encoding="utf-8").write(page)
 
-sz = lambda n: os.path.getsize(os.path.join(BASE, n)) / 1024
-print("wrote pages: index.html corpus.html collectable.html + json:")
+sz = lambda n: os.path.getsize(os.path.join(SITE, n)) / 1024
+print("wrote site/ pages + json:")
 for n in ["index.html", "source.html", "corpus.html", "collectable.html",
           "cve_index.json", "cve_level.json", "source_available.json", "by_year.json",
           "advisories.json", "advisories_list.json", "cve_kb.json"]:
