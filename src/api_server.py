@@ -1763,7 +1763,7 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are confirmed by execution (build &rarr; reproduce &rarr; run); source-uncollectable CVEs stay under_investigation with an SSVC priority.</p>' + ANALYZER_HTML)
+                  'Source-available CVEs are judged by the four CISA justification questions (Q1&ndash;Q4, Q1 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
@@ -1786,7 +1786,7 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 """
 
 _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or, when source is obtainable, the <b>four CISA justification questions (Q1&ndash;Q4)</b> answered from the code &mdash; with <b>execution</b> as the strongest confirmation of Q2/Q3. Anything else is held as <b>under_investigation</b> and ranked by an <b>SSVC</b> priority. <b>Deployment context never sets status</b> &mdash; no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or, when source is obtainable, the <b>four CISA justification questions (Q1&ndash;Q4)</b> answered from the code &mdash; with <b>execution</b> as the strongest confirmation of Q2/Q3. Anything else is held as <b>under_investigation</b>. <b>Deployment context never sets status</b> &mdash; no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
 <p class="hint" style="margin:-8px 0 18px;padding:8px 12px;border-left:3px solid #b8862b;background:rgba(184,134,43,.08)">On the published CISA flags: a VEX justification flag exists in only <b>12 CISA advisories, 18 CVEs</b> (2 vendors) across the entire OT corpus. Each is a <b>vendor assertion about a proprietary product build</b>, not verified fact, and that product source is not obtainable &mdash; so it is <b>adopted verbatim as provenance</b> (tier upstream-asserted) and used as a label reference, never as a benchmark our own judge is scored against.</p>
 
 <div class="card">
@@ -1818,14 +1818,12 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
     </div>
 
     <div class="vm-lane vm-no">
-      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation + SSVC</b></div>
-      <div class="vm-step"><b>1. Status is forced to</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
+      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>3. SSVC (SEI Deployer)</b> priority<span class="vm-sub">Exploitation (KEV/EPSS) &times; System&nbsp;Exposure &times; Automatable (AV) &times; Human&nbsp;Impact</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> &middot; SSVC: <span class="mono">defer / scheduled / out-of-cycle / immediate</span></div>
+      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
     </div>
   </div>
 
@@ -1857,16 +1855,16 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
     </ul>
   </div>
   <div class="card">
-    <h3 style="margin:0 0 6px">Source-uncollectable path (under_investigation + SSVC)</h3>
-    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span> and ranked by an operational <b>SSVC priority</b>. No reachability estimate is emitted — the deployment exposure in this corpus is synthetic, and a number derived from it is not a claim about any real asset.</p>
+    <h3 style="margin:0 0 6px">Source-uncollectable path (under_investigation)</h3>
+    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span>. No reachability or priority estimate is emitted — a number derived from synthetic deployment data would not be a claim about any real asset.</p>
     <ul class="vm-list">
       <li>Status is always <span class="mono">under_investigation</span> &mdash; a not_affected/affected claim would be unsupported without code.</li>
-      <li><b>SSVC</b> (SEI <i>Deployer</i> tree) ranks remediation urgency from <b>Exploitation</b> (KEV/EPSS), <b>System Exposure</b> (from the deployment exposure selector), <b>Automatable</b> (CVSS attack vector), and <b>Human Impact</b> &rarr; <span class="mono">defer / scheduled / out-of-cycle / immediate</span>.</li>
-      <li>If the source later becomes obtainable, the case is routed into the execution-based verification path for a confirmed verdict.</li>
+      <li>What is recorded is strictly the evidence gap: which source could not be obtained and why, so the case can be revisited.</li>
+      <li>If the source later becomes obtainable, the case is routed into the four-question (Q1&ndash;Q4) verification path for a code-grounded verdict.</li>
     </ul>
   </div>
 </div>
-<p class="hint" style="margin:14px 2px 0">Note: SBOM/AAS describe the asset's static composition; the operational inputs above (exposure, exploitation, automatability, human impact) are supplied separately &mdash; that is what turns identification into a VEX decision and an SSVC priority.</p>
+<p class="hint" style="margin:14px 2px 0">Note: status is set by code/SBOM evidence only. Deployment context (network exposure, etc.) is deliberately not used — it never sets a VEX status, and this corpus's exposure values are synthetic.</p>
 """
 
 PAGES = {
