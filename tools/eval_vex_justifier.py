@@ -131,25 +131,19 @@ def main():
     acc = sum(per[c]["tp"] for c in per) / len(test)
     print("  macro-F1=%.3f | accuracy=%.3f" % (sum(macro) / 2, acc))
 
-    # (B) justification accuracy on CISA gold
+    # NOTE: the 18 CISA ICSA flags (data/vex_justify_eval.jsonl) are deliberately
+    # NOT scored here. They are vendor assertions about proprietary product builds
+    # and the product source is not obtainable, so a code-level judge cannot be
+    # evaluated against them: with no code to feed, the model only emits its default
+    # lean and the "accuracy" measures nothing. They exist in only 12 advisories /
+    # 18 CVEs total and are kept as a reference vocabulary, not a benchmark. The
+    # held-out F1 above is the one honest metric (real code in, fix-commit labels).
     if os.path.exists(GOLD):
         gold = [json.loads(l) for l in open(GOLD, encoding="utf-8")]
-        jc = sc = 0
-        rows = []
-        for r in gold:
-            user = ("CVE %s (advisory %s). Judge this vulnerability for the product per the "
-                    "CISA justification questions and answer with the JSON object."
-                    % (r["cve"], r.get("advisory", "")))
-            txt = gen(tok, model, user)
-            ps, pj = parse_status(txt), parse_just(txt)
-            sc += (ps == r.get("gold_status"))
-            jc += (pj == r.get("gold_justification"))
-            rows.append((r["cve"], r.get("gold_justification"), pj, ps))
-        print("\n=== (B) CISA gold (n=%d) ===" % len(gold))
-        print("  status not_affected correct : %d/%d" % (sc, len(gold)))
-        print("  justification exact match   : %d/%d" % (jc, len(gold)))
-        for cve, gj, pj, ps in rows:
-            print("    %-16s gold=%-38s pred=%s (%s)" % (cve, gj, pj, ps))
+        print("\n=== CISA flags: reference only (NOT scored) ===")
+        print("  %d published ICSA justifications (12 advisories / 18 CVEs)." % len(gold))
+        print("  Vendor assertions about proprietary builds; no product source to feed a")
+        print("  code judge -> not a capability metric. See README methodology.")
 
     out = os.path.join(BASE, "results", "vex_justifier_eval.json")
     json.dump({"status": {c: per[c] for c in per}, "macro_f1": sum(macro) / 2,

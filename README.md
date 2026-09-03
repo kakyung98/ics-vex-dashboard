@@ -116,8 +116,9 @@ Q1 is answered from the SBOM and the fix commit, Q2/Q3 can be judged by reasonin
 over the patch diff and the surrounding code, Q4 by configuration/pattern checks.
 The seed dataset for this classifier is built by
 `tools/build_justification_seed.py` from `data/code_evidence.json` (34 vuln/patched
-code pairs) with the 18 CISA-labelled ICSA justifications held out as the gold
-eval set (`data/vex_justify_eval.jsonl`).
+code pairs). The 18 CISA-labelled ICSA justifications (`data/vex_justify_eval.jsonl`)
+are kept only as a **reference list of the real published labels**, not as a scored
+benchmark — see the note below on why they cannot serve as ground truth.
 
 #### Fine-tuned judge — baseline results
 
@@ -126,59 +127,71 @@ C/C++ VEX-judgment corpus (`tools/build_vexc_dataset.py`, from DiverseVul,
 PrimeVul, CVEfixes-C, BigVul, and the project seed; published as the
 [`vexc-instruct`](https://github.com/kakyung98/vexc-instruct) dataset) and a
 **Qwen2.5-Coder-7B-Instruct** model is QLoRA fine-tuned on it
-(`tools/train_vex_justifier.py`; r=16, α=32, 1 epoch, 12k subsample). Evaluated
-greedily by `tools/eval_vex_justifier.py`:
+(`tools/train_vex_justifier.py`; r=16, α=32, 1 epoch, 12k subsample). It is
+evaluated greedily by `tools/eval_vex_justifier.py` on a **held-out split** —
+rows the trainer never saw, separated with the training shuffle seed so there is
+no leakage:
 
-| Split | Metric | Score |
-|---|---|---|
-| Held-out test (n=800, never trained) | `affected` F1 | 0.888 |
-| | `not_affected` F1 | 0.897 |
-| | **macro-F1 / accuracy** | **0.892 / 0.892** |
-| CISA gold (n=18, real published) | `not_affected` status correct | 15 / 18 |
-| | justification **label** exact match | 0 / 18 |
+| Metric (held-out test, n=800, never trained) | Score |
+|---|---|
+| `affected` F1 | 0.888 |
+| `not_affected` F1 | 0.897 |
+| **macro-F1 / accuracy** | **0.892 / 0.892** |
 
-The honest reading: the corpus teaches **Q1 (is the vulnerable construct
-present?)** well — hence ~0.89 F1 on status — but the real CISA labels are
-dominated by `component_not_present` and `vulnerable_code_not_in_execute_path`,
-which need whole-program / SBOM context the function-level data does not carry.
-The judge gets the *status* right on 15 of 18 real cases yet never reproduces the
-exact CISA *label*. That is exactly why Q2 (reachability) and Q3 (adversary
-control) are handled by program analysis (`tools/callgraph_reach.py` and a
-fuzzing track), not by the model alone.
+This is the one honest performance number: the input is real code and the labels
+are backed by the fix commit. It says the corpus teaches **Q1 (is the vulnerable
+construct present?)** well. It does **not** claim Q2/Q3 — those need whole-program
+context the function-level data lacks, which is why reachability goes to program
+analysis (`tools/callgraph_reach.py`) and a fuzzing track, not the model alone.
+
+> **Why there is no "CISA-gold accuracy" here.** The 18 published ICSA flags are
+> **vendor assertions about proprietary product builds**, not verified facts, and
+> the corresponding product source is not obtainable. A code judge cannot be
+> scored against them: with no source to feed, the model only emits its default
+> lean, so any such number measures nothing. They define the label vocabulary and
+> motivate the task — they are not a test set.
 
 ---
 
-## Comparison against the only public ground truth
+## The only public ICS VEX flags — 12 advisories, 18 CVEs
 
-Because the axis is the ICSA, our output lines up file-for-file with the CISA
-originals. `tools/collect_gt_icsa.py` pins the labelled originals into
-`data/gt_icsa/`, and `tools/compare_cisa_csaf.py` scores us against them.
+Across CISA's entire OT CSAF corpus, a VEX **justification flag** appears in only
+**12 advisories, covering 18 (ICSA × CVE) pairs** (all ICSA: 11 Siemens, 1
+Mobotix). That is the whole public ground on which "not_affected" has ever been
+declared for ICS.
 
-The public label set for ICS VEX is tiny — 12 advisories / 18 (ICSA, CVE) pairs.
-The comparison keeps **adopted** verdicts (taken verbatim from CISA, excluded
-from any accuracy figure) strictly separate from **independently derived** ones,
-so scoring adopted labels against their own source can never manufacture a fake
-100%.
+These flags are **vendor assertions about proprietary product builds**, decided
+with whole-program knowledge (compile flags, configuration, the vendor's own call
+graph) that is not published — and the product firmware source is not obtainable.
+So they are a **reference**, not verifiable ground truth, and not a scored
+benchmark for a code-level judge (which sees a function, not the vendor's build).
+`tools/collect_gt_icsa.py` pins these labelled originals into `data/gt_icsa/` for
+inspection.
 
-### Model-level independent derivation
+### What *is* independently derivable — product structure
 
-`tools/inject_product_variants.py` lifts the CISA `product_tree` into the SBOM so
-model variants exist as components (e.g. SIPROTEC 5: CP300 affected, CP200 not).
-`tools/eval_variant_derivation.py` then derives `not_affected` from inputs any
-asset owner reads off the advisory (the model list + `known_affected`), while
-withholding the answer fields (`known_not_affected`, `flags`):
+One part of these advisories can be reproduced from public inputs: **product
+structure**. `tools/inject_product_variants.py` lifts the CISA `product_tree` into
+the SBOM so model variants exist as components (e.g. SIPROTEC 5: CP300 affected,
+CP200 not). `tools/eval_variant_derivation.py` then derives `not_affected` from
+what any asset owner reads off the advisory (the model list + `known_affected`),
+while withholding the answer fields (`known_not_affected`, `flags`):
 
 ```
 model level    TP 278 / FP 676 / FN 0    precision 0.291  recall 1.000
-pair level     justification correct 10/18
+by-label       component_not_present 10/10   |   source-reachability labels 0/8
 ```
 
-Recall is perfect: every model CISA declared not-affected is recovered. The
-false positives are all models CISA never enumerated — with the answer withheld,
-"not affected" and "not mentioned" are indistinguishable, which is the ceiling of
-the public data, not a defect. The 10/18 split cleanly by label:
-`component_not_present` 10/10, and 0/8 for the two source-reachability labels —
-product structure is derivable, source-level reachability is not.
+Recall is perfect: every model CISA declared not-affected is recovered, and the
+`component_not_present` justification lands 10/10 — because it follows from the
+product list alone. The two **source-reachability** labels
+(`vulnerable_code_not_in_execute_path`, `vulnerable_code_not_present`) land 0/8:
+they depend on the vendor's build internals, which public data cannot supply. The
+false positives are models CISA never enumerated — with the answer withheld,
+"not affected" and "not mentioned" are indistinguishable, the ceiling of the
+public data, not a defect. This is the clean line of the whole project:
+**product structure is derivable from public data; source-level reachability is
+not, and the vendor's flag for it is an assertion we cannot verify.**
 
 ---
 
@@ -312,15 +325,21 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    the evidence.
 2. Independent model-level derivation reaches recall 1.000 but precision 0.291,
    bounded by the public data (CISA does not enumerate the not-affected models).
-3. Source-level justifications (`not_in_execute_path`, `vulnerable_code_not_present`)
-   need the vulnerable component identified; 17 of the 18 gold pairs do not name it.
-4. Version comparison is impossible (all `NOASSERTION`).
-5. Execution verification only reaches self-contained libraries; closed ICS
+3. The 18 public CISA flags are **vendor assertions about proprietary builds** and
+   the product source is not obtainable, so they cannot score a code-level judge;
+   they are a reference vocabulary, not a test set. The judge's only honest number
+   is the held-out F1 (0.892) on code-grounded patch pairs.
+4. The fine-tuned judge is validated for **Q1 (presence)** only; Q2/Q3 answers from
+   the model are reasoning, not proof.
+5. Version comparison is impossible (all `NOASSERTION`).
+6. Execution verification only reaches self-contained libraries; closed ICS
    firmware cannot enter that path.
-6. The component inventory is synthetic; real asset SBOMs will change the
+7. The component inventory is synthetic; real asset SBOMs will change the
    `component_not_present` numbers.
-7. No static call-graph/taint tooling yet, so Q2/Q3 of the justification classifier
-   rely on model reasoning over code rather than program analysis.
+8. Static call-graph reachability (`tools/callgraph_reach.py`) exists but is
+   currently limited by vulnerable-function identification (target function known
+   for only ~34 of the source-available CVEs); a fuzzing track for Q3 is future
+   work.
 
 ---
 
