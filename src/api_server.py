@@ -183,7 +183,7 @@ class Store:
         self.verify = {"summary": _load(os.path.join(_vf, "_summary.json"), {}),
                        "records": _recs}
         self.verify_coverage = _load(os.path.join(RESULTS, "verify_coverage.json"), {})
-        # Published VEX ground truth: the 12 CISA-labelled ICSA (18 ICSA x CVE pairs).
+        # Published CISA VEX flags (vendor assertions): 12 ICSA, 18 ICSA x CVE pairs.
         self.gt_icsa = _load(os.path.join(DATA, "gt_icsa", "manifest.json"), {"tier1": [], "tier2": []})
         self.sbom_index = _load(os.path.join(BASE, "sbom_index.json"), {"generated": 0, "assets": []})
         # CISA ICS advisories (the corpus provenance)
@@ -683,8 +683,8 @@ def build_app():
 
     @app.get("/api/published_vex")
     def published_vex():
-        """The only public ICS VEX ground truth: CISA-labelled ICSA justifications
-        (12 advisories, 18 ICSA x CVE pairs), keyed to CVE."""
+        """The only public ICS VEX flags (vendor assertions, not verified truth):
+        CISA-labelled ICSA justifications (12 advisories, 18 ICSA x CVE pairs)."""
         man = STORE.gt_icsa
         pairs, ldist, vendors = [], {}, {}
         for r in man.get("tier1", []):
@@ -1753,8 +1753,8 @@ COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source Code A
 </div>
 <div id="sa-cwe" style="margin-top:16px"></div></div>"""
 
-PUBLISHED_VEX_HTML = """<div class="card"><h3 style="margin:0 0 4px">Published VEX ground truth <span class="hint" id="pv-hint"></span></h3>
-<p class="hint" style="margin:0 0 12px">The entire public ICS VEX label set: across all 3,984 files in CISA's CSAF repository, only these advisories carry a <span class="mono">vulnerabilities[].flags[].label</span> justification. Keyed to CVE — the VEX judgment unit.</p>
+PUBLISHED_VEX_HTML = """<div class="card"><h3 style="margin:0 0 4px">Published CISA VEX flags <span class="hint" id="pv-hint"></span></h3>
+<p class="hint" style="margin:0 0 12px">The entire public ICS VEX label set: across all 3,984 files in CISA's CSAF repository, only these advisories carry a <span class="mono">vulnerabilities[].flags[].label</span> justification. Keyed to CVE — the VEX judgment unit. These are <b>vendor assertions</b> about proprietary product builds (adopted verbatim as provenance), <b>not verified ground truth</b>: the product source is not obtainable, so they are a label reference, not a benchmark. Three code/build justifications appear — <span class="mono">component_not_present</span> dominates, but it is not the only one; environment-based justifications never appear.</p>
 <div id="pv-kpis" class="kpis">loading…</div>
 <div id="pv-charts" style="margin-top:16px"></div>
 <div id="pv-rows" style="margin-top:16px"></div></div>"""
@@ -1791,7 +1791,8 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 """
 
 _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or <b>execution</b> (the affected version is rebuilt and a reproducer is run against it). Anything else is held as <b>under_investigation</b> and ranked by an <b>SSVC</b> priority. <b>Deployment context never sets status</b> — no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
+<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or, when source is obtainable, the <b>four CISA justification questions (Q1&ndash;Q4)</b> answered from the code &mdash; with <b>execution</b> as the strongest confirmation of Q2/Q3. Anything else is held as <b>under_investigation</b> and ranked by an <b>SSVC</b> priority. <b>Deployment context never sets status</b> &mdash; no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
+<p class="hint" style="margin:-8px 0 18px;padding:8px 12px;border-left:3px solid #b8862b;background:rgba(184,134,43,.08)">On the published CISA flags: a VEX justification flag exists in only <b>12 CISA advisories, 18 CVEs</b> (2 vendors) across the entire OT corpus. Each is a <b>vendor assertion about a proprietary product build</b>, not verified fact, and that product source is not obtainable &mdash; so it is <b>adopted verbatim as provenance</b> (tier upstream-asserted) and used as a label reference, never as a benchmark our own judge is scored against.</p>
 
 <div class="card">
 <div class="vm-flow">
@@ -1809,16 +1810,16 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>Execution-verified VEX</b></div>
-      <div class="vm-step"><b>1. Resolve upstream</b> — map the component to its repo + vulnerable commit/version (CVE/NVD refs)</div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub">fine-tuned judge (Qwen2.5-Coder-7B QLoRA) over the function + patch diff &mdash; held-out macro-F1 <b>0.892</b></span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. Rebuild the environment</b> — clone at the vulnerable version, resolve prerequisites, compile in an isolated sandbox (build critic loop)</div>
+      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>3. Synthesize a reproducer</b> — craft an input/PoC that drives the vulnerable path (CWE + patch-diff guided)</div>
+      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub">a reproducer / fuzzing drives the vulnerable path (CWE + patch-diff guided)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>4. Execute &amp; verify</b> — run it in the sandbox; a crash / sanitizer / assert confirms the trigger (verifier critic)</div>
+      <div class="vm-step"><b>Q4 &middot; Is an inline mitigation already present?</b><span class="vm-sub">configuration / guard-pattern check on the surrounding code</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">Evidence tier: <b>execution-verified</b> (reproducer triggers on the vulnerable build) / <b>build-only</b> if the trigger isn't reached</div>
+      <div class="vm-verd vm-vgreen">All four pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
     </div>
 
     <div class="vm-lane vm-no">
@@ -1850,14 +1851,14 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
     </ul>
   </div>
   <div class="card">
-    <h3 style="margin:0 0 6px">Source-available path (execution-based verification)</h3>
-    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is <b>confirmed by execution</b> — the affected version is actually built and a reproducer is run against it. This is the strongest VEX evidence, not metadata inference.</p>
+    <h3 style="margin:0 0 6px">Source-available path (the four justification questions)</h3>
+    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is judged from the <b>code</b>, question by question. Q1 is answered by a fine-tuned model; Q2/Q3 are backed by program analysis and, at their strongest, by <b>execution</b> — actually building the affected version and running a reproducer against it.</p>
     <ul class="vm-list">
-      <li>A <b>multi-agent developer&rarr;critic loop</b> runs fully locally (Ollama, $0): a builder rebuilds the environment, an exploiter writes a reproducer, a verifier confirms the trigger — each stage gated by a critic that must accept the evidence before proceeding.</li>
-      <li><b>Environment reconstruction</b>: clone the upstream repo at the vulnerable commit/version, resolve build prerequisites, and compile inside an isolated Docker sandbox.</li>
-      <li><b>Reproducer synthesis</b>: build an input/PoC that drives the vulnerable code path, guided by the CVE description, CWE, and patch diff.</li>
-      <li><b>Execution &amp; verification</b>: run the reproducer in the sandbox — an observed crash / sanitizer report / assert confirms the vulnerability is reachable and exploitable &rarr; <span class="mono">affected</span> (execution-verified). Running it against the patched build that no longer triggers &rarr; <span class="mono">fixed</span>/<span class="mono">not_affected</span> (execution-verified).</li>
-      <li>Confirmed tier = <b>execution-verified</b>; if the environment builds but the trigger isn't reached within budget it falls back to <b>build-only</b> &rarr; <span class="mono">under_investigation</span>.</li>
+      <li><b>Q1 &mdash; presence</b>: a <b>Qwen2.5-Coder-7B</b> model QLoRA-fine-tuned on a 23,538-row C/C++ VEX-judgment corpus (published as <span class="mono">vexc-instruct</span>) decides whether the vulnerable construct is present in the function. Measured on a held-out, no-leakage split: <b>macro-F1 0.892</b>. This is the one honest capability number &mdash; real code in, fix-commit labels.</li>
+      <li><b>Q2 &mdash; reachability</b>: a static call graph (<span class="mono">tools/callgraph_reach.py</span>, tree-sitter) checks whether the vulnerable function is reachable from the component's entry points; unreachable &rarr; <span class="mono">vulnerable_code_not_in_execute_path</span>.</li>
+      <li><b>Q3 &mdash; adversary control</b>: a reproducer/PoC (CWE + patch-diff guided), optionally fuzzed, tries to drive attacker-influenced input to the sink. A <b>multi-agent builder&rarr;exploiter&rarr;verifier loop</b> runs fully locally (Ollama, $0) in a Docker sandbox.</li>
+      <li><b>Execution = strongest evidence</b>: an observed crash / sanitizer report / assert on the vulnerable build confirms Q2+Q3 at once &rarr; <span class="mono">affected</span>, tier <b>execution-verified</b>; the same reproducer failing on the patched build &rarr; <span class="mono">fixed</span>/<span class="mono">not_affected</span>. Builds but no trigger &rarr; <b>build-only</b> &rarr; <span class="mono">under_investigation</span>.</li>
+      <li><b>Q4 &mdash; mitigation</b>: a configuration or guard-pattern already neutralising the path &rarr; <span class="mono">inline_mitigations_already_exist</span>.</li>
     </ul>
   </div>
   <div class="card">
