@@ -1799,7 +1799,7 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
   <div class="vm-split">
     <div class="vm-lane vm-yes">
       <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub">fine-tuned judge (Qwen2.5-Coder-7B QLoRA) over the function + patch diff &mdash; held-out macro-F1 <b>0.892</b></span></div>
+      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B, F1 <b>0.892</b>) judges presence</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
       <div class="vm-mini">&darr;</div>
@@ -1838,9 +1838,9 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
   </div>
   <div class="card">
     <h3 style="margin:0 0 6px">Source-available path (the four justification questions)</h3>
-    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is judged from the <b>code</b>, question by question. Q1 is answered by a fine-tuned model; Q2/Q3 are backed by program analysis and, at their strongest, by <b>execution</b> — actually building the affected version and running a reproducer against it.</p>
+    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is judged from the <b>code</b>, question by question. Q1 runs a three-model stack (SecureBERT &rarr; CodeBERT &rarr; fine-tuned sLLM); Q2/Q3 are backed by program analysis and, at their strongest, by <b>execution</b> — actually building the affected version and running a reproducer against it.</p>
     <ul class="vm-list">
-      <li><b>Q1 &mdash; presence</b>: a <b>Qwen2.5-Coder-7B</b> model QLoRA-fine-tuned on a 23,538-row C/C++ VEX-judgment corpus (published as <span class="mono">vexc-instruct</span>) decides whether the vulnerable construct is present in the function. Measured on a held-out, no-leakage split: <b>macro-F1 0.892</b>. This is the one honest capability number &mdash; real code in, fix-commit labels.</li>
+      <li><b>Q1 &mdash; presence (three models):</b> <b>SecureBERT</b> matches the CVE to the component and routes it; where source exists, <b>CodeBERT</b> matches the component's code against the known vulnerable/patched reference; the fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B QLoRA on the 23,538-row <span class="mono">vexc-instruct</span> corpus) makes the final presence judgment &mdash; held-out, no-leakage <b>macro-F1 0.892</b> (the one honest capability number: real code in, fix-commit labels). Source-uncollectable CVEs stop at SecureBERT (no reference code to compare) &rarr; <span class="mono">under_investigation</span>.</li>
       <li><b>Q2 &mdash; reachability</b>: a static call graph (<span class="mono">tools/callgraph_reach.py</span>, tree-sitter) checks whether the vulnerable function is reachable from the component's entry points; unreachable &rarr; <span class="mono">vulnerable_code_not_in_execute_path</span>.</li>
       <li><b>Q3 &mdash; adversary control</b>: a reproducer/PoC (CWE + patch-diff guided), optionally fuzzed, tries to drive attacker-influenced input to the sink. A <b>multi-agent builder&rarr;exploiter&rarr;verifier loop</b> runs fully locally (Ollama, $0) in a Docker sandbox.</li>
       <li><b>Execution = strongest evidence</b>: an observed crash / sanitizer report / assert on the vulnerable build confirms Q2+Q3 at once &rarr; <span class="mono">affected</span>, tier <b>execution-verified</b>; the same reproducer failing on the patched build &rarr; <span class="mono">fixed</span>/<span class="mono">not_affected</span>. Builds but no trigger &rarr; <b>build-only</b> &rarr; <span class="mono">under_investigation</span>.</li>
@@ -1857,7 +1857,7 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
     </ul>
   </div>
 </div>
-<p class="hint" style="margin:14px 2px 0">Note: status is set by code/SBOM evidence only. Deployment context (network exposure, etc.) is deliberately not used — it never sets a VEX status, and this corpus's exposure values are synthetic.</p>
+<p class="hint" style="margin:14px 2px 0">Note: status is set by code/SBOM evidence only. Deployment context (network exposure, etc.) is deliberately not used — it never sets a VEX status, and this corpus's exposure values are synthetic. The full SecureBERT&rarr;CodeBERT&rarr;sLLM stack runs in the batch pipeline (<span class="mono">src/vex_pipeline.py</span>); the interactive analyzer uses a lightweight KB match for speed.</p>
 """
 
 PAGES = {
