@@ -127,7 +127,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <main class="main">
 <h1 style="margin:0 0 18px">Published VEX (CISA)</h1><div class="card"><h3 style="margin:0 0 4px">Published CISA VEX flags <span class="hint" id="pv-hint"></span></h3>
 <p class="hint" style="margin:0 0 12px">The entire public ICS VEX label set: across all 3,984 files in CISA's CSAF repository, only these advisories carry a <span class="mono">vulnerabilities[].flags[].label</span> justification. Keyed to CVE — the VEX judgment unit. These are <b>vendor assertions</b> about proprietary product builds (adopted verbatim as provenance), <b>not verified ground truth</b>: the product source is not obtainable, so they are a label reference, not a benchmark. Three code/build justifications appear — <span class="mono">component_not_present</span> dominates, but it is not the only one; environment-based justifications never appear.</p>
-<p class="hint" style="margin:-4px 0 12px;font-size:12px">Counting note: the distribution below is by <b>label instance</b> (<b>19</b>) &mdash; one pair, <span class="mono">CVE-2024-3596</span>, carries two labels (<span class="mono">vulnerable_code_not_in_execute_path</span> + <span class="mono">vulnerable_code_not_present</span>), so instances exceed the <b>18</b> (ICSA&times;CVE) pairs. The <a href="corpus.html" style="color:inherit">Corpus</a> page counts one justification <b>per pair</b> (18), which is why its <span class="mono">vulnerable_code_not_present</span> reads 3, not 4.</p>
+<p class="hint" style="margin:-4px 0 12px;font-size:12px">Counting note: the distribution below is by <b>label instance</b> (<b>19</b>) &mdash; one pair, <span class="mono">CVE-2024-3596</span>, carries two labels (<span class="mono">vulnerable_code_not_in_execute_path</span> + <span class="mono">vulnerable_code_not_present</span>), so label instances (<b>19</b>) exceed the <b>18</b> (ICSA&times;CVE) pairs.</p>
 <div id="pv-kpis" class="kpis">loading…</div>
 <div id="pv-charts" style="margin-top:16px"></div>
 <div id="pv-rows" style="margin-top:16px"></div></div>
@@ -257,8 +257,8 @@ async function stats(){
     const k=document.getElementById('kpis');k.innerHTML='';
     for(const key of ['LIKELY_AFFECTED','LIKELY_NOT_AFFECTED','UNDER_INVESTIGATION'])
       k.innerHTML+='<div class="kpi"><b style="color:'+C[key]+'">'+(v[key]||0).toLocaleString()+'</b><span>'+L[key]+'</span></div>';
-    const bj=s.by_justification||{};const bjk=Object.keys(bj);
-    if(bjk.length)k.innerHTML+='<div class="kpi"><b style="color:'+C.LIKELY_NOT_AFFECTED+'">'+bjk.map(j=>bj[j]).reduce((a,b)=>a+b,0).toLocaleString()+'</b><span>with CISA justification <span class="hint" style="font-size:11px">(per ICSA&times;CVE pair)</span><br><span class="hint" style="font-size:11px">'+bjk.join(', ')+'</span></span></div>';
+    // 'with CISA justification' 타일 제거 — per-CVE 카드와 분모(진술 단위)가 달라 혼동을 준다.
+    // justification 분포는 Published VEX (CISA) 페이지에 그대로 있다.
     // 2행 — 추정치. VEX 진술이 아니며 노출도는 합성값이라는 사실을 화면에 명시한다.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
