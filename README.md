@@ -153,6 +153,39 @@ analysis (`tools/callgraph_reach.py`) and a fuzzing track, not the model alone.
 > lean, so any such number measures nothing. They define the label vocabulary and
 > motivate the task — they are not a test set.
 
+#### Applying the judge to the ICS target population — negative result
+
+The held-out F1 above is measured on the training corpus's own distribution. To
+see what the judge does on *our* population, `tools/build_ics_groundtruth.py`
+assembles the **34 CVEs** that have full vuln/patched functions in
+`data/code_evidence.json` into `data/ics_gt_pairs.jsonl`.
+`tools/judge_ics_cves.py` then runs the fine-tuned judge over both sides of each
+pair (gold: vulnerable → `affected`, patched → `not_affected`) and joins the static
+Q2 verdict from `results/callgraph_reach.json`.
+
+The result (`results/ics_cve_judgments.json`) is a **collapse to `affected`**:
+
+| ICS pairs, n=34 CVEs / 68 examples | Value |
+|---|---|
+| vulnerable side | TP 34, FN 0 |
+| patched side | TN 0, FP 34 |
+| `affected` recall / precision | 1.000 / 0.500 |
+| **macro-F1** | **0.333** (vs 0.892 held-out) |
+
+The judge answers `affected` for every input, so it never separates the patched
+build from the vulnerable one on this data. The cause is **not** input truncation
+(these functions are short — median 437 chars, none clipped) and **not** identical
+pairs (all 34 differ). It is an unexplained distribution gap between the
+patch-pair corpus the judge was trained on and these ICS pairs, and it is the
+honest counterweight to the 0.892: **the held-out number does not transfer to the
+target population as-is.** It also cannot be read as a clean test — these ICS CVEs
+overlap the training corpus, so a working judge would score *optimistically* here,
+not at chance.
+
+Q2 coverage from the static call graph on the same rows: 8 `reachable`,
+5 `target-not-found`, 21 with no entry. The 2 execution-verified CVEs carry no
+code pair and are outside this table.
+
 ---
 
 ## The only public ICS VEX flags — 12 advisories, 18 CVEs
@@ -260,15 +293,18 @@ logs.
 | 4. Reverse SBOMs | `src/build_reverse_sbom.py` | `reverse_sbom/*.json`, `data/findings.csv` |
 | 5. Inject model variants | `tools/inject_product_variants.py` | `product_tree` variants in SBOMs |
 | 6. Collect OSS code | `tools/collect_code_gh.py` | `data/code_evidence.json` |
-| 7. Execution verify | `src/exploit_verifier.py`, `tools/exec_verify_c.sh` | `results/exec_verification*.json` |
+| 7. Execution verify | `tools/run_verify_full.ps1`, `tools/exec_verify_c.sh` | `results/verify_full/*.json` |
 | 8. Batch judgment | `src/vex_batch.py` | `results/vex_batch.jsonl` |
 | 9. Ground truth | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | 10. Compare / evaluate | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | console reports |
 | 11. Justification seed | `tools/build_justification_seed.py` | `data/vex_justify_seed.jsonl`, `data/vex_justify_eval.jsonl` |
-| 12. Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
+| 12. ICS ground-truth pairs | `tools/build_ics_groundtruth.py` | `data/ics_gt_pairs.jsonl` |
+| 13. Judge the ICS population | `tools/judge_ics_cves.py` | `results/ics_cve_judgments.json` |
+| 14. Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
 
-Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 12's
-`build_sbom_index.py` is not run by `build_site.py`, so run it separately.
+Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 14's
+`build_sbom_index.py` is not run by `build_site.py`, so run it separately. Steps 12/13 need the fine-tuned adapter in
+`models/vex-justifier-lora` and a GPU.
 
 ---
 
@@ -311,6 +347,9 @@ python tools/compare_cisa_csaf.py --csaf-repo /tmp/CSAF
 python tools/eval_variant_derivation.py
 python tools/build_justification_seed.py
 
+python tools/build_ics_groundtruth.py
+python tools/judge_ics_cves.py          # needs a GPU + models/vex-justifier-lora
+
 python tools/build_sbom_index.py && python tools/build_site.py
 ```
 
@@ -333,12 +372,15 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    is the held-out F1 (0.892) on code-grounded patch pairs.
 4. The fine-tuned judge is validated for **Q1 (presence)** only; Q2/Q3 answers from
    the model are reasoning, not proof.
-5. Version comparison is impossible (all `NOASSERTION`).
-6. Execution verification only reaches self-contained libraries; closed ICS
+5. That Q1 validation does not transfer: on the 34 ICS vuln/patched pairs the judge
+   collapses to `affected` (macro-F1 0.333), so no ICS statement currently rests on
+   its output.
+6. Version comparison is impossible (all `NOASSERTION`).
+7. Execution verification only reaches self-contained libraries; closed ICS
    firmware cannot enter that path.
-7. The component inventory is synthetic; real asset SBOMs will change the
+8. The component inventory is synthetic; real asset SBOMs will change the
    `component_not_present` numbers.
-8. Static call-graph reachability (`tools/callgraph_reach.py`) exists but is
+9. Static call-graph reachability (`tools/callgraph_reach.py`) exists but is
    currently limited by vulnerable-function identification (target function known
    for only ~34 of the source-available CVEs); a fuzzing track for Q3 is future
    work.
