@@ -274,7 +274,7 @@ Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 12'
 
 ## Web console — ICS-VEXForge
 
-Six pages, all served as the GitHub Pages static site (the root `*.html` / `*.json`):
+Six pages. The live server (`src/api_server.py`) renders them on the fly; the static export (`tools/build_site.py`) writes the self-contained bundle to `site/` (`site/*.html` + `site/*.json` + `site/adv/`):
 
 - **Analyzer** — SBOM → CVE + VEX, CPE normalization, SSVC priority, OpenVEX/CSAF export
 - **VEX Analysis Method** — the evidence ladder as a diagram

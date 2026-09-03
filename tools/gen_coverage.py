@@ -12,7 +12,11 @@ ENGINE = os.environ.get("VERIFY_ENGINE_DIR", r"C:\Users\user\Desktop\cve-genie")
 CACHE = os.path.join(ENGINE, "webapp", "data", "icsvex_tierA.json")
 
 # T = the 110 tier-A / source-collectable CVEs
-ci = json.load(open(os.path.join(BASE, "cve_index.json"), encoding="utf-8"))
+# cve_index.json 은 정적 사이트 산출물이므로 site/ 에 있다 (build_site.py). 과거 루트 경로도 허용.
+_ci_path = os.path.join(BASE, "site", "cve_index.json")
+if not os.path.isfile(_ci_path):
+    _ci_path = os.path.join(BASE, "cve_index.json")
+ci = json.load(open(_ci_path, encoding="utf-8"))
 T = {r["cve"] for r in ci if r.get("source_available")}
 cache = set(json.load(open(CACHE, encoding="utf-8"))) if os.path.isfile(CACHE) else set()
 recs = {json.load(open(p, encoding="utf-8"))["cve"] for p in glob.glob(os.path.join(BASE, "results", "verify_full", "CVE-*.json"))}
