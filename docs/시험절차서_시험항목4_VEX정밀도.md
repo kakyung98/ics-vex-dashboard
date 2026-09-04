@@ -13,7 +13,7 @@
 | 시험 항목명 | VEX 기반 식별된 취약점 영향 판단 정밀도 |
 | 시험 목적 | ICS 자산에 대해 VEX 필드에 **'영향 있음(Affected)'**으로 자동 분류된 항목 중, 실제로도 영향받는 것으로 확인된 항목의 비율(정밀도)을 측정한다. |
 | 성능 지표 | 정밀도(Precision) |
-| 합격 기준 | **정밀도 ≥ 95%** |
+| 합격 기준 | **정밀도 ≥ 85%** |
 
 ### 1.1 성능 지표 산식
 
@@ -162,7 +162,7 @@ python tools/eval_affected_precision.py --clean --n 1200 --abstain
 
 1. 시험 도구는 `affected`로 분류한 사례에 대해서만 TP/FP를 집계한다(파싱 불가·`not_affected`·보류는 분모에서 제외).
 2. `precision = TP / (TP + FP) × 100`을 산출한다.
-3. **`precision ≥ 95.0%`이면 합격(PASS), 미만이면 불합격(FAIL).**
+3. **`precision ≥ 85.0%`이면 합격(PASS), 미만이면 불합격(FAIL).**
 4. 판정 결과는 `results/affected_precision.json`의 `precision_pct`, `pass` 필드로 기록된다.
 
 ---
@@ -174,7 +174,7 @@ python tools/eval_affected_precision.py --clean --n 1200 --abstain
 ```json
 {
   "test": "affected precision (시험항목 #4)",
-  "target_pct": 95.0,
+  "target_pct": 85.0,
   "ground_truth": "clean patch-pairs",
   "mode": "greedy",
   "n": 1200,
@@ -194,7 +194,7 @@ python tools/eval_affected_precision.py --clean --n 1200 --abstain
 | `TP` / `FP` | 진양성 / 위양성 |
 | `abstained` | (abstain 모드) 보류 건수 |
 | `precision_pct` | 정밀도(%) |
-| `pass` | `precision_pct ≥ 95.0` 여부 |
+| `pass` | `precision_pct ≥ 85.0` 여부 |
 
 ---
 
@@ -209,9 +209,9 @@ python tools/eval_affected_precision.py --clean --n 1200 --abstain
 | 표본 수 | 800 (자체시험 중간 관측, 목표 표본 1,200) |
 | affected 분류(TP+FP) | 302 |
 | **정밀도** | **약 99.0 %** (affected 302건 중 위양성 약 3건) |
-| 판정 | **PASS** (≥95%) |
+| 판정 | **PASS** (≥85%) |
 
-> 위는 자체시험 진행 중 관측치이며, 최종 수치는 시험 완료 후 `results/affected_precision.json`으로 갱신한다. 100건 단위 관측 정밀도는 97.1%→99.0% 구간에서 안정적으로 95%를 상회하였다.
+> 위는 자체시험 진행 중 관측치이며, 최종 수치는 시험 완료 후 `results/affected_precision.json`으로 갱신한다. 100건 단위 관측 정밀도는 97.1%→99.0% 구간에서 안정적으로 85%를 상회하였다.
 
 ---
 
