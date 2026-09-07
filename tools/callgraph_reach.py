@@ -26,7 +26,7 @@ from collections import defaultdict, deque
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(BASE, "data", "source_snapshots")
 CE = os.path.join(BASE, "data", "code_evidence.json")
-VF = os.path.join(BASE, "data", "vuln_funcs.json")  # tools/extract_vuln_funcs.py output
+VF = os.path.join(BASE, "data", "vuln_targets.json")  # tools/locate_vuln_funcs.py output
 
 import tree_sitter_c
 import tree_sitter_cpp
@@ -83,6 +83,56 @@ def _calls_in(node, src):
     return out
 
 
+# --- K&R fallback ------------------------------------------------------------
+# tree-sitter's C grammar chokes on old-style (K&R) definitions and on macro-
+# wrapped signatures, which are pervasive in the corpus (zlib 1.2.8's inflate.c
+# alone yields 89 ERROR nodes and loses `inflate`). A lost definition makes its
+# callees look unreachable - i.e. it manufactures false `not_affected` - so a
+# regex scanner supplements, never replaces, the parse.
+_KW = {"if", "for", "while", "switch", "return", "sizeof", "do", "else", "case",
+       "defined", "typedef", "struct", "union", "enum", "static", "extern"}
+# a top-level definition starts at column 0; that alone rejects most statements
+_KR_DEF = re.compile(
+    rb"^[A-Za-z_][A-Za-z0-9_ \t\*]*?\b([A-Za-z_]\w*)[ \t]*\("      # ret + name(
+    rb"[^;{}()]*\)[ \t]*"                                          # args)
+    rb"(?:\r?\n[ \t]*[A-Za-z_][^;{}\n]*;)*"                        # K&R param decls
+    rb"[ \t]*\r?\n?[ \t]*\{",                                      # body brace
+    re.M)
+_CALL = re.compile(rb"\b([A-Za-z_]\w*)[ \t]*\(")
+
+
+def _match_brace(src, i):
+    """End offset of the block whose '{' is at i, or None."""
+    depth = 0
+    while i < len(src):
+        c = src[i:i + 1]
+        if c == b"{":
+            depth += 1
+        elif c == b"}":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return None
+
+
+def _scan_regex(src):
+    """(name, calls) for definitions a regex can see. Supplements the parse."""
+    out = []
+    for m in _KR_DEF.finditer(src):
+        name = m.group(1).decode("utf-8", "ignore")
+        if name in _KW:
+            continue
+        brace = src.find(b"{", m.end() - 1)
+        end = _match_brace(src, brace) if brace >= 0 else None
+        if end is None:
+            continue
+        body = src[brace:end]
+        calls = {c.decode("utf-8", "ignore") for c in _CALL.findall(body)}
+        out.append((name, calls - _KW))
+    return out
+
+
 def build_graph(root):
     defs = defaultdict(set)
     defined = set()
@@ -114,6 +164,10 @@ def build_graph(root):
                         defined.add(name)
                         defs[name] |= _calls_in(body, src)
                 stack.extend(n.children)
+            for name, calls in _scan_regex(src):
+                if name not in defined:          # parser wins where it succeeded
+                    defined.add(name)
+                    defs[name] |= calls
     return defs, defined, files
 
 
@@ -158,7 +212,10 @@ def analyze(cve, targets):
                               if verdict == "unreachable" else None)}
 
 
-_VULN_FUNCS = json.load(open(VF, encoding="utf-8")) if os.path.exists(VF) else {}
+# {CVE: {"targets": [...], "source": ...}} - Q2 and Q3 must judge the same targets
+_T = json.load(open(VF, encoding="utf-8")) if os.path.exists(VF) else {}
+_VULN_FUNCS = {c: v["targets"] for c, v in _T.items() if v.get("targets")}
+_TARGET_SOURCE = {c: v.get("source") for c, v in _T.items()}
 
 
 def targets_for(cve, ce, override):
