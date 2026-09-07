@@ -141,24 +141,181 @@ def enclosing_funcs(cve, ev):
     return (best or [top[0][0]]), "ok"
 
 
+# --------------------------------------------------------------- patch-driven
+# The code_evidence path above is capped at the 34 CVEs that carry a stored
+# vuln/patched pair. The fix commits themselves cover far more of the snapshot
+# corpus, so drive extraction from the patch diffs and keep code_evidence as a
+# fallback.
+TIERA = os.environ.get("TIERA_JSON",
+                       r"C:\Users\user\Desktop\cve-genie\webapp\data\icsvex_tierA.json")
+EXT_SRC = {".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh"}
+SKIP_SEG = {"test", "tests", "example", "examples", "fuzz", "fuzzing", "doc",
+            "docs", "benchmark", "benchmarks", ".github", "contrib"}
+_FILE_RE = re.compile(r"^Filename: (.+?):$", re.M)
+_HUNK_RE = re.compile(r"^@@ -(\d+)(?:,\d+)? \+\d+(?:,\d+)? @@", re.M)
+
+
+def _iter_hunks(content):
+    """Yield (path, old_start_line, [removed lines]) for each hunk of a patch blob."""
+    parts = _FILE_RE.split(content or "")
+    for i in range(1, len(parts) - 1, 2):
+        path, body = parts[i], parts[i + 1]
+        marks = list(_HUNK_RE.finditer(body))
+        for j, m in enumerate(marks):
+            end = marks[j + 1].start() if j + 1 < len(marks) else len(body)
+            block = body[m.end():end]
+            removed = [l[1:] for l in block.splitlines() if l.startswith("-")]
+            yield path, int(m.group(1)), removed
+
+
+PATCHD = os.path.join(BASE, "data", "patches")
+_DIFF_FILE_RE = re.compile(r"^\+\+\+ b/(.+)$", re.M)
+
+
+def _iter_hunks_diff(text):
+    """Same, for a real unified diff (tools/fetch_patches.py cache)."""
+    marks = list(_DIFF_FILE_RE.finditer(text or ""))
+    for i, fm in enumerate(marks):
+        end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
+        body = text[fm.end():end]
+        path = fm.group(1).strip()
+        hs = list(_HUNK_RE.finditer(body))
+        for j, m in enumerate(hs):
+            hend = hs[j + 1].start() if j + 1 < len(hs) else len(body)
+            block = body[m.end():hend]
+            removed = [l[1:] for l in block.splitlines() if l.startswith("-")]
+            yield path, int(m.group(1)), removed
+
+
+def load_patch_hunks(cve, tier_blobs):
+    """Hunk iterators for a CVE: the full cached diffs when present, else the
+    tier-A blobs (truncated at 6000 chars, so source hunks are often missing)."""
+    d = os.path.join(PATCHD, cve)
+    if os.path.isdir(d):
+        diffs = [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".diff")]
+        if diffs:
+            return [("diff", open(p, encoding="utf-8", errors="ignore").read())
+                    for p in diffs]
+    return [("blob", b) for b in (tier_blobs or [])]
+
+
+def _is_src(path):
+    low = path.replace("\\", "/").lower()
+    if os.path.splitext(low)[1] not in EXT_SRC:
+        return False
+    return not (SKIP_SEG & set(low.split("/")[:-1]))
+
+
+def _find_by_suffix(root, relpath):
+    """Locate a patch path in the snapshot by the longest matching path suffix."""
+    want = [p for p in relpath.replace("\\", "/").split("/") if p]
+    best, best_n = None, 0
+    for dp, _dn, fns in os.walk(root):
+        for fn in fns:
+            if fn != want[-1]:
+                continue
+            have = os.path.join(dp, fn).replace("\\", "/").split("/")
+            n = 0
+            while n < len(want) and n < len(have) and want[-1 - n] == have[-1 - n]:
+                n += 1
+            if n > best_n:
+                best, best_n = os.path.join(dp, fn), n
+    return best
+
+
+def enclosing_funcs_from_patch(cve, sources):
+    """Enclosing function names for every source hunk of a CVE's fix commit(s).
+
+    `sources` is [(kind, text)] from load_patch_hunks: "diff" = a real unified
+    diff, "blob" = the truncated tier-A rendering."""
+    root = os.path.join(SNAP, cve)
+    if not os.path.isdir(root):
+        return None, "no-snapshot"
+    hit = Counter()
+    cache = {}
+    seen_src = missing_file = False
+    for kind, content in sources:
+        it = _iter_hunks_diff(content) if kind == "diff" else _iter_hunks(content)
+        for path, old_start, removed in it:
+            if not _is_src(path):
+                continue
+            seen_src = True
+            if path not in cache:
+                fpath = _find_by_suffix(root, path)
+                ent = False
+                if not fpath:
+                    missing_file = True
+                if fpath:
+                    try:
+                        ent = (_funcs_by_line(fpath),
+                               open(fpath, encoding="utf-8",
+                                    errors="ignore").read().splitlines())
+                    except Exception:
+                        ent = False
+                cache[path] = ent
+            if not cache[path]:
+                continue
+            spans, text = cache[path]
+            matched = False
+            for a in _distinctive_lines("\n".join(removed)):
+                for i, line in enumerate(text):
+                    if a in line:
+                        for s, e, nm in spans:
+                            if s <= i <= e:
+                                hit[nm] += 1
+                                matched = True
+                        break  # first occurrence is enough per anchor
+            if not matched:
+                # no anchor matched (snapshot != patch parent): fall back to the
+                # hunk's old-side start line
+                i = old_start - 1
+                for s, e, nm in spans:
+                    if s <= i <= e:
+                        hit[nm] += 1
+    if not hit:
+        if not seen_src:
+            return None, "no-source-hunk"
+        return None, ("file-not-in-snapshot" if missing_file else "anchors-unmatched")
+    top = hit.most_common()
+    best = [nm for nm, c in top if c >= max(2, top[0][1] // 2)]
+    return (best or [top[0][0]]), "ok"
+
+
 def main():
-    ce = json.load(open(CE, encoding="utf-8"))
+    ce = json.load(open(CE, encoding="utf-8")) if os.path.exists(CE) else {}
+    tier = json.load(open(TIERA, encoding="utf-8")) if os.path.isfile(TIERA) else {}
+    patches = {}
+    for cve, v in tier.items():
+        blobs = [pc.get("content") or "" for pc in (v.get("patch_commits") or [])]
+        if any(blobs):
+            patches[cve] = blobs
+
+    snaps = ({d for d in os.listdir(SNAP) if os.path.isdir(os.path.join(SNAP, d))}
+             if os.path.isdir(SNAP) else set())
+    # only a CVE with a source snapshot can be resolved at all
     out, stats = {}, Counter()
-    for cve, ev in ce.items():
-        if not isinstance(ev, dict) or not ev.get("file"):
-            continue
-        if not (ev.get("vuln_code") or ev.get("patched_code")):
-            continue
-        funcs, why = enclosing_funcs(cve, ev)
-        stats[why] += 1
+    for cve in sorted(snaps):
+        funcs, why, via = None, "no-input", "-"
+        sources = load_patch_hunks(cve, patches.get(cve))
+        if sources:
+            funcs, why = enclosing_funcs_from_patch(cve, sources)
+            via = sources[0][0]
+        if not funcs and isinstance(ce.get(cve), dict) and ce[cve].get("file"):
+            f2, w2 = enclosing_funcs(cve, ce[cve])
+            if f2:
+                funcs, why, via = f2, w2, "code_ev"
+            elif via == "-":
+                why, via = w2, "code_ev"
+        stats["%s/%s" % (via, why)] += 1
         if funcs:
             out[cve] = funcs
-            print("%-18s %-22s -> %s" % (cve, os.path.basename(ev["file"]), funcs))
+            print("%-18s %-8s -> %s" % (cve, via, funcs[:6]))
         else:
-            print("%-18s %-22s -- %s" % (cve, os.path.basename(ev["file"]), why))
+            print("%-18s %-8s -- %s" % (cve, via, why))
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("\n== %d CVEs resolved to a vulnerable function ==" % len(out))
-    print("reasons:", dict(stats))
+    print("\n== %d / %d CVEs resolved to a vulnerable function ==" % (len(out), sum(stats.values())))
+    for k, v in sorted(stats.items(), key=lambda x: -x[1]):
+        print("   %-28s %d" % (k, v))
     print("->", OUT)
 
 
