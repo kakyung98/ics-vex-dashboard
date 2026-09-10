@@ -122,8 +122,8 @@ and the executed rule cannot drift apart.
 | Q | Tool | Result on 104 snapshots | Clearances |
 |---|---|---|---|
 | Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
-| Q2 | `tools/callgraph_reach.py` | reachable 60, target-not-found 41, no-source 3 | **0** |
-| Q3 | `tools/taint_reach.py` | controllable 60, target-not-found 41, no-source 3 | **0** |
+| Q2 | `tools/callgraph_reach.py` | reachable 60, target-not-found 44, no-source 0 | **0** |
+| Q3 | `tools/taint_reach.py` | controllable 60, target-not-found 44, no-source 0 | **0** |
 | Q4 | `tools/mitigation_scan.py` | all 104 `under_investigation` | **0** |
 
 **Source-level analysis clears nothing on this corpus.** That is not a tooling
