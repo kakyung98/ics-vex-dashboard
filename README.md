@@ -122,7 +122,7 @@ and the executed rule cannot drift apart.
 | Q | Tool | Result on 104 snapshots | Clearances |
 |---|---|---|---|
 | Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
-| Q2 | `tools/callgraph_reach.py` | reachable 62, target-not-found 39, no-source 3 | **0** |
+| Q2 | `tools/callgraph_reach.py` | reachable 60, target-not-found 41, no-source 3 | **0** |
 | Q3 | `tools/taint_reach.py` | controllable 60, target-not-found 41, no-source 3 | **0** |
 | Q4 | `tools/mitigation_scan.py` | all 104 `under_investigation` | **0** |
 
@@ -300,24 +300,37 @@ build → exploit → verify pipeline with a **local model (Ollama, $0)** and Do
 sandboxing. All 106 source-available CVEs were run (the 88 that built plus an
 18-CVE expansion of prior build failures and never-attempted CVEs).
 
-> This campaign is **complete and closed**. Its full evidence is preserved in this
-> repository (`results/verify_full/`, `results/verify_evidence/`,
-> `results/verify_full_summary.csv`), but the batch runners that drove the external
-> container engine have been removed — re-running the campaign from this repository
-> alone is not possible. Everything downstream reads the preserved results.
+> This campaign is **complete, closed, and not reproducible here.** Its evidence is
+> preserved (`results/verify_full/`, `results/verify_evidence/`,
+> `results/verify_full_summary.csv`), but the runners that drove the external
+> container engine were removed in b4fc1bc8, and `src/exploit_verifier.py` no
+> longer exists. Treat what follows as an archive, not as a pipeline stage.
 
-```
-execution-verified   2   a generated PoC actually reproduced the flaw
-exploit-generated   20   critic-accepted PoC, execution not reproduced
-build-only          70   vulnerable environment rebuilt, no working PoC
-failed              14   build could not be reproduced
-── 106 total
-```
+**Two things from that campaign are still live**, and nothing else is:
 
-Of the 14 failures, **2 (CVE-2021-33909, CVE-2023-32233) died in the CVE-processor
-step before any source was downloaded**, so no snapshot exists for them. That is
-why the code-level analysis below has a population of **104**, not 106:
-`data/source_snapshots/` holds the 104 CVEs whose source was actually collected.
+| Still used | By | For |
+|---|---|---|
+| the **2 execution-verified** CVEs (CVE-2020-8177, CVE-2022-32221, both curl) | `src/vex_batch.py` | the only `affected` verdicts in the corpus resting on a run, not an argument |
+| `results/verify_build_logs/` | `tools/mitigation_scan.py` | the compile lines Q4 reads |
+| `data/source_snapshots/` | Q1–Q4 | the 104 source trees everything below analyses |
+
+The campaign's other outcome labels — `exploit-generated 20`, `build-only 70`,
+`failed 14` — are a **historical record of a pipeline this repository can no
+longer run**. Nothing reads them except the console page that displays the
+archive. They are not reproducible and are not evidence for any verdict.
+
+One number from them still matters, as methodology rather than data: an LLM
+critic accepted **22** PoCs and a real run reproduced **2**. That 20-PoC gap is
+why status in this system rests on execution, never on a critic's approval.
+Failure analysis shows the misses are dominated by memory-corruption CWEs whose
+trigger produces no observable effect without sanitizer instrumentation, while
+both successes are logic-class bugs with a visible effect.
+
+Two of the failures — **CVE-2021-33909 and CVE-2023-32233** — died in the
+CVE-processor step before any source was downloaded, so no snapshot exists for
+them. That is why the code-level analysis below has a population of **104**, not
+106: `data/source_snapshots/` holds the CVEs whose source was actually
+collected.
 
 The two execution-verified CVEs are **CVE-2020-8177** and **CVE-2022-32221** (both
 curl) — the first exploits this local harness produced that a run actually
@@ -367,7 +380,7 @@ logs.
 | 4. Reverse SBOMs | `src/build_reverse_sbom.py` | `reverse_sbom/*.json`, `data/findings.csv` |
 | 5. Inject model variants | `tools/inject_product_variants.py` | `product_tree` variants in SBOMs |
 | 6. Collect OSS code | `tools/collect_code_gh.py` | `data/code_evidence.json` |
-| 7. Execution verify | `tools/exec_verify_c.sh` (ASan build/trigger) | `results/exec_verification_c.json` |
+| 7. ~~Execution verify~~ | **closed campaign, not reproducible here** — the runners were removed in b4fc1bc8. Downstream reads only the preserved `results/exec_verification*.json` and `results/verify_build_logs/` | — |
 | 8. Batch judgment | `src/vex_batch.py` | `results/vex_batch.jsonl` |
 | 9. Ground truth | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | 10. Compare / evaluate | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | console reports |

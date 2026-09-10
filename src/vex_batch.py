@@ -24,6 +24,8 @@ Run:
 import os, sys, csv, json, argparse
 from collections import Counter
 
+import vex_decision as VD
+
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -46,6 +48,16 @@ def tier_for(status, has_pair, route=None):
         # confirms the fix is separable; the deterministic sweep stays conservative.
         return "static-reasoned"
     return "under-investigation"
+
+
+# CSAF remediation categories, keyed by CVE (tools/extract_remediations.py).
+# Used ONLY to triage statements already held at under_investigation - never to
+# set a status. See src/vex_decision.triage().
+_REM_PATH = os.path.join(BASE, "data", "remediations.json")
+try:
+    REMEDIATION = json.load(open(_REM_PATH, encoding="utf-8"))
+except Exception:
+    REMEDIATION = {}
 
 
 def run(limit=None, use_securebert=False, progress_every=1000):
@@ -71,6 +83,7 @@ def run(limit=None, use_securebert=False, progress_every=1000):
     total = len(rows)
 
     by_vex, by_tier, by_cwe_vex = Counter(), Counter(), {}
+    by_likelihood = Counter()
     # source-availability class drives which pipeline legs apply:
     #   code-available     -> code pair collected -> CodeBERT patch-diff eligible
     #   oss-attributed     -> OSS (tier A/C) but no code collected
@@ -137,6 +150,15 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 sb_signal = {"label": pred["label"],
                              "probs": {k: round(v, 3) for k, v in pred["probs"].items()}}
 
+            # Triage inside under_investigation. A held statement stays held;
+            # the label only says which held statements deserve attention first,
+            # and it lives in its own field because OpenVEX/CSAF have no status
+            # to export it as.
+            likelihood = likelihood_basis = None
+            if status == UNDER_INV:
+                _rem = REMEDIATION.get(cve) or {}
+                likelihood, likelihood_basis = VD.triage(_rem.get("categories") or {})
+
             et = tier_for(status, has_pair, route)
             rec = {
                 "cve": cve, "device": device, "vendor": vendor, "product": product,
@@ -148,11 +170,16 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 "justification_vocabulary": vocab, "basis": basis,
                 "estimate_confidence": conf, "evidence_tier": et, "route": route,
             }
+            if likelihood:
+                rec["likelihood"] = likelihood
+                rec["likelihood_basis"] = likelihood_basis
             if sb_signal:
                 rec["securebert_signal"] = sb_signal
             out.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
             by_vex[status] += 1
+            if likelihood:
+                by_likelihood[likelihood] += 1
             by_tier[et] += 1
             by_class_vex[source_class][status] += 1
             by_class_n[source_class] += 1
@@ -170,6 +197,10 @@ def run(limit=None, use_securebert=False, progress_every=1000):
         "code_pair_findings": n_pair,
         "securebert": bool(use_securebert),
         "by_vex": dict(by_vex),
+        "by_likelihood": dict(by_likelihood),
+        "likelihood_note": ("triage WITHIN under_investigation, from CISA CSAF "
+                            "remediation categories - not a VEX status and never "
+                            "exported as one"),
         "by_tier": dict(by_tier),
         "by_source_class": {k: {"n": by_class_n[k], **dict(by_class_vex[k])}
                             for k in ("code-available", "oss-attributed",
