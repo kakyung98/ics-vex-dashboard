@@ -31,6 +31,29 @@ _TOK = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
 _FILE = re.compile(r"[\w./-]+\.(?:c|h|cc|cpp|cxx)\b")
 
 
+# A name can be defined in the snapshot and still be a useless target. Two kinds
+# showed up and reached the Q2/Q3/Q4 stages before being caught:
+#   ZLIB_INTERNAL  an export macro the parser read as a function name
+#   memset         libc, which the NVD text mentions as the *called* primitive
+#                  ("can memset() too much data"), not the vulnerable function
+_LIBC = {
+    "memcpy", "memmove", "memset", "memcmp", "strcpy", "strncpy", "strcat",
+    "strncat", "strcmp", "strlen", "strdup", "sprintf", "snprintf", "vsnprintf",
+    "printf", "fprintf", "malloc", "calloc", "realloc", "free", "alloca",
+    "atoi", "atol", "strtol", "abort", "exit", "assert", "qsort", "bsearch",
+    "open", "close", "read", "write", "fopen", "fclose", "fread", "fwrite",
+}
+
+
+def usable_target(name):
+    """Reject export macros and libc primitives as vulnerable-function targets."""
+    if name in _LIBC:
+        return False
+    if name.isupper() or (name.replace("_", "").isupper() and len(name) > 3):
+        return False
+    return True
+
+
 def code_context(desc, tok):
     """Is this token used as code in the prose, not as an English word?
 
@@ -54,7 +77,7 @@ def from_description(desc, index):
     """Function names the NVD text points at that really exist in this snapshot."""
     hits = {}
     for tok in set(_TOK.findall(desc or "")):
-        if tok not in index:
+        if tok not in index or not usable_target(tok):
             continue
         why = code_context(desc, tok)
         if why:
@@ -91,8 +114,10 @@ def main():
         files = files_in_description(desc, index)
 
         if cve in patch:                       # path A wins; B is scored against it
-            out[cve] = {"targets": patch[cve], "source": "patch",
-                        "evidence": "fix-commit hunk"}
+            keep = [t for t in patch[cve] if usable_target(t)]
+            if keep:
+                out[cve] = {"targets": keep, "source": "patch",
+                            "evidence": "fix-commit hunk"}
             if hits:
                 if set(hits) & set(patch[cve]):
                     agree += 1

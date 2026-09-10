@@ -1958,10 +1958,12 @@ it judged. A model-ranked guess can keep a CVE in the affected pool; it can neve
   <div class="kpi"><div class="kpi-n">__TGT__</div><div class="kpi-l">vulnerable function located</div></div>
   <div class="kpi"><div class="kpi-n">__Q2R__</div><div class="kpi-l">Q2 reachable</div></div>
   <div class="kpi"><div class="kpi-n">__Q3C__</div><div class="kpi-l">Q3 adversary-controllable</div></div>
+  <div class="kpi"><div class="kpi-n">__Q4C__</div><div class="kpi-l">Q4 mitigation clearances</div></div>
   <div class="kpi"><div class="kpi-n">__CLR__</div><div class="kpi-l">clearances from source analysis</div></div>
 </div>
 <p class="hint" style="margin:14px 2px 0"><b>Zero.</b> Neither Q2 nor Q3 cleared a single CVE:
-<span class="mono">unreachable 0</span>, <span class="mono">not-controllable 0</span>. Once indirect calls are
+<span class="mono">unreachable 0</span>, <span class="mono">not-controllable 0</span>, and Q4 cleared none
+either. Once indirect calls are
 handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
 failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
 <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
@@ -1973,6 +1975,7 @@ already asserted.</p>
    .replace("__SOUND_ROWS__", sound_rows) \
    .replace("__SNAP__", str(c["snapshots"])).replace("__TGT__", str(c["targets_located"])) \
    .replace("__Q2R__", str(c["q2_reachable"])).replace("__Q3C__", str(c["q3_controllable"])) \
+   .replace("__Q4C__", str(c["q4_mitigation_cleared"])) \
    .replace("__CLR__", str(c["clearances_from_source_analysis"]))
 
 

@@ -1,0 +1,2798 @@
+[
+  {
+    "cve": "CVE-2015-7547",
+    "status": "ok",
+    "targets": [
+      "send_vc"
+    ],
+    "files": {
+      "send_vc": [
+        "glibc-glibc-2.17/resolv/res_send.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2016-9318",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2016-9840",
+    "status": "ok",
+    "targets": [
+      "inflate_table"
+    ],
+    "files": {
+      "inflate_table": [
+        "zlib-1.2.8/inftrees.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 68,
+      "defines": [
+        "HAVE_HIDDEN",
+        "PIC",
+        "_FILE_OFFSET_BITS",
+        "_LARGEFILE64_SOURCE"
+      ],
+      "hardening": {},
+      "compiled": [
+        "adler32.c",
+        "compress.c",
+        "crc32.c",
+        "deflate.c",
+        "example.c",
+        "gzclose.c",
+        "gzlib.c",
+        "gzread.c",
+        "gzwrite.c",
+        "infback.c",
+        "inffast.c",
+        "inflate.c",
+        "inftrees.c",
+        "minigzip.c",
+        "trees.c",
+        "uncompr.c",
+        "zutil.c"
+      ]
+    },
+    "build_coverage": 0.3617021276595745,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no mitigation evidence"
+  },
+  {
+    "cve": "CVE-2016-9841",
+    "status": "ok",
+    "targets": [
+      "inflate_fast"
+    ],
+    "files": {
+      "inflate_fast": [
+        "zlib-1.2.8/inffast.c"
+      ]
+    },
+    "guards": {
+      "inflate_fast": [
+        {
+          "file": "zlib-1.2.8/inffast.c",
+          "guards": [
+            "ifndef ASMINF"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 68,
+      "defines": [
+        "HAVE_HIDDEN",
+        "PIC",
+        "_FILE_OFFSET_BITS",
+        "_LARGEFILE64_SOURCE"
+      ],
+      "hardening": {},
+      "compiled": [
+        "adler32.c",
+        "compress.c",
+        "crc32.c",
+        "deflate.c",
+        "example.c",
+        "gzclose.c",
+        "gzlib.c",
+        "gzread.c",
+        "gzwrite.c",
+        "infback.c",
+        "inffast.c",
+        "inflate.c",
+        "inftrees.c",
+        "minigzip.c",
+        "trees.c",
+        "uncompr.c",
+        "zutil.c"
+      ]
+    },
+    "build_coverage": 0.3617021276595745,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "guarded by ifndef ASMINF; -D flags cannot prove the macro is undefined (config.h is not on the command line)"
+  },
+  {
+    "cve": "CVE-2017-13077",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2017-13078",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2017-14491",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 16,
+      "defines": [
+        "VERSION"
+      ],
+      "hardening": {},
+      "compiled": [
+        "cache.c",
+        "dhcp.c",
+        "dnsmasq.c",
+        "forward.c",
+        "network.c",
+        "option.c",
+        "rfc1035.c",
+        "util.c"
+      ]
+    },
+    "build_coverage": 0.21052631578947367,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2017-16544",
+    "status": "ok",
+    "targets": [
+      "add_match"
+    ],
+    "files": {
+      "add_match": [
+        "busybox-1_20_2/libbb/lineedit.c"
+      ]
+    },
+    "guards": {
+      "add_match": [
+        {
+          "file": "busybox-1_20_2/libbb/lineedit.c",
+          "guards": [
+            "if ENABLE_FEATURE_EDITING",
+            "if ENABLE_FEATURE_TAB_COMPLETION"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2018-14526",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2018-14567",
+    "status": "ok",
+    "targets": [
+      "xz_decomp"
+    ],
+    "files": {
+      "xz_decomp": [
+        "libxml2-2.9.4/xzlib.c"
+      ]
+    },
+    "guards": {
+      "xz_decomp": [
+        {
+          "file": "libxml2-2.9.4/xzlib.c",
+          "guards": [
+            "ifdef LIBXML_LZMA_ENABLED"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2018-15473",
+    "status": "ok",
+    "targets": [
+      "userauth_pubkey"
+    ],
+    "files": {
+      "userauth_pubkey": [
+        "openssh-portable-V_7_4_P1/auth2-pubkey.c",
+        "openssh-portable-V_7_4_P1/sshconnect2.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2018-18065",
+    "status": "ok",
+    "targets": [
+      "_set_key"
+    ],
+    "files": {
+      "_set_key": [
+        "net-snmp-5.7.3/agent/helpers/table_container.c"
+      ]
+    },
+    "guards": {
+      "_set_key": [
+        {
+          "file": "net-snmp-5.7.3/agent/helpers/table_container.c",
+          "guards": [
+            "ifndef NETSNMP_FEATURE_REMOVE_TABLE_CONTAINER"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2018-20843",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2018-25032",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 68,
+      "defines": [
+        "HAVE_HIDDEN",
+        "PIC",
+        "_FILE_OFFSET_BITS",
+        "_LARGEFILE64_SOURCE"
+      ],
+      "hardening": {},
+      "compiled": [
+        "adler32.c",
+        "compress.c",
+        "crc32.c",
+        "deflate.c",
+        "example.c",
+        "gzclose.c",
+        "gzlib.c",
+        "gzread.c",
+        "gzwrite.c",
+        "infback.c",
+        "inffast.c",
+        "inflate.c",
+        "inftrees.c",
+        "minigzip.c",
+        "trees.c",
+        "uncompr.c",
+        "zutil.c"
+      ]
+    },
+    "build_coverage": 0.3617021276595745,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2018-8740",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 4,
+      "defines": [
+        "BUILD_sqlite",
+        "NDEBUG",
+        "PIC",
+        "SQLITE_HAVE_ZLIB",
+        "SQLITE_OS_UNIX",
+        "SQLITE_TEMP_STORE",
+        "SQLITE_THREADSAFE",
+        "_HAVE_SQLITE_CONFIG_H"
+      ],
+      "hardening": {},
+      "compiled": [
+        "sqlite3.c"
+      ]
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2019-11477",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": null,
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2019-13103",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2019-13106",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2019-15903",
+    "status": "ok",
+    "targets": [
+      "doProlog",
+      "storeEntityValue"
+    ],
+    "files": {
+      "doProlog": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ],
+      "storeEntityValue": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-17498",
+    "status": "ok",
+    "targets": [
+      "_libssh2_packet_add"
+    ],
+    "files": {
+      "_libssh2_packet_add": [
+        "libssh2-libssh2-1.9.0/src/packet.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-3855",
+    "status": "ok",
+    "targets": [
+      "sftp_bin2attr",
+      "sftp_fsync",
+      "_libssh2_packet_add",
+      "sftp_packet_read",
+      "sftp_init",
+      "sftp_packetlist_flush",
+      "_libssh2_transport_read"
+    ],
+    "files": {
+      "sftp_bin2attr": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fsync": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "_libssh2_packet_add": [
+        "libssh2-libssh2-1.8.0/src/packet.c"
+      ],
+      "sftp_packet_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_init": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packetlist_flush": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "_libssh2_transport_read": [
+        "libssh2-libssh2-1.8.0/src/transport.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-3856",
+    "status": "ok",
+    "targets": [
+      "sftp_bin2attr",
+      "sftp_fsync",
+      "_libssh2_packet_add",
+      "sftp_packet_read",
+      "sftp_init",
+      "sftp_packetlist_flush",
+      "_libssh2_transport_read"
+    ],
+    "files": {
+      "sftp_bin2attr": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fsync": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "_libssh2_packet_add": [
+        "libssh2-libssh2-1.8.0/src/packet.c"
+      ],
+      "sftp_packet_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_init": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packetlist_flush": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "_libssh2_transport_read": [
+        "libssh2-libssh2-1.8.0/src/transport.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-3858",
+    "status": "ok",
+    "targets": [
+      "sftp_bin2attr",
+      "sftp_fsync",
+      "_libssh2_packet_add",
+      "sftp_packet_read",
+      "sftp_init",
+      "sftp_packetlist_flush",
+      "_libssh2_transport_read"
+    ],
+    "files": {
+      "sftp_bin2attr": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fsync": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "_libssh2_packet_add": [
+        "libssh2-libssh2-1.8.0/src/packet.c"
+      ],
+      "sftp_packet_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_init": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packetlist_flush": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "_libssh2_transport_read": [
+        "libssh2-libssh2-1.8.0/src/transport.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-5481",
+    "status": "ok",
+    "targets": [
+      "read_data"
+    ],
+    "files": {
+      "read_data": [
+        "curl-curl-7_64_0/lib/security.c"
+      ]
+    },
+    "guards": {
+      "read_data": [
+        {
+          "file": "curl-curl-7_64_0/lib/security.c",
+          "guards": [
+            "ifndef CURL_DISABLE_FTP",
+            "ifdef HAVE_GSSAPI"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-5482",
+    "status": "ok",
+    "targets": [
+      "tftp_connect"
+    ],
+    "files": {
+      "tftp_connect": [
+        "curl-curl-7_64_0/lib/tftp.c"
+      ]
+    },
+    "guards": {
+      "tftp_connect": [
+        {
+          "file": "curl-curl-7_64_0/lib/tftp.c",
+          "guards": [
+            "ifndef CURL_DISABLE_TFTP"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2019-6111",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2019-8457",
+    "status": "ok",
+    "targets": [
+      "rtreenode"
+    ],
+    "files": {
+      "rtreenode": [
+        "sqlite-version-3.22.0/ext/rtree/rtree.c"
+      ]
+    },
+    "guards": {
+      "rtreenode": [
+        {
+          "file": "sqlite-version-3.22.0/ext/rtree/rtree.c",
+          "guards": [
+            "if !defined(SQLITE_CORE) \\"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-10648",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2020-11655",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2020-13434",
+    "status": "ok",
+    "targets": [
+      "sqlite3_str_vappendf"
+    ],
+    "files": {
+      "sqlite3_str_vappendf": [
+        "sqlite-version-3.31.1/src/printf.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-13630",
+    "status": "ok",
+    "targets": [
+      "fts3EvalNextRow"
+    ],
+    "files": {
+      "fts3EvalNextRow": [
+        "sqlite-version-3.31.1/ext/fts3/fts3.c"
+      ]
+    },
+    "guards": {
+      "fts3EvalNextRow": [
+        {
+          "file": "sqlite-version-3.31.1/ext/fts3/fts3.c",
+          "guards": [
+            "if !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_FTS3)"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-15778",
+    "status": "ok",
+    "targets": [
+      "toremote"
+    ],
+    "files": {
+      "toremote": [
+        "openssh-portable-V_8_2_P1/scp.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-1971",
+    "status": "ok",
+    "targets": [
+      "TS_RESP_verify_response",
+      "TS_RESP_verify_token"
+    ],
+    "files": {
+      "TS_RESP_verify_response": [
+        "openssl-OpenSSL_1_1_1g/crypto/ts/ts_rsp_verify.c"
+      ],
+      "TS_RESP_verify_token": [
+        "openssl-OpenSSL_1_1_1g/crypto/ts/ts_rsp_verify.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-22218",
+    "status": "ok",
+    "targets": [
+      "_libssh2_packet_add"
+    ],
+    "files": {
+      "_libssh2_packet_add": [
+        "libssh2-libssh2-1.9.0/src/packet.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-25681",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 78,
+      "defines": [
+        "VERSION"
+      ],
+      "hardening": {},
+      "compiled": [
+        "arp.c",
+        "auth.c",
+        "blockdata.c",
+        "bpf.c",
+        "cache.c",
+        "conntrack.c",
+        "crypto.c",
+        "dbus.c",
+        "dhcp-common.c",
+        "dhcp.c",
+        "dhcp6.c",
+        "dnsmasq.c",
+        "dnssec.c",
+        "domain.c",
+        "dump.c",
+        "edns0.c",
+        "forward.c",
+        "helper.c",
+        "inotify.c",
+        "ipset.c",
+        "lease.c",
+        "log.c",
+        "loop.c",
+        "metrics.c",
+        "netlink.c",
+        "network.c",
+        "option.c",
+        "outpacket.c",
+        "poll.c",
+        "radv.c",
+        "rfc1035.c",
+        "rfc2131.c",
+        "rfc3315.c",
+        "rrfilter.c",
+        "slaac.c",
+        "tables.c",
+        "tftp.c",
+        "ubus.c",
+        "util.c"
+      ]
+    },
+    "build_coverage": 0.9285714285714286,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2020-25684",
+    "status": "ok",
+    "targets": [
+      "reply_query"
+    ],
+    "files": {
+      "reply_query": [
+        "dnsmasq-2.82/src/forward.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2020-8177",
+    "status": "ok",
+    "targets": [
+      "tool_header_cb"
+    ],
+    "files": {
+      "tool_header_cb": [
+        "curl-curl-7_64_0/src/tool_cb_hdr.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-20227",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 2,
+      "defines": [
+        "BUILD_sqlite",
+        "NDEBUG",
+        "SQLITE_ENABLE_MATH_FUNCTIONS",
+        "SQLITE_ENABLE_PERCENTILE",
+        "SQLITE_HAVE_ZLIB",
+        "SQLITE_THREADSAFE",
+        "_HAVE_SQLITE_CONFIG_H"
+      ],
+      "hardening": {},
+      "compiled": [
+        "sqlite3.c"
+      ]
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-23840",
+    "status": "ok",
+    "targets": [
+      "EVP_CipherUpdate",
+      "EVP_DecryptUpdate",
+      "EVP_EncryptUpdate"
+    ],
+    "files": {
+      "EVP_CipherUpdate": [
+        "openssl-OpenSSL_1_0_2u/crypto/evp/evp_enc.c"
+      ],
+      "EVP_DecryptUpdate": [
+        "openssl-OpenSSL_1_0_2u/crypto/evp/evp_enc.c"
+      ],
+      "EVP_EncryptUpdate": [
+        "openssl-OpenSSL_1_0_2u/crypto/evp/evp_enc.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-31571",
+    "status": "ok",
+    "targets": [
+      "xQueueGenericCreate"
+    ],
+    "files": {
+      "xQueueGenericCreate": [
+        "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/queue.c"
+      ]
+    },
+    "guards": {
+      "xQueueGenericCreate": [
+        {
+          "file": "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/queue.c",
+          "guards": [
+            "if ( configSUPPORT_DYNAMIC_ALLOCATION == 1 )"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-31572",
+    "status": "ok",
+    "targets": [
+      "xStreamBufferGenericCreate"
+    ],
+    "files": {
+      "xStreamBufferGenericCreate": [
+        "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/stream_buffer.c"
+      ]
+    },
+    "guards": {
+      "xStreamBufferGenericCreate": [
+        {
+          "file": "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/stream_buffer.c",
+          "guards": [
+            "if ( configSUPPORT_DYNAMIC_ALLOCATION == 1 )"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-33574",
+    "status": "ok",
+    "targets": [
+      "mq_notify"
+    ],
+    "files": {
+      "mq_notify": [
+        "glibc-glibc-2.28/rt/mq_notify.c",
+        "glibc-glibc-2.28/sysdeps/unix/sysv/linux/mq_notify.c"
+      ]
+    },
+    "guards": {
+      "mq_notify": [
+        {
+          "file": "glibc-glibc-2.28/sysdeps/unix/sysv/linux/mq_notify.c",
+          "guards": [
+            "ifdef __NR_mq_notify"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-3450",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 34,
+      "defines": [
+        "NDEBUG"
+      ],
+      "hardening": {},
+      "compiled": [
+        "test_test.c",
+        "threadstest.c",
+        "time_offset_test.c",
+        "tls13ccstest.c",
+        "tls13encryptiontest.c",
+        "tls13secretstest.c",
+        "uitest.c",
+        "v3ext.c",
+        "v3nametest.c",
+        "verify_extra_test.c",
+        "versions.c",
+        "wpackettest.c",
+        "x509_check_cert_pkey_test.c",
+        "x509_dup_cert_test.c",
+        "x509_internal_test.c",
+        "x509_time_test.c",
+        "x509aux.c"
+      ]
+    },
+    "build_coverage": 0.018065887353878853,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-3517",
+    "status": "ok",
+    "targets": [
+      "test_htmlDocContentDumpFormatOutput",
+      "test_xmlDebugDumpNode",
+      "test_xmlParseBalancedChunkMemory",
+      "test_xmlIO",
+      "test_xmlSaveTree"
+    ],
+    "files": {
+      "test_htmlDocContentDumpFormatOutput": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlDebugDumpNode": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlParseBalancedChunkMemory": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlIO": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlSaveTree": [
+        "libxml2-2.9.10/testapi.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-3518",
+    "status": "ok",
+    "targets": [
+      "test_htmlDocContentDumpFormatOutput",
+      "test_xmlDebugDumpNode",
+      "test_xmlParseBalancedChunkMemory",
+      "test_xmlIO",
+      "test_xmlSaveTree"
+    ],
+    "files": {
+      "test_htmlDocContentDumpFormatOutput": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlDebugDumpNode": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlParseBalancedChunkMemory": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlIO": [
+        "libxml2-2.9.10/testapi.c"
+      ],
+      "test_xmlSaveTree": [
+        "libxml2-2.9.10/testapi.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-35942",
+    "status": "ok",
+    "targets": [
+      "parse_param",
+      "wordexp"
+    ],
+    "files": {
+      "parse_param": [
+        "glibc-glibc-2.31/posix/wordexp.c"
+      ],
+      "wordexp": [
+        "glibc-glibc-2.31/posix/wordexp.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-36369",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-3711",
+    "status": "ok",
+    "targets": [
+      "EVP_PKEY_decrypt"
+    ],
+    "files": {
+      "EVP_PKEY_decrypt": [
+        "openssl-OpenSSL_1_1_1k/crypto/evp/pmeth_fn.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-3712",
+    "status": "ok",
+    "targets": [
+      "ASN1_STRING_set",
+      "ASN1_STRING_set0",
+      "X509_REQ_get1_email",
+      "X509_get1_email",
+      "X509_get1_ocsp"
+    ],
+    "files": {
+      "ASN1_STRING_set": [
+        "openssl-OpenSSL_1_1_1k/crypto/asn1/asn1_lib.c"
+      ],
+      "ASN1_STRING_set0": [
+        "openssl-OpenSSL_1_1_1k/crypto/asn1/asn1_lib.c"
+      ],
+      "X509_REQ_get1_email": [
+        "openssl-OpenSSL_1_1_1k/crypto/x509v3/v3_utl.c"
+      ],
+      "X509_get1_email": [
+        "openssl-OpenSSL_1_1_1k/crypto/x509v3/v3_utl.c"
+      ],
+      "X509_get1_ocsp": [
+        "openssl-OpenSSL_1_1_1k/crypto/x509v3/v3_utl.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 34,
+      "defines": [
+        "NDEBUG"
+      ],
+      "hardening": {},
+      "compiled": [
+        "test_test.c",
+        "threadstest.c",
+        "time_offset_test.c",
+        "tls13ccstest.c",
+        "tls13encryptiontest.c",
+        "tls13secretstest.c",
+        "uitest.c",
+        "v3ext.c",
+        "v3nametest.c",
+        "verify_extra_test.c",
+        "versions.c",
+        "wpackettest.c",
+        "x509_check_cert_pkey_test.c",
+        "x509_dup_cert_test.c",
+        "x509_internal_test.c",
+        "x509_time_test.c",
+        "x509aux.c"
+      ]
+    },
+    "build_coverage": 0.018046709129511677,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "log compiled 2% of the project's sources - too partial to argue absence from"
+  },
+  {
+    "cve": "CVE-2021-3999",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-41617",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-42374",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-42375",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-42376",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2021-42378",
+    "status": "ok",
+    "targets": [
+      "getvar_i"
+    ],
+    "files": {
+      "getvar_i": [
+        "busybox-1_30_1/editors/awk.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-42379",
+    "status": "ok",
+    "targets": [
+      "next_input_file"
+    ],
+    "files": {
+      "next_input_file": [
+        "busybox-1_33_1/editors/awk.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-42380",
+    "status": "ok",
+    "targets": [
+      "evaluate"
+    ],
+    "files": {
+      "evaluate": [
+        "busybox-1_33_1/editors/awk.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-42386",
+    "status": "ok",
+    "targets": [
+      "nvalloc"
+    ],
+    "files": {
+      "nvalloc": [
+        "busybox-1_30_1/editors/awk.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2021-44228",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-0547",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-0778",
+    "status": "ok",
+    "targets": [
+      "BN_mod_sqrt"
+    ],
+    "files": {
+      "BN_mod_sqrt": [
+        "openssl-OpenSSL_1_1_1k/crypto/bn/bn_sqrt.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 34,
+      "defines": [
+        "NDEBUG"
+      ],
+      "hardening": {},
+      "compiled": [
+        "test_test.c",
+        "threadstest.c",
+        "time_offset_test.c",
+        "tls13ccstest.c",
+        "tls13encryptiontest.c",
+        "tls13secretstest.c",
+        "uitest.c",
+        "v3ext.c",
+        "v3nametest.c",
+        "verify_extra_test.c",
+        "versions.c",
+        "wpackettest.c",
+        "x509_check_cert_pkey_test.c",
+        "x509_dup_cert_test.c",
+        "x509_internal_test.c",
+        "x509_time_test.c",
+        "x509aux.c"
+      ]
+    },
+    "build_coverage": 0.018046709129511677,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "log compiled 2% of the project's sources - too partial to argue absence from"
+  },
+  {
+    "cve": "CVE-2022-0847",
+    "status": "ok",
+    "targets": [
+      "copy_page_to_iter_pipe",
+      "push_pipe"
+    ],
+    "files": {
+      "copy_page_to_iter_pipe": [
+        "linux-4.19.325/lib/iov_iter.c"
+      ],
+      "push_pipe": [
+        "linux-4.19.325/lib/iov_iter.c"
+      ]
+    },
+    "guards": {},
+    "build": null,
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2022-1292",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-2068",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 34,
+      "defines": [
+        "NDEBUG"
+      ],
+      "hardening": {},
+      "compiled": [
+        "test_test.c",
+        "threadstest.c",
+        "time_offset_test.c",
+        "tls13ccstest.c",
+        "tls13encryptiontest.c",
+        "tls13secretstest.c",
+        "uitest.c",
+        "v3ext.c",
+        "v3nametest.c",
+        "verify_extra_test.c",
+        "versions.c",
+        "wpackettest.c",
+        "x509_check_cert_pkey_test.c",
+        "x509_dup_cert_test.c",
+        "x509_internal_test.c",
+        "x509_time_test.c",
+        "x509aux.c"
+      ]
+    },
+    "build_coverage": 0.018027571580063628,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-22576",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-22822",
+    "status": "ok",
+    "targets": [
+      "addBinding"
+    ],
+    "files": {
+      "addBinding": [
+        "libexpat-R_2_2_10/expat/lib/xmlparse.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 14,
+      "defines": [
+        "CMAKE_BOOTSTRAP",
+        "_FILE_OFFSET_BITS"
+      ],
+      "hardening": {},
+      "compiled": [
+        "hex.c",
+        "md5.c",
+        "rhash-librhash-hex.c",
+        "rhash-librhash-md5.c",
+        "rhash-librhash-rhash.c",
+        "rhash-librhash-sha1.c",
+        "rhash-librhash-sha256.c",
+        "rhash-librhash-sha3.c",
+        "rhash-librhash-sha512.c",
+        "rhash.c",
+        "sha1.c",
+        "sha256.c",
+        "sha3.c",
+        "sha512.c"
+      ]
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "log compiled 0% of the project's sources - too partial to argue absence from"
+  },
+  {
+    "cve": "CVE-2022-22965",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-23303",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-23852",
+    "status": "ok",
+    "targets": [
+      "XML_GetBuffer"
+    ],
+    "files": {
+      "XML_GetBuffer": [
+        "libexpat-R_2_2_10/expat/lib/xmlparse.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2022-25235",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-25236",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-25315",
+    "status": "ok",
+    "targets": [
+      "storeRawNames"
+    ],
+    "files": {
+      "storeRawNames": [
+        "libexpat-R_2_4_1/expat/lib/xmlparse.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2022-27774",
+    "status": "ok",
+    "targets": [
+      "Curl_follow"
+    ],
+    "files": {
+      "Curl_follow": [
+        "curl-curl-7_79_1/lib/transfer.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2022-28391",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-29824",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-32221",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-37434",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-40303",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-40304",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-41742",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-4304",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2022-46908",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-0215",
+    "status": "ok",
+    "targets": [
+      "B64_write_ASN1",
+      "BIO_f_asn1",
+      "BIO_new_CMS",
+      "BIO_new_NDEF",
+      "BIO_new_PKCS7",
+      "BIO_pop",
+      "PEM_write_bio_ASN1_stream",
+      "PEM_write_bio_CMS_stream",
+      "PEM_write_bio_PKCS7_stream",
+      "SMIME_write_ASN1",
+      "SMIME_write_CMS",
+      "SMIME_write_PKCS7",
+      "i2d_ASN1_bio_stream",
+      "i2d_CMS_bio_stream",
+      "i2d_PKCS7_bio_stream"
+    ],
+    "files": {
+      "B64_write_ASN1": [
+        "openssl-openssl-3.0.7/crypto/asn1/asn_mime.c"
+      ],
+      "BIO_f_asn1": [
+        "openssl-openssl-3.0.7/crypto/asn1/bio_asn1.c"
+      ],
+      "BIO_new_CMS": [
+        "openssl-openssl-3.0.7/crypto/cms/cms_io.c"
+      ],
+      "BIO_new_NDEF": [
+        "openssl-openssl-3.0.7/crypto/asn1/bio_ndef.c"
+      ],
+      "BIO_new_PKCS7": [
+        "openssl-openssl-3.0.7/crypto/pkcs7/bio_pk7.c"
+      ],
+      "BIO_pop": [
+        "openssl-openssl-3.0.7/crypto/bio/bio_lib.c"
+      ],
+      "PEM_write_bio_ASN1_stream": [
+        "openssl-openssl-3.0.7/crypto/asn1/asn_mime.c"
+      ],
+      "PEM_write_bio_CMS_stream": [
+        "openssl-openssl-3.0.7/crypto/cms/cms_io.c"
+      ],
+      "PEM_write_bio_PKCS7_stream": [
+        "openssl-openssl-3.0.7/crypto/pkcs7/pk7_mime.c"
+      ],
+      "SMIME_write_ASN1": [
+        "openssl-openssl-3.0.7/crypto/asn1/asn_mime.c"
+      ],
+      "SMIME_write_CMS": [
+        "openssl-openssl-3.0.7/crypto/cms/cms_io.c"
+      ],
+      "SMIME_write_PKCS7": [
+        "openssl-openssl-3.0.7/crypto/pkcs7/pk7_mime.c"
+      ],
+      "i2d_ASN1_bio_stream": [
+        "openssl-openssl-3.0.7/crypto/asn1/asn_mime.c"
+      ],
+      "i2d_CMS_bio_stream": [
+        "openssl-openssl-3.0.7/crypto/cms/cms_io.c"
+      ],
+      "i2d_PKCS7_bio_stream": [
+        "openssl-openssl-3.0.7/crypto/pkcs7/pk7_mime.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-0286",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-27533",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-27536",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-28450",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-28484",
+    "status": "ok",
+    "targets": [
+      "xmlSchemaFixupComplexType"
+    ],
+    "files": {
+      "xmlSchemaFixupComplexType": [
+        "libxml2-2.9.14/xmlschemas.c"
+      ]
+    },
+    "guards": {
+      "xmlSchemaFixupComplexType": [
+        {
+          "file": "libxml2-2.9.14/xmlschemas.c",
+          "guards": [
+            "ifdef LIBXML_SCHEMAS_ENABLED"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-34035",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-38408",
+    "status": "ok",
+    "targets": [
+      "pkcs11_register_provider"
+    ],
+    "files": {
+      "pkcs11_register_provider": [
+        "openssh-portable-V_9_3_P1/ssh-pkcs11.c"
+      ]
+    },
+    "guards": {
+      "pkcs11_register_provider": [
+        {
+          "file": "openssh-portable-V_9_3_P1/ssh-pkcs11.c",
+          "guards": [
+            "ifdef ENABLE_PKCS11"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-38545",
+    "status": "ok",
+    "targets": [
+      "do_connect",
+      "tcpkeepalive",
+      "curl_multi_fdset",
+      "our_select",
+      "bindlocal",
+      "Curl_poll"
+    ],
+    "files": {
+      "do_connect": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
+      "tcpkeepalive": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
+      "curl_multi_fdset": [
+        "curl-curl-8_0_1/lib/multi.c"
+      ],
+      "our_select": [
+        "curl-curl-8_0_1/lib/select.c"
+      ],
+      "bindlocal": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
+      "Curl_poll": [
+        "curl-curl-8_0_1/lib/select.c"
+      ]
+    },
+    "guards": {
+      "our_select": [
+        {
+          "file": "curl-curl-8_0_1/lib/select.c",
+          "guards": [
+            "ifndef HAVE_POLL_FINE"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-44487",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-45322",
+    "status": "ok",
+    "targets": [
+      "xmlUnlinkNode"
+    ],
+    "files": {
+      "xmlUnlinkNode": [
+        "libxml2-2.10.4/tree.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-46218",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-46850",
+    "status": "ok",
+    "targets": [
+      "is_hard_reset_method2"
+    ],
+    "files": {
+      "is_hard_reset_method2": [
+        "openvpn-2.5.5/src/openvpn/ssl.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-48795",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-4911",
+    "status": "ok",
+    "targets": [
+      "parse_tunables",
+      "do_test"
+    ],
+    "files": {
+      "parse_tunables": [
+        "glibc-glibc-2.35/elf/dl-tunables.c"
+      ],
+      "do_test": [
+        "glibc-glibc-2.35/argp/bug-argp1.c",
+        "glibc-glibc-2.35/argp/bug-argp2.c",
+        "glibc-glibc-2.35/argp/tst-argp1.c"
+      ]
+    },
+    "guards": {
+      "parse_tunables": [
+        {
+          "file": "glibc-glibc-2.35/elf/dl-tunables.c",
+          "guards": [
+            "if TUNABLES_FRONTEND == TUNABLES_FRONTEND_valstring"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [
+      "glibc-glibc-2.35/sysdeps/pthread/tst-locale2.c"
+    ],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-52425",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2023-7104",
+    "status": "ok",
+    "targets": [
+      "sessionReadRecord"
+    ],
+    "files": {
+      "sessionReadRecord": [
+        "sqlite-version-3.41.2/ext/session/sqlite3session.c"
+      ]
+    },
+    "guards": {
+      "sessionReadRecord": [
+        {
+          "file": "sqlite-version-3.41.2/ext/session/sqlite3session.c",
+          "guards": [
+            "if defined(SQLITE_ENABLE_SESSION) && defined(SQLITE_ENABLE_PREUPDATE_HOOK)"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2023-7256",
+    "status": "ok",
+    "targets": [
+      "sock_initaddress"
+    ],
+    "files": {
+      "sock_initaddress": [
+        "libpcap-libpcap-1.9.1/sockutils.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2024-1086",
+    "status": "ok",
+    "targets": [
+      "nf_hook_slow",
+      "nft_verdict_init"
+    ],
+    "files": {
+      "nf_hook_slow": [
+        "linux-5.10.220/net/netfilter/core.c"
+      ],
+      "nft_verdict_init": [
+        "linux-5.10.220/net/netfilter/nf_tables_api.c"
+      ]
+    },
+    "guards": {},
+    "build": null,
+    "build_coverage": 0.0,
+    "included_by": [
+      "linux-5.10.220/arch/s390/boot/sclp_early_core.c",
+      "linux-5.10.220/drivers/gpu/drm/i915/intel_uncore.c",
+      "linux-5.10.220/sound/pci/au88x0/au8810.c",
+      "linux-5.10.220/sound/pci/au88x0/au8820.c",
+      "linux-5.10.220/sound/pci/au88x0/au8830.c"
+    ],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2024-2379",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  },
+  {
+    "cve": "CVE-2024-2961",
+    "status": "ok",
+    "targets": [
+      "iconv"
+    ],
+    "files": {
+      "iconv": [
+        "glibc-glibc-2.35/iconv/iconv.c"
+      ]
+    },
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
+    "cve": "CVE-2024-6387",
+    "status": "ok",
+    "targets": [],
+    "files": {},
+    "guards": {},
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no target to evaluate"
+  }
+]

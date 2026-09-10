@@ -30,14 +30,14 @@ TARGET_SOURCES = {
         "label": "Fix-commit hunk",
         "how": "the vulnerable function is the one the upstream fix edits",
         "may_clear": True,
-        "n": 25,
+        "n": 24,
     },
     "description": {
         "label": "NVD description",
         "how": "the advisory names the function, and that name is really defined "
                "in the collected snapshot",
         "may_clear": True,
-        "n": 29,
+        "n": 28,
     },
     "codebert": {
         "label": "CodeBERT ranking",
@@ -50,7 +50,7 @@ TARGET_SOURCES = {
         "label": "Not identified",
         "how": "no fix commit, no description mention",
         "may_clear": False,
-        "n": 43,
+        "n": 45,
     },
 }
 
@@ -67,21 +67,26 @@ QUESTIONS = [
      "clears_with": ["vulnerable_code_not_in_execute_path"],
      "how": "static call graph from all entry points (tools/callgraph_reach.py)",
      "state": "implemented",
-     "result": "reachable 55, target-not-found 46, no-source 3 - unreachable 0"},
+     "result": "reachable 54, target-not-found 47, no-source 3 - unreachable 0"},
     {"id": "Q3", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
      "how": "the same call graph walked only from tainted entries - I/O readers, "
             "public-header API, and every address-taken function "
             "(tools/taint_reach.py)",
      "state": "implemented",
-     "result": "controllable 53, target-not-found 48, no-source 3 - "
+     "result": "controllable 52, target-not-found 49, no-source 3 - "
                "not-controllable 0"},
     {"id": "Q4", "ask": "Is an inline mitigation already present?",
      "clears_with": ["inline_mitigations_already_exist"],
-     "how": "preprocessor guards around the vulnerable function plus the -D flags "
-            "in the recorded build logs",
-     "state": "not implemented",
-     "result": "no public ICS advisory has ever used this label (0 of 3,984)"},
+     "how": "preprocessor guards around the vulnerable function, plus the -D "
+            "flags and compiled files on the real compile lines in "
+            "results/verify_build_logs (tools/mitigation_scan.py)",
+     "state": "implemented",
+     "result": "0 clearances of 104. 48 have no usable build log, 3 logs are too "
+               "partial to argue absence from, 2 targets sit under a guard whose "
+               "macro the -D flags cannot resolve. Hardening flags are recorded "
+               "but never clear: they turn corruption into abort(), which "
+               "reduces impact, not applicability"},
 ]
 
 # --- why the call graph is walked conservatively ------------------------------
@@ -100,6 +105,13 @@ SOUNDNESS = [
      "(`sqlite3_create_function(..., rtreenode, ...)`) are invisible, so every "
      "address-taken function is treated as a root.",
      "this single fix overturned all 6 clearances the first Q3 run produced"),
+    ("Partial build logs",
+     "the first Q4 run counted `clang-format` and configure chatter "
+     "(\"gcc accepts -g... yes\") as compile lines, so files that were built "
+     "looked unbuilt. A compile line must now start with a compiler and name a "
+     "source, the log must cover half the project, and a file another "
+     "translation unit #includes cannot be called absent.",
+     "it produced 5 false `vulnerable_code_not_present` clearances"),
     ("Graph completeness",
      "call resolution = defined callees / all callees, median 0.67. Below 0.50 "
      "the graph is too incomplete to argue from.",
@@ -153,8 +165,9 @@ def resolve(q1=None, q2=None, q3=None, q4=None, target_source="none",
 
 
 CORPUS = {
-    "snapshots": 104, "targets_located": 54,
-    "q2_reachable": 55, "q2_unreachable": 0,
-    "q3_controllable": 53, "q3_not_controllable": 0,
+    "snapshots": 104, "targets_located": 52,
+    "q2_reachable": 54, "q2_unreachable": 0,
+    "q3_controllable": 52, "q3_not_controllable": 0,
+    "q4_mitigation_cleared": 0,
     "clearances_from_source_analysis": 0,
 }
