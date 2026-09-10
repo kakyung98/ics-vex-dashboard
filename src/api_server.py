@@ -1105,7 +1105,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 @media(max-width:820px){.vm-split,.vm-cols{grid-template-columns:1fr}}
 </style></head><body><div class="layout">
 <aside class="side">
-  <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
+  <div class="side-brand"><a href="index.html" title="Go to ICS-VEXForge" aria-label="ICS-VEXForge"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
   __NAV__
 </aside>
 <main class="main">
@@ -2086,7 +2086,7 @@ PAGES = {
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
-_NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
+_NAV = [("analyzer", "index.html", "ICS-VEXForge"),
         ("source", "source.html", "ICS-CERT Advisories"),
         ("published-vex", "published-vex.html", "Published VEX (CISA)"),
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
