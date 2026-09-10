@@ -485,7 +485,16 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    — old CVEs (the KRACK set, dnsmasq 2017, early sqlite) cite only distro
    advisories and mailing lists. Closing those needs per-project security-page
    parsers, not another forge adapter.
-10. Q3's `not-controllable` and Q4's clearance both rest on arguing from absence
+10. A Joern pilot ([`docs/JOERN_PILOT.md`](docs/JOERN_PILOT.md)) measured what a
+   CPG would add. It parses K&R and macro-wrapped signatures natively (removing
+   the regex workaround in `tools/callgraph_reach.py`) and can express Q3 as a
+   taint flow rather than reachability. It does **not** improve call resolution
+   (0.533 vs the current median 0.67) — that is dominated by the absence of a
+   build, which no front end recovers. Its data flow must be used
+   asymmetrically: flows found are positive evidence, flows not found are not
+   evidence of safety (on CVE-2016-9840, a real zlib flaw, it reports 0 flows
+   because the taint travels through struct members).
+11. Q3's `not-controllable` and Q4's clearance both rest on arguing from absence
    in an incomplete static view. The guards above make that argument honest, but
    they also make it rare: on this corpus neither fires. A dynamic track
    (fuzzing the tainted entries) is the way to get positive evidence for Q3.
