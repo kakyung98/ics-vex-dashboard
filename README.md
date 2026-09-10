@@ -480,7 +480,15 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    firmware cannot enter that path.
 8. The component inventory is synthetic; real asset SBOMs will change the
    `component_not_present` numbers.
-9. The binding limit on Q2/Q3/Q4 is **target coverage: 60 of 104 snapshots**. Of
+9. **NVD carries a CPE for 88.9% of these CVEs** (10,059 of 11,314; 69.6% with a
+   version range), and the top vendors are ICS ones - Siemens 1,932, Schneider
+   Electric 375, Rockwell 322, Advantech 275 (`results/cpe_census.json`, a full
+   census, not a sample). This corrects an earlier reading of the CSAF side,
+   where only 0.2% of OT products carry a CPE: the advisories omit them, NVD
+   supplies them. The analyzer's CPE panel fails on ICS components not because
+   CPE is unavailable but because it matches against a 42-entry OSS knowledge
+   base; pointing it at the NVD dictionary is the fix.
+10. The binding limit on Q2/Q3/Q4 is **target coverage: 60 of 104 snapshots**. Of
    the remaining 44, **35 have no commit link anywhere in their NVD references**
    — old CVEs (the KRACK set, dnsmasq 2017, early sqlite) cite only distro
    advisories and mailing lists. Closing those needs per-project security-page
