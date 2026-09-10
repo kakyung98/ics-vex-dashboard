@@ -88,6 +88,12 @@ def in_affected_range(cve, product, version):
     rs = RANGES.get(cve)
     if not rs:
         return None
+    # The range must belong to THIS product. An NVD record carries ranges for
+    # every product the CVE touches - distributions, bundlers, the library
+    # itself - and taking whichever came first silently answered with another
+    # product's versions: CVE-2018-25032 resolved to nokogiri < 1.13.4 instead
+    # of zlib < 1.2.12. With no product match the answer is "undecidable", not
+    # "use something else".
     pkg = _norm_pkg(product)
     cand = None
     for r in rs:
@@ -97,8 +103,6 @@ def in_affected_range(cve, product, version):
         if pkg and (pkg == p or pkg in p or p in pkg):
             cand = r
             break
-        if cand is None:
-            cand = r
     if not cand:
         return None
     lo, hi_ex, hi_in = cand.get("startIncl"), cand.get("endExcl"), cand.get("endIncl")

@@ -34,12 +34,20 @@ from tree_sitter import Language, Parser
 
 C_LANG = Language(tree_sitter_c.language())
 CPP_LANG = Language(tree_sitter_cpp.language())
+try:
+    import tree_sitter_java
+    JAVA_LANG = Language(tree_sitter_java.language())
+except Exception:      # grammar absent - Java trees are then simply skipped
+    JAVA_LANG = None
 EXT_C = {".c", ".h"}
 EXT_CPP = {".cc", ".cpp", ".cxx", ".hpp", ".hh"}
+EXT_JAVA = {".java"} if JAVA_LANG else set()
 SKIP = ("test", "example", "examples", "fuzz", ".git", "doc", "docs")
 
 
 def _parser(ext):
+    if ext in EXT_JAVA:
+        return Parser(JAVA_LANG)
     return Parser(CPP_LANG if ext in EXT_CPP else C_LANG)
 
 
@@ -79,6 +87,26 @@ def _calls_in(node, src):
             fn = n.child_by_field_name("function")
             if fn is not None and fn.type in ("identifier", "field_identifier"):
                 out.add(src[fn.start_byte:fn.end_byte].decode("utf-8", "ignore"))
+        elif n.type == "method_invocation":
+            # Java: `obj.foo(x)` - the callee is the `name` field
+            nm = n.child_by_field_name("name")
+            if nm is not None:
+                out.add(src[nm.start_byte:nm.end_byte].decode("utf-8", "ignore"))
+        stack.extend(n.children)
+    return out
+
+
+def _java_methods(tree, src):
+    """(name, body node) for every method/constructor in a Java file."""
+    out = []
+    stack = [tree.root_node]
+    while stack:
+        n = stack.pop()
+        if n.type in ("method_declaration", "constructor_declaration"):
+            nm = n.child_by_field_name("name")
+            body = n.child_by_field_name("body")
+            if nm is not None and body is not None:
+                out.append((src[nm.start_byte:nm.end_byte].decode("utf-8", "ignore"), body))
         stack.extend(n.children)
     return out
 
@@ -143,7 +171,7 @@ def build_graph(root):
             continue
         for fn in fns:
             ext = os.path.splitext(fn)[1].lower()
-            if ext not in EXT_C and ext not in EXT_CPP:
+            if ext not in EXT_C and ext not in EXT_CPP and ext not in EXT_JAVA:
                 continue
             p = os.path.join(dp, fn)
             try:
@@ -154,6 +182,11 @@ def build_graph(root):
                 continue
             files += 1
             tree = _parser(ext).parse(src)
+            if ext in EXT_JAVA:
+                for name, body in _java_methods(tree, src):
+                    defined.add(name)
+                    defs[name] |= _calls_in(body, src)
+                continue                      # the C paths below do not apply
             stack = [tree.root_node]
             while stack:
                 n = stack.pop()
