@@ -116,7 +116,7 @@ Q4 inline mitigation present?    -> inline_mitigations_already_exist
 
 All four questions are now implemented and have been run over the 104 source
 snapshots. The rule they share lives in one module, `src/vex_decision.py`, which
-the console's **VEX Decision Logic** page renders from, so the documented rule
+the console's **VEX Flag Decision Logic** page renders from, so the documented rule
 and the executed rule cannot drift apart.
 
 | Q | Tool | Result on 104 snapshots | Clearances |

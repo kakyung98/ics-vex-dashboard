@@ -1911,7 +1911,7 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 
 
 
-# --- VEX Decision Logic page -------------------------------------------------
+# --- VEX Flag Decision Logic page -------------------------------------------------
 # Rendered from src/vex_decision.py so the documented rule and the executed rule
 # cannot drift apart.
 def _decision_page():
@@ -1937,7 +1937,7 @@ def _decision_page():
         % (name, what, why) for name, what, why in VD.SOUNDNESS)
 
     c = VD.CORPUS
-    return """<h1 style="margin:0 0 8px">VEX Decision Logic</h1>
+    return """<h1 style="margin:0 0 8px">VEX Flag Decision Logic</h1>
 <p class="hint" style="margin:0 0 18px">The rule this system actually executes, and what it produced on the
 collected corpus. The governing principle is <b>conservative generation</b>: a statement is lowered to
 <span class="mono">not_affected</span> only by evidence strong enough to survive being wrong. Everything
@@ -2075,7 +2075,7 @@ _DECISION_PAGE = _decision_page()
 
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
-    "vex-decision": ("VEX Decision Logic", _DECISION_PAGE),
+    "vex-decision": ("VEX Flag Decision Logic", _DECISION_PAGE),
     "source": ("ICS-CERT Advisories",
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
     # one page: the population, and the slice of it that has source
@@ -2089,7 +2089,7 @@ PAGES = {
 _NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
         ("source", "source.html", "ICS-CERT Advisories"),
         ("published-vex", "published-vex.html", "Published VEX (CISA)"),
-        ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
+        ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
         ("dataset", "dataset.html", "CVE Dataset"),
         ("ics-sbom", "ics-sbom.html", "Synthetic SBOM")]
 
