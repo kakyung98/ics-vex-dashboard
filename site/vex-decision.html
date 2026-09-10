@@ -915,7 +915,7 @@ async function publishedVex(){
           '<div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+w+'%;background:'+c+'"></div></div></div>';}
     document.getElementById('pv-charts').innerHTML=ch;
     // rows table
-    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>CSAF source</th><th>Product</th><th>Justification</th></tr></thead><tbody>';
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>CSAF source</th><th>Vendor</th><th>Products the flag names</th><th>Justification</th></tr></thead><tbody>';
     for(const r of rows){const c=PVJUST_COL[r.justification]||'var(--ink3)';
       const labs=(r.labels||[]).map(l=>'<span class="badge" style="background:'+((PVJUST_COL[l]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[l]||'var(--ink3)'))+'">'+esc(l)+'</span>').join(' ');
       h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+esc(r.cve)+'" target="_blank" rel="noopener">'+esc(r.cve)+'</a></td>'+
@@ -923,7 +923,17 @@ async function publishedVex(){
          // the flags this row asserts live in the CSAF document, not on the
          // advisory page - link both the upstream JSON and our pinned copy
          '<td class="mono hint" style="white-space:nowrap">'+(r.csaf_url?('<a href="'+esc(r.csaf_url)+'" target="_blank" rel="noopener">upstream</a>'):'&mdash;')+(r.csaf_local?(' &middot; <a href="'+esc(r.csaf_local)+'" target="_blank" rel="noopener">pinned</a>'):'')+'</td>'+
-         '<td class="hint">'+esc((r.title||'').replace(/^[A-Za-z]+ /,''))+'</td>'+
+         // a VEX statement is product x vulnerability x status, so name the
+         // products the flag actually covers rather than the advisory title
+         '<td class="hint">'+esc(r.vendor||'')+'</td>'+
+         '<td class="hint">'+((r.products&&r.products.length)
+           ? r.products.map(p=>'<div><span class="mono">'+esc(p.product||'')+'</span>'
+               +(p.version?' <span class="hint" style="opacity:.7">'+esc(p.version)+'</span>':'')
+               // a CVE can carry a different justification per product
+               +((r.labels&&r.labels.length>1&&p.label)?(' <span class="badge" style="background:'+((PVJUST_COL[p.label]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[p.label]||'var(--ink3)'))+'">'+esc(p.label)+'</span>'):'')
+               +'</div>').join('')
+               +((r.product_count>r.products.length)?('<div class="hint">+'+(r.product_count-r.products.length)+' more</div>'):'')
+           : esc((r.title||'').replace(/^[A-Za-z]+ /,'')))+'</td>'+
          '<td>'+labs+'</td></tr>';}
     box.innerHTML=h+'</tbody></table></div>';
   }catch(e){box.innerHTML='<span class="err">published VEX unavailable</span>';}

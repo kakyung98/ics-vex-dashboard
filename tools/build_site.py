@@ -71,7 +71,21 @@ def _published_vex(store):
         for cve, labels in (r.get("flags") or {}).items():
             for lab in labels:
                 ldist[lab] = ldist.get(lab, 0) + 1
+            # resolve the flag to the products it actually names
+            prods = []
+            _src = os.path.join(BASE, "data", "gt_icsa", "tier1_justification",
+                                "cisa_csaf", "%s.json" % (r.get("advisory_id") or ""))
+            if os.path.exists(_src):
+                try:
+                    prods = A.flagged_products(json.load(open(_src, encoding="utf-8")), cve)
+                except Exception:
+                    prods = []
             rows.append({"advisory": r.get("advisory_id"), "cve": cve, "title": title,
+                         "vendor": (prods[0]["vendor"] if prods else vendor),
+                         "products": [{"product": p["product"], "version": p["version"],
+                                       "label": p.get("label")}
+                                      for p in prods][:12],
+                         "product_count": len(prods),
                          "justification": labels[0] if labels else None, "labels": labels,
                          "url": r.get("cisa_url"),
                          "csaf_url": (("https://raw.githubusercontent.com/cisagov/CSAF/develop/" + r["source_file"]) if r.get("source_file")
