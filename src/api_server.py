@@ -2076,8 +2076,8 @@ _DECISION_PAGE = _decision_page()
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
     "vex-decision": ("VEX Flag Decision Logic", _DECISION_PAGE),
-    "source": ("ICS-CERT Advisories",
-               '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
+    "source": ("ICS-CERT Advisories (CISA)",
+               '<h1 style="margin:0 0 18px">ICS-CERT Advisories (CISA)</h1>' + SOURCE_HTML),
     # one page: the population, and the slice of it that has source
     "dataset": ("CVE Dataset", """<h1 style="margin:0 0 6px">CVE Dataset</h1>
 <p class="hint" style="margin:0 0 18px">Everything derived from the ICS-CERT advisories: how many CVEs exist, what verdict each carries, and which of them have obtainable source &mdash; the only ones a code-level judgment can be made about. The two halves used to be separate pages (&ldquo;corpus statistics&rdquo; and &ldquo;source code available&rdquo;), but they answer one question: <b>what is in the dataset, and how much of it can actually be judged?</b></p>"""
@@ -2087,7 +2087,7 @@ PAGES = {
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "ICS-VEXForge"),
-        ("source", "source.html", "ICS-CERT Advisories"),
+        ("source", "source.html", "ICS-CERT Advisories (CISA)"),
         ("published-vex", "published-vex.html", "Published VEX (CISA)"),
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
         ("dataset", "dataset.html", "CVE Dataset"),
