@@ -33,6 +33,11 @@ def dump(name, obj):
 
 # ---- 1) datasets the page fetches (same-origin) ---------------------------
 dump("cve_level.json", S.cve_level)
+# The Synthetic SBOM page falls back to a same-origin sbom_index.json when there
+# is no API, and the file lived only at the repo root - so the deployed page
+# fetched a 404 and rendered empty. Ship it with the bundle (separators are
+# already compact via dump(), which is what keeps 7.7 MB down to ~5 MB).
+dump("sbom_index.json", S.sbom_index)
 # pinned CSAF originals, so the Published VEX table's claims can be checked
 # against the document they come from without leaving the site
 _gt_src = os.path.join(BASE, "data", "gt_icsa", "tier1_justification", "cisa_csaf")
