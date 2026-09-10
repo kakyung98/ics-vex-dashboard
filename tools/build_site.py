@@ -33,6 +33,17 @@ def dump(name, obj):
 
 # ---- 1) datasets the page fetches (same-origin) ---------------------------
 dump("cve_level.json", S.cve_level)
+# pinned CSAF originals, so the Published VEX table's claims can be checked
+# against the document they come from without leaving the site
+_gt_src = os.path.join(BASE, "data", "gt_icsa", "tier1_justification", "cisa_csaf")
+if os.path.isdir(_gt_src):
+    _gt_dst = os.path.join(SITE, "gt_icsa")
+    os.makedirs(_gt_dst, exist_ok=True)
+    for _f in os.listdir(_gt_src):
+        if _f.endswith(".json"):
+            shutil.copyfile(os.path.join(_gt_src, _f), os.path.join(_gt_dst, _f))
+    print("  copied %d pinned CSAF documents -> site/gt_icsa/"
+          % len([f for f in os.listdir(_gt_dst) if f.endswith(".json")]))
 # NVD affected ranges, so the browser can apply the same version test the server
 # does (src/sbom_match.in_affected_range). Without this the static build falls
 # back to "every CVE this component ever had".
@@ -63,6 +74,9 @@ def _published_vex(store):
             rows.append({"advisory": r.get("advisory_id"), "cve": cve, "title": title,
                          "justification": labels[0] if labels else None, "labels": labels,
                          "url": r.get("cisa_url"),
+                         "csaf_url": (("https://raw.githubusercontent.com/cisagov/CSAF/main/" + r["source_file"]) if r.get("source_file")
+                                      else None),
+                         "csaf_local": "gt_icsa/%s.json" % r.get("advisory_id", ""),
                          "release": r.get("current_release_date") or r.get("initial_release_date")})
     rows.sort(key=lambda x: x["cve"])
     return {"advisories": len(man.get("tier1", [])), "pairs": len(rows),

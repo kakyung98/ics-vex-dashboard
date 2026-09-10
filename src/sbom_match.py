@@ -123,6 +123,51 @@ def in_affected_range(cve, product, version):
     return True
 
 
+
+# --- ICS device identity ------------------------------------------------------
+# An ICS SBOM names a vendor product, not an OSS library, so the OSS knowledge
+# base has no right answer to find and a similarity score only invents one. What
+# CISA does publish on 28.1% of OT products is a model number - an exact string
+# (Siemens MLFB `6GK7342-5DA02-0XE0`) that the advisory already ties to its CVEs.
+# Matching on it is a lookup, not an inference.
+MODEL_INDEX_PATH = os.path.join(BASE, "data", "model_cve_index.json")
+try:
+    MODEL_INDEX = json.load(open(MODEL_INDEX_PATH, encoding="utf-8"))
+except Exception:
+    MODEL_INDEX = {}
+
+# MLFB and its relatives: alphanumeric runs joined by hyphens, no spaces. Used
+# only to recover a model that a generator folded into the component name.
+_MODEL_RE = re.compile(r"\b[0-9A-Z]{3,}(?:-[0-9A-Z]{2,}){1,4}\b")
+
+
+def models_of(component):
+    """Model numbers this component declares, property first, then its name."""
+    out = []
+    for p in component.get("properties") or []:
+        if p.get("name") in ("ics:model-number", "ics:sku") and p.get("value"):
+            out.append(p["value"])
+    if not out:
+        # a generator may have folded it into the name: "SIMATIC CP 342-5 (6GK...)"
+        for m in _MODEL_RE.findall((component.get("name") or "").upper()):
+            if m in MODEL_INDEX:
+                out.append(m)
+    return out
+
+
+def ics_identify(component):
+    """(model, entry) when a declared model number is in the index, else (None, None).
+
+    Exact match only. A model number that is not in the index is reported as
+    unidentified rather than approximated - there is no meaningful notion of a
+    'nearly matching' order code."""
+    for m in models_of(component):
+        e = MODEL_INDEX.get(m)
+        if e:
+            return m, e
+    return None, None
+
+
 def identify(component, kb_idx, kb_match, ro_best):
     """(kb component, how, detail) for one SBOM component.
 
