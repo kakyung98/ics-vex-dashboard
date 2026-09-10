@@ -48,23 +48,61 @@ def csaf_sources(repo):
 
 
 def variants_of(csaf):
-    """product_tree -> {product_id: full name}"""
-    names = {}
+    """product_tree -> {product_id: {name, cpe, models, hashes, skus, version_range}}
 
-    def walk(bs, pref):
+    The previous version returned only the flattened name, which threw away every
+    structured identifier CISA does publish. Measured over the OT corpus
+    (28,631 products): cpe 0.2%, purl 0%, but **model_numbers 28.1%** - Siemens
+    MLFB order codes and their equivalents, 1,326 distinct strings. Those are the
+    identifiers an ICS asset owner actually holds; CPE barely exists here because
+    NVD's dictionary has no entry for most vendor firmware.
+
+    The version range matters too: 84.6% of OT branches are
+    `product_version_range`, and folding that expression into the name is what
+    produced component names like "AVEVA Enterprise SCADA >=2024|<=2024_SP1_P01"
+    that no matcher can do anything with."""
+    out = {}
+
+    def walk(bs, pref, vrange):
         for b in bs or []:
             nm = pref + [b.get("name", "")]
+            vr = b.get("name") if b.get("category") == "product_version_range" else vrange
             if "product" in b:
-                pid = b["product"].get("product_id")
+                p = b["product"]
+                pid = p.get("product_id")
                 if pid:
-                    names[pid] = " ".join(n for n in nm if n).strip()
-            walk(b.get("branches"), nm)
+                    h = p.get("product_identification_helper") or {}
+                    out[pid] = {
+                        "name": " ".join(n for n in nm if n).strip(),
+                        "cpe": h.get("cpe"),
+                        "models": list(h.get("model_numbers") or []),
+                        "skus": list(h.get("skus") or []),
+                        "hashes": list(h.get("hashes") or []),
+                        "version_range": vr,
+                    }
+            walk(b.get("branches"), nm, vr)
 
-    walk((csaf.get("product_tree") or {}).get("branches"), [])
+    walk((csaf.get("product_tree") or {}).get("branches"), [], None)
     for fp in (csaf.get("product_tree") or {}).get("full_product_names") or []:
-        if fp.get("product_id"):
-            names.setdefault(fp["product_id"], fp.get("name", ""))
-    return names
+        pid = fp.get("product_id")
+        if pid and pid not in out:
+            h = fp.get("product_identification_helper") or {}
+            out[pid] = {"name": fp.get("name", ""), "cpe": h.get("cpe"),
+                        "models": list(h.get("model_numbers") or []),
+                        "skus": list(h.get("skus") or []),
+                        "hashes": list(h.get("hashes") or []),
+                        "version_range": None}
+    for r in (csaf.get("product_tree") or {}).get("relationships") or []:
+        fp = r.get("full_product_name") or {}
+        pid = fp.get("product_id")
+        if pid and pid not in out:
+            h = fp.get("product_identification_helper") or {}
+            out[pid] = {"name": fp.get("name", ""), "cpe": h.get("cpe"),
+                        "models": list(h.get("model_numbers") or []),
+                        "skus": list(h.get("skus") or []),
+                        "hashes": list(h.get("hashes") or []),
+                        "version_range": None}
+    return out
 
 
 def inject(sbom_path, csaf_path):
@@ -81,21 +119,51 @@ def inject(sbom_path, csaf_path):
     comps = sbom.setdefault("components", [])
     have = {c.get("bom-ref") for c in comps}
     vrefs = {}
-    for pid, nm in sorted(names.items()):
+    for pid, info in sorted(names.items()):
+        nm = info["name"]
         ref = "variant:%s" % slug(nm or pid)
         vrefs[pid] = ref
-        if ref in have:
-            continue
-        comps.append({
+        props = [{"name": "variant:csaf-product-id", "value": pid},
+                 {"name": "variant:source", "value": "cisa-csaf"}]
+        # A model number is an exact string an asset owner can read off the
+        # device (Siemens MLFB "6GK7342-5DA02-0XE0"). Matching on it needs no
+        # similarity metric at all, so it cannot mis-fire the way a name can.
+        for m in info["models"]:
+            props.append({"name": "ics:model-number", "value": m})
+        for k in info["skus"]:
+            props.append({"name": "ics:sku", "value": k})
+        if info["version_range"]:
+            props.append({"name": "ics:version-range", "value": info["version_range"]})
+        comp = {
             "type": "device", "bom-ref": ref, "name": nm or pid,
             "version": "NOASSERTION", "scope": "required",
             "description": "Product variant enumerated by the source CSAF product_tree.",
-            "properties": [
-                {"name": "variant:csaf-product-id", "value": pid},
-                {"name": "variant:source", "value": "cisa-csaf"},
-            ],
-        })
-        have.add(ref)
+            "properties": props,
+        }
+        if info["cpe"]:
+            comp["cpe"] = info["cpe"]          # CycloneDX has a first-class field
+        if info["hashes"]:
+            hs = []
+            for h in info["hashes"]:
+                for fh in (h.get("file_hashes") or []):
+                    if fh.get("algorithm") and fh.get("value"):
+                        hs.append({"alg": fh["algorithm"].upper(), "content": fh["value"]})
+            if hs:
+                comp["hashes"] = hs
+        # Enrich in place when the variant already exists: skipping it is why an
+        # earlier run left every device component without its model number.
+        prev = next((c for c in comps if c.get("bom-ref") == ref), None)
+        if prev is None:
+            comps.append(comp)
+            have.add(ref)
+        else:
+            keep = [x for x in (prev.get("properties") or [])
+                    if not x.get("name", "").startswith(("ics:", "variant:"))]
+            prev["properties"] = keep + props
+            if info["cpe"]:
+                prev["cpe"] = info["cpe"]
+            if comp.get("hashes"):
+                prev["hashes"] = comp["hashes"]
 
     # dependencies: 최상위 장비가 모델들을 포함
     deps = sbom.setdefault("dependencies", [])

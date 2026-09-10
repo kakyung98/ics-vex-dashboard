@@ -122,7 +122,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab" href="vex-method.html">VEX Analysis Method</a><a class="navtab on" href="vex-decision.html">VEX Decision Logic</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
+  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab on" href="vex-decision.html">VEX Decision Logic</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
 <h1 style="margin:0 0 8px">VEX Decision Logic</h1>
@@ -142,6 +142,52 @@ toward a clearance. The first Q3 run produced <b>6 clearances; all 6 were false<
 removed every one of them.</p>
 </div>
 
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The rule as a flow</h2>
+<p class="hint" style="margin:0 0 12px">The same gates as the table below, read top to bottom.</p>
+<div class="card">
+<div class="vm-flow">
+  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
+
+  <div class="vm-split">
+    <div class="vm-lane vm-yes">
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B) judges presence &mdash; held-out macro-F1 <b>0.892</b>, but <b>0.333</b> on the ICS pairs, so no ICS statement rests on it</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub">a reproducer / fuzzing drives the vulnerable path (CWE + patch-diff guided)</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q4 &middot; Is an inline mitigation already present?</b><span class="vm-sub">configuration / guard-pattern check on the surrounding code</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vgreen">All four pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
+    </div>
+
+    <div class="vm-lane vm-no">
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
+      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
+    </div>
+  </div>
+
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
+</div>
+</div>
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">Gate order &mdash; strongest evidence first</h2>
 <table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
