@@ -620,6 +620,82 @@ def vex_for_sbom(sbom, exposure=None):
 # ---------------------------------------------------------------------------
 # cisagov/CSAF's default branch is `develop`, not `main` - a raw URL
 # built on `main` 404s silently.
+
+def _csaf_product_map(csaf):
+    """product_id -> {vendor, product, version} from the product_tree branches."""
+    out = {}
+
+    def walk(bs, vendor, product, version):
+        for b in bs or []:
+            cat, nm = b.get("category"), b.get("name")
+            v, p, ver = vendor, product, version
+            if cat == "vendor":
+                v = nm
+            elif cat in ("product_name", "product_family"):
+                p = nm
+            elif cat in ("product_version", "product_version_range"):
+                ver = nm
+            if "product" in b:
+                pr = b["product"]
+                out[pr.get("product_id")] = {
+                    "vendor": v, "product": p or pr.get("name", ""), "version": ver,
+                    "full": pr.get("name", ""),
+                }
+            walk(b.get("branches"), v, p, ver)
+
+    pt = csaf.get("product_tree") or {}
+    walk(pt.get("branches"), None, None, None)
+    # Products also live outside branches, and missing these is why the Mobotix
+    # advisory resolved to nothing: its flag names 200+ ids defined only as
+    # relationships (a product installed on / bundled with another).
+    for fp in pt.get("full_product_names") or []:
+        out.setdefault(fp.get("product_id"),
+                       {"vendor": None, "product": fp.get("name", ""),
+                        "version": None, "full": fp.get("name", "")})
+    for r in pt.get("relationships") or []:
+        fp = r.get("full_product_name") or {}
+        pid = fp.get("product_id")
+        if not pid or pid in out:
+            continue
+        base = out.get(r.get("product_reference")) or {}
+        out[pid] = {"vendor": base.get("vendor"),
+                    "product": fp.get("name", ""),
+                    "version": base.get("version"), "full": fp.get("name", "")}
+    return out
+
+
+def flagged_products(csaf, cve, label=None):
+    """Products this CVE's flags name, as [{label, vendor, product, version}].
+
+    Grouped by label on purpose: a CVE can carry different justifications for
+    different products. CVE-2024-3596 in icsa-25-135-05 is
+    `vulnerable_code_not_in_execute_path` on one product and
+    `vulnerable_code_not_present` on five others - filtering to a single label
+    silently dropped the majority of them."""
+    pm = _csaf_product_map(csaf)
+    out = []
+    for v in csaf.get("vulnerabilities") or []:
+        if v.get("cve") != cve:
+            continue
+        for f in v.get("flags") or []:
+            if label and f.get("label") != label:
+                continue
+            for pid in f.get("product_ids") or []:
+                info = pm.get(pid)
+                if info:
+                    out.append(dict(info, product_id=pid, label=f.get("label")))
+    # a flag with no product_ids applies to the whole advisory
+    if not out:
+        for v in csaf.get("vulnerabilities") or []:
+            if v.get("cve") != cve:
+                continue
+            for f in v.get("flags") or []:
+                if not (f.get("product_ids") or []):
+                    out.append({"vendor": None, "product": "(all products in this advisory)",
+                                "version": None, "product_id": None, "label": f.get("label")})
+    return out
+
+
 CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/develop/"
 
 
@@ -1629,7 +1705,7 @@ async function publishedVex(){
           '<div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+w+'%;background:'+c+'"></div></div></div>';}
     document.getElementById('pv-charts').innerHTML=ch;
     // rows table
-    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>CSAF source</th><th>Product</th><th>Justification</th></tr></thead><tbody>';
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>CSAF source</th><th>Vendor</th><th>Products the flag names</th><th>Justification</th></tr></thead><tbody>';
     for(const r of rows){const c=PVJUST_COL[r.justification]||'var(--ink3)';
       const labs=(r.labels||[]).map(l=>'<span class="badge" style="background:'+((PVJUST_COL[l]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[l]||'var(--ink3)'))+'">'+esc(l)+'</span>').join(' ');
       h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+esc(r.cve)+'" target="_blank" rel="noopener">'+esc(r.cve)+'</a></td>'+
@@ -1637,7 +1713,17 @@ async function publishedVex(){
          // the flags this row asserts live in the CSAF document, not on the
          // advisory page - link both the upstream JSON and our pinned copy
          '<td class="mono hint" style="white-space:nowrap">'+(r.csaf_url?('<a href="'+esc(r.csaf_url)+'" target="_blank" rel="noopener">upstream</a>'):'&mdash;')+(r.csaf_local?(' &middot; <a href="'+esc(r.csaf_local)+'" target="_blank" rel="noopener">pinned</a>'):'')+'</td>'+
-         '<td class="hint">'+esc((r.title||'').replace(/^[A-Za-z]+ /,''))+'</td>'+
+         // a VEX statement is product x vulnerability x status, so name the
+         // products the flag actually covers rather than the advisory title
+         '<td class="hint">'+esc(r.vendor||'')+'</td>'+
+         '<td class="hint">'+((r.products&&r.products.length)
+           ? r.products.map(p=>'<div><span class="mono">'+esc(p.product||'')+'</span>'
+               +(p.version?' <span class="hint" style="opacity:.7">'+esc(p.version)+'</span>':'')
+               // a CVE can carry a different justification per product
+               +((r.labels&&r.labels.length>1&&p.label)?(' <span class="badge" style="background:'+((PVJUST_COL[p.label]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[p.label]||'var(--ink3)'))+'">'+esc(p.label)+'</span>'):'')
+               +'</div>').join('')
+               +((r.product_count>r.products.length)?('<div class="hint">+'+(r.product_count-r.products.length)+' more</div>'):'')
+           : esc((r.title||'').replace(/^[A-Za-z]+ /,'')))+'</td>'+
          '<td>'+labs+'</td></tr>';}
     box.innerHTML=h+'</tbody></table></div>';
   }catch(e){box.innerHTML='<span class="err">published VEX unavailable</span>';}
