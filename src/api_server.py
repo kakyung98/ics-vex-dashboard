@@ -29,6 +29,7 @@ BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 sys.path.insert(0, os.path.join(BASE, "src"))
 import build_ground_truth as G  # exposure_for(), CWE_NAME
 import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
+import vex_decision as VD            # single source of truth for the VEX rule
 
 # Official MITRE CWE names (Title Case). Covers every CWE shown in the
 # collectable-CVE pool + common corpus weaknesses. Overrides the informal
@@ -837,6 +838,10 @@ def build_app():
     @app.get("/vex-method.html", response_class=HTMLResponse)
     def vex_method():
         return make_page("vex-method")
+
+    @app.get("/vex-decision.html", response_class=HTMLResponse)
+    def vex_decision_page():
+        return make_page("vex-decision")
 
     @app.get("/corpus.html", response_class=HTMLResponse)
     def corpus():
@@ -1860,9 +1865,124 @@ _VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
 <p class="hint" style="margin:14px 2px 0">Note: status is set by code/SBOM evidence only. Deployment context (network exposure, etc.) is deliberately not used — it never sets a VEX status, and this corpus's exposure values are synthetic. The full SecureBERT&rarr;CodeBERT&rarr;sLLM stack runs in the batch pipeline (<span class="mono">src/vex_pipeline.py</span>); the interactive analyzer uses a lightweight KB match for speed.</p>
 """
 
+
+# --- VEX Decision Logic page -------------------------------------------------
+# Rendered from src/vex_decision.py so the documented rule and the executed rule
+# cannot drift apart.
+def _decision_page():
+    q_rows = "".join(
+        '<tr><td class="mono"><b>%s</b></td><td>%s</td><td class="mono" style="font-size:13px">%s</td>'
+        '<td><span class="pill %s">%s</span></td><td class="hint" style="font-size:13px">%s</td></tr>'
+        % (q["id"], q["ask"], "<br>".join(q["clears_with"]),
+           "pill-ok" if q["state"] == "implemented" else "pill-und",
+           q["state"], q["result"])
+        for q in VD.QUESTIONS)
+
+    src_rows = "".join(
+        '<tr><td><b>%s</b></td><td class="hint">%s</td><td style="text-align:right" class="mono">%s</td>'
+        '<td><span class="pill %s">%s</span></td></tr>'
+        % (v["label"], v["how"] + ((" &mdash; " + v["note"]) if v.get("note") else ""),
+           v["n"] or "&mdash;",
+           "pill-ok" if v["may_clear"] else "pill-aff",
+           "may clear" if v["may_clear"] else "may NOT clear")
+        for v in VD.TARGET_SOURCES.values())
+
+    sound_rows = "".join(
+        '<tr><td><b>%s</b></td><td class="hint">%s</td><td class="hint" style="font-size:13px">%s</td></tr>'
+        % (name, what, why) for name, what, why in VD.SOUNDNESS)
+
+    c = VD.CORPUS
+    return """<h1 style="margin:0 0 8px">VEX Decision Logic</h1>
+<p class="hint" style="margin:0 0 18px">The rule this system actually executes, and what it produced on the
+collected corpus. The governing principle is <b>conservative generation</b>: a statement is lowered to
+<span class="mono">not_affected</span> only by evidence strong enough to survive being wrong. Everything
+else is held at <span class="mono">under_investigation</span> &mdash; including, deliberately, every CVE
+whose source could not be obtained. Failing to prove absence is not evidence of presence.</p>
+
+<div class="card" style="border-left:3px solid #b8862b">
+<h2 style="margin:0 0 8px;font-size:17px">Why the bias is one-directional</h2>
+<p class="hint" style="margin:0">In static analysis <b>&ldquo;not found&rdquo; and &ldquo;not there&rdquo;
+look identical</b>. If the parser loses a function, its callees appear unreachable &mdash; and an unreachable
+vulnerable function reads as <span class="mono">not_affected</span>. So every uncertainty in this pipeline is
+resolved toward <span class="mono">affected</span> or <span class="mono">under_investigation</span>, never
+toward a clearance. The first Q3 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
+removed every one of them.</p>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Gate order &mdash; strongest evidence first</h2>
+<table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
+<tr><td class="mono">1</td><td>The vendor or CISA already published a justification</td>
+    <td><span class="pill pill-ok">not_affected</span> adopted verbatim, provenance recorded</td></tr>
+<tr><td class="mono">2</td><td>The affected component is absent from this SBOM</td>
+    <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
+<tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
+    <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
+<tr><td class="mono">4</td><td>A code question (Q1&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
+    <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
+<tr><td class="mono">5</td><td>Q1&ndash;Q3 all evaluated and all still vulnerable</td>
+    <td><span class="pill pill-aff">affected</span></td></tr>
+<tr><td class="mono">&mdash;</td><td>anything else</td>
+    <td><span class="pill pill-und">under_investigation</span></td></tr>
+</tbody></table>
+<p class="hint" style="margin:12px 2px 0">Gate 3 is the conservative core. No CISA justification accepts
+network position or exposure as a basis, and a verdict resting on topology turns false the moment the
+topology changes &mdash; so operational context enters only as an SSVC priority, never as a status.</p>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The four CISA questions, as implemented</h2>
+<table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
+<tbody>__Q_ROWS__</tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Evidence strength bounds the verdict</h2>
+<p class="hint" style="margin:0 0 10px">A judgment is only as strong as the evidence that picked the function
+it judged. A model-ranked guess can keep a CVE in the affected pool; it can never clear one, because
+&ldquo;the function I guessed is unreachable&rdquo; says nothing about the CVE.</p>
+<table class="tbl"><thead><tr><th>Target identified by</th><th>How</th><th>CVEs</th><th>Clearance right</th></tr></thead>
+<tbody>__SRC_ROWS__</tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Why the call graph is walked conservatively</h2>
+<table class="tbl"><thead><tr><th>Incompleteness</th><th>What it does</th><th>Why it would be a false clearance</th></tr></thead>
+<tbody>__SOUND_ROWS__</tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">What the rule produced</h2>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-n">__SNAP__</div><div class="kpi-l">source snapshots</div></div>
+  <div class="kpi"><div class="kpi-n">__TGT__</div><div class="kpi-l">vulnerable function located</div></div>
+  <div class="kpi"><div class="kpi-n">__Q2R__</div><div class="kpi-l">Q2 reachable</div></div>
+  <div class="kpi"><div class="kpi-n">__Q3C__</div><div class="kpi-l">Q3 adversary-controllable</div></div>
+  <div class="kpi"><div class="kpi-n">__CLR__</div><div class="kpi-l">clearances from source analysis</div></div>
+</div>
+<p class="hint" style="margin:14px 2px 0"><b>Zero.</b> Neither Q2 nor Q3 cleared a single CVE:
+<span class="mono">unreachable 0</span>, <span class="mono">not-controllable 0</span>. Once indirect calls are
+handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
+failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
+<span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
+<span class="mono">inline_mitigations_already_exist</span> have been used <b>0 times</b>. On this corpus the
+only justifications that survive are <span class="mono">component_not_present</span> and what upstream
+already asserted.</p>
+</div>
+""".replace("__Q_ROWS__", q_rows).replace("__SRC_ROWS__", src_rows) \
+   .replace("__SOUND_ROWS__", sound_rows) \
+   .replace("__SNAP__", str(c["snapshots"])).replace("__TGT__", str(c["targets_located"])) \
+   .replace("__Q2R__", str(c["q2_reachable"])).replace("__Q3C__", str(c["q3_controllable"])) \
+   .replace("__CLR__", str(c["clearances_from_source_analysis"]))
+
+
+_DECISION_PAGE = _decision_page()
+
+
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
     "vex-method": ("VEX Analysis Method", _VEXMETHOD_PAGE),
+    "vex-decision": ("VEX Decision Logic", _DECISION_PAGE),
     "source": ("ICS-CERT Advisories",
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
     "corpus": ("Corpus statistics",
@@ -1875,6 +1995,7 @@ PAGES = {
 }
 _NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
         ("vex-method", "vex-method.html", "VEX Analysis Method"),
+        ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
         ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
         ("collectable", "collectable.html", "Source Code Available CVEs"),
         ("published-vex", "published-vex.html", "Published VEX (CISA)"),
