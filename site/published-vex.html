@@ -153,12 +153,67 @@ fetch('cve_kb.json').then(r=>r.json()).then(d=>{const idx={};KB_COMPS=(d.compone
 function roMatches(a,b){let bi=0,bj=0,bs=0;for(let i=0;i<a.length;i++){for(let j=0;j<b.length;j++){let k=0;while(i+k<a.length&&j+k<b.length&&a[i+k]===b[j+k])k++;if(k>bs){bs=k;bi=i;bj=j;}}}if(bs===0)return 0;return bs+roMatches(a.slice(0,bi),b.slice(0,bj))+roMatches(a.slice(bi+bs),b.slice(bj+bs));}
 function roRatio(a,b){a=(a||'').toLowerCase();b=(b||'').toLowerCase();const t=a.length+b.length;return t?2*roMatches(a,b)/t:0;}
 function cveIdsFor(comp,ver){if(!comp)return [];const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}return cves.map(cv=>cv.id);}
-function roBest(name){const n=(name||'').toLowerCase();let best=null,br=0,bs=null;for(const c of KB_COMPS){for(const s of [c.name,c.cpe_product,c.key].filter(Boolean)){const r=roRatio(n,s);if(r>br){br=r;best=c;bs=s;}}}return [best,Math.round(br*1000)/1000,bs];}
+// returns [component, bestRatio, matchedString, runnerUpRatio] - the runner-up
+// is what makes ambiguity detectable; without it `openssl` silently wins over
+// `openssh` at 0.857.
+function roBest(name){const n=(name||'').toLowerCase();let best=null,br=0,bs=null,second=0;for(const c of KB_COMPS){let cr=0,cs=null;for(const s of [c.name,c.cpe_product,c.key].filter(Boolean)){const r=roRatio(n,s);if(r>cr){cr=r;cs=s;}}if(cr>br){second=br;br=cr;best=c;bs=cs;}else if(cr>second){second=cr;}}return [best,Math.round(br*1000)/1000,bs,Math.round(second*1000)/1000];}
 function compareNormJs(sbom,exp,th){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rows=[];const ex=new Set(),nm=new Set();for(const [name,ver] of comps){const exact=CVE_KB[name.toLowerCase()];const exIds=cveIdsFor(exact,ver);exIds.forEach(x=>ex.add(x));const rb=roBest(name),nc=rb[0],ratio=rb[1],ms=rb[2];const normalized=ratio>=th?nc:null;const nmIds=cveIdsFor(normalized,ver);nmIds.forEach(x=>nm.add(x));rows.push({component:name,version:ver||'(unpinned)',exact_match:exact?exact.name:null,normalized_match:normalized?normalized.name:null,best_match:nc?nc.name:null,matched_string:ms,ro_ratio:ratio,matched_by_normalization:!!(normalized&&!exact),exact_cve_count:exIds.length,normalized_cve_count:nmIds.length});}const both=[...ex].filter(x=>nm.has(x)).sort();const onlyE=[...ex].filter(x=>!nm.has(x)).sort();const onlyN=[...nm].filter(x=>!ex.has(x)).sort();return {threshold:th,components:comps.length,normalization:rows,comparison:{exact_total:ex.size,normalized_total:nm.size,both:both,only_exact:onlyE,only_normalized:onlyN}};}
-function computeVex(sbom,exp){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(const [name,ver] of comps){const comp=CVE_KB[name.toLowerCase()];if(!comp)continue;const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
+
+// --- component identity and version ranges (mirrors src/sbom_match.py) -------
+// Name similarity must not decide identity: RO scores `openssl` against
+// `openssh` at 0.857 and they share no CVEs. Identifiers first; a name only
+// when it is exact, or fuzzy AND unambiguous.
+var VRANGES={};
+function _normPkg(x){return String(x||'').toLowerCase().replace(/^lib/,'');}
+function _parseVer(s){if(!s)return null;var t=String(s).match(/\d+|[A-Za-z]+/g);if(!t)return null;
+  return t.map(function(x){if(/^\d+$/.test(x))return parseInt(x,10);var n=0;
+    x.toLowerCase().split('').forEach(function(c){var o=c.charCodeAt(0)-96;if(o>=1&&o<=26)n=n*26+o;});return n;});}
+function _cmpVer(a,b){var ta=_parseVer(a),tb=_parseVer(b);if(!ta||!tb)return null;
+  var n=Math.max(ta.length,tb.length);for(var i=0;i<n;i++){var x=ta[i]||0,y=tb[i]||0;if(x!==y)return x<y?-1:1;}return 0;}
+var UNPINNED={'':1,'noassertion':1,'unknown':1,'none':1,'n/a':1,'*':1};
+// true / false / null, where null means undecidable - never read null as false
+function inAffectedRange(cve,product,version){
+  if(!version||UNPINNED[String(version).toLowerCase()])return null;
+  var rs=VRANGES[cve];if(!rs||!rs.length)return null;
+  var pkg=_normPkg(product),cand=null;
+  for(var i=0;i<rs.length;i++){var r=rs[i];
+    if(!(r.startIncl||r.endExcl||r.endIncl))continue;
+    var p=_normPkg(r.product);
+    if(pkg&&(pkg===p||pkg.indexOf(p)>=0||p.indexOf(pkg)>=0)){cand=r;break;}
+    if(!cand)cand=r;}
+  if(!cand)return null;
+  var c;
+  if(cand.startIncl){c=_cmpVer(version,cand.startIncl);if(c===null)return null;if(c<0)return false;}
+  if(cand.endExcl){c=_cmpVer(version,cand.endExcl);if(c===null)return null;if(c>=0)return false;}
+  if(cand.endIncl){c=_cmpVer(version,cand.endIncl);if(c===null)return null;if(c>0)return false;}
+  return true;}
+function cvesForVersion(comp,ver){var out=[],seen={};var vmap=comp.versions||{};
+  for(var k in vmap)for(var i=0;i<vmap[k].length;i++){var cv=vmap[k][i];
+    if(seen[cv.id])continue;seen[cv.id]=1;
+    var v=inAffectedRange(cv.id,comp.cpe_product||comp.key,ver);
+    if(v===false)continue;            // version is outside the affected range
+    cv=Object.assign({},cv,{_decided:v===true});out.push(cv);}
+  return out;}
+function identifyComp(c){
+  var purl=String(c.purl||'').toLowerCase();
+  if(purl){var m=purl.match(/^pkg:[^/]+\/(?:[^/@]+\/)?([^@?#]+)/);
+    if(m&&CVE_KB[m[1]])return CVE_KB[m[1]];}
+  var cpe=String(c.cpe||'').toLowerCase();
+  if(cpe){var p=cpe.split(':');if(p.length>=5&&CVE_KB[p[4]])return CVE_KB[p[4]];}
+  var name=String(c.name||'').trim();
+  if(!name)return null;
+  if(CVE_KB[name.toLowerCase()])return CVE_KB[name.toLowerCase()];
+  var rb=roBest(name);
+  // 0.90 absolute and 0.05 clear of the runner-up, else unidentified
+  if(rb[0]&&rb[1]>=0.90&&(rb[1]-(rb[3]||0))>=0.05)return rb[0];
+  return null;}
+
+function computeVex(sbom,exp){const rawComps=(sbom.components||[]).filter(c=>c&&c.name);const comps=rawComps.map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(let ci=0;ci<comps.length;ci++){const name=comps[ci][0],ver=comps[ci][1];const comp=identifyComp(rawComps[ci]);if(!comp)continue;const cves=cvesForVersion(comp,ver);for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
 function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url}))};}
 
 async function run(){
+  if(!Object.keys(VRANGES).length){try{VRANGES=await(await fetch('cve_version_ranges.json')).json();}catch(e){}}
+
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
