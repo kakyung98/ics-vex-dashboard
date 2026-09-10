@@ -355,8 +355,14 @@
   {
     "cve": "CVE-2018-20843",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "lookup"
+    ],
+    "files": {
+      "lookup": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -368,7 +374,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2018-25032",
@@ -443,15 +449,25 @@
   {
     "cve": "CVE-2019-11477",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "tcp_shifted_skb",
+      "tcp_shift_skb_data"
+    ],
+    "files": {
+      "tcp_shifted_skb": [
+        "linux-4.9.337/net/ipv4/tcp_input.c"
+      ],
+      "tcp_shift_skb_data": [
+        "linux-4.9.337/net/ipv4/tcp_input.c"
+      ]
+    },
     "guards": {},
     "build": null,
     "build_coverage": 0.0,
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2019-13103",
@@ -1389,9 +1405,36 @@
   {
     "cve": "CVE-2021-36369",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "add_extendedopt",
+      "recv_msg_userauth_failure",
+      "cli_auth_pubkey",
+      "cli_getopts"
+    ],
+    "files": {
+      "add_extendedopt": [
+        "dropbear-DROPBEAR_2020.81/cli-runopts.c"
+      ],
+      "recv_msg_userauth_failure": [
+        "dropbear-DROPBEAR_2020.81/cli-auth.c"
+      ],
+      "cli_auth_pubkey": [
+        "dropbear-DROPBEAR_2020.81/cli-authpubkey.c"
+      ],
+      "cli_getopts": [
+        "dropbear-DROPBEAR_2020.81/cli-runopts.c"
+      ]
+    },
+    "guards": {
+      "cli_auth_pubkey": [
+        {
+          "file": "dropbear-DROPBEAR_2020.81/cli-authpubkey.c",
+          "guards": [
+            "if DROPBEAR_CLI_PUBKEY_AUTH"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -1402,7 +1445,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-3711",
@@ -1974,8 +2017,14 @@
   {
     "cve": "CVE-2022-25236",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "XML_ParserCreateNS"
+    ],
+    "files": {
+      "XML_ParserCreateNS": [
+        "libexpat-R_2_4_1/expat/lib/xmlparse.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1987,7 +2036,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-25315",
@@ -2058,8 +2107,38 @@
   {
     "cve": "CVE-2022-29824",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "xmlBufResize",
+      "xmlBufGrowInternal",
+      "xmlBufCCat",
+      "xmlBufferGrow",
+      "xmlBufferCCat",
+      "xmlBufAdd",
+      "xmlBufferAdd"
+    ],
+    "files": {
+      "xmlBufResize": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufGrowInternal": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufCCat": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufferGrow": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufferCCat": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufAdd": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufferAdd": [
+        "libxml2-2.9.10/tree.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2071,7 +2150,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-32221",
@@ -2112,8 +2191,18 @@
   {
     "cve": "CVE-2022-40303",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "nodePush",
+      "xmlParseAttValueComplex"
+    ],
+    "files": {
+      "nodePush": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseAttValueComplex": [
+        "libxml2-2.9.14/parser.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2125,7 +2214,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-40304",
@@ -2575,8 +2664,22 @@
   {
     "cve": "CVE-2023-48795",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "make_mac",
+      "encrypt_packet",
+      "writebuf_enqueue"
+    ],
+    "files": {
+      "make_mac": [
+        "dropbear-DROPBEAR_2022.83/packet.c"
+      ],
+      "encrypt_packet": [
+        "dropbear-DROPBEAR_2022.83/packet.c"
+      ],
+      "writebuf_enqueue": [
+        "dropbear-DROPBEAR_2022.83/packet.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2588,7 +2691,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-4911",
@@ -2634,8 +2737,14 @@
   {
     "cve": "CVE-2023-52425",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "XML_Parse"
+    ],
+    "files": {
+      "XML_Parse": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2647,7 +2756,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-7104",

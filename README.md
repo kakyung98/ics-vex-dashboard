@@ -122,8 +122,8 @@ and the executed rule cannot drift apart.
 | Q | Tool | Result on 104 snapshots | Clearances |
 |---|---|---|---|
 | Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
-| Q2 | `tools/callgraph_reach.py` | reachable 54, target-not-found 47, no-source 3 | **0** |
-| Q3 | `tools/taint_reach.py` | controllable 52, target-not-found 49, no-source 3 | **0** |
+| Q2 | `tools/callgraph_reach.py` | reachable 62, target-not-found 39, no-source 3 | **0** |
+| Q3 | `tools/taint_reach.py` | controllable 60, target-not-found 41, no-source 3 | **0** |
 | Q4 | `tools/mitigation_scan.py` | all 104 `under_investigation` | **0** |
 
 **Source-level analysis clears nothing on this corpus.** That is not a tooling
@@ -141,10 +141,10 @@ path is recorded and it bounds the verdict (`data/vuln_targets.json`):
 
 | Path | How | CVEs | May clear? |
 |---|---|---|---|
-| A `patch` | the function the upstream fix commit edits (`tools/extract_vuln_funcs.py` over diffs cached by `tools/fetch_patches.py`) | 24 | yes |
+| A `patch` | the function the upstream fix commit edits (`tools/extract_vuln_funcs.py` over diffs cached by `tools/fetch_patches.py`) | 32 | yes |
 | B `description` | the NVD text names it *and* that name is really defined in the snapshot (`tools/locate_vuln_funcs.py`) | 28 | yes |
 | C `codebert` | a Devign-fine-tuned CodeBERT ranks candidates (`tools/rank_codebert.py`) | 0 | **no — not adopted** |
-| — | not identified | 45 | no |
+| — | not identified | 40 | no |
 
 Path B filters on code context — a token must carry `_`/CamelCase, be written as
 a call, or be named "the X function" — because otherwise ordinary English words
@@ -152,7 +152,7 @@ that happen to be function names (`and`, `service`, `process`) match. Export
 macros (`ZLIB_INTERNAL`) and libc primitives the text mentions as the *called*
 function (`memset`) are rejected outright.
 
-**Path C is a measured negative result.** Scored against the 52 known targets,
+**Path C is a measured negative result.** Scored against the then-known targets,
 the ranker reaches top-1 0.056, top-5 0.111, **top-20 0.148** — about 7x random
 (0.021) but with the true function at median rank 450 of 4,000. The model
 answers "does this function look generally risky", not "is this the function
@@ -314,6 +314,11 @@ failed              14   build could not be reproduced
 ── 106 total
 ```
 
+Of the 14 failures, **2 (CVE-2021-33909, CVE-2023-32233) died in the CVE-processor
+step before any source was downloaded**, so no snapshot exists for them. That is
+why the code-level analysis below has a population of **104**, not 106:
+`data/source_snapshots/` holds the 104 CVEs whose source was actually collected.
+
 The two execution-verified CVEs are **CVE-2020-8177** and **CVE-2022-32221** (both
 curl) — the first exploits this local harness produced that a run actually
 triggered.
@@ -462,10 +467,11 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    firmware cannot enter that path.
 8. The component inventory is synthetic; real asset SBOMs will change the
    `component_not_present` numbers.
-9. The binding limit on Q2/Q3/Q4 is **target coverage: 52 of 104 snapshots**. The
-   rest have no fix commit on GitHub (glibc lives on sourceware, sqlite on
-   fossil, busybox and dnsmasq on their own git hosts) and no function named in
-   the NVD text. Per-forge commit adapters would lift those to path-A quality.
+9. The binding limit on Q2/Q3/Q4 is **target coverage: 60 of 104 snapshots**. Of
+   the remaining 44, **35 have no commit link anywhere in their NVD references**
+   — old CVEs (the KRACK set, dnsmasq 2017, early sqlite) cite only distro
+   advisories and mailing lists. Closing those needs per-project security-page
+   parsers, not another forge adapter.
 10. Q3's `not-controllable` and Q4's clearance both rest on arguing from absence
    in an incomplete static view. The guards above make that argument honest, but
    they also make it rare: on this corpus neither fires. A dynamic track
