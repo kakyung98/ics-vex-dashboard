@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.join(BASE, "src"))
 import build_ground_truth as G  # exposure_for(), CWE_NAME
 import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 import vex_decision as VD            # single source of truth for the VEX rule
+import sbom_match as SM              # identifier-first matching + NVD version ranges
 
 # Official MITRE CWE names (Title Case). Covers every CWE shown in the
 # collectable-CVE pool + common corpus weaknesses. Overrides the informal
@@ -436,14 +437,28 @@ def _cve_ids(comp, ver):
 def _ro_best_match(name):
     """Ratcliff-Obershelp (difflib) nearest KB component for a component name.
     Returns (component, best_ratio, matched_string) over its name/cpe/key strings."""
+    comp, r, sstr, _runner = _ro_ranked(name)
+    return comp, r, sstr
+
+
+def _ro_ranked(name):
+    """As above, plus the runner-up ratio from a DIFFERENT component.
+
+    The margin matters: `openssl` scores 0.857 against `openssh`, so a bare best
+    match silently swaps one product's CVE set for another's. Two candidates
+    within a hair of each other mean the name simply does not identify the
+    component."""
     n = (name or "").lower()
     best, best_r, best_s = None, 0.0, None
+    second = 0.0
     for comp, strs in STORE.kb_match:
-        for s in strs:
-            r = difflib.SequenceMatcher(None, n, s).ratio()
-            if r > best_r:
-                best_r, best, best_s = r, comp, s
-    return best, round(best_r, 3), best_s
+        cr = max((difflib.SequenceMatcher(None, n, s).ratio() for s in strs), default=0.0)
+        if cr > best_r:
+            second, best_r, best, best_s = best_r, cr, comp, max(
+                strs, key=lambda s: difflib.SequenceMatcher(None, n, s).ratio())
+        elif cr > second:
+            second = cr
+    return best, round(best_r, 3), best_s, round(second, 3)
 
 
 def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
@@ -481,24 +496,26 @@ def vex_compare_sbom(sbom, exposure=None, threshold=0.7):
 
 
 def vex_for_sbom(sbom, exposure=None):
-    comps = [((c.get("name") or "").strip(), (c.get("version") or "").strip())
-             for c in sbom.get("components", []) if (c.get("name") or "").strip()]
+    raw = [c for c in sbom.get("components", []) if isinstance(c, dict)]
     rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
     by_cve = {}  # unique CVE -> worst-case row
-    for name, ver in comps:
-        comp = STORE.kb_idx.get(name.lower())
+    unidentified = []
+    for c in raw:
+        name = (c.get("name") or "").strip()
+        ver = (c.get("version") or "").strip()
+        comp, how, detail = SM.identify(c, STORE.kb_idx, STORE.kb_match, _ro_ranked)
         if not comp:
+            if name:
+                unidentified.append({"component": name, "version": ver or "(unpinned)",
+                                     "reason": detail})
             continue
-        vmap = comp.get("versions", {})
-        cves = vmap.get(ver)
-        pinned = cves is not None
-        if cves is None:
-            seen = set(); cves = []
-            for lst in vmap.values():
-                for cv in lst:
-                    if cv["id"] not in seen:
-                        seen.add(cv["id"]); cves.append(cv)
-        for cv in cves:
+        # Range-filtered: a CVE whose NVD range excludes this version is dropped
+        # rather than reported. `decided` says whether the version was actually
+        # checked - an unpinned or uncached version yields the CVE with the flag
+        # off, never a silent claim that it applies.
+        pairs = SM.cves_for(comp, ver)
+        pinned = any(d for _cv, d in pairs)
+        for cv, decided in pairs:
             av = cv.get("av", "N")
             exp = exposure or G.exposure_for(comp["name"])
             has_pair = cv["id"] in STORE.pairs
@@ -509,7 +526,9 @@ def vex_for_sbom(sbom, exposure=None):
                     else "under-investigation")
             row = {
                 "cve": cv["id"], "component": comp["name"], "version": ver or "(unpinned)",
-                "version_pinned": pinned, "severity": cv.get("sev", ""),
+                "version_pinned": pinned, "version_decided": decided,
+                "identified_by": how, "identified_detail": detail,
+                "severity": cv.get("sev", ""),
                 "cvss": cv.get("cvss"),
                 "source_collectable": bool(
                     STORE.cve_index.get(cv["id"], {}).get("source_available")
@@ -589,7 +608,10 @@ def vex_for_sbom(sbom, exposure=None):
     cves = sorted(by_cve.values(),
                   key=lambda r: (-rank.get(r["final_vex"], 0), r["cve"]))
     by = Counter(r["final_vex"] for r in cves)
-    return {"components": len(comps), "cves_matched": len(cves),
+    return {"components": len(raw), "cves_matched": len(cves),
+            # Components the identifiers could not resolve are reported, not
+            # silently dropped and not guessed at - see sbom_match.identify().
+            "unidentified": unidentified,
             "summary": {"by_vex": dict(by)}, "cves": cves}
 
 
