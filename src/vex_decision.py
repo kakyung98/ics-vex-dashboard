@@ -67,15 +67,14 @@ QUESTIONS = [
      "clears_with": ["vulnerable_code_not_in_execute_path"],
      "how": "static call graph from all entry points (tools/callgraph_reach.py)",
      "state": "implemented",
-     "result": "reachable 60, target-not-found 41, no-source 3 - unreachable 0"},
+     "result": "reachable 60, target-not-found 44, no-source 0 - unreachable 0; Java trees parse now, so no snapshot is unreadable"},
     {"id": "Q3", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
      "how": "the same call graph walked only from tainted entries - I/O readers, "
             "public-header API, and every address-taken function "
             "(tools/taint_reach.py)",
      "state": "implemented",
-     "result": "controllable 60, target-not-found 41, no-source 3 - "
-               "not-controllable 0"},
+     "result": "controllable 60, target-not-found 44, no-source 0 - not-controllable 0"},
     {"id": "Q4", "ask": "Is an inline mitigation already present?",
      "clears_with": ["inline_mitigations_already_exist"],
      "how": "preprocessor guards around the vulnerable function, plus the -D "

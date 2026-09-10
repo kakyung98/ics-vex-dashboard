@@ -200,8 +200,8 @@ icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-407
 | Q | 도구 | 결과 | 면책 |
 |---|---|---|---|
 | Q1 취약 코드 존재 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS 쌍 0.333 | 0 |
-| Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 60, target-not-found 41, no-source 3 | **0** |
-| Q3 공격자 통제 | `tools/taint_reach.py` | controllable 60, target-not-found 41, no-source 3 | **0** |
+| Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 60, target-not-found 44, no-source 0 | **0** |
+| Q3 공격자 통제 | `tools/taint_reach.py` | controllable 60, target-not-found 44, no-source 0 | **0** |
 | Q4 인라인 완화 | `tools/mitigation_scan.py` | 104건 전부 `under_investigation` | **0** |
 
 **소스 수준 분석은 이 코퍼스에서 아무것도 면책하지 못한다.** 이는 도구의 실패가
