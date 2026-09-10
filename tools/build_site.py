@@ -74,7 +74,7 @@ def _published_vex(store):
             rows.append({"advisory": r.get("advisory_id"), "cve": cve, "title": title,
                          "justification": labels[0] if labels else None, "labels": labels,
                          "url": r.get("cisa_url"),
-                         "csaf_url": (("https://raw.githubusercontent.com/cisagov/CSAF/main/" + r["source_file"]) if r.get("source_file")
+                         "csaf_url": (("https://raw.githubusercontent.com/cisagov/CSAF/develop/" + r["source_file"]) if r.get("source_file")
                                       else None),
                          "csaf_local": "gt_icsa/%s.json" % r.get("advisory_id", ""),
                          "release": r.get("current_release_date") or r.get("initial_release_date")})

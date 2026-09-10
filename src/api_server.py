@@ -618,7 +618,9 @@ def vex_for_sbom(sbom, exposure=None):
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
-CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/main/"
+# cisagov/CSAF's default branch is `develop`, not `main` - a raw URL
+# built on `main` 404s silently.
+CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/develop/"
 
 
 def build_app():
