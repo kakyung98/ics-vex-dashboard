@@ -122,13 +122,30 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab on" href="vex-method.html">VEX Analysis Method</a><a class="navtab" href="vex-decision.html">VEX Decision Logic</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
+  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab on" href="vex-decision.html">VEX Decision Logic</a><a class="navtab" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
-<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or, when source is obtainable, the <b>four CISA justification questions (Q1&ndash;Q4)</b> answered from the code &mdash; with <b>execution</b> as the strongest confirmation of Q2/Q3. Anything else is held as <b>under_investigation</b>. <b>Deployment context never sets status</b> &mdash; no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
-<p class="hint" style="margin:-8px 0 18px;padding:8px 12px;border-left:3px solid #b8862b;background:rgba(184,134,43,.08)">On the published CISA flags: a VEX justification flag exists in only <b>12 CISA advisories, 18 CVEs</b> (2 vendors) across the entire OT corpus. Each is a <b>vendor assertion about a proprietary product build</b>, not verified fact, and that product source is not obtainable &mdash; so it is <b>adopted verbatim as provenance</b> (tier upstream-asserted) and used as a label reference, never as a benchmark our own judge is scored against.</p>
+<h1 style="margin:0 0 8px">VEX Decision Logic</h1>
+<p class="hint" style="margin:0 0 18px">The rule this system actually executes, and what it produced on the
+collected corpus. The governing principle is <b>conservative generation</b>: a statement is lowered to
+<span class="mono">not_affected</span> only by evidence strong enough to survive being wrong. Everything
+else is held at <span class="mono">under_investigation</span> &mdash; including, deliberately, every CVE
+whose source could not be obtained. Failing to prove absence is not evidence of presence.</p>
 
+<div class="card" style="border-left:3px solid #b8862b">
+<h2 style="margin:0 0 8px;font-size:17px">Why the bias is one-directional</h2>
+<p class="hint" style="margin:0">In static analysis <b>&ldquo;not found&rdquo; and &ldquo;not there&rdquo;
+look identical</b>. If the parser loses a function, its callees appear unreachable &mdash; and an unreachable
+vulnerable function reads as <span class="mono">not_affected</span>. So every uncertainty in this pipeline is
+resolved toward <span class="mono">affected</span> or <span class="mono">under_investigation</span>, never
+toward a clearance. The first Q3 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
+removed every one of them.</p>
+</div>
+
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The rule as a flow</h2>
+<p class="hint" style="margin:0 0 12px">The same gates as the table below, read top to bottom.</p>
 <div class="card">
 <div class="vm-flow">
   <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
@@ -146,7 +163,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <div class="vm-split">
     <div class="vm-lane vm-yes">
       <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B, F1 <b>0.892</b>) judges presence</span></div>
+      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B) judges presence &mdash; held-out macro-F1 <b>0.892</b>, but <b>0.333</b> on the ICS pairs, so no ICS statement rests on it</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
       <div class="vm-mini">&darr;</div>
@@ -171,40 +188,68 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
 </div>
 </div>
-
-<div class="vm-cols">
-  <div class="card">
-    <h3 style="margin:0 0 6px">SBOM-evidence path (<span class="mono">component_not_present</span>)</h3>
-    <p class="hint" style="margin:0 0 8px">The only CISA justification that needs no source code and no version comparison — which matters, because this corpus records every component version as <span class="mono">NOASSERTION</span>.</p>
-    <ul class="vm-list">
-      <li><b>Component absence</b>: an advisory names a component this SBOM does not contain &rarr; <span class="mono">not_affected</span>, evidenced by the SBOM itself.</li>
-      <li><b>Model absence</b>: CISA splits verdicts by product model inside one advisory (ICSA-25-191-06 marks SIPROTEC 5 CP300 affected, CP200 not). <span class="mono">tools/inject_product_variants.py</span> lifts <span class="mono">product_tree</span> into the SBOM so those variants exist as components; an asset whose model is absent from the affected list is <span class="mono">not_affected</span>.</li>
-      <li><b>Measured</b>: against the 18 labelled pairs in <span class="mono">data/gt_icsa</span> — model-level recall <b>1.000</b>, precision 0.291, and <b>10/10</b> on pairs CISA itself labelled <span class="mono">component_not_present</span>. The 8 misses all require source-level reachability.</li>
-      <li>The evaluation withholds <span class="mono">known_not_affected</span> and <span class="mono">flags[].label</span> from its inputs, so the derivation is independent rather than a restatement of the label.</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3 style="margin:0 0 6px">Source-available path (the four justification questions)</h3>
-    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is judged from the <b>code</b>, question by question. Q1 runs a three-model stack (SecureBERT &rarr; CodeBERT &rarr; fine-tuned sLLM); Q2/Q3 are backed by program analysis and, at their strongest, by <b>execution</b> — actually building the affected version and running a reproducer against it.</p>
-    <ul class="vm-list">
-      <li><b>Q1 &mdash; presence (three models):</b> <b>SecureBERT</b> matches the CVE to the component and routes it; where source exists, <b>CodeBERT</b> matches the component's code against the known vulnerable/patched reference; the fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B QLoRA on the 23,538-row <span class="mono">vexc-instruct</span> corpus) makes the final presence judgment &mdash; held-out, no-leakage <b>macro-F1 0.892</b> (the one honest capability number: real code in, fix-commit labels). Source-uncollectable CVEs stop at SecureBERT (no reference code to compare) &rarr; <span class="mono">under_investigation</span>.</li>
-      <li><b>Q2 &mdash; reachability</b>: a static call graph (<span class="mono">tools/callgraph_reach.py</span>, tree-sitter) checks whether the vulnerable function is reachable from the component's entry points; unreachable &rarr; <span class="mono">vulnerable_code_not_in_execute_path</span>.</li>
-      <li><b>Q3 &mdash; adversary control</b>: a reproducer/PoC (CWE + patch-diff guided), optionally fuzzed, tries to drive attacker-influenced input to the sink. A <b>multi-agent builder&rarr;exploiter&rarr;verifier loop</b> runs fully locally (Ollama, $0) in a Docker sandbox.</li>
-      <li><b>Execution = strongest evidence</b>: an observed crash / sanitizer report / assert on the vulnerable build confirms Q2+Q3 at once &rarr; <span class="mono">affected</span>, tier <b>execution-verified</b>; the same reproducer failing on the patched build &rarr; <span class="mono">fixed</span>/<span class="mono">not_affected</span>. Builds but no trigger &rarr; <b>build-only</b> &rarr; <span class="mono">under_investigation</span>.</li>
-      <li><b>Q4 &mdash; mitigation</b>: a configuration or guard-pattern already neutralising the path &rarr; <span class="mono">inline_mitigations_already_exist</span>.</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3 style="margin:0 0 6px">Source-uncollectable path (under_investigation)</h3>
-    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span>. No reachability or priority estimate is emitted — a number derived from synthetic deployment data would not be a claim about any real asset.</p>
-    <ul class="vm-list">
-      <li>Status is always <span class="mono">under_investigation</span> &mdash; a not_affected/affected claim would be unsupported without code.</li>
-      <li>What is recorded is strictly the evidence gap: which source could not be obtained and why, so the case can be revisited.</li>
-      <li>If the source later becomes obtainable, the case is routed into the four-question (Q1&ndash;Q4) verification path for a code-grounded verdict.</li>
-    </ul>
-  </div>
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Gate order &mdash; strongest evidence first</h2>
+<table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
+<tr><td class="mono">1</td><td>The vendor or CISA already published a justification</td>
+    <td><span class="pill pill-ok">not_affected</span> adopted verbatim, provenance recorded</td></tr>
+<tr><td class="mono">2</td><td>The affected component is absent from this SBOM</td>
+    <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
+<tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
+    <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
+<tr><td class="mono">4</td><td>A code question (Q1&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
+    <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
+<tr><td class="mono">5</td><td>Q1&ndash;Q3 all evaluated and all still vulnerable</td>
+    <td><span class="pill pill-aff">affected</span></td></tr>
+<tr><td class="mono">&mdash;</td><td>anything else</td>
+    <td><span class="pill pill-und">under_investigation</span></td></tr>
+</tbody></table>
+<p class="hint" style="margin:12px 2px 0">Gate 3 is the conservative core. No CISA justification accepts
+network position or exposure as a basis, and a verdict resting on topology turns false the moment the
+topology changes &mdash; so operational context enters only as an SSVC priority, never as a status.</p>
 </div>
-<p class="hint" style="margin:14px 2px 0">Note: status is set by code/SBOM evidence only. Deployment context (network exposure, etc.) is deliberately not used — it never sets a VEX status, and this corpus's exposure values are synthetic. The full SecureBERT&rarr;CodeBERT&rarr;sLLM stack runs in the batch pipeline (<span class="mono">src/vex_pipeline.py</span>); the interactive analyzer uses a lightweight KB match for speed.</p>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The four CISA questions, as implemented</h2>
+<table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
+<tbody><tr><td class="mono"><b>Q1</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">the fine-tuned judge scores macro-F1 0.892 held-out but collapses to `affected` on the 34 ICS pairs (macro-F1 0.333), so no ICS statement currently rests on its output</td></tr><tr><td class="mono"><b>Q2</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">reachable 60, target-not-found 41, no-source 3 - unreachable 0</td></tr><tr><td class="mono"><b>Q3</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 60, target-not-found 41, no-source 3 - not-controllable 0</td></tr><tr><td class="mono"><b>Q4</b></td><td>Is an inline mitigation already present?</td><td class="mono" style="font-size:13px">inline_mitigations_already_exist</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">0 clearances of 104. 55 have no usable build log, 3 logs are too partial to argue absence from, 2 targets sit under a guard whose macro the -D flags cannot resolve. Hardening flags are recorded but never clear: they turn corruption into abort(), which reduces impact, not applicability</td></tr></tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Evidence strength bounds the verdict</h2>
+<p class="hint" style="margin:0 0 10px">A judgment is only as strong as the evidence that picked the function
+it judged. A model-ranked guess can keep a CVE in the affected pool; it can never clear one, because
+&ldquo;the function I guessed is unreachable&rdquo; says nothing about the CVE.</p>
+<table class="tbl"><thead><tr><th>Target identified by</th><th>How</th><th>CVEs</th><th>Clearance right</th></tr></thead>
+<tbody><tr><td><b>Fix-commit hunk</b></td><td class="hint">the vulnerable function is the one the upstream fix edits</td><td style="text-align:right" class="mono">32</td><td><span class="pill pill-ok">may clear</span></td></tr><tr><td><b>NVD description</b></td><td class="hint">the advisory names the function, and that name is really defined in the collected snapshot</td><td style="text-align:right" class="mono">28</td><td><span class="pill pill-ok">may clear</span></td></tr><tr><td><b>CodeBERT ranking</b></td><td class="hint">a Devign-fine-tuned classifier ranks candidate functions &mdash; measured top-20 recall 0.148 against known targets - NOT ADOPTED</td><td style="text-align:right" class="mono">&mdash;</td><td><span class="pill pill-aff">may NOT clear</span></td></tr><tr><td><b>Not identified</b></td><td class="hint">no fix commit, no description mention</td><td style="text-align:right" class="mono">40</td><td><span class="pill pill-aff">may NOT clear</span></td></tr></tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Why the call graph is walked conservatively</h2>
+<table class="tbl"><thead><tr><th>Incompleteness</th><th>What it does</th><th>Why it would be a false clearance</th></tr></thead>
+<tbody><tr><td><b>K&R definitions</b></td><td class="hint">tree-sitter emits ERROR nodes on old-style C and drops the definition (zlib 1.2.8's inflate.c: 89 errors, `inflate` lost). A regex scanner supplements the parse.</td><td class="hint" style="font-size:13px">a lost definition makes its callees look unreachable = a false clearance</td></tr><tr><td><b>Macro-wrapped headers</b></td><td class="hint">`ZEXTERN int ZEXPORT inflate OF((z_streamp, int));` parsed to 3 of zlib's public functions; a regex fallback recovers them.</td><td class="hint" style="font-size:13px">a missed public entry shrinks the attack surface = a false clearance</td></tr><tr><td><b>Indirect calls</b></td><td class="hint">a static graph sees only `f()`. Dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible, so every address-taken function is treated as a root.</td><td class="hint" style="font-size:13px">this single fix overturned all 6 clearances the first Q3 run produced</td></tr><tr><td><b>Partial build logs</b></td><td class="hint">the first Q4 run counted `clang-format` and configure chatter ("gcc accepts -g... yes") as compile lines, so files that were built looked unbuilt. A compile line must now start with a compiler and name a source, the log must cover half the project, and a file another translation unit #includes cannot be called absent.</td><td class="hint" style="font-size:13px">it produced 5 false `vulnerable_code_not_present` clearances</td></tr><tr><td><b>Graph completeness</b></td><td class="hint">call resolution = defined callees / all callees, median 0.67. Below 0.50 the graph is too incomplete to argue from.</td><td class="hint" style="font-size:13px">an argument from absence needs the graph to be near-complete</td></tr></tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">What the rule produced</h2>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-n">104</div><div class="kpi-l">source snapshots</div></div>
+  <div class="kpi"><div class="kpi-n">60</div><div class="kpi-l">vulnerable function located</div></div>
+  <div class="kpi"><div class="kpi-n">60</div><div class="kpi-l">Q2 reachable</div></div>
+  <div class="kpi"><div class="kpi-n">60</div><div class="kpi-l">Q3 adversary-controllable</div></div>
+  <div class="kpi"><div class="kpi-n">0</div><div class="kpi-l">Q4 mitigation clearances</div></div>
+  <div class="kpi"><div class="kpi-n">0</div><div class="kpi-l">clearances from source analysis</div></div>
+</div>
+<p class="hint" style="margin:14px 2px 0"><b>Zero.</b> Neither Q2 nor Q3 cleared a single CVE:
+<span class="mono">unreachable 0</span>, <span class="mono">not-controllable 0</span>, and Q4 cleared none
+either. Once indirect calls are
+handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
+failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
+<span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
+<span class="mono">inline_mitigations_already_exist</span> have been used <b>0 times</b>. On this corpus the
+only justifications that survive are <span class="mono">component_not_present</span> and what upstream
+already asserted.</p>
+</div>
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>

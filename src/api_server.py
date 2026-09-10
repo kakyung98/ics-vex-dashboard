@@ -859,7 +859,8 @@ def build_app():
 
     @app.get("/vex-method.html", response_class=HTMLResponse)
     def vex_method():
-        return make_page("vex-method")
+        # merged into the decision page; keep the old URL working
+        return make_page("vex-decision")
 
     @app.get("/vex-decision.html", response_class=HTMLResponse)
     def vex_decision_page():
@@ -1805,87 +1806,6 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 <div id="sbom-results" style="margin-top:12px"><span class="hint">loading…</span></div></div>
 """
 
-_VEXMETHOD_PAGE = """<h1 style="margin:0 0 8px">VEX Analysis Method</h1>
-<p class="hint" style="margin:0 0 18px">How ICS-VEXForge decides each component-CVE. Status is set by <b>evidence only</b>, in a fixed order of strength: an <b>upstream</b> verdict the vendor or CISA already published, <b>SBOM structure</b> (the affected component or model is not in this asset), or, when source is obtainable, the <b>four CISA justification questions (Q1&ndash;Q4)</b> answered from the code &mdash; with <b>execution</b> as the strongest confirmation of Q2/Q3. Anything else is held as <b>under_investigation</b>. <b>Deployment context never sets status</b> &mdash; no CISA justification accepts it as a basis, and a verdict resting on network position turns false the moment the topology changes.</p>
-<p class="hint" style="margin:-8px 0 18px;padding:8px 12px;border-left:3px solid #b8862b;background:rgba(184,134,43,.08)">On the published CISA flags: a VEX justification flag exists in only <b>12 CISA advisories, 18 CVEs</b> (2 vendors) across the entire OT corpus. Each is a <b>vendor assertion about a proprietary product build</b>, not verified fact, and that product source is not obtainable &mdash; so it is <b>adopted verbatim as provenance</b> (tier upstream-asserted) and used as a label reference, never as a benchmark our own judge is scored against.</p>
-
-<div class="card">
-<div class="vm-flow">
-  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
-  <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
-  <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
-
-  <div class="vm-split">
-    <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B, F1 <b>0.892</b>) judges presence</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub">a reproducer / fuzzing drives the vulnerable path (CWE + patch-diff guided)</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q4 &middot; Is an inline mitigation already present?</b><span class="vm-sub">configuration / guard-pattern check on the surrounding code</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">All four pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
-    </div>
-
-    <div class="vm-lane vm-no">
-      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
-      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
-    </div>
-  </div>
-
-  <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
-</div>
-</div>
-
-<div class="vm-cols">
-  <div class="card">
-    <h3 style="margin:0 0 6px">SBOM-evidence path (<span class="mono">component_not_present</span>)</h3>
-    <p class="hint" style="margin:0 0 8px">The only CISA justification that needs no source code and no version comparison — which matters, because this corpus records every component version as <span class="mono">NOASSERTION</span>.</p>
-    <ul class="vm-list">
-      <li><b>Component absence</b>: an advisory names a component this SBOM does not contain &rarr; <span class="mono">not_affected</span>, evidenced by the SBOM itself.</li>
-      <li><b>Model absence</b>: CISA splits verdicts by product model inside one advisory (ICSA-25-191-06 marks SIPROTEC 5 CP300 affected, CP200 not). <span class="mono">tools/inject_product_variants.py</span> lifts <span class="mono">product_tree</span> into the SBOM so those variants exist as components; an asset whose model is absent from the affected list is <span class="mono">not_affected</span>.</li>
-      <li><b>Measured</b>: against the 18 labelled pairs in <span class="mono">data/gt_icsa</span> — model-level recall <b>1.000</b>, precision 0.291, and <b>10/10</b> on pairs CISA itself labelled <span class="mono">component_not_present</span>. The 8 misses all require source-level reachability.</li>
-      <li>The evaluation withholds <span class="mono">known_not_affected</span> and <span class="mono">flags[].label</span> from its inputs, so the derivation is independent rather than a restatement of the label.</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3 style="margin:0 0 6px">Source-available path (the four justification questions)</h3>
-    <p class="hint" style="margin:0 0 8px">When the vulnerable source is obtainable, the verdict is judged from the <b>code</b>, question by question. Q1 runs a three-model stack (SecureBERT &rarr; CodeBERT &rarr; fine-tuned sLLM); Q2/Q3 are backed by program analysis and, at their strongest, by <b>execution</b> — actually building the affected version and running a reproducer against it.</p>
-    <ul class="vm-list">
-      <li><b>Q1 &mdash; presence (three models):</b> <b>SecureBERT</b> matches the CVE to the component and routes it; where source exists, <b>CodeBERT</b> matches the component's code against the known vulnerable/patched reference; the fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B QLoRA on the 23,538-row <span class="mono">vexc-instruct</span> corpus) makes the final presence judgment &mdash; held-out, no-leakage <b>macro-F1 0.892</b> (the one honest capability number: real code in, fix-commit labels). Source-uncollectable CVEs stop at SecureBERT (no reference code to compare) &rarr; <span class="mono">under_investigation</span>.</li>
-      <li><b>Q2 &mdash; reachability</b>: a static call graph (<span class="mono">tools/callgraph_reach.py</span>, tree-sitter) checks whether the vulnerable function is reachable from the component's entry points; unreachable &rarr; <span class="mono">vulnerable_code_not_in_execute_path</span>.</li>
-      <li><b>Q3 &mdash; adversary control</b>: a reproducer/PoC (CWE + patch-diff guided), optionally fuzzed, tries to drive attacker-influenced input to the sink. A <b>multi-agent builder&rarr;exploiter&rarr;verifier loop</b> runs fully locally (Ollama, $0) in a Docker sandbox.</li>
-      <li><b>Execution = strongest evidence</b>: an observed crash / sanitizer report / assert on the vulnerable build confirms Q2+Q3 at once &rarr; <span class="mono">affected</span>, tier <b>execution-verified</b>; the same reproducer failing on the patched build &rarr; <span class="mono">fixed</span>/<span class="mono">not_affected</span>. Builds but no trigger &rarr; <b>build-only</b> &rarr; <span class="mono">under_investigation</span>.</li>
-      <li><b>Q4 &mdash; mitigation</b>: a configuration or guard-pattern already neutralising the path &rarr; <span class="mono">inline_mitigations_already_exist</span>.</li>
-    </ul>
-  </div>
-  <div class="card">
-    <h3 style="margin:0 0 6px">Source-uncollectable path (under_investigation)</h3>
-    <p class="hint" style="margin:0 0 8px">Closed vendor firmware has no obtainable source, so no code-grounded verdict is defensible. The status is held at <span class="mono">under_investigation</span>. No reachability or priority estimate is emitted — a number derived from synthetic deployment data would not be a claim about any real asset.</p>
-    <ul class="vm-list">
-      <li>Status is always <span class="mono">under_investigation</span> &mdash; a not_affected/affected claim would be unsupported without code.</li>
-      <li>What is recorded is strictly the evidence gap: which source could not be obtained and why, so the case can be revisited.</li>
-      <li>If the source later becomes obtainable, the case is routed into the four-question (Q1&ndash;Q4) verification path for a code-grounded verdict.</li>
-    </ul>
-  </div>
-</div>
-<p class="hint" style="margin:14px 2px 0">Note: status is set by code/SBOM evidence only. Deployment context (network exposure, etc.) is deliberately not used — it never sets a VEX status, and this corpus's exposure values are synthetic. The full SecureBERT&rarr;CodeBERT&rarr;sLLM stack runs in the batch pipeline (<span class="mono">src/vex_pipeline.py</span>); the interactive analyzer uses a lightweight KB match for speed.</p>
-"""
 
 
 # --- VEX Decision Logic page -------------------------------------------------
@@ -1931,6 +1851,52 @@ toward a clearance. The first Q3 run produced <b>6 clearances; all 6 were false<
 removed every one of them.</p>
 </div>
 
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The rule as a flow</h2>
+<p class="hint" style="margin:0 0 12px">The same gates as the table below, read top to bottom.</p>
+<div class="card">
+<div class="vm-flow">
+  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
+
+  <div class="vm-split">
+    <div class="vm-lane vm-yes">
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B) judges presence &mdash; held-out macro-F1 <b>0.892</b>, but <b>0.333</b> on the ICS pairs, so no ICS statement rests on it</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub">a reproducer / fuzzing drives the vulnerable path (CWE + patch-diff guided)</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q4 &middot; Is an inline mitigation already present?</b><span class="vm-sub">configuration / guard-pattern check on the surrounding code</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vgreen">All four pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
+    </div>
+
+    <div class="vm-lane vm-no">
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
+      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
+    </div>
+  </div>
+
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
+</div>
+</div>
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">Gate order &mdash; strongest evidence first</h2>
 <table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
@@ -2006,7 +1972,6 @@ _DECISION_PAGE = _decision_page()
 
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
-    "vex-method": ("VEX Analysis Method", _VEXMETHOD_PAGE),
     "vex-decision": ("VEX Decision Logic", _DECISION_PAGE),
     "source": ("ICS-CERT Advisories",
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
@@ -2019,7 +1984,6 @@ PAGES = {
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
-        ("vex-method", "vex-method.html", "VEX Analysis Method"),
         ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
         ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
         ("collectable", "collectable.html", "Source Code Available CVEs"),
