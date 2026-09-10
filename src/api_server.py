@@ -618,6 +618,9 @@ def vex_for_sbom(sbom, exposure=None):
 # ---------------------------------------------------------------------------
 # FastAPI app
 # ---------------------------------------------------------------------------
+CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/main/"
+
+
 def build_app():
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import HTMLResponse
@@ -729,6 +732,10 @@ def build_app():
                     "justification": labels[0] if labels else None,
                     "labels": labels,
                     "url": r.get("cisa_url"),
+                    # the flags this table reports live in the CSAF document,
+                    # not on the advisory page - link the document itself
+                    "csaf_url": (CSAF_RAW + r["source_file"]) if r.get("source_file") else None,
+                    "csaf_local": "gt_icsa/%s.json" % r.get("advisory_id", ""),
                     "release": r.get("current_release_date") or r.get("initial_release_date"),
                 })
         pairs.sort(key=lambda x: x["cve"])
@@ -1620,11 +1627,14 @@ async function publishedVex(){
           '<div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:2px"><div style="height:100%;width:'+w+'%;background:'+c+'"></div></div></div>';}
     document.getElementById('pv-charts').innerHTML=ch;
     // rows table
-    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>Product</th><th>Justification</th></tr></thead><tbody>';
+    let h='<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>Advisory</th><th>CSAF source</th><th>Product</th><th>Justification</th></tr></thead><tbody>';
     for(const r of rows){const c=PVJUST_COL[r.justification]||'var(--ink3)';
       const labs=(r.labels||[]).map(l=>'<span class="badge" style="background:'+((PVJUST_COL[l]||'var(--ink3)'))+'22;color:'+((PVJUST_COL[l]||'var(--ink3)'))+'">'+esc(l)+'</span>').join(' ');
       h+='<tr><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+esc(r.cve)+'" target="_blank" rel="noopener">'+esc(r.cve)+'</a></td>'+
          '<td class="mono hint">'+(r.url?('<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+esc(r.advisory)+'</a>'):esc(r.advisory))+'</td>'+
+         // the flags this row asserts live in the CSAF document, not on the
+         // advisory page - link both the upstream JSON and our pinned copy
+         '<td class="mono hint" style="white-space:nowrap">'+(r.csaf_url?('<a href="'+esc(r.csaf_url)+'" target="_blank" rel="noopener">upstream</a>'):'&mdash;')+(r.csaf_local?(' &middot; <a href="'+esc(r.csaf_local)+'" target="_blank" rel="noopener">pinned</a>'):'')+'</td>'+
          '<td class="hint">'+esc((r.title||'').replace(/^[A-Za-z]+ /,''))+'</td>'+
          '<td>'+labs+'</td></tr>';}
     box.innerHTML=h+'</tbody></table></div>';
