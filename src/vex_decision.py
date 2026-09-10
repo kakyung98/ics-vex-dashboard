@@ -67,7 +67,7 @@ QUESTIONS = [
      "clears_with": ["vulnerable_code_not_in_execute_path"],
      "how": "static call graph from all entry points (tools/callgraph_reach.py)",
      "state": "implemented",
-     "result": "reachable 62, target-not-found 39, no-source 3 - unreachable 0"},
+     "result": "reachable 60, target-not-found 41, no-source 3 - unreachable 0"},
     {"id": "Q3", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
      "how": "the same call graph walked only from tainted entries - I/O readers, "
@@ -119,6 +119,54 @@ SOUNDNESS = [
 ]
 
 
+# --- triage inside under_investigation ---------------------------------------
+# When the source cannot be obtained the VEX status is `under_investigation`,
+# full stop - that never changes, and no amount of advisory text may move it.
+# But holding 11,232 statements in one undifferentiated bucket is useless to an
+# asset owner, so they carry a SEPARATE likelihood label derived from the CSAF
+# remediation categories.
+#
+# This label is NOT a VEX status. OpenVEX and CSAF admit only four statuses, and
+# `likely_*` is none of them; it is exported as its own field so that nothing
+# downstream can mistake a triage hint for a judgment.
+# NAMING: the legacy pipeline stores the VEX status `affected` as the literal
+# string "LIKELY_AFFECTED" (src/api_server.py:93) and renders it back to
+# "Affected" in the UI. These triage values would then differ from a real status
+# only by case, so they are prefixed - a status and a triage hint must never be
+# one typo apart.
+LIKELY_AFFECTED = "triage_likely_affected"
+LIKELY_NOT_AFFECTED = "triage_likely_not_affected"
+LIKELIHOOD_UNKNOWN = "triage_unknown"
+
+# An operator-side mitigation reduces exploitability where it is applied, so a
+# statement carrying one is the weaker candidate for attention.
+_MITIGATING = {"mitigation", "workaround"}
+# A fix that exists but is not yet applied protects nothing, and "no fix
+# planned" protects nothing ever - both leave the exposure standing.
+_UNSHIELDED = {"vendor_fix", "none_available", "no_fix_planned"}
+
+
+def triage(remediation_categories):
+    """(likelihood, reason) for a statement held at under_investigation.
+
+    Judged on whether a MITIGATION exists, not whether a fix exists: a mitigation
+    blunts the vulnerability where deployed, whereas an unapplied vendor patch
+    leaves the product exactly as vulnerable as before.
+    """
+    cats = set(remediation_categories or ())
+    if not cats:
+        return LIKELIHOOD_UNKNOWN, "no remediation recorded in any advisory"
+    if cats & _MITIGATING:
+        return LIKELY_NOT_AFFECTED, ("advisory publishes a mitigation (%s); "
+                                     "applied, it blunts exploitation"
+                                     % ",".join(sorted(cats & _MITIGATING)))
+    if cats & _UNSHIELDED:
+        return LIKELY_AFFECTED, ("only %s - nothing shields the product until the "
+                                 "fix is applied"
+                                 % ",".join(sorted(cats & _UNSHIELDED)))
+    return LIKELIHOOD_UNKNOWN, "remediation categories not recognised"
+
+
 def resolve(q1=None, q2=None, q3=None, q4=None, target_source="none",
             call_resolution=0.0, upstream=None, sbom_absent=False,
             source_available=True, min_resolution=0.5):
@@ -141,6 +189,8 @@ def resolve(q1=None, q2=None, q3=None, q4=None, target_source="none",
     #    no CISA justification accepts it, and a verdict resting on topology
     #    turns false the moment the topology changes.
     if not source_available:
+        # Held here unconditionally. `triage()` may attach a likelihood label to
+        # this statement, but it is a separate field and never a status.
         return UNDER_INV, None, "source not obtainable; context does not set status"
 
     # 4. a code-level clearance requires a trustworthy target and a usable graph
@@ -170,7 +220,7 @@ def resolve(q1=None, q2=None, q3=None, q4=None, target_source="none",
 # code-level number below is measured over.
 CORPUS = {
     "snapshots": 104, "targets_located": 60,
-    "q2_reachable": 62, "q2_unreachable": 0,
+    "q2_reachable": 60, "q2_unreachable": 0,
     "q3_controllable": 60, "q3_not_controllable": 0,
     "q4_mitigation_cleared": 0,
     "clearances_from_source_analysis": 0,

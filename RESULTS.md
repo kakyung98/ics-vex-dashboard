@@ -41,7 +41,7 @@ ICSA 당 statement 는 **중앙값 1건, 최대 490건**. 편차가 크므로 CV
 | 4. 역방향 SBOM | `src/build_reverse_sbom.py` | `reverse_sbom/*.json`, `data/findings.csv` |
 | 5. 모델 변형 주입 | `tools/inject_product_variants.py` | SBOM 에 `product_tree` 모델 단위 |
 | 6. OSS 코드 수집 | `tools/collect_code_gh.py` | `data/code_evidence.json` |
-| 7. 실행 검증 | `src/exploit_verifier.py`, `tools/exec_verify_c.sh` | `results/exec_verification*.json` |
+| 7. ~~실행 검증~~ | **종료된 캠페인 — 재현 불가.** 러너는 b4fc1bc8 에서 제거됐다. 보존된 산출물(`results/exec_verification*.json`, `results/verify_build_logs/`)만 하류가 읽는다 | — |
 | 8. 배치 판정 | `src/vex_batch.py` | `results/vex_batch.jsonl` |
 | 9. Ground Truth | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
 | 10. 대조·평가 | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | 콘솔 리포트 |
@@ -200,7 +200,7 @@ icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-407
 | Q | 도구 | 결과 | 면책 |
 |---|---|---|---|
 | Q1 취약 코드 존재 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS 쌍 0.333 | 0 |
-| Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 62, target-not-found 39, no-source 3 | **0** |
+| Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 60, target-not-found 41, no-source 3 | **0** |
 | Q3 공격자 통제 | `tools/taint_reach.py` | controllable 60, target-not-found 41, no-source 3 | **0** |
 | Q4 인라인 완화 | `tools/mitigation_scan.py` | 104건 전부 `under_investigation` | **0** |
 
@@ -382,8 +382,8 @@ python src/build_reverse_sbom.py                          # 수 분
 python tools/inject_product_variants.py --csaf-repo /tmp/CSAF
 
 python tools/collect_code_gh.py           # OSS 취약/패치 실코드 (gh 인증 필요)
-python src/exploit_verifier.py            # 실행 검증 (Python 라이브러리)
-wsl -e bash tools/exec_verify_c.sh        # 실행 검증 (C, AddressSanitizer)
+# 실행 검증은 재현 절차에 없다 - 러너가 제거되어 이 저장소만으로는 실행할 수 없다.
+# 하류는 보존된 results/exec_verification*.json 을 읽는다.
 
 python src/vex_batch.py                   # 배치 판정
 python src/build_ground_truth.py          # 증거 계층 결정

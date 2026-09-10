@@ -219,19 +219,20 @@ _TARGET_SOURCE = {c: v.get("source") for c, v in _T.items()}
 
 
 def targets_for(cve, ce, override):
+    """The recorded target set for this CVE, and nothing else.
+
+    There used to be a fallback here that scraped `name(` out of the raw hunk
+    text when no target was recorded. It judged CVEs that data/vuln_targets.json
+    says have no target, on "targets" like `for` and `sizeof` - C keywords - and
+    on names the macro/libc filter had deliberately rejected. Q3 reads
+    vuln_targets.json directly and had no such fallback, so Q2 reported 62
+    judgments against Q3's 60 over the same corpus.
+
+    Both stages must judge the same targets or their verdicts cannot be compared,
+    so a CVE with no recorded target is `target-not-found` here too."""
     if override:
         return [t.strip() for t in override.split(",") if t.strip()]
-    # precise enclosing-function names (extract_vuln_funcs.py) take priority
-    if cve in _VULN_FUNCS:
-        return list(_VULN_FUNCS[cve])
-    # fallback: crude identifier scrape from the hunk blob (noisy)
-    v = ce.get(cve, {})
-    names = set()
-    for blob in (v.get("vuln_code"), v.get("patched_code")):
-        if blob:
-            for m in re.finditer(r"([A-Za-z_][A-Za-z0-9_]{2,})\s*\(", blob):
-                names.add(m.group(1))
-    return sorted(names)[:12]
+    return list(_VULN_FUNCS.get(cve, ()))
 
 
 def main():
