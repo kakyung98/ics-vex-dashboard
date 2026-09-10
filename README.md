@@ -8,8 +8,9 @@ never in synthetic deployment context.
 > **Dashboard (ICS-VEXForge)** — run it locally with `python src/api_server.py
 > --port 8100`, then open http://127.0.0.1:8100/. Paste/upload an SBOM to get
 > per-component CVE + VEX analysis, browse the corpus, and export OpenVEX /
-> CSAF 2.0 documents — all in the browser. (This repository is private, so the
-> GitHub Pages site is not published.)
+> CSAF 2.0 documents — all in the browser. The same bundle is published to
+> GitHub Pages (`site/**` pushes deploy automatically via
+> `.github/workflows/pages.yml`).
 
 ---
 
@@ -100,10 +101,10 @@ moment the topology changes. Operational context enters only as an **SSVC
 priority**, whose System Exposure is a value the user chooses for a real
 deployment — not a synthetic number.
 
-### The VEX-justification direction (current work)
+### The four CISA justification questions
 
-We are moving the judgment core from a single "did it trigger?" axis to the four
-CISA justification questions, answered in order:
+The judgment core is the four CISA justification questions, answered in order,
+rather than a single "did it trigger?" axis:
 
 ```
 Q1 vulnerable code present?      -> component_not_present / vulnerable_code_not_present
@@ -113,9 +114,71 @@ Q4 inline mitigation present?    -> inline_mitigations_already_exist
 (all pass)                       -> affected
 ```
 
-An exploit PoC is the *strongest* evidence for Q2/Q3, but not the only one:
-Q1 is answered from the SBOM and the fix commit, Q2/Q3 can be judged by reasoning
-over the patch diff and the surrounding code, Q4 by configuration/pattern checks.
+All four questions are now implemented and have been run over the 104 source
+snapshots. The rule they share lives in one module, `src/vex_decision.py`, which
+the console's **VEX Decision Logic** page renders from, so the documented rule
+and the executed rule cannot drift apart.
+
+| Q | Tool | Result on 104 snapshots | Clearances |
+|---|---|---|---|
+| Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
+| Q2 | `tools/callgraph_reach.py` | reachable 54, target-not-found 47, no-source 3 | **0** |
+| Q3 | `tools/taint_reach.py` | controllable 52, target-not-found 49, no-source 3 | **0** |
+| Q4 | `tools/mitigation_scan.py` | all 104 `under_investigation` | **0** |
+
+**Source-level analysis clears nothing on this corpus.** That is not a tooling
+failure — it reproduces the public record, where
+`vulnerable_code_cannot_be_controlled_by_adversary` and
+`inline_mitigations_already_exist` have each been used **0 times** across CISA's
+3,984 OT documents. The only justifications that survive here are
+`component_not_present` and what upstream already asserted.
+
+#### Locating the vulnerable function — three paths, three clearance rights
+
+Every code-level question needs to know *which function* to judge, and a
+judgment is only as strong as the evidence that picked that function. So the
+path is recorded and it bounds the verdict (`data/vuln_targets.json`):
+
+| Path | How | CVEs | May clear? |
+|---|---|---|---|
+| A `patch` | the function the upstream fix commit edits (`tools/extract_vuln_funcs.py` over diffs cached by `tools/fetch_patches.py`) | 24 | yes |
+| B `description` | the NVD text names it *and* that name is really defined in the snapshot (`tools/locate_vuln_funcs.py`) | 28 | yes |
+| C `codebert` | a Devign-fine-tuned CodeBERT ranks candidates (`tools/rank_codebert.py`) | 0 | **no — not adopted** |
+| — | not identified | 45 | no |
+
+Path B filters on code context — a token must carry `_`/CamelCase, be written as
+a call, or be named "the X function" — because otherwise ordinary English words
+that happen to be function names (`and`, `service`, `process`) match. Export
+macros (`ZLIB_INTERNAL`) and libc primitives the text mentions as the *called*
+function (`memset`) are rejected outright.
+
+**Path C is a measured negative result.** Scored against the 52 known targets,
+the ranker reaches top-1 0.056, top-5 0.111, **top-20 0.148** — about 7x random
+(0.021) but with the true function at median rank 450 of 4,000. The model
+answers "does this function look generally risky", not "is this the function
+this CVE is about", so 85% of the time the real target is not in the top 20.
+It is therefore never used to set a status; those CVEs stay
+`under_investigation`. Numbers in `results/codebert_rank.json`.
+
+#### Why the static analysis is walked conservatively
+
+In static analysis **"not found" and "not there" look identical**, and every such
+confusion points the same way: toward a false clearance. Three real instances
+were found and fixed, two of them only after they had produced verdicts:
+
+| Incompleteness | What it did | Cost |
+|---|---|---|
+| K&R definitions | tree-sitter emits ERROR nodes on old-style C and drops the definition — zlib 1.2.8's `inflate.c` alone yields 89 errors and loses `inflate` | callees looked unreachable |
+| Macro-wrapped headers | `ZEXTERN int ZEXPORT inflate OF((...))` parsed to 3 of zlib's public functions | the attack surface looked tiny |
+| Indirect calls | a static graph sees only `f()`; dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible | **6 false `not_affected`** in the first Q3 run |
+| Partial build logs | `clang-format` and configure chatter ("gcc accepts -g... yes") counted as compile lines, so built files looked unbuilt | **5 false `not_affected`** in the first Q4 run |
+
+The fixes are all in the same direction — widen what counts as reachable or
+compiled, never narrow it. A regex scanner supplements the parse for K&R and
+macro-wrapped signatures; every address-taken function becomes a taint root; a
+compile line must start with a compiler and name a source, the log must cover
+half the project, and a file another translation unit `#include`s can never be
+called absent. Each fix removed every false clearance it was aimed at.
 The seed dataset for this classifier is built by
 `tools/build_justification_seed.py` from `data/code_evidence.json` (34 vuln/patched
 code pairs). The 18 CISA-labelled ICSA justifications (`data/vex_justify_eval.jsonl`)
@@ -306,7 +369,16 @@ logs.
 | 11. Justification seed | `tools/build_justification_seed.py` | `data/vex_justify_seed.jsonl`, `data/vex_justify_eval.jsonl` |
 | 12. ICS ground-truth pairs | `tools/build_ics_groundtruth.py` | `data/ics_gt_pairs.jsonl` |
 | 13. Judge the ICS population | `tools/judge_ics_cves.py` | `results/ics_cve_judgments.json` |
-| 14. Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
+| 14. Cache fix-commit diffs | `tools/fetch_patches.py` | `data/patches/<CVE>/<sha>.diff` |
+| 15. Index snapshot functions | `tools/build_func_index.py` | `data/func_index/` (gitignored, rebuildable) |
+| 16. Locate the vulnerable function | `tools/extract_vuln_funcs.py`, `tools/locate_vuln_funcs.py` | `data/vuln_funcs.json`, `data/vuln_targets.json` |
+| 17. Q2 execute-path | `tools/callgraph_reach.py --all` | `results/callgraph_reach.json` |
+| 18. Q3 adversary control | `tools/taint_reach.py --all` | `results/taint_reach.json` |
+| 19. Q4 inline mitigations | `tools/mitigation_scan.py` | `results/mitigation_scan.json` |
+| 20. Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
+
+Steps 14-16 must precede 17-19: all three questions judge the same target set,
+and `data/vuln_targets.json` is what records which path identified it.
 
 Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 14's
 `build_sbom_index.py` is not run by `build_site.py`, so run it separately. Steps 12/13 need the fine-tuned adapter in
@@ -381,15 +453,23 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
 5. That Q1 validation does not transfer: on the 34 ICS vuln/patched pairs the judge
    collapses to `affected` (macro-F1 0.333), so no ICS statement currently rests on
    its output.
-6. Version comparison is impossible (all `NOASSERTION`).
+6. Version comparison is impossible **on the reverse-built SBOM corpus** — every
+   component version there is `NOASSERTION`. Where real versions exist, matching
+   them against NVD ranges works: `tools/eval_version_match.py` scores
+   precision 100.0% / recall 98.3% / macro-F1 0.99 over 125 CVEs
+   (`results/version_match.json`).
 7. Execution verification only reaches self-contained libraries; closed ICS
    firmware cannot enter that path.
 8. The component inventory is synthetic; real asset SBOMs will change the
    `component_not_present` numbers.
-9. Static call-graph reachability (`tools/callgraph_reach.py`) exists but is
-   currently limited by vulnerable-function identification (target function known
-   for only ~34 of the source-available CVEs); a fuzzing track for Q3 is future
-   work.
+9. The binding limit on Q2/Q3/Q4 is **target coverage: 52 of 104 snapshots**. The
+   rest have no fix commit on GitHub (glibc lives on sourceware, sqlite on
+   fossil, busybox and dnsmasq on their own git hosts) and no function named in
+   the NVD text. Per-forge commit adapters would lift those to path-A quality.
+10. Q3's `not-controllable` and Q4's clearance both rest on arguing from absence
+   in an incomplete static view. The guards above make that argument honest, but
+   they also make it rare: on this corpus neither fires. A dynamic track
+   (fuzzing the tainted entries) is the way to get positive evidence for Q3.
 
 ---
 
