@@ -122,20 +122,29 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to Analyzer" aria-label="ICS-VEXForge Analyzer"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab" href="vex-decision.html">VEX Decision Logic</a><a class="navtab on" href="corpus.html">ICS Advisories-based CVE Corpus</a><a class="navtab" href="collectable.html">Source Code Available CVEs</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
+  <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge Analyzer</a><a class="navtab" href="source.html">ICS-CERT Advisories</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="vex-decision.html">VEX Decision Logic</a><a class="navtab on" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
-<h1 style="margin:0 0 18px">Corpus statistics</h1><div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
+<h1 style="margin:0 0 6px">CVE Dataset</h1>
+<p class="hint" style="margin:0 0 18px">Everything derived from the ICS-CERT advisories: how many CVEs exist, what verdict each carries, and which of them have obtainable source &mdash; the only ones a code-level judgment can be made about. The two halves used to be separate pages (&ldquo;corpus statistics&rdquo; and &ldquo;source code available&rdquo;), but they answer one question: <b>what is in the dataset, and how much of it can actually be judged?</b></p><div class="card"><h3 style="margin:0 0 8px">Dataset axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this corpus most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
-<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
+<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the dataset</h3><div id="kpis-src" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this dataset most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
+<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">the source data · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
 <div id="adv-year" style="margin-top:14px"></div>
 <div id="adv-ven" style="margin-top:14px"></div></div>
 
 <div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
-<div id="year" style="margin-top:12px">loading…</div></div>
+<div id="year" style="margin-top:12px">loading…</div></div><div class="card"><h3 style="margin:0 0 4px">Source Code Available CVEs</h3>
+<p class="hint" style="margin:0 0 12px">CVEs whose OSS source can be collected — the pool eligible for execution-based verification (build &rarr; reproduce &rarr; run).</p>
+<div id="sa-kpis" class="kpis">loading…</div>
+<div id="sa-charts" style="margin-top:16px"></div>
+<div class="satwo" style="margin-top:16px">
+  <div id="sa-vendors"></div>
+  <div id="sa-devtype"></div>
+</div>
+<div id="sa-cwe" style="margin-top:16px"></div></div>
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
 </main>
