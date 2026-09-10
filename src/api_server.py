@@ -951,13 +951,18 @@ def build_app():
     def vex_decision_page():
         return make_page("vex-decision")
 
+    @app.get("/dataset.html", response_class=HTMLResponse)
+    def dataset():
+        return make_page("dataset")
+
+    # merged into /dataset.html; the old URLs still resolve
     @app.get("/corpus.html", response_class=HTMLResponse)
     def corpus():
-        return make_page("corpus")
+        return make_page("dataset")
 
     @app.get("/collectable.html", response_class=HTMLResponse)
     def collectable():
-        return make_page("collectable")
+        return make_page("dataset")
 
     @app.get("/published-vex.html", response_class=HTMLResponse)
     def published_vex_page():
@@ -1844,11 +1849,11 @@ ANALYZER_HTML = """<div class="card"><div class="row">
 <div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
 <div id="cmp-body"></div></div>"""
 
-CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Corpus axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
+CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Dataset axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the corpus</h3><div id="kpis-src" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this corpus most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
-<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">corpus source · 2010–2026</span></h3>
+<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the dataset</h3><div id="kpis-src" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this dataset most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
+<div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">the source data · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
 <div id="adv-year" style="margin-top:14px"></div>
 <div id="adv-ven" style="margin-top:14px"></div></div>
@@ -2073,20 +2078,19 @@ PAGES = {
     "vex-decision": ("VEX Decision Logic", _DECISION_PAGE),
     "source": ("ICS-CERT Advisories",
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories</h1>' + SOURCE_HTML),
-    "corpus": ("Corpus statistics",
-               '<h1 style="margin:0 0 18px">Corpus statistics</h1>' + CORPUS_HTML),
-    "collectable": ("Source Code Available CVEs",
-                    '<h1 style="margin:0 0 18px">Source Code Available CVEs</h1>' + COLLECTABLE_HTML),
+    # one page: the population, and the slice of it that has source
+    "dataset": ("CVE Dataset", """<h1 style="margin:0 0 6px">CVE Dataset</h1>
+<p class="hint" style="margin:0 0 18px">Everything derived from the ICS-CERT advisories: how many CVEs exist, what verdict each carries, and which of them have obtainable source &mdash; the only ones a code-level judgment can be made about. The two halves used to be separate pages (&ldquo;corpus statistics&rdquo; and &ldquo;source code available&rdquo;), but they answer one question: <b>what is in the dataset, and how much of it can actually be judged?</b></p>"""
+               + CORPUS_HTML + COLLECTABLE_HTML),
     "published-vex": ("Published VEX (CISA)",
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "ICS-VEXForge Analyzer"),
-        ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
-        ("corpus", "corpus.html", "ICS Advisories-based CVE Corpus"),
-        ("collectable", "collectable.html", "Source Code Available CVEs"),
-        ("published-vex", "published-vex.html", "Published VEX (CISA)"),
         ("source", "source.html", "ICS-CERT Advisories"),
+        ("published-vex", "published-vex.html", "Published VEX (CISA)"),
+        ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
+        ("dataset", "dataset.html", "CVE Dataset"),
         ("ics-sbom", "ics-sbom.html", "Synthetic SBOM")]
 
 

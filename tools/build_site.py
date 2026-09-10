@@ -229,7 +229,9 @@ for key, fname in [("analyzer", "index.html"),
                    ("vex-decision", "vex-decision.html"),
                    # the merged page keeps answering the old URL
                    ("vex-decision", "vex-method.html"), ("source", "source.html"),
-                   ("corpus", "corpus.html"), ("collectable", "collectable.html"),
+                   ("dataset", "dataset.html"),
+                   # the merged page keeps answering both old URLs
+                   ("dataset", "corpus.html"), ("dataset", "collectable.html"),
                    ("published-vex", "published-vex.html"),
                    ("ics-sbom", "ics-sbom.html")]:
     page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])
