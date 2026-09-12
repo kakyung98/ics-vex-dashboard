@@ -122,8 +122,8 @@ and the executed rule cannot drift apart.
 | Q | Tool | Result on 104 snapshots | Clearances |
 |---|---|---|---|
 | Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
-| Q2 | `tools/callgraph_reach.py` | reachable 60, target-not-found 44, no-source 0 | **0** |
-| Q3 | `tools/taint_reach.py` | controllable 60, target-not-found 44, no-source 0 | **0** |
+| Q2 | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
+| Q3 | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
 | Q4 | `tools/mitigation_scan.py` | all 104 `under_investigation` | **0** |
 
 **Source-level analysis clears nothing on this corpus.** That is not a tooling
@@ -141,10 +141,11 @@ path is recorded and it bounds the verdict (`data/vuln_targets.json`):
 
 | Path | How | CVEs | May clear? |
 |---|---|---|---|
-| A `patch` | the function the upstream fix edits. The fix commit comes from NVD references, the project's own advisory data (curl.se, openssl-library.org), or a commit whose message names the CVE; diffs cached by `tools/fetch_patches.py`, functions read by `tools/extract_vuln_funcs.py` | 42 | yes |
+| A `patch` | the function the upstream fix edits. The fix commit comes from NVD references, the Debian security tracker, the project's own advisory data (curl.se, openssl-library.org, w1.fi), a local `git log` search of the project's history (`tools/git_grep_fix_commits.py`), or a commit whose message names the CVE; diffs cached by `tools/fetch_patches.py`, functions read by `tools/extract_vuln_funcs.py` | 75 | yes |
+| A `patch-partial` | as A, on only the files the fix touches at its parent commit (the two Linux CVEs) | 2 | **no** — no whole program to argue from |
 | B `description` | the NVD text names it *and* that name is really defined in the snapshot (`tools/locate_vuln_funcs.py`) | 28 | yes |
 | C `codebert` | a Devign-fine-tuned CodeBERT ranks candidates (`tools/rank_codebert.py`) | 0 | **no — not adopted** |
-| — | not identified | 34 | no |
+| — | not identified (CVE-2023-28450: the fix only changes a `#define` default) | 1 | no |
 
 Path B filters on code context — a token must carry `_`/CamelCase, be written as
 a call, or be named "the X function" — because otherwise ordinary English words
