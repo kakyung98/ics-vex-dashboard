@@ -77,14 +77,17 @@ QUESTIONS = [
      "clears_with": ["vulnerable_code_not_in_execute_path"],
      "how": "static call graph from all entry points (tools/callgraph_reach.py)",
      "state": "implemented",
-     "result": "reachable 60, target-not-found 44, no-source 0 - unreachable 0; Java trees parse now, so no snapshot is unreadable"},
+     "result": "reachable 100, target-not-found 4, no-source 0 - unreachable 0; Java trees parse now, so no snapshot is unreadable"},
     {"id": "Q3", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
      "how": "the same call graph walked only from tainted entries - I/O readers, "
             "public-header API, and every address-taken function "
             "(tools/taint_reach.py)",
      "state": "implemented",
-     "result": "controllable 60, target-not-found 44, no-source 0 - not-controllable 0"},
+     "result": "controllable 99, target-not-found 4, no-source 0 - not-controllable 1 "
+               "(Spring4Shell, held at under_investigation: Java's reflection and "
+               "framework dispatch leave the entry model without API or indirect "
+               "roots), clearances 0"},
     {"id": "Q4", "ask": "Is an inline mitigation already present?",
      "clears_with": ["inline_mitigations_already_exist"],
      "how": "preprocessor guards around the vulnerable function, plus the -D "
@@ -235,9 +238,9 @@ def resolve(q1=None, q2=None, q3=None, q4=None, target_source="none",
 # source was downloaded, so 104 snapshots exist and 104 is the population every
 # code-level number below is measured over.
 CORPUS = {
-    "snapshots": 104, "targets_located": 60,
-    "q2_reachable": 60, "q2_unreachable": 0,
-    "q3_controllable": 60, "q3_not_controllable": 0,
+    "snapshots": 104, "targets_located": 105,
+    "q2_reachable": 100, "q2_unreachable": 0,
+    "q3_controllable": 99, "q3_not_controllable": 1,
     "q4_mitigation_cleared": 0,
     "clearances_from_source_analysis": 0,
 }

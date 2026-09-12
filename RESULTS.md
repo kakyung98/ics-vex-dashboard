@@ -193,15 +193,18 @@ icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-407
 
 네 질문 모두 구현되어 소스 스냅샷 **104건** 위에서 실행됐다. (실행검증 캠페인은
 106건을 시도했으나 2건 —— CVE-2021-33909, CVE-2023-32233 —— 은 CVE Processor
-단계에서 즉시 실패해 소스를 받지 못했다. 코드 수준 분석의 모집단은 104다.) 공유 규칙은
+단계에서 즉시 실패해 소스를 받지 못했다. 코드 수준 분석의 모집단은 104다. 이 2건은
+이후 fix 가 건드린 파일만 부분 스냅샷으로 수집해 타깃은 지목했지만, Q2–Q4 는 돌리지 않는다.)
+Q3 의 `not-controllable` 1건(Spring4Shell)은 진입 모델 게이트가 `under_investigation` 으로
+묶는다 — Java 는 리플렉션·프레임워크 디스패치로 요청이 들어와 정적 그래프가 볼 수 없다. 공유 규칙은
 `src/vex_decision.py` 한 곳에 있고, 콘솔의 **VEX Flag Decision Logic** 페이지가 그
 모듈에서 생성되므로 문서와 구현이 어긋날 수 없다.
 
 | Q | 도구 | 결과 | 면책 |
 |---|---|---|---|
 | Q1 취약 코드 존재 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS 쌍 0.333 | 0 |
-| Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 60, target-not-found 44, no-source 0 | **0** |
-| Q3 공격자 통제 | `tools/taint_reach.py` | controllable 60, target-not-found 44, no-source 0 | **0** |
+| Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
+| Q3 공격자 통제 | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
 | Q4 인라인 완화 | `tools/mitigation_scan.py` | 104건 전부 `under_investigation` | **0** |
 
 **소스 수준 분석은 이 코퍼스에서 아무것도 면책하지 못한다.** 이는 도구의 실패가
@@ -218,10 +221,11 @@ icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-407
 
 | 경로 | 방법 | CVE | 면책 가능 |
 |---|---|---|---|
-| A `patch` | fix 커밋이 수정한 함수. fix 커밋은 NVD 레퍼런스, 프로젝트 자체 보안 데이터(curl.se, openssl-library.org), CVE ID가 적힌 커밋 메시지에서 확보 (`extract_vuln_funcs.py`, diff 캐시 `fetch_patches.py`) | 42 | 가능 |
+| A `patch` | fix 커밋이 수정한 함수. fix 커밋은 NVD 레퍼런스, Debian 보안 트래커, 프로젝트 자체 보안 데이터(curl.se, openssl-library.org, w1.fi), 프로젝트 이력의 로컬 `git log` 검색(`git_grep_fix_commits.py`), CVE ID가 적힌 커밋 메시지에서 확보 (`extract_vuln_funcs.py`, diff 캐시 `fetch_patches.py`) | 75 | 가능 |
+| A `patch-partial` | A 와 같으나 fix 가 건드린 파일만 fix 부모 커밋에서 수집 (리눅스 CVE 2건) | 2 | **불가** — 전체 프로그램이 없음 |
 | B `description` | NVD 설명이 지목 **&&** 그 이름이 스냅샷에 실제 정의됨 (`locate_vuln_funcs.py`) | 28 | 가능 |
 | C `codebert` | Devign 파인튜닝 CodeBERT 랭킹 (`rank_codebert.py`) | 0 | **불가 — 미채택** |
-| — | 미확보 | 34 | 불가 |
+| — | 미확보 (CVE-2023-28450: fix 가 `#define` 기본값만 변경) | 1 | 불가 |
 
 경로 B는 코드 문맥 필터를 건다 — 토큰이 `_`/CamelCase를 포함하거나, `foo()` 형태로
 호출되거나, "the X function"으로 명시돼야 한다. 그렇지 않으면 `and`·`service`·
