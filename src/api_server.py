@@ -947,6 +947,10 @@ def build_app():
         # merged into the decision page; keep the old URL working
         return make_page("vex-decision")
 
+    @app.get("/sbom-to-cve.html", response_class=HTMLResponse)
+    def sbom_to_cve_page():
+        return make_page("sbom-to-cve")
+
     @app.get("/vex-decision.html", response_class=HTMLResponse)
     def vex_decision_page():
         return make_page("vex-decision")
@@ -2073,8 +2077,176 @@ already asserted.</p>
 _DECISION_PAGE = _decision_page()
 
 
+
+# --- ICS-SBOM to CVE page ------------------------------------------------------
+# Why the CPEs in an ICS SBOM cannot identify its CVEs on their own. Rendered
+# from results/sbom_cpe_limits.json (tools/measure_sbom_cpe_limits.py), so every
+# number here is recomputed from data rather than restated by hand.
+def _sbom_cve_page():
+    try:
+        d = json.load(open(os.path.join(RESULTS, "sbom_cpe_limits.json"), encoding="utf-8"))
+    except Exception:
+        return ('<h1 style="margin:0 0 8px">ICS-SBOM to CVE</h1><p class="hint">'
+                'results/sbom_cpe_limits.json is missing - run '
+                '<span class="mono">tools/measure_sbom_cpe_limits.py</span>.</p>')
+    found = d["found_in_nvd"] or 1
+    L = d["layer"]
+    pct = lambda n, t=found: "%.1f%%" % (100.0 * n / t) if t else "-"  # noqa: E731
+    vk = d["version_kinds"]
+    nver = d["version_strings"] or 1
+
+    def grade(g):
+        col = {"measured": "var(--safe)", "proxy": "var(--und)",
+               "case": "var(--und)", "definition": "var(--ink2)"}[g]
+        return ('<span class="badge" style="background:%s22;color:%s">%s</span>'
+                % (col, col, g))
+
+    yrs = "".join('<tr><td class="mono">%s</td><td class="mono" style="text-align:right">%d</td>'
+                  '<td class="mono" style="text-align:right">%d</td>'
+                  '<td class="mono" style="text-align:right">%.1f%%</td></tr>'
+                  % (y, v["cves"], v["no_cpe"], v["pct"])
+                  for y, v in d["no_cpe_by_year"].items())
+    comps = ", ".join('<span class="mono">%s</span> %d' % (c, n)
+                      for c, n in d["top_embedded_components"][:8])
+    vrows = "".join('<tr><td>%s</td><td class="mono" style="text-align:right">%d</td>'
+                    '<td class="mono" style="text-align:right">%s</td><td class="mono hint">%s</td></tr>'
+                    % (k, n, pct(n, nver), ", ".join(d["version_samples"].get(k, [])[:3]))
+                    for k, n in sorted(vk.items(), key=lambda x: -x[1]))
+
+    rows = [
+        ("A", "No CPE to match", [
+            ("1", "NVD has no CPE for the CVE",
+             "%d of %d CVEs (%s), plus %d absent from NVD entirely. Concentrated in "
+             "recent years - under 1%% for 2016-2022, 21%% for 2024, 44%% for 2025 - "
+             "which is NVD's enrichment backlog, not a property of ICS."
+             % (L.get("no_cpe", 0), found, pct(L.get("no_cpe", 0)), d["missing_from_nvd"]),
+             "measured"),
+            ("2", "The SBOM carries no CPE",
+             "CISA's own identification of OT products carries a CPE on %d of %d (0.2%%) "
+             "and a purl on none. This is the closest stand-in available; no real vendor "
+             "SBOM sample was measured." % (d["csaf_ot_with_cpe"], d["csaf_ot_products"]),
+             "proxy"),
+        ]),
+        ("B", "The CPE names a different layer", [
+            ("3", "NVD's CPE is the embedded component, not the ICS product",
+             "%d CVEs (%s): the vulnerable software sits inside the product - %s. An SBOM "
+             "that lists products without their embedded components cannot reach these "
+             "by CPE at all. (%d CVEs in this and the next bucket may be misfiled: the "
+             "census kept at most 4 vendors per CVE.)"
+             % (L.get("embedded_component", 0), pct(L.get("embedded_component", 0)), comps,
+                d["layer_cap_uncertain"]),
+             "measured"),
+        ]),
+        ("C", "The version cannot be decided", [
+            ("4", "The CPE has no version range",
+             "%d of %d CPE-bearing CVEs (%s) name a product with no version bound, so any "
+             "installed version matches." % (d["cpe_without_range"], d["with_cpe"],
+                                             pct(d["cpe_without_range"], d["with_cpe"])),
+             "measured"),
+            ("5", "ICS version notation does not compare with CPE ranges",
+             "Only %d of %d version strings in our SBOMs (%s) are a plain dotted version. "
+             "The rest are range expressions in two syntaxes, 'every version', or vendor "
+             "service-pack notation (SP1_P01, R2). In our CSAF-derived SBOMs the field "
+             "also holds the advisory's affected range, not an installed version."
+             % (vk.get("plain dotted version", 0), nver,
+                pct(vk.get("plain dotted version", 0), nver)),
+             "measured"),
+            ("6", "A multi-product record yields the wrong product's range",
+             "NVD lists ranges for every product a CVE touches. Taking the first bounded "
+             "one decided CVE-2018-25032 against nokogiri &lt; 1.13.4 instead of zlib "
+             "&lt; 1.2.12. The rate is not measured.", "case"),
+        ]),
+        ("D", "The match is unreliable", [
+            ("7", "Other IT products are co-listed",
+             "%d CVEs (%s) carry CPEs only for unrelated IT products that ship the same "
+             "code (NetApp, Oracle, Apple, Cisco...). Vendor-agnostic matching turns "
+             "them into false positives." % (L.get("other_it_products", 0),
+                                              pct(L.get("other_it_products", 0))),
+             "measured"),
+            ("8", "The advisory vendor cannot anchor the match",
+             "%d CVEs come from 'Multiple'-vendor advisories (e.g. Amnesia:33, embedded "
+             "TCP/IP stacks), so vendor scoping has nothing to scope to. Product-name "
+             "divergence between CSAF and the CPE dictionary is a further source of "
+             "error that is not measured here." % L.get("multiple_vendor_advisory", 0),
+             "measured"),
+        ]),
+        ("E", "A match is not a finding", [
+            ("9", "In the affected list is not the same as vulnerable code present",
+             "A CPE match says this product/version is listed. It does not say the "
+             "vulnerable code is in this build - a feature may be compiled out or a fix "
+             "backported. That gap is what VEX exists to close: 12 CISA advisories "
+             "already declare listed products not_affected for 18 CVEs.", "definition"),
+        ]),
+    ]
+    body = ""
+    for gid, gname, items in rows:
+        body += ('<tr><td colspan="4" style="padding-top:14px"><b>%s. %s</b></td></tr>'
+                 % (gid, gname))
+        for n, title, text, g in items:
+            body += ('<tr><td class="mono">%s</td><td><b>%s</b></td>'
+                     '<td class="hint" style="font-size:13px">%s</td><td>%s</td></tr>'
+                     % (n, title, text, grade(g)))
+
+    return """<h1 style="margin:0 0 8px">ICS-SBOM to CVE</h1>
+<p class="hint" style="margin:0 0 18px">Taking an ICS SBOM and identifying its CVEs from
+the CPEs inside it fails in nine distinct ways. Each is stated with how it was
+established: <b>measured</b> over the full population, <b>proxy</b> measured on a
+stand-in, <b>case</b> shown on instances with the rate unmeasured, or
+<b>definition</b>. Recomputed from <span class="mono">results/sbom_cpe_limits.json</span>.</p>
+
+<div class="card">
+<div class="kpis">
+  <div class="kpi"><div class="kpi-n">__POP__</div><div class="kpi-l">ICSA CVEs</div></div>
+  <div class="kpi"><div class="kpi-n">__CPE__</div><div class="kpi-l">carry a CPE in NVD</div></div>
+  <div class="kpi"><div class="kpi-n">__PROD__</div><div class="kpi-l">CPE names the product</div></div>
+  <div class="kpi"><div class="kpi-n">__COMP__</div><div class="kpi-l">CPE names an embedded component</div></div>
+  <div class="kpi"><div class="kpi-n">__NONE__</div><div class="kpi-l">no CPE</div></div>
+</div>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The nine limits</h2>
+<table class="tbl"><thead><tr><th>#</th><th>Limit</th><th>Evidence</th><th>Grade</th></tr></thead>
+<tbody>__ROWS__</tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Limit 1 in detail &mdash; CVEs without a CPE, by CVE year</h2>
+<table class="tbl"><thead><tr><th>Year</th><th style="text-align:right">CVEs</th>
+<th style="text-align:right">no CPE</th><th style="text-align:right">share</th></tr></thead>
+<tbody>__YEARS__</tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Limit 5 in detail &mdash; version strings in our SBOMs</h2>
+<table class="tbl"><thead><tr><th>Kind</th><th style="text-align:right">Count</th>
+<th style="text-align:right">Share</th><th>Examples</th></tr></thead>
+<tbody>__VERS__</tbody></table>
+</div>
+
+<div class="card" style="border-left:3px solid #b8862b">
+<h2 style="margin:0 0 8px;font-size:17px">What follows for matching</h2>
+<p class="hint" style="margin:0">CPE matching is usable where the CPE names the product
+itself (limit 3's complement) and a version can be decided (limits 4-6). Everywhere
+else it has to be replaced or supplemented: an exact <b>model number</b> lookup for
+device components, the <b>embedded components and their versions</b> listed in the SBOM
+for the component layer, and a VEX judgement for limit 9. None of these limits is solved
+by a better similarity threshold.</p>
+</div>
+""".replace("__POP__", "{:,}".format(d["population"])) \
+   .replace("__CPE__", pct(d["with_cpe"])) \
+   .replace("__PROD__", pct(L.get("product", 0))) \
+   .replace("__COMP__", pct(L.get("embedded_component", 0))) \
+   .replace("__NONE__", pct(L.get("no_cpe", 0))) \
+   .replace("__ROWS__", body).replace("__YEARS__", yrs).replace("__VERS__", vrows)
+
+
+_SBOM_CVE_PAGE = _sbom_cve_page()
+
+
 PAGES = {
     "analyzer": ("SBOM → VEX Analyzer", _ANALYZER_PAGE),
+    "sbom-to-cve": ("ICS-SBOM to CVE", _SBOM_CVE_PAGE),
     "vex-decision": ("VEX Flag Decision Logic", _DECISION_PAGE),
     "source": ("ICS-CERT Advisories (CISA)",
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories (CISA)</h1>' + SOURCE_HTML),
@@ -2087,6 +2259,7 @@ PAGES = {
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
 _NAV = [("analyzer", "index.html", "ICS-VEXForge"),
+        ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
         ("source", "source.html", "ICS-CERT Advisories (CISA)"),
         ("published-vex", "published-vex.html", "Published VEX (CISA)"),
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
