@@ -91,6 +91,43 @@ def compute():
     return n
 
 
+# The same Q2/Q3 phrase appears in both documents and in the QUESTIONS prose the
+# console renders; covering all three here means --write leaves nothing to fix
+# by hand (the prose used to print "must be edited by hand" and drifted).
+DOC_FILES = ("README.md", "RESULTS.md", os.path.join("src", "vex_decision.py"))
+_DOC_ROWS = {
+    "Q2": (re.compile(r"reachable \d+, target-not-found \d+, no-source \d+"),
+           lambda n: "reachable %d, target-not-found %d, no-source %d" % (
+               n["q2"].get("reachable", 0), n["q2"].get("target-not-found", 0),
+               n["q2"].get("no-source", 0))),
+    "Q3": (re.compile(r"controllable \d+, target-not-found \d+, no-source \d+"),
+           lambda n: "controllable %d, target-not-found %d, no-source %d" % (
+               n["q3"].get("controllable", 0), n["q3"].get("target-not-found", 0),
+               n["q3"].get("no-source", 0))),
+}
+
+
+def check_docs(n, write):
+    """Stale Q2/Q3 phrases in the docs -> [(file, question, found, wanted)]."""
+    stale = []
+    for f in DOC_FILES:
+        p = os.path.join(BASE, f)
+        if not os.path.exists(p):
+            continue
+        text = io.open(p, encoding="utf-8").read()
+        new = text
+        for q, (pat, want_of) in _DOC_ROWS.items():
+            want = want_of(n)
+            for m in pat.finditer(text):
+                if m.group(0) != want:
+                    stale.append((f, q, m.group(0), want))
+            if write:
+                new = pat.sub(want, new)
+        if write and new != text:
+            io.open(p, "w", encoding="utf-8", newline="\n").write(new)
+    return stale
+
+
 CORPUS_KEYS = ["snapshots", "targets_located", "q2_reachable", "q2_unreachable",
                "q3_controllable", "q3_not_controllable", "q4_mitigation_cleared",
                "clearances_from_source_analysis"]
@@ -138,6 +175,16 @@ def main():
         if not ok:
             stale.append((q["id"] + "_prose", q["result"][:40], want))
         print("  %-5s %-6s expects %r" % ("OK " if ok else "STALE", q["id"], want))
+
+    print("\n== README.md / RESULTS.md / src/vex_decision.py Q2-Q3 phrases ==")
+    doc_stale = check_docs(n, a.write)
+    if not doc_stale:
+        print("  OK    every copy matches the data")
+    for f, q, found, want in doc_stale:
+        print("  %s %-10s %s  found %r  data %r"
+              % ("FIXED" if a.write else "STALE", f, q, found, want))
+    if doc_stale and not a.write:
+        stale.append(("docs", len(doc_stale), 0))
 
     if stale and a.write:
         p = os.path.join(BASE, "src", "vex_decision.py")

@@ -141,10 +141,10 @@ path is recorded and it bounds the verdict (`data/vuln_targets.json`):
 
 | Path | How | CVEs | May clear? |
 |---|---|---|---|
-| A `patch` | the function the upstream fix commit edits (`tools/extract_vuln_funcs.py` over diffs cached by `tools/fetch_patches.py`) | 32 | yes |
+| A `patch` | the function the upstream fix edits. The fix commit comes from NVD references, the project's own advisory data (curl.se, openssl-library.org), or a commit whose message names the CVE; diffs cached by `tools/fetch_patches.py`, functions read by `tools/extract_vuln_funcs.py` | 42 | yes |
 | B `description` | the NVD text names it *and* that name is really defined in the snapshot (`tools/locate_vuln_funcs.py`) | 28 | yes |
 | C `codebert` | a Devign-fine-tuned CodeBERT ranks candidates (`tools/rank_codebert.py`) | 0 | **no — not adopted** |
-| — | not identified | 40 | no |
+| — | not identified | 34 | no |
 
 Path B filters on code context — a token must carry `_`/CamelCase, be written as
 a call, or be named "the X function" — because otherwise ordinary English words
@@ -494,20 +494,31 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    by CPE at all. The console page **ICS-SBOM to CVE** lists all nine limits of
    CPE-based identification, each with its evidence grade, rendered from
    `results/sbom_cpe_limits.json` (`tools/measure_sbom_cpe_limits.py`).
-10. The binding limit on Q2/Q3/Q4 is **target coverage: 60 of 104 snapshots**. Of
-   the remaining 44, **35 have no commit link anywhere in their NVD references**
-   — old CVEs (the KRACK set, dnsmasq 2017, early sqlite) cite only distro
-   advisories and mailing lists. Closing those needs per-project security-page
-   parsers, not another forge adapter.
-10. A Joern pilot ([`docs/JOERN_PILOT.md`](docs/JOERN_PILOT.md)) measured what a
-   CPG would add. It parses K&R and macro-wrapped signatures natively (removing
-   the regex workaround in `tools/callgraph_reach.py`) and can express Q3 as a
-   taint flow rather than reachability. It does **not** improve call resolution
-   (0.533 vs the current median 0.67) — that is dominated by the absence of a
-   build, which no front end recovers. Its data flow must be used
-   asymmetrically: flows found are positive evidence, flows not found are not
-   evidence of safety (on CVE-2016-9840, a real zlib flaw, it reports 0 flows
-   because the taint travels through struct members).
+10. **Target coverage is 105 of 106 campaign CVEs** (fix-commit hunk 75, NVD
+   description 28, fix-commit hunk on a partial snapshot 2). The fix commits come from
+   NVD references, the Debian security tracker's NOTE lines, a local `git log` search
+   of each project's blobless mirror keyed by the commit/ticket/bug ids those
+   references carry (`tools/git_grep_fix_commits.py`), and - for eight CVEs no key
+   reaches - a primary advisory or the project's own patch set, each recorded with its
+   evidence (`ADVISORY_FIX`; w1.fi 2022-1 and Alpine's patches cached as diffs).
+   Every target added in this push was checked against the code: the function must
+   contain a line the fix actually changes in the snapshot, and every name the
+   extractor rule changes removed contained none. That is a consistency check, not
+   proof that the target is the vulnerable function. The exceptions, stated plainly:
+   - **CVE-2023-28450** (dnsmasq) has no target: its fix only lowers the
+     `EDNS_PKTSZ` default in `config.h`; no function is edited.
+   - **CVE-2021-33909 / CVE-2023-32233** (Linux) have only the files the fix touches,
+     at the fix's parent commit (`data/partial_snapshots`). Their targets are real,
+     but the source label `patch-partial` may not clear and Q2-Q4 do not run on them.
+   - **CVE-2023-34035** is a Spring Security CVE whose snapshot held only
+     spring-framework 6.0.9; spring-security 6.1.0 (the release Spring Boot 3.1.0
+     pairs with it) was added beside it.
+   - Weak targets: CVE-2021-42375's fix commit is *inferred* (Claroty names the
+     trigger characters `$ { } #`; the only ash parser fix in 1.34.0 but not 1.33.1 is
+     the `${#var}` one); CVE-2017-13077/13078 come from hostapd's optional AP-side
+     KRACK workaround, not a protocol fix; CVE-2022-28391 was never fixed upstream and
+     rests on Alpine's patch; CVE-2023-46850's fix edits `tls_process_state`, absent
+     from the 2.5.5 snapshot.
 11. Q3's `not-controllable` and Q4's clearance both rest on arguing from absence
    in an incomplete static view. The guards above make that argument honest, but
    they also make it rare: on this corpus neither fires. A dynamic track

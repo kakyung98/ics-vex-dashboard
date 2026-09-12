@@ -25,6 +25,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IDX = os.path.join(BASE, "data", "func_index")
 NVD = os.path.join(BASE, "data", "nvd_cache.json")
 PATCH = os.path.join(BASE, "data", "vuln_funcs.json")
+PARTIAL = os.path.join(BASE, "data", "partial_snapshots")
 OUT = os.path.join(BASE, "data", "vuln_targets.json")
 
 _TOK = re.compile(r"[A-Za-z_][A-Za-z0-9_]{2,}")
@@ -133,15 +134,29 @@ def main():
                         "files": files[:20],
                         "evidence": "NVD text names a file, not a function"}
 
+    # Components with only a partial snapshot (the files the fix touches, at its
+    # parent commit). The function is located from real code, but the source
+    # label keeps Q2-Q4 from reading anything into it: they need the whole
+    # program, and a one-file call graph would call almost everything unreachable.
+    for cve in sorted(set(patch) - set(out)):
+        if os.path.isdir(os.path.join(PARTIAL, cve)):
+            keep = [t for t in patch[cve] if usable_target(t)]
+            if keep:
+                out[cve] = {"targets": keep, "source": "patch-partial",
+                            "evidence": "fix-commit hunk; partial snapshot (touched "
+                                        "files at the fix's parent) - no Q2-Q4"}
+
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     n = lambda s: sum(1 for v in out.values() if v["source"] == s)  # noqa: E731
     tot = len(os.listdir(IDX))
     print("\n== targets located: %d / %d snapshots ==" % (
         sum(1 for v in out.values() if v["targets"]), tot))
     print("   A patch             %d" % n("patch"))
+    print("   A patch, partial    %d" % n("patch-partial"))
     print("   B description       %d" % n("description"))
     print("   file only (no func) %d" % n("description-file"))
-    print("   none                %d" % (tot - len(out)))
+    print("   none                %d" % (tot - sum(1 for v in out.values()
+                                                if v["source"] != "patch-partial")))
     if agree + disagree:
         print("\n   B checked against A on %d CVEs: agree %d, disagree %d (precision %.2f)"
               % (agree + disagree, agree, disagree, agree / (agree + disagree)))

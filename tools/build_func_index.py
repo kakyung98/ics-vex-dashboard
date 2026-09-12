@@ -19,7 +19,7 @@ SNAP = os.path.join(BASE, "data", "source_snapshots")
 OUTD = os.path.join(BASE, "data", "func_index")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from extract_vuln_funcs import _funcname, _parser, EXT_SRC, SKIP_SEG  # noqa: E402
+from extract_vuln_funcs import _funcs_by_line, EXT_SRC, SKIP_SEG  # noqa: E402
 
 
 def index_snapshot(root):
@@ -41,15 +41,17 @@ def index_snapshot(root):
                 continue
             nfiles += 1
             rel = os.path.relpath(p, root).replace("\\", "/")
-            tree = _parser(p).parse(src)
-            stack = [tree.root_node]
-            while stack:
-                n = stack.pop()
-                if n.type == "function_definition":
-                    nm = _funcname(n, src)
-                    if nm:
-                        funcs[nm].append([rel, n.start_point[0], n.end_point[0]])
-                stack.extend(n.children)
+            # The extractor's span reader, so the index and the targets agree on
+            # what a function is: Java methods, K&R definitions and tree-sitter
+            # nodes cut short by a parse error. The C grammar alone indexed
+            # nothing in the Java snapshots and lost K&R functions such as
+            # zlib 1.2.12's inflate.
+            try:
+                spans = _funcs_by_line(p)
+            except Exception:
+                continue
+            for s, e, nm in spans:
+                funcs[nm].append([rel, s, e])
     return funcs, nfiles
 
 
