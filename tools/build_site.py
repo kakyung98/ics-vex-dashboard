@@ -231,6 +231,7 @@ html = html.replace("async function run(){",
 _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
 html = html.replace("__VEX_TREE__", _tree_json)
 for key, fname in [("analyzer", "index.html"),
+                   ("sbom-to-cve", "sbom-to-cve.html"),
                    ("vex-decision", "vex-decision.html"),
                    # the merged page keeps answering the old URL
                    ("vex-decision", "vex-method.html"), ("source", "source.html"),

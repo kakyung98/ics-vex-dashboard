@@ -487,7 +487,13 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    where only 0.2% of OT products carry a CPE: the advisories omit them, NVD
    supplies them. The analyzer's CPE panel fails on ICS components not because
    CPE is unavailable but because it matches against a 42-entry OSS knowledge
-   base; pointing it at the NVD dictionary is the fix.
+   base. Pointing it at the NVD dictionary helps only part of the way: for 27.8%
+   of these CVEs NVD's CPE names an embedded upstream component (the Linux kernel
+   alone in 1,296; OpenSSL, glibc, curl, MariaDB), not the ICS product, so an
+   SBOM that lists products without their embedded components cannot reach them
+   by CPE at all. The console page **ICS-SBOM to CVE** lists all nine limits of
+   CPE-based identification, each with its evidence grade, rendered from
+   `results/sbom_cpe_limits.json` (`tools/measure_sbom_cpe_limits.py`).
 10. The binding limit on Q2/Q3/Q4 is **target coverage: 60 of 104 snapshots**. Of
    the remaining 44, **35 have no commit link anywhere in their NVD references**
    — old CVEs (the KRACK set, dnsmasq 2017, early sqlite) cite only distro
