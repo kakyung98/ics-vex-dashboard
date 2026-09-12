@@ -28,9 +28,19 @@ UNDER_INV = "under_investigation"
 TARGET_SOURCES = {
     "patch": {
         "label": "Fix-commit hunk",
-        "how": "the vulnerable function is the one the upstream fix edits",
+        "how": "the vulnerable function is the one the upstream fix edits - the fix "
+               "commit comes from NVD references, the project's own advisory data, "
+               "or a commit whose message names the CVE",
         "may_clear": True,
-        "n": 32,
+        "n": 75,
+    },
+    "patch-partial": {
+        "label": "Fix-commit hunk, partial snapshot",
+        "how": "as above, but only the files the fix touches were collected (at the "
+               "fix's parent commit) - the function is located from real code, yet "
+               "no whole-program question can run on one file",
+        "may_clear": False,
+        "n": 2,
     },
     "description": {
         "label": "NVD description",
@@ -50,7 +60,7 @@ TARGET_SOURCES = {
         "label": "Not identified",
         "how": "no fix commit, no description mention",
         "may_clear": False,
-        "n": 40,
+        "n": 1,
     },
 }
 
@@ -81,9 +91,10 @@ QUESTIONS = [
             "flags and compiled files on the real compile lines in "
             "results/verify_build_logs (tools/mitigation_scan.py)",
      "state": "implemented",
-     "result": "0 clearances of 104. 55 have no usable build log, 3 logs are too "
-               "partial to argue absence from, 2 targets sit under a guard whose "
-               "macro the -D flags cannot resolve. Hardening flags are recorded "
+     "result": "0 clearances of 104. 93 have no usable build log, 4 logs are too "
+               "partial to argue absence from, 4 targets sit under a guard whose "
+               "macro the -D flags cannot resolve, 2 show no mitigation, 1 has no "
+               "target (CVE-2023-28450). Hardening flags are recorded "
                "but never clear: they turn corruption into abort(), which "
                "reduces impact, not applicability"},
 ]
@@ -111,6 +122,12 @@ SOUNDNESS = [
      "source, the log must cover half the project, and a file another "
      "translation unit #includes cannot be called absent.",
      "it produced 5 false `vulnerable_code_not_present` clearances"),
+    ("Entry-model completeness",
+     "Q3 seeds its walk from I/O readers, the public API and address-taken "
+     "functions. When neither of the last two is found - Java, where requests "
+     "arrive through reflection and framework dispatch - a missing tainted path "
+     "is not evidence.",
+     "Spring4Shell (CVE-2022-22965) was cleared as not-controllable by exactly this gap"),
     ("Graph completeness",
      "call resolution = defined callees / all callees, median 0.67. Below 0.50 "
      "the graph is too incomplete to argue from.",

@@ -3,11 +3,39 @@
     "cve": "CVE-2015-7547",
     "status": "ok",
     "targets": [
-      "send_vc"
+      "send_vc",
+      "send_dg",
+      "gaih_getanswer_slice",
+      "__libc_res_nsearch",
+      "gaih_getanswer",
+      "__libc_res_nsend",
+      "reopen",
+      "res_nsearch"
     ],
     "files": {
       "send_vc": [
         "glibc-glibc-2.17/resolv/res_send.c"
+      ],
+      "send_dg": [
+        "glibc-glibc-2.17/resolv/res_send.c"
+      ],
+      "gaih_getanswer_slice": [
+        "glibc-glibc-2.17/resolv/nss_dns/dns-host.c"
+      ],
+      "__libc_res_nsearch": [
+        "glibc-glibc-2.17/resolv/res_query.c"
+      ],
+      "gaih_getanswer": [
+        "glibc-glibc-2.17/resolv/nss_dns/dns-host.c"
+      ],
+      "__libc_res_nsend": [
+        "glibc-glibc-2.17/resolv/res_send.c"
+      ],
+      "reopen": [
+        "glibc-glibc-2.17/resolv/res_send.c"
+      ],
+      "res_nsearch": [
+        "glibc-glibc-2.17/resolv/res_query.c"
       ]
     },
     "guards": {},
@@ -26,9 +54,128 @@
   {
     "cve": "CVE-2016-9318",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "xmlDefaultExternalEntityLoader",
+      "xmlNoNetExternalEntityLoader",
+      "xmlCtxtUseOptionsInternal",
+      "usage",
+      "main",
+      "xmlIOHTTPOpenW",
+      "xmlParseBalancedChunkMemoryInternal",
+      "xmlParseInNodeContext",
+      "xmlParseExternalEntityPrivate",
+      "if",
+      "xmlParseBalancedChunkMemoryRecover",
+      "xmlCreateEntityParserCtxtInternal"
+    ],
+    "files": {
+      "xmlDefaultExternalEntityLoader": [
+        "libxml2-2.9.4/xmlIO.c"
+      ],
+      "xmlNoNetExternalEntityLoader": [
+        "libxml2-2.9.4/xmlIO.c"
+      ],
+      "xmlCtxtUseOptionsInternal": [
+        "libxml2-2.9.4/parser.c"
+      ],
+      "usage": [
+        "libxml2-2.9.4/testC14N.c",
+        "libxml2-2.9.4/testOOM.c",
+        "libxml2-2.9.4/testReader.c"
+      ],
+      "main": [
+        "libxml2-2.9.4/nanoftp.c",
+        "libxml2-2.9.4/nanoftp.c",
+        "libxml2-2.9.4/nanohttp.c"
+      ],
+      "xmlIOHTTPOpenW": [
+        "libxml2-2.9.4/xmlIO.c"
+      ],
+      "xmlParseBalancedChunkMemoryInternal": [
+        "libxml2-2.9.4/parser.c"
+      ],
+      "xmlParseInNodeContext": [
+        "libxml2-2.9.4/parser.c"
+      ],
+      "xmlParseExternalEntityPrivate": [
+        "libxml2-2.9.4/parser.c"
+      ],
+      "if": [
+        "libxml2-2.9.4/buf.c",
+        "libxml2-2.9.4/buf.c",
+        "libxml2-2.9.4/encoding.c"
+      ],
+      "xmlParseBalancedChunkMemoryRecover": [
+        "libxml2-2.9.4/parser.c"
+      ],
+      "xmlCreateEntityParserCtxtInternal": [
+        "libxml2-2.9.4/parser.c"
+      ]
+    },
+    "guards": {
+      "usage": [
+        {
+          "file": "libxml2-2.9.4/testC14N.c",
+          "guards": [
+            "if defined(LIBXML_C14N_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)"
+          ]
+        },
+        {
+          "file": "libxml2-2.9.4/testReader.c",
+          "guards": [
+            "ifdef LIBXML_READER_ENABLED"
+          ]
+        }
+      ],
+      "main": [
+        {
+          "file": "libxml2-2.9.4/nanoftp.c",
+          "guards": [
+            "else /* !LIBXML_FTP_ENABLED */",
+            "ifdef STANDALONE"
+          ]
+        },
+        {
+          "file": "libxml2-2.9.4/nanoftp.c",
+          "guards": [
+            "ifdef LIBXML_FTP_ENABLED",
+            "ifdef STANDALONE"
+          ]
+        },
+        {
+          "file": "libxml2-2.9.4/nanohttp.c",
+          "guards": [
+            "else /* !LIBXML_HTTP_ENABLED */",
+            "ifdef STANDALONE"
+          ]
+        }
+      ],
+      "xmlIOHTTPOpenW": [
+        {
+          "file": "libxml2-2.9.4/xmlIO.c",
+          "guards": [
+            "ifdef LIBXML_HTTP_ENABLED",
+            "ifdef LIBXML_OUTPUT_ENABLED"
+          ]
+        }
+      ],
+      "if": [
+        {
+          "file": "libxml2-2.9.4/encoding.c",
+          "guards": [
+            "ifdef LIBXML_ICU_ENABLED"
+          ]
+        }
+      ],
+      "xmlParseBalancedChunkMemoryRecover": [
+        {
+          "file": "libxml2-2.9.4/parser.c",
+          "guards": [
+            "ifdef LIBXML_SAX1_ENABLED"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -39,7 +186,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2016-9840",
@@ -92,11 +239,15 @@
     "cve": "CVE-2016-9841",
     "status": "ok",
     "targets": [
-      "inflate_fast"
+      "inflate_fast",
+      "inflate"
     ],
     "files": {
       "inflate_fast": [
         "zlib-1.2.8/inffast.c"
+      ],
+      "inflate": [
+        "zlib-1.2.8/inflate.c"
       ]
     },
     "guards": {
@@ -147,9 +298,67 @@
   {
     "cve": "CVE-2017-13077",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "hostapd_config_defaults_bss",
+      "hostapd_wpa_auth_conf",
+      "wpa_auth_mic_failure_report",
+      "wpa_group_setkeys",
+      "wpa_get_mib_sta",
+      "wpa_auth_sta_key_mgmt",
+      "wpa_auth_pmksa_add_sae",
+      "hostapd_config_free_vlan",
+      "ieee80211w_kde_add",
+      "wpa_send_eapol"
+    ],
+    "files": {
+      "hostapd_config_defaults_bss": [
+        "wpa_supplicant-2.6/src/ap/ap_config.c"
+      ],
+      "hostapd_wpa_auth_conf": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth_glue.c"
+      ],
+      "wpa_auth_mic_failure_report": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_group_setkeys": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_get_mib_sta": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_auth_sta_key_mgmt": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_auth_pmksa_add_sae": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "hostapd_config_free_vlan": [
+        "wpa_supplicant-2.6/src/ap/ap_config.c"
+      ],
+      "ieee80211w_kde_add": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c",
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_send_eapol": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ]
+    },
+    "guards": {
+      "ieee80211w_kde_add": [
+        {
+          "file": "wpa_supplicant-2.6/src/ap/wpa_auth.c",
+          "guards": [
+            "else /* CONFIG_IEEE80211W */"
+          ]
+        },
+        {
+          "file": "wpa_supplicant-2.6/src/ap/wpa_auth.c",
+          "guards": [
+            "ifdef CONFIG_IEEE80211W"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -160,14 +369,72 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2017-13078",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "hostapd_config_defaults_bss",
+      "hostapd_wpa_auth_conf",
+      "wpa_auth_mic_failure_report",
+      "wpa_group_setkeys",
+      "wpa_get_mib_sta",
+      "wpa_auth_sta_key_mgmt",
+      "wpa_auth_pmksa_add_sae",
+      "hostapd_config_free_vlan",
+      "ieee80211w_kde_add",
+      "wpa_send_eapol"
+    ],
+    "files": {
+      "hostapd_config_defaults_bss": [
+        "wpa_supplicant-2.6/src/ap/ap_config.c"
+      ],
+      "hostapd_wpa_auth_conf": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth_glue.c"
+      ],
+      "wpa_auth_mic_failure_report": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_group_setkeys": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_get_mib_sta": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_auth_sta_key_mgmt": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_auth_pmksa_add_sae": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "hostapd_config_free_vlan": [
+        "wpa_supplicant-2.6/src/ap/ap_config.c"
+      ],
+      "ieee80211w_kde_add": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c",
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ],
+      "wpa_send_eapol": [
+        "wpa_supplicant-2.6/src/ap/wpa_auth.c"
+      ]
+    },
+    "guards": {
+      "ieee80211w_kde_add": [
+        {
+          "file": "wpa_supplicant-2.6/src/ap/wpa_auth.c",
+          "guards": [
+            "else /* CONFIG_IEEE80211W */"
+          ]
+        },
+        {
+          "file": "wpa_supplicant-2.6/src/ap/wpa_auth.c",
+          "guards": [
+            "ifdef CONFIG_IEEE80211W"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -178,14 +445,109 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2017-14491",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "add_resource_record",
+      "dnssec_generate_query",
+      "parse_dhcp_opt",
+      "check_for_ignored_address",
+      "do_options",
+      "add_options",
+      "if",
+      "do_rfc1035_name",
+      "canonicalise"
+    ],
+    "files": {
+      "add_resource_record": [
+        "dnsmasq-2.78/src/rfc1035.c"
+      ],
+      "dnssec_generate_query": [
+        "dnsmasq-2.78/src/dnssec.c"
+      ],
+      "parse_dhcp_opt": [
+        "dnsmasq-2.78/src/option.c"
+      ],
+      "check_for_ignored_address": [
+        "dnsmasq-2.78/src/rfc1035.c"
+      ],
+      "do_options": [
+        "dnsmasq-2.78/src/rfc2131.c"
+      ],
+      "add_options": [
+        "dnsmasq-2.78/src/rfc3315.c"
+      ],
+      "if": [
+        "dnsmasq-2.78/src/bpf.c",
+        "dnsmasq-2.78/src/bpf.c",
+        "dnsmasq-2.78/src/cache.c"
+      ],
+      "do_rfc1035_name": [
+        "dnsmasq-2.78/src/util.c"
+      ],
+      "canonicalise": [
+        "dnsmasq-2.78/src/util.c"
+      ]
+    },
+    "guards": {
+      "dnssec_generate_query": [
+        {
+          "file": "dnsmasq-2.78/src/dnssec.c",
+          "guards": [
+            "ifdef HAVE_DNSSEC"
+          ]
+        }
+      ],
+      "parse_dhcp_opt": [
+        {
+          "file": "dnsmasq-2.78/src/option.c",
+          "guards": [
+            "ifdef HAVE_DHCP"
+          ]
+        }
+      ],
+      "do_options": [
+        {
+          "file": "dnsmasq-2.78/src/rfc2131.c",
+          "guards": [
+            "ifdef HAVE_DHCP"
+          ]
+        }
+      ],
+      "add_options": [
+        {
+          "file": "dnsmasq-2.78/src/rfc3315.c",
+          "guards": [
+            "ifdef HAVE_DHCP6"
+          ]
+        }
+      ],
+      "if": [
+        {
+          "file": "dnsmasq-2.78/src/bpf.c",
+          "guards": [
+            "if defined(HAVE_BSD_NETWORK) || defined(HAVE_SOLARIS_NETWORK)",
+            "ifdef HAVE_DHCP6"
+          ]
+        },
+        {
+          "file": "dnsmasq-2.78/src/bpf.c",
+          "guards": [
+            "if defined(HAVE_BSD_NETWORK) || defined(HAVE_SOLARIS_NETWORK)",
+            "ifdef HAVE_IPV6"
+          ]
+        },
+        {
+          "file": "dnsmasq-2.78/src/cache.c",
+          "guards": [
+            "ifdef HAVE_DNSSEC"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 16,
       "defines": [
@@ -207,7 +569,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "guarded by ifdef HAVE_DNSSEC;ifdef HAVE_DHCP;ifdef HAVE_DHCP;ifdef HAVE_DHCP6;ifdef HAVE_DHCP6; -D flags cannot prove the macro is undefined (config.h is not on the command line)"
   },
   {
     "cve": "CVE-2017-16544",
@@ -246,9 +608,30 @@
   {
     "cve": "CVE-2018-14526",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "wpa_sm_pmksa_free_cb",
+      "wpa_sm_rx_eapol"
+    ],
+    "files": {
+      "wpa_sm_pmksa_free_cb": [
+        "wpa_supplicant-2.6/src/rsn_supp/wpa.c"
+      ],
+      "wpa_sm_rx_eapol": [
+        "wpa_supplicant-2.6/src/rsn_supp/wpa.c",
+        "wpa_supplicant-2.6/src/rsn_supp/wpa.h"
+      ]
+    },
+    "guards": {
+      "wpa_sm_rx_eapol": [
+        {
+          "file": "wpa_supplicant-2.6/src/rsn_supp/wpa.h",
+          "guards": [
+            "ifndef WPA_H",
+            "else /* CONFIG_NO_WPA */"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -256,10 +639,16 @@
       "compiled": []
     },
     "build_coverage": 0.0,
-    "included_by": [],
+    "included_by": [
+      "wpa_supplicant-2.6/src/rsn_supp/peerkey.c",
+      "wpa_supplicant-2.6/src/rsn_supp/pmksa_cache.c",
+      "wpa_supplicant-2.6/src/rsn_supp/preauth.c",
+      "wpa_supplicant-2.6/src/rsn_supp/tdls.c",
+      "wpa_supplicant-2.6/src/rsn_supp/wpa_ft.c"
+    ],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2018-14567",
@@ -298,15 +687,44 @@
     "cve": "CVE-2018-15473",
     "status": "ok",
     "targets": [
-      "userauth_pubkey"
+      "userauth_pubkey",
+      "userauth_gssapi",
+      "userauth_hostbased",
+      "pubkey_auth_info"
     ],
     "files": {
       "userauth_pubkey": [
         "openssh-portable-V_7_4_P1/auth2-pubkey.c",
         "openssh-portable-V_7_4_P1/sshconnect2.c"
+      ],
+      "userauth_gssapi": [
+        "openssh-portable-V_7_4_P1/auth2-gss.c",
+        "openssh-portable-V_7_4_P1/sshconnect2.c"
+      ],
+      "userauth_hostbased": [
+        "openssh-portable-V_7_4_P1/auth2-hostbased.c",
+        "openssh-portable-V_7_4_P1/sshconnect2.c"
+      ],
+      "pubkey_auth_info": [
+        "openssh-portable-V_7_4_P1/auth2-pubkey.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "userauth_gssapi": [
+        {
+          "file": "openssh-portable-V_7_4_P1/auth2-gss.c",
+          "guards": [
+            "ifdef GSSAPI"
+          ]
+        },
+        {
+          "file": "openssh-portable-V_7_4_P1/sshconnect2.c",
+          "guards": [
+            "ifdef GSSAPI"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -356,10 +774,14 @@
     "cve": "CVE-2018-20843",
     "status": "ok",
     "targets": [
-      "lookup"
+      "lookup",
+      "setElementTypePrefix"
     ],
     "files": {
       "lookup": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ],
+      "setElementTypePrefix": [
         "libexpat-R_2_2_0/expat/lib/xmlparse.c"
       ]
     },
@@ -379,9 +801,58 @@
   {
     "cve": "CVE-2018-25032",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "deflateInit2_",
+      "compress_block",
+      "deflateCopy",
+      "deflatePrime",
+      "deflate_fast",
+      "deflate_slow",
+      "deflate_rle",
+      "deflate_huff",
+      "init_block",
+      "_tr_tally",
+      "_tr_flush_block"
+    ],
+    "files": {
+      "deflateInit2_": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "compress_block": [
+        "zlib-1.2.11/trees.c"
+      ],
+      "deflateCopy": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "deflatePrime": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "deflate_fast": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "deflate_slow": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "deflate_rle": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "deflate_huff": [
+        "zlib-1.2.11/deflate.c"
+      ],
+      "init_block": [
+        "zlib-1.2.11/trees.c"
+      ]
+    },
+    "guards": {
+      "deflate_slow": [
+        {
+          "file": "zlib-1.2.11/deflate.c",
+          "guards": [
+            "ifndef FASTEST"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 68,
       "defines": [
@@ -415,13 +886,23 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "guarded by ifndef FASTEST; -D flags cannot prove the macro is undefined (config.h is not on the command line)"
   },
   {
     "cve": "CVE-2018-8740",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "sqlite3EndTable",
+      "corruptSchema"
+    ],
+    "files": {
+      "sqlite3EndTable": [
+        "sqlite-version-3.22.0/src/build.c"
+      ],
+      "corruptSchema": [
+        "sqlite-version-3.22.0/src/prepare.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 4,
@@ -444,21 +925,45 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2019-11477",
     "status": "ok",
     "targets": [
+      "tcp_shift_skb_data",
       "tcp_shifted_skb",
-      "tcp_shift_skb_data"
+      "tcp_sync_mss",
+      "__tcp_retransmit_skb",
+      "tcp_init",
+      "skb_can_shift",
+      "__tcp_mtu_to_mss",
+      "tcp_collapse_retrans"
     ],
     "files": {
+      "tcp_shift_skb_data": [
+        "linux-4.9.337/net/ipv4/tcp_input.c"
+      ],
       "tcp_shifted_skb": [
         "linux-4.9.337/net/ipv4/tcp_input.c"
       ],
-      "tcp_shift_skb_data": [
+      "tcp_sync_mss": [
+        "linux-4.9.337/net/ipv4/tcp_output.c"
+      ],
+      "__tcp_retransmit_skb": [
+        "linux-4.9.337/net/ipv4/tcp_output.c"
+      ],
+      "tcp_init": [
+        "linux-4.9.337/net/ipv4/tcp.c"
+      ],
+      "skb_can_shift": [
         "linux-4.9.337/net/ipv4/tcp_input.c"
+      ],
+      "__tcp_mtu_to_mss": [
+        "linux-4.9.337/net/ipv4/tcp_output.c"
+      ],
+      "tcp_collapse_retrans": [
+        "linux-4.9.337/net/ipv4/tcp_output.c"
       ]
     },
     "guards": {},
@@ -472,9 +977,36 @@
   {
     "cve": "CVE-2019-13103",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "print_partition_extended",
+      "part_get_info_extended"
+    ],
+    "files": {
+      "print_partition_extended": [
+        "u-boot-2018.03/disk/part_dos.c"
+      ],
+      "part_get_info_extended": [
+        "u-boot-2018.03/disk/part_dos.c"
+      ]
+    },
+    "guards": {
+      "print_partition_extended": [
+        {
+          "file": "u-boot-2018.03/disk/part_dos.c",
+          "guards": [
+            "ifdef CONFIG_HAVE_BLOCK_DEVICE"
+          ]
+        }
+      ],
+      "part_get_info_extended": [
+        {
+          "file": "u-boot-2018.03/disk/part_dos.c",
+          "guards": [
+            "ifdef CONFIG_HAVE_BLOCK_DEVICE"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -485,13 +1017,19 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2019-13106",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "ext4fs_read_file"
+    ],
+    "files": {
+      "ext4fs_read_file": [
+        "u-boot-2018.03/fs/ext4/ext4fs.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -503,14 +1041,18 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2019-15903",
     "status": "ok",
     "targets": [
       "doProlog",
-      "storeEntityValue"
+      "storeEntityValue",
+      "internalEntityProcessor",
+      "externalParEntProcessor",
+      "prologProcessor",
+      "processInternalEntity"
     ],
     "files": {
       "doProlog": [
@@ -518,9 +1060,30 @@
       ],
       "storeEntityValue": [
         "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ],
+      "internalEntityProcessor": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ],
+      "externalParEntProcessor": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ],
+      "prologProcessor": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
+      ],
+      "processInternalEntity": [
+        "libexpat-R_2_2_0/expat/lib/xmlparse.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "externalParEntProcessor": [
+        {
+          "file": "libexpat-R_2_2_0/expat/lib/xmlparse.c",
+          "guards": [
+            "ifdef XML_DTD"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -561,38 +1124,119 @@
     "cve": "CVE-2019-3855",
     "status": "ok",
     "targets": [
-      "sftp_bin2attr",
-      "sftp_fsync",
       "_libssh2_packet_add",
-      "sftp_packet_read",
+      "sftp_bin2attr",
       "sftp_init",
-      "sftp_packetlist_flush",
-      "_libssh2_transport_read"
+      "_libssh2_transport_read",
+      "sftp_packet_require",
+      "comp_method_zlib_decomp",
+      "sftp_packet_requirev",
+      "sftp_open",
+      "sftp_read",
+      "sftp_readdir",
+      "sftp_fstat",
+      "sftp_stat",
+      "sftp_symlink",
+      "sftp_write",
+      "sftp_fsync",
+      "sftp_fstatvfs",
+      "sftp_statvfs",
+      "sftp_mkdir",
+      "sftp_rmdir",
+      "sftp_packet_add",
+      "sftp_packet_read",
+      "sftp_close_handle",
+      "sftp_unlink",
+      "sftp_rename",
+      "sftp_attr2bin"
     ],
     "files": {
-      "sftp_bin2attr": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
-      "sftp_fsync": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
       "_libssh2_packet_add": [
         "libssh2-libssh2-1.8.0/src/packet.c"
       ],
-      "sftp_packet_read": [
+      "sftp_bin2attr": [
         "libssh2-libssh2-1.8.0/src/sftp.c"
       ],
       "sftp_init": [
         "libssh2-libssh2-1.8.0/src/sftp.c"
       ],
-      "sftp_packetlist_flush": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
       "_libssh2_transport_read": [
         "libssh2-libssh2-1.8.0/src/transport.c"
+      ],
+      "sftp_packet_require": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "comp_method_zlib_decomp": [
+        "libssh2-libssh2-1.8.0/src/comp.c"
+      ],
+      "sftp_packet_requirev": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_open": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_readdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fstat": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_stat": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_symlink": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_write": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fsync": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fstatvfs": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_statvfs": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_mkdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_rmdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packet_add": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packet_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_close_handle": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_unlink": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_rename": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_attr2bin": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "comp_method_zlib_decomp": [
+        {
+          "file": "libssh2-libssh2-1.8.0/src/comp.c",
+          "guards": [
+            "ifdef LIBSSH2_HAVE_ZLIB"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -609,38 +1253,119 @@
     "cve": "CVE-2019-3856",
     "status": "ok",
     "targets": [
-      "sftp_bin2attr",
-      "sftp_fsync",
       "_libssh2_packet_add",
-      "sftp_packet_read",
+      "sftp_bin2attr",
       "sftp_init",
-      "sftp_packetlist_flush",
-      "_libssh2_transport_read"
+      "_libssh2_transport_read",
+      "sftp_packet_require",
+      "comp_method_zlib_decomp",
+      "sftp_packet_requirev",
+      "sftp_open",
+      "sftp_read",
+      "sftp_readdir",
+      "sftp_fstat",
+      "sftp_stat",
+      "sftp_symlink",
+      "sftp_write",
+      "sftp_fsync",
+      "sftp_fstatvfs",
+      "sftp_statvfs",
+      "sftp_mkdir",
+      "sftp_rmdir",
+      "sftp_packet_add",
+      "sftp_packet_read",
+      "sftp_close_handle",
+      "sftp_unlink",
+      "sftp_rename",
+      "sftp_attr2bin"
     ],
     "files": {
-      "sftp_bin2attr": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
-      "sftp_fsync": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
       "_libssh2_packet_add": [
         "libssh2-libssh2-1.8.0/src/packet.c"
       ],
-      "sftp_packet_read": [
+      "sftp_bin2attr": [
         "libssh2-libssh2-1.8.0/src/sftp.c"
       ],
       "sftp_init": [
         "libssh2-libssh2-1.8.0/src/sftp.c"
       ],
-      "sftp_packetlist_flush": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
       "_libssh2_transport_read": [
         "libssh2-libssh2-1.8.0/src/transport.c"
+      ],
+      "sftp_packet_require": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "comp_method_zlib_decomp": [
+        "libssh2-libssh2-1.8.0/src/comp.c"
+      ],
+      "sftp_packet_requirev": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_open": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_readdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fstat": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_stat": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_symlink": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_write": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fsync": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fstatvfs": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_statvfs": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_mkdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_rmdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packet_add": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packet_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_close_handle": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_unlink": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_rename": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_attr2bin": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "comp_method_zlib_decomp": [
+        {
+          "file": "libssh2-libssh2-1.8.0/src/comp.c",
+          "guards": [
+            "ifdef LIBSSH2_HAVE_ZLIB"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -657,38 +1382,119 @@
     "cve": "CVE-2019-3858",
     "status": "ok",
     "targets": [
-      "sftp_bin2attr",
-      "sftp_fsync",
       "_libssh2_packet_add",
-      "sftp_packet_read",
+      "sftp_bin2attr",
       "sftp_init",
-      "sftp_packetlist_flush",
-      "_libssh2_transport_read"
+      "_libssh2_transport_read",
+      "sftp_packet_require",
+      "comp_method_zlib_decomp",
+      "sftp_packet_requirev",
+      "sftp_open",
+      "sftp_read",
+      "sftp_readdir",
+      "sftp_fstat",
+      "sftp_stat",
+      "sftp_symlink",
+      "sftp_write",
+      "sftp_fsync",
+      "sftp_fstatvfs",
+      "sftp_statvfs",
+      "sftp_mkdir",
+      "sftp_rmdir",
+      "sftp_packet_add",
+      "sftp_packet_read",
+      "sftp_close_handle",
+      "sftp_unlink",
+      "sftp_rename",
+      "sftp_attr2bin"
     ],
     "files": {
-      "sftp_bin2attr": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
-      "sftp_fsync": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
       "_libssh2_packet_add": [
         "libssh2-libssh2-1.8.0/src/packet.c"
       ],
-      "sftp_packet_read": [
+      "sftp_bin2attr": [
         "libssh2-libssh2-1.8.0/src/sftp.c"
       ],
       "sftp_init": [
         "libssh2-libssh2-1.8.0/src/sftp.c"
       ],
-      "sftp_packetlist_flush": [
-        "libssh2-libssh2-1.8.0/src/sftp.c"
-      ],
       "_libssh2_transport_read": [
         "libssh2-libssh2-1.8.0/src/transport.c"
+      ],
+      "sftp_packet_require": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "comp_method_zlib_decomp": [
+        "libssh2-libssh2-1.8.0/src/comp.c"
+      ],
+      "sftp_packet_requirev": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_open": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_readdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fstat": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_stat": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_symlink": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_write": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fsync": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_fstatvfs": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_statvfs": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_mkdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_rmdir": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packet_add": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_packet_read": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_close_handle": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_unlink": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_rename": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
+      ],
+      "sftp_attr2bin": [
+        "libssh2-libssh2-1.8.0/src/sftp.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "comp_method_zlib_decomp": [
+        {
+          "file": "libssh2-libssh2-1.8.0/src/comp.c",
+          "guards": [
+            "ifdef LIBSSH2_HAVE_ZLIB"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -771,9 +1577,47 @@
   {
     "cve": "CVE-2019-6111",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "sink",
+      "main",
+      "tolocal",
+      "verifydir",
+      "toremote",
+      "rsource",
+      "run_err"
+    ],
+    "files": {
+      "main": [
+        "openssh-portable-V_7_4_P1/hmac.c",
+        "openssh-portable-V_7_4_P1/logintest.c",
+        "openssh-portable-V_7_4_P1/scp.c"
+      ],
+      "tolocal": [
+        "openssh-portable-V_7_4_P1/scp.c"
+      ],
+      "verifydir": [
+        "openssh-portable-V_7_4_P1/scp.c"
+      ],
+      "toremote": [
+        "openssh-portable-V_7_4_P1/scp.c"
+      ],
+      "rsource": [
+        "openssh-portable-V_7_4_P1/scp.c"
+      ],
+      "run_err": [
+        "openssh-portable-V_7_4_P1/scp.c"
+      ]
+    },
+    "guards": {
+      "main": [
+        {
+          "file": "openssh-portable-V_7_4_P1/hmac.c",
+          "guards": [
+            "ifdef TEST"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -784,7 +1628,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2019-8457",
@@ -822,8 +1666,22 @@
   {
     "cve": "CVE-2020-10648",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "fit_config_check_sig",
+      "fit_image_verify_required_sigs",
+      "fit_config_verify_sig"
+    ],
+    "files": {
+      "fit_config_check_sig": [
+        "u-boot-2020.04/common/image-sig.c"
+      ],
+      "fit_image_verify_required_sigs": [
+        "u-boot-2020.04/common/image-sig.c"
+      ],
+      "fit_config_verify_sig": [
+        "u-boot-2020.04/common/image-sig.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -835,13 +1693,35 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2020-11655",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "resolveOrderByTermToExprList",
+      "columnTypeImpl",
+      "sqlite3ColumnsFromExprList",
+      "sqlite3Select",
+      "resetAccumulator"
+    ],
+    "files": {
+      "resolveOrderByTermToExprList": [
+        "sqlite-version-3.22.0/src/resolve.c"
+      ],
+      "columnTypeImpl": [
+        "sqlite-version-3.22.0/src/select.c"
+      ],
+      "sqlite3ColumnsFromExprList": [
+        "sqlite-version-3.22.0/src/select.c"
+      ],
+      "sqlite3Select": [
+        "sqlite-version-3.22.0/src/select.c"
+      ],
+      "resetAccumulator": [
+        "sqlite-version-3.22.0/src/select.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -853,7 +1733,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2020-13434",
@@ -940,10 +1820,14 @@
     "cve": "CVE-2020-1971",
     "status": "ok",
     "targets": [
+      "GENERAL_NAME_cmp",
       "TS_RESP_verify_response",
       "TS_RESP_verify_token"
     ],
     "files": {
+      "GENERAL_NAME_cmp": [
+        "openssl-OpenSSL_1_1_1g/crypto/x509v3/v3_genn.c"
+      ],
       "TS_RESP_verify_response": [
         "openssl-OpenSSL_1_1_1g/crypto/ts/ts_rsp_verify.c"
       ],
@@ -991,9 +1875,60 @@
   {
     "cve": "CVE-2020-25681",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "sort_rrset",
+      "validate_rrset",
+      "get_rdata",
+      "check_date_range"
+    ],
+    "files": {
+      "sort_rrset": [
+        "dnsmasq-2.82/src/dnssec.c"
+      ],
+      "validate_rrset": [
+        "dnsmasq-2.82/src/dnssec.c"
+      ],
+      "get_rdata": [
+        "dnsmasq-2.82/src/dnssec.c"
+      ],
+      "check_date_range": [
+        "dnsmasq-2.82/src/dnssec.c"
+      ]
+    },
+    "guards": {
+      "sort_rrset": [
+        {
+          "file": "dnsmasq-2.82/src/dnssec.c",
+          "guards": [
+            "ifdef HAVE_DNSSEC"
+          ]
+        }
+      ],
+      "validate_rrset": [
+        {
+          "file": "dnsmasq-2.82/src/dnssec.c",
+          "guards": [
+            "ifdef HAVE_DNSSEC"
+          ]
+        }
+      ],
+      "get_rdata": [
+        {
+          "file": "dnsmasq-2.82/src/dnssec.c",
+          "guards": [
+            "ifdef HAVE_DNSSEC"
+          ]
+        }
+      ],
+      "check_date_range": [
+        {
+          "file": "dnsmasq-2.82/src/dnssec.c",
+          "guards": [
+            "ifdef HAVE_DNSSEC"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 78,
       "defines": [
@@ -1046,7 +1981,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "guarded by ifdef HAVE_DNSSEC;ifdef HAVE_DNSSEC;ifdef HAVE_DNSSEC;ifdef HAVE_DNSSEC; -D flags cannot prove the macro is undefined (config.h is not on the command line)"
   },
   {
     "cve": "CVE-2020-25684",
@@ -1076,11 +2011,15 @@
     "cve": "CVE-2020-8177",
     "status": "ok",
     "targets": [
-      "tool_header_cb"
+      "tool_header_cb",
+      "getparameter"
     ],
     "files": {
       "tool_header_cb": [
         "curl-curl-7_64_0/src/tool_cb_hdr.c"
+      ],
+      "getparameter": [
+        "curl-curl-7_64_0/src/tool_getparam.c"
       ]
     },
     "guards": {},
@@ -1099,9 +2038,64 @@
   {
     "cve": "CVE-2021-20227",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "sqlite3Select",
+      "sqlite3WindowRewrite",
+      "havingToWhereExprCb",
+      "sqlite3FinishCoding",
+      "flattenSubquery",
+      "analyzeAggregate",
+      "constInsert",
+      "sqlite3FunctionUsesThisSrc",
+      "addAggInfoFunc"
+    ],
+    "files": {
+      "sqlite3Select": [
+        "sqlite-version-3.31.1/src/select.c"
+      ],
+      "sqlite3WindowRewrite": [
+        "sqlite-version-3.31.1/src/window.c"
+      ],
+      "havingToWhereExprCb": [
+        "sqlite-version-3.31.1/src/select.c"
+      ],
+      "sqlite3FinishCoding": [
+        "sqlite-version-3.31.1/src/build.c"
+      ],
+      "flattenSubquery": [
+        "sqlite-version-3.31.1/src/select.c"
+      ],
+      "analyzeAggregate": [
+        "sqlite-version-3.31.1/src/expr.c"
+      ],
+      "constInsert": [
+        "sqlite-version-3.31.1/src/select.c"
+      ],
+      "sqlite3FunctionUsesThisSrc": [
+        "sqlite-version-3.31.1/src/expr.c"
+      ],
+      "addAggInfoFunc": [
+        "sqlite-version-3.31.1/src/expr.c"
+      ]
+    },
+    "guards": {
+      "sqlite3WindowRewrite": [
+        {
+          "file": "sqlite-version-3.31.1/src/window.c",
+          "guards": [
+            "ifndef SQLITE_OMIT_WINDOWFUNC"
+          ]
+        }
+      ],
+      "flattenSubquery": [
+        {
+          "file": "sqlite-version-3.31.1/src/select.c",
+          "guards": [
+            "if !defined(SQLITE_OMIT_SUBQUERY) || !defined(SQLITE_OMIT_VIEW)"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 2,
       "defines": [
@@ -1122,7 +2116,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-23840",
@@ -1160,10 +2154,14 @@
     "cve": "CVE-2021-31571",
     "status": "ok",
     "targets": [
-      "xQueueGenericCreate"
+      "xQueueGenericCreate",
+      "xQueueGenericReset"
     ],
     "files": {
       "xQueueGenericCreate": [
+        "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/queue.c"
+      ],
+      "xQueueGenericReset": [
         "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/queue.c"
       ]
     },
@@ -1193,10 +2191,14 @@
     "cve": "CVE-2021-31572",
     "status": "ok",
     "targets": [
-      "xStreamBufferGenericCreate"
+      "xStreamBufferGenericCreate",
+      "prvInitialiseNewStreamBuffer"
     ],
     "files": {
       "xStreamBufferGenericCreate": [
+        "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/stream_buffer.c"
+      ],
+      "prvInitialiseNewStreamBuffer": [
         "FreeRTOS-Kernel-10.2.1/FreeRTOS/Source/stream_buffer.c"
       ]
     },
@@ -1259,8 +2261,14 @@
   {
     "cve": "CVE-2021-3450",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "check_chain_extensions"
+    ],
+    "files": {
+      "check_chain_extensions": [
+        "openssl-OpenSSL_1_1_1g/crypto/x509/x509_vfy.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 34,
@@ -1292,33 +2300,17 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "log compiled 2% of the project's sources - too partial to argue absence from"
   },
   {
     "cve": "CVE-2021-3517",
     "status": "ok",
     "targets": [
-      "test_htmlDocContentDumpFormatOutput",
-      "test_xmlDebugDumpNode",
-      "test_xmlParseBalancedChunkMemory",
-      "test_xmlIO",
-      "test_xmlSaveTree"
+      "xmlEncodeEntitiesInternal"
     ],
     "files": {
-      "test_htmlDocContentDumpFormatOutput": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlDebugDumpNode": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlParseBalancedChunkMemory": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlIO": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlSaveTree": [
-        "libxml2-2.9.10/testapi.c"
+      "xmlEncodeEntitiesInternal": [
+        "libxml2-2.9.10/entities.c"
       ]
     },
     "guards": {},
@@ -1338,30 +2330,23 @@
     "cve": "CVE-2021-3518",
     "status": "ok",
     "targets": [
-      "test_htmlDocContentDumpFormatOutput",
-      "test_xmlDebugDumpNode",
-      "test_xmlParseBalancedChunkMemory",
-      "test_xmlIO",
-      "test_xmlSaveTree"
+      "xmlXIncludeDoProcess"
     ],
     "files": {
-      "test_htmlDocContentDumpFormatOutput": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlDebugDumpNode": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlParseBalancedChunkMemory": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlIO": [
-        "libxml2-2.9.10/testapi.c"
-      ],
-      "test_xmlSaveTree": [
-        "libxml2-2.9.10/testapi.c"
+      "xmlXIncludeDoProcess": [
+        "libxml2-2.9.10/xinclude.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "xmlXIncludeDoProcess": [
+        {
+          "file": "libxml2-2.9.10/xinclude.c",
+          "guards": [
+            "ifdef LIBXML_XINCLUDE_ENABLED"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -1407,26 +2392,66 @@
     "status": "ok",
     "targets": [
       "add_extendedopt",
-      "recv_msg_userauth_failure",
       "cli_auth_pubkey",
-      "cli_getopts"
+      "cli_getopts",
+      "recv_msg_userauth_info_request",
+      "cli_auth_password",
+      "cli_session_init",
+      "send_msg_userauth_pubkey",
+      "recv_msg_userauth_success"
     ],
     "files": {
       "add_extendedopt": [
         "dropbear-DROPBEAR_2020.81/cli-runopts.c"
-      ],
-      "recv_msg_userauth_failure": [
-        "dropbear-DROPBEAR_2020.81/cli-auth.c"
       ],
       "cli_auth_pubkey": [
         "dropbear-DROPBEAR_2020.81/cli-authpubkey.c"
       ],
       "cli_getopts": [
         "dropbear-DROPBEAR_2020.81/cli-runopts.c"
+      ],
+      "recv_msg_userauth_info_request": [
+        "dropbear-DROPBEAR_2020.81/cli-authinteract.c"
+      ],
+      "cli_auth_password": [
+        "dropbear-DROPBEAR_2020.81/cli-authpasswd.c"
+      ],
+      "cli_session_init": [
+        "dropbear-DROPBEAR_2020.81/cli-session.c"
+      ],
+      "send_msg_userauth_pubkey": [
+        "dropbear-DROPBEAR_2020.81/cli-authpubkey.c"
+      ],
+      "recv_msg_userauth_success": [
+        "dropbear-DROPBEAR_2020.81/cli-auth.c"
       ]
     },
     "guards": {
       "cli_auth_pubkey": [
+        {
+          "file": "dropbear-DROPBEAR_2020.81/cli-authpubkey.c",
+          "guards": [
+            "if DROPBEAR_CLI_PUBKEY_AUTH"
+          ]
+        }
+      ],
+      "recv_msg_userauth_info_request": [
+        {
+          "file": "dropbear-DROPBEAR_2020.81/cli-authinteract.c",
+          "guards": [
+            "if DROPBEAR_CLI_INTERACT_AUTH"
+          ]
+        }
+      ],
+      "cli_auth_password": [
+        {
+          "file": "dropbear-DROPBEAR_2020.81/cli-authpasswd.c",
+          "guards": [
+            "if DROPBEAR_CLI_PASSWORD_AUTH"
+          ]
+        }
+      ],
+      "send_msg_userauth_pubkey": [
         {
           "file": "dropbear-DROPBEAR_2020.81/cli-authpubkey.c",
           "guards": [
@@ -1534,9 +2559,26 @@
   {
     "cve": "CVE-2021-3999",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "__getcwd"
+    ],
+    "files": {
+      "__getcwd": [
+        "glibc-glibc-2.28/io/getcwd.c",
+        "glibc-glibc-2.28/sysdeps/mach/hurd/dl-sysdep.c",
+        "glibc-glibc-2.28/sysdeps/mach/hurd/getcwd.c"
+      ]
+    },
+    "guards": {
+      "__getcwd": [
+        {
+          "file": "glibc-glibc-2.28/sysdeps/mach/hurd/dl-sysdep.c",
+          "guards": [
+            "ifdef SHARED"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -1544,16 +2586,24 @@
       "compiled": []
     },
     "build_coverage": 0.0,
-    "included_by": [],
+    "included_by": [
+      "glibc-glibc-2.28/sysdeps/unix/sysv/linux/dl-getcwd.c"
+    ],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-41617",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "subprocess"
+    ],
+    "files": {
+      "subprocess": [
+        "openssh-portable-V_8_2_P1/auth.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1565,13 +2615,19 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-42374",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "unpack_lzma_stream"
+    ],
+    "files": {
+      "unpack_lzma_stream": [
+        "busybox-1_30_1/archival/libarchive/decompress_unlzma.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1583,13 +2639,19 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-42375",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "readtoken1"
+    ],
+    "files": {
+      "readtoken1": [
+        "busybox-1_31_1/shell/ash.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1601,13 +2663,23 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-42376",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "parse_stream",
+      "encode_string"
+    ],
+    "files": {
+      "parse_stream": [
+        "busybox-1_31_1/shell/hush.c"
+      ],
+      "encode_string": [
+        "busybox-1_31_1/shell/hush.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1619,7 +2691,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2021-42378",
@@ -1673,10 +2745,14 @@
     "cve": "CVE-2021-42380",
     "status": "ok",
     "targets": [
-      "evaluate"
+      "evaluate",
+      "fsrealloc"
     ],
     "files": {
       "evaluate": [
+        "busybox-1_33_1/editors/awk.c"
+      ],
+      "fsrealloc": [
         "busybox-1_33_1/editors/awk.c"
       ]
     },
@@ -1720,8 +2796,62 @@
   {
     "cve": "CVE-2021-44228",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "format",
+      "MessagePatternConverter",
+      "loadNoLookups",
+      "newInstance",
+      "loadMessageRenderer",
+      "build",
+      "toString",
+      "JndiManager",
+      "lookup",
+      "createManager"
+    ],
+    "files": {
+      "format": [
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/Layout.java",
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/PatternLayout.java",
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/SimpleLayout.java"
+      ],
+      "MessagePatternConverter": [
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/pattern/MessagePatternConverter.java"
+      ],
+      "loadNoLookups": [
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/pattern/MessagePatternConverter.java"
+      ],
+      "newInstance": [
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/pattern/Log4j1MdcPatternConverter.java",
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/pattern/Log4j1NdcPatternConverter.java",
+        "logging-log4j2-rel-2.14.1/log4j-api/src/main/java/org/apache/logging/log4j/message/MapMessage.java"
+      ],
+      "loadMessageRenderer": [
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/pattern/MessagePatternConverter.java"
+      ],
+      "build": [
+        "logging-log4j2-rel-2.14.1/log4j-cassandra/src/main/java/org/apache/logging/log4j/cassandra/CassandraAppender.java",
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/appender/AppenderSet.java",
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/appender/AsyncAppender.java"
+      ],
+      "toString": [
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/Priority.java",
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/config/InputStreamWrapper.java",
+        "logging-log4j2-rel-2.14.1/log4j-1.2-api/src/main/java/org/apache/log4j/config/Log4j1ConfigurationConverter.java"
+      ],
+      "JndiManager": [
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/net/JndiManager.java"
+      ],
+      "lookup": [
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/appender/mom/JmsManager.java",
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/appender/rolling/FileExtension.java",
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/lookup/AbstractLookup.java"
+      ],
+      "createManager": [
+        "logging-log4j2-rel-2.14.1/log4j-cassandra/src/main/java/org/apache/logging/log4j/cassandra/CassandraManager.java",
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/appender/ConsoleAppender.java",
+        "logging-log4j2-rel-2.14.1/log4j-core/src/main/java/org/apache/logging/log4j/core/appender/FileManager.java"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1733,14 +2863,37 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-0547",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "plugin_call_ssl"
+    ],
+    "files": {
+      "plugin_call_ssl": [
+        "openvpn-2.5.5/src/openvpn/plugin.c",
+        "openvpn-2.5.5/src/openvpn/plugin.h"
+      ]
+    },
+    "guards": {
+      "plugin_call_ssl": [
+        {
+          "file": "openvpn-2.5.5/src/openvpn/plugin.c",
+          "guards": [
+            "ifdef ENABLE_PLUGIN"
+          ]
+        },
+        {
+          "file": "openvpn-2.5.5/src/openvpn/plugin.h",
+          "guards": [
+            "ifndef OPENVPN_PLUGIN_H",
+            "else /* ifdef ENABLE_PLUGIN */"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -1748,10 +2901,16 @@
       "compiled": []
     },
     "build_coverage": 0.0,
-    "included_by": [],
+    "included_by": [
+      "openvpn-2.5.5/sample/sample-plugins/client-connect/sample-client-connect.c",
+      "openvpn-2.5.5/sample/sample-plugins/defer/simple.c",
+      "openvpn-2.5.5/sample/sample-plugins/keying-material-exporter-demo/keyingmaterialexporter.c",
+      "openvpn-2.5.5/sample/sample-plugins/log/log.c",
+      "openvpn-2.5.5/sample/sample-plugins/log/log_v3.c"
+    ],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-0778",
@@ -1823,7 +2982,11 @@
   {
     "cve": "CVE-2022-1292",
     "status": "ok",
-    "targets": [],
+    "targets": [
+      "link_hash_crl",
+      "link_hash_cert",
+      "check_file"
+    ],
     "files": {},
     "guards": {},
     "build": {
@@ -1836,12 +2999,17 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-2068",
     "status": "ok",
-    "targets": [],
+    "targets": [
+      "link_hash_cert",
+      "hash_dir",
+      "check_file",
+      "link_hash_crl"
+    ],
     "files": {},
     "guards": {},
     "build": {
@@ -1874,13 +3042,47 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no mitigation evidence"
   },
   {
     "cve": "CVE-2022-22576",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "Curl_ssl_config_matches",
+      "safecmp",
+      "conn_free",
+      "ConnectionExists",
+      "create_conn",
+      "raw_tolower",
+      "Curl_strntolower",
+      "blobcmp"
+    ],
+    "files": {
+      "Curl_ssl_config_matches": [
+        "curl-curl-7_79_1/lib/vtls/vtls.c"
+      ],
+      "safecmp": [
+        "curl-curl-7_79_1/lib/vtls/vtls.c"
+      ],
+      "conn_free": [
+        "curl-curl-7_79_1/lib/url.c"
+      ],
+      "ConnectionExists": [
+        "curl-curl-7_79_1/lib/url.c"
+      ],
+      "create_conn": [
+        "curl-curl-7_79_1/lib/url.c"
+      ],
+      "raw_tolower": [
+        "curl-curl-7_79_1/lib/strcase.c"
+      ],
+      "Curl_strntolower": [
+        "curl-curl-7_79_1/lib/strcase.c"
+      ],
+      "blobcmp": [
+        "curl-curl-7_79_1/lib/vtls/vtls.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1892,7 +3094,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-22822",
@@ -1939,8 +3141,18 @@
   {
     "cve": "CVE-2022-22965",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "CachedIntrospectionResults",
+      "introspectInterfaces"
+    ],
+    "files": {
+      "CachedIntrospectionResults": [
+        "spring-framework-5.3.17/spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java"
+      ],
+      "introspectInterfaces": [
+        "spring-framework-5.3.17/spring-beans/src/main/java/org/springframework/beans/CachedIntrospectionResults.java"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1952,13 +3164,19 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-23303",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "sae_derive_pwe_ecc"
+    ],
+    "files": {
+      "sae_derive_pwe_ecc": [
+        "wpa_supplicant-2.9/src/common/sae.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -1970,7 +3188,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-23852",
@@ -1999,9 +3217,29 @@
   {
     "cve": "CVE-2022-25235",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "nameLength",
+      "prologTok",
+      "attributeValueTok",
+      "entityValueTok",
+      "getAtts",
+      "updatePosition"
+    ],
+    "files": {
+      "nameLength": [
+        "libexpat-R_2_2_10/expat/lib/xmltok_impl.c"
+      ]
+    },
+    "guards": {
+      "nameLength": [
+        {
+          "file": "libexpat-R_2_2_10/expat/lib/xmltok_impl.c",
+          "guards": [
+            "ifdef XML_TOK_IMPL_C"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2009,19 +3247,33 @@
       "compiled": []
     },
     "build_coverage": 0.0,
-    "included_by": [],
+    "included_by": [
+      "libexpat-R_2_2_10/expat/lib/xmltok.c"
+    ],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-25236",
     "status": "ok",
     "targets": [
-      "XML_ParserCreateNS"
+      "XML_ParserCreateNS",
+      "XML_ExternalEntityParserCreate",
+      "doCdataSection",
+      "addBinding"
     ],
     "files": {
       "XML_ParserCreateNS": [
+        "libexpat-R_2_4_1/expat/lib/xmlparse.c"
+      ],
+      "XML_ExternalEntityParserCreate": [
+        "libexpat-R_2_4_1/expat/lib/xmlparse.c"
+      ],
+      "doCdataSection": [
+        "libexpat-R_2_4_1/expat/lib/xmlparse.c"
+      ],
+      "addBinding": [
         "libexpat-R_2_4_1/expat/lib/xmlparse.c"
       ]
     },
@@ -2089,9 +3341,28 @@
   {
     "cve": "CVE-2022-28391",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "parse_reply",
+      "sockaddr2str"
+    ],
+    "files": {
+      "parse_reply": [
+        "busybox-1_35_0/networking/nslookup.c"
+      ],
+      "sockaddr2str": [
+        "busybox-1_35_0/libbb/xconnect.c"
+      ]
+    },
+    "guards": {
+      "parse_reply": [
+        {
+          "file": "busybox-1_35_0/networking/nslookup.c",
+          "guards": [
+            "else /****** A version from LEDE / OpenWRT ******/"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2102,40 +3373,84 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-29824",
     "status": "ok",
     "targets": [
+      "xmlBufCCat",
+      "xmlBufferCCat",
       "xmlBufResize",
       "xmlBufGrowInternal",
-      "xmlBufCCat",
       "xmlBufferGrow",
-      "xmlBufferCCat",
+      "xmlBufferResize",
       "xmlBufAdd",
-      "xmlBufferAdd"
+      "xmlBufCreateSize",
+      "xmlBufferCreateSize",
+      "xmlBufferAddHead",
+      "xmlBufferWriteQuotedString",
+      "xmlBufCat",
+      "xmlBufferWriteChar",
+      "xmlBufAddHead",
+      "xmlBufferCreateStatic",
+      "xmlBufferAdd",
+      "xmlBufferDetach",
+      "xmlBufferFree"
     ],
     "files": {
+      "xmlBufCCat": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufferCCat": [
+        "libxml2-2.9.10/tree.c"
+      ],
       "xmlBufResize": [
         "libxml2-2.9.10/buf.c"
       ],
       "xmlBufGrowInternal": [
         "libxml2-2.9.10/buf.c"
       ],
-      "xmlBufCCat": [
-        "libxml2-2.9.10/buf.c"
-      ],
       "xmlBufferGrow": [
         "libxml2-2.9.10/tree.c"
       ],
-      "xmlBufferCCat": [
+      "xmlBufferResize": [
         "libxml2-2.9.10/tree.c"
       ],
       "xmlBufAdd": [
         "libxml2-2.9.10/buf.c"
       ],
+      "xmlBufCreateSize": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufferCreateSize": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufferAddHead": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufferWriteQuotedString": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufCat": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufferWriteChar": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufAddHead": [
+        "libxml2-2.9.10/buf.c"
+      ],
+      "xmlBufferCreateStatic": [
+        "libxml2-2.9.10/tree.c"
+      ],
       "xmlBufferAdd": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufferDetach": [
+        "libxml2-2.9.10/tree.c"
+      ],
+      "xmlBufferFree": [
         "libxml2-2.9.10/tree.c"
       ]
     },
@@ -2155,8 +3470,14 @@
   {
     "cve": "CVE-2022-32221",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "Curl_vsetopt"
+    ],
+    "files": {
+      "Curl_vsetopt": [
+        "curl-curl-7_79_1/lib/setopt.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2168,13 +3489,19 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-37434",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "inflate"
+    ],
+    "files": {
+      "inflate": [
+        "zlib-1.2.12/inflate.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2186,20 +3513,80 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-40303",
     "status": "ok",
     "targets": [
-      "nodePush",
-      "xmlParseAttValueComplex"
+      "xmlParseAttValueInternal",
+      "xmlParsePI",
+      "xmlParseAttValueComplex",
+      "xmlParseNmtoken",
+      "xmlParseStringName",
+      "xmlParseSystemLiteral",
+      "xmlParseCDSect",
+      "xmlParseNCNameComplex",
+      "xmlParsePubidLiteral",
+      "xmlParseCommentComplex",
+      "xmlParseNameComplex",
+      "xmlParseName",
+      "xmlParseNCName",
+      "xmlParseEntityValue",
+      "xmlParseComment",
+      "xmlFatalErr",
+      "xmlParseElementEnd"
     ],
     "files": {
-      "nodePush": [
+      "xmlParseAttValueInternal": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParsePI": [
         "libxml2-2.9.14/parser.c"
       ],
       "xmlParseAttValueComplex": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseNmtoken": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseStringName": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseSystemLiteral": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseCDSect": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseNCNameComplex": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParsePubidLiteral": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseCommentComplex": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseNameComplex": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseName": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseNCName": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseEntityValue": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseComment": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlFatalErr": [
+        "libxml2-2.9.14/parser.c"
+      ],
+      "xmlParseElementEnd": [
         "libxml2-2.9.14/parser.c"
       ]
     },
@@ -2219,8 +3606,18 @@
   {
     "cve": "CVE-2022-40304",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "xmlFreeEntity",
+      "xmlCreateEntity"
+    ],
+    "files": {
+      "xmlFreeEntity": [
+        "libxml2-2.9.14/entities.c"
+      ],
+      "xmlCreateEntity": [
+        "libxml2-2.9.14/entities.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2232,13 +3629,127 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-41742",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "ngx_http_mp4_read_moov_atom",
+      "ngx_http_mp4_read_stsd_atom",
+      "ngx_http_mp4_read_mvhd_atom",
+      "ngx_http_mp4_read_mdhd_atom",
+      "ngx_http_mp4_read_hdlr_atom",
+      "ngx_http_mp4_read_vmhd_atom",
+      "ngx_http_mp4_read_smhd_atom",
+      "ngx_http_mp4_read_dinf_atom",
+      "ngx_http_mp4_read_ctts_atom",
+      "ngx_http_mp4_read_stsc_atom",
+      "ngx_http_mp4_read_stco_atom",
+      "ngx_http_mp4_read_co64_atom",
+      "ngx_http_mp4_update_mdat_atom",
+      "ngx_http_mp4_update_mdia_atom",
+      "ngx_http_mp4_update_stbl_atom",
+      "ngx_http_mp4_update_stts_atom",
+      "ngx_http_mp4_crop_stts_data",
+      "ngx_http_mp4_crop_stsc_data",
+      "ngx_http_mp4_merge_conf",
+      "ngx_http_mp4_read_ftyp_atom",
+      "ngx_http_mp4_read_mdat_atom",
+      "ngx_http_mp4_read_tkhd_atom",
+      "ngx_http_mp4_read_mdia_atom",
+      "ngx_http_mp4_read_minf_atom",
+      "ngx_http_mp4_read_stbl_atom",
+      "ngx_http_mp4_read_stts_atom",
+      "ngx_http_mp4_read_stss_atom",
+      "ngx_http_mp4_read_stsz_atom"
+    ],
+    "files": {
+      "ngx_http_mp4_read_moov_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stsd_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_mvhd_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_mdhd_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_hdlr_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_vmhd_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_smhd_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_dinf_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_ctts_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stsc_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stco_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_co64_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_update_mdat_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_update_mdia_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_update_stbl_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_update_stts_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_crop_stts_data": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_crop_stsc_data": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_merge_conf": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_ftyp_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_mdat_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_tkhd_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_mdia_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_minf_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stbl_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stts_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stss_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ],
+      "ngx_http_mp4_read_stsz_atom": [
+        "nginx-release-1.20.1/src/http/modules/ngx_http_mp4_module.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2250,14 +3761,67 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-4304",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "rsa_ossl_private_decrypt",
+      "bn_sub_words",
+      "rsa_ossl_public_decrypt",
+      "BN_BLINDING_invert_ex",
+      "rsa_ossl_private_encrypt",
+      "BN_BLINDING_update",
+      "bn_wexpand",
+      "rsa_blinding_invert"
+    ],
+    "files": {
+      "rsa_ossl_private_decrypt": [
+        "openssl-openssl-3.0.7/crypto/rsa/rsa_ossl.c"
+      ],
+      "bn_sub_words": [
+        "openssl-openssl-3.0.7/crypto/bn/bn_asm.c",
+        "openssl-openssl-3.0.7/crypto/bn/asm/x86_64-gcc.c",
+        "openssl-openssl-3.0.7/crypto/bn/asm/x86_64-gcc.c"
+      ],
+      "rsa_ossl_public_decrypt": [
+        "openssl-openssl-3.0.7/crypto/rsa/rsa_ossl.c"
+      ],
+      "BN_BLINDING_invert_ex": [
+        "openssl-openssl-3.0.7/crypto/bn/bn_blind.c"
+      ],
+      "rsa_ossl_private_encrypt": [
+        "openssl-openssl-3.0.7/crypto/rsa/rsa_ossl.c"
+      ],
+      "BN_BLINDING_update": [
+        "openssl-openssl-3.0.7/crypto/bn/bn_blind.c"
+      ],
+      "bn_wexpand": [
+        "openssl-openssl-3.0.7/crypto/bn/bn_lib.c"
+      ],
+      "rsa_blinding_invert": [
+        "openssl-openssl-3.0.7/crypto/rsa/rsa_ossl.c"
+      ]
+    },
+    "guards": {
+      "bn_sub_words": [
+        {
+          "file": "openssl-openssl-3.0.7/crypto/bn/asm/x86_64-gcc.c",
+          "guards": [
+            "else ",
+            "else "
+          ]
+        },
+        {
+          "file": "openssl-openssl-3.0.7/crypto/bn/asm/x86_64-gcc.c",
+          "guards": [
+            "else ",
+            "ifndef SIMICS"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2268,12 +3832,14 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2022-46908",
     "status": "ok",
-    "targets": [],
+    "targets": [
+      "safeModeAuth"
+    ],
     "files": {},
     "guards": {},
     "build": {
@@ -2286,7 +3852,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-0215",
@@ -2371,8 +3937,14 @@
   {
     "cve": "CVE-2023-0286",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "GENERAL_NAME_cmp"
+    ],
+    "files": {
+      "GENERAL_NAME_cmp": [
+        "openssl-openssl-3.0.7/crypto/x509/v3_genn.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2384,14 +3956,53 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-27533",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "check_telnet_options",
+      "str_is_nonascii",
+      "printsub"
+    ],
+    "files": {
+      "check_telnet_options": [
+        "curl-curl-8_0_1/lib/telnet.c"
+      ],
+      "str_is_nonascii": [
+        "curl-curl-8_0_1/lib/telnet.c"
+      ],
+      "printsub": [
+        "curl-curl-8_0_1/lib/telnet.c"
+      ]
+    },
+    "guards": {
+      "check_telnet_options": [
+        {
+          "file": "curl-curl-8_0_1/lib/telnet.c",
+          "guards": [
+            "ifndef CURL_DISABLE_TELNET"
+          ]
+        }
+      ],
+      "str_is_nonascii": [
+        {
+          "file": "curl-curl-8_0_1/lib/telnet.c",
+          "guards": [
+            "ifndef CURL_DISABLE_TELNET"
+          ]
+        }
+      ],
+      "printsub": [
+        {
+          "file": "curl-curl-8_0_1/lib/telnet.c",
+          "guards": [
+            "ifndef CURL_DISABLE_TELNET"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2402,13 +4013,23 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-27536",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "ConnectionExists",
+      "allocate_conn"
+    ],
+    "files": {
+      "ConnectionExists": [
+        "curl-curl-8_0_1/lib/url.c"
+      ],
+      "allocate_conn": [
+        "curl-curl-8_0_1/lib/url.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2420,7 +4041,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-28450",
@@ -2476,42 +4097,27 @@
   {
     "cve": "CVE-2023-34035",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
-    "build": {
-      "compile_lines": 0,
-      "defines": [],
-      "hardening": {},
-      "compiled": []
-    },
-    "build_coverage": 0.0,
-    "included_by": [],
-    "vex": "under_investigation",
-    "justification": null,
-    "reason": "no target to evaluate"
-  },
-  {
-    "cve": "CVE-2023-38408",
-    "status": "ok",
     "targets": [
-      "pkcs11_register_provider"
+      "regexMatchers",
+      "requestMatchers",
+      "antMatchers"
     ],
     "files": {
-      "pkcs11_register_provider": [
-        "openssh-portable-V_9_3_P1/ssh-pkcs11.c"
+      "regexMatchers": [
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java",
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java"
+      ],
+      "requestMatchers": [
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java",
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java",
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java"
+      ],
+      "antMatchers": [
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java",
+        "spring-security-6.1.0/config/src/main/java/org/springframework/security/config/annotation/web/AbstractRequestMatcherRegistry.java"
       ]
     },
-    "guards": {
-      "pkcs11_register_provider": [
-        {
-          "file": "openssh-portable-V_9_3_P1/ssh-pkcs11.c",
-          "guards": [
-            "ifdef ENABLE_PKCS11"
-          ]
-        }
-      ]
-    },
+    "guards": {},
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2525,34 +4131,144 @@
     "reason": "no usable build log; guards cannot be resolved"
   },
   {
+    "cve": "CVE-2023-38408",
+    "status": "ok",
+    "targets": [
+      "pkcs11_register_provider",
+      "process_add_identity",
+      "process_add_smartcard_key",
+      "main",
+      "sshsk_open",
+      "lookup_setenv_in_list",
+      "ptimeout_isset"
+    ],
+    "files": {
+      "pkcs11_register_provider": [
+        "openssh-portable-V_9_3_P1/ssh-pkcs11.c"
+      ],
+      "process_add_identity": [
+        "openssh-portable-V_9_3_P1/ssh-agent.c"
+      ],
+      "process_add_smartcard_key": [
+        "openssh-portable-V_9_3_P1/ssh-agent.c"
+      ],
+      "main": [
+        "openssh-portable-V_9_3_P1/hmac.c",
+        "openssh-portable-V_9_3_P1/logintest.c",
+        "openssh-portable-V_9_3_P1/scp.c"
+      ],
+      "sshsk_open": [
+        "openssh-portable-V_9_3_P1/ssh-sk.c"
+      ],
+      "lookup_setenv_in_list": [
+        "openssh-portable-V_9_3_P1/misc.c"
+      ],
+      "ptimeout_isset": [
+        "openssh-portable-V_9_3_P1/misc.c"
+      ]
+    },
+    "guards": {
+      "pkcs11_register_provider": [
+        {
+          "file": "openssh-portable-V_9_3_P1/ssh-pkcs11.c",
+          "guards": [
+            "ifdef ENABLE_PKCS11"
+          ]
+        }
+      ],
+      "process_add_smartcard_key": [
+        {
+          "file": "openssh-portable-V_9_3_P1/ssh-agent.c",
+          "guards": [
+            "ifdef ENABLE_PKCS11"
+          ]
+        }
+      ],
+      "main": [
+        {
+          "file": "openssh-portable-V_9_3_P1/hmac.c",
+          "guards": [
+            "ifdef TEST"
+          ]
+        }
+      ],
+      "sshsk_open": [
+        {
+          "file": "openssh-portable-V_9_3_P1/ssh-sk.c",
+          "guards": [
+            "ifdef ENABLE_SK"
+          ]
+        }
+      ]
+    },
+    "build": {
+      "compile_lines": 0,
+      "defines": [],
+      "hardening": {},
+      "compiled": []
+    },
+    "build_coverage": 0.0,
+    "included_by": [
+      "openssh-portable-V_9_3_P1/regress/misc/fuzz-harness/agent_fuzz_helper.c"
+    ],
+    "vex": "under_investigation",
+    "justification": null,
+    "reason": "no usable build log; guards cannot be resolved"
+  },
+  {
     "cve": "CVE-2023-38545",
     "status": "ok",
     "targets": [
-      "do_connect",
       "tcpkeepalive",
+      "do_connect",
+      "cf_udp_setup_quic",
       "curl_multi_fdset",
-      "our_select",
       "bindlocal",
-      "Curl_poll"
+      "our_select",
+      "Curl_poll",
+      "tcpnodelay",
+      "nosigpipe",
+      "Curl_sndbufset",
+      "hash_fd",
+      "socket_open",
+      "multi_wait"
     ],
     "files": {
+      "tcpkeepalive": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
       "do_connect": [
         "curl-curl-8_0_1/lib/cf-socket.c"
       ],
-      "tcpkeepalive": [
+      "cf_udp_setup_quic": [
         "curl-curl-8_0_1/lib/cf-socket.c"
       ],
       "curl_multi_fdset": [
         "curl-curl-8_0_1/lib/multi.c"
       ],
-      "our_select": [
-        "curl-curl-8_0_1/lib/select.c"
-      ],
       "bindlocal": [
         "curl-curl-8_0_1/lib/cf-socket.c"
       ],
+      "our_select": [
+        "curl-curl-8_0_1/lib/select.c"
+      ],
       "Curl_poll": [
         "curl-curl-8_0_1/lib/select.c"
+      ],
+      "tcpnodelay": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
+      "nosigpipe": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
+      "Curl_sndbufset": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
+      ],
+      "hash_fd": [
+        "curl-curl-8_0_1/lib/multi.c"
+      ],
+      "socket_open": [
+        "curl-curl-8_0_1/lib/cf-socket.c"
       ]
     },
     "guards": {
@@ -2561,6 +4277,22 @@
           "file": "curl-curl-8_0_1/lib/select.c",
           "guards": [
             "ifndef HAVE_POLL_FINE"
+          ]
+        }
+      ],
+      "nosigpipe": [
+        {
+          "file": "curl-curl-8_0_1/lib/cf-socket.c",
+          "guards": [
+            "ifdef SO_NOSIGPIPE"
+          ]
+        }
+      ],
+      "Curl_sndbufset": [
+        {
+          "file": "curl-curl-8_0_1/lib/cf-socket.c",
+          "guards": [
+            "ifdef USE_WINSOCK"
           ]
         }
       ]
@@ -2580,8 +4312,26 @@
   {
     "cve": "CVE-2023-44487",
     "status": "ok",
-    "targets": [],
-    "files": {},
+    "targets": [
+      "h2_recv_priority",
+      "h2_recv_rst_stream",
+      "h2_send_hpack",
+      "h2_recv_headers"
+    ],
+    "files": {
+      "h2_recv_priority": [
+        "lighttpd1.4-lighttpd-1.4.64/src/h2.c"
+      ],
+      "h2_recv_rst_stream": [
+        "lighttpd1.4-lighttpd-1.4.64/src/h2.c"
+      ],
+      "h2_send_hpack": [
+        "lighttpd1.4-lighttpd-1.4.64/src/h2.c"
+      ],
+      "h2_recv_headers": [
+        "lighttpd1.4-lighttpd-1.4.64/src/h2.c"
+      ]
+    },
     "guards": {},
     "build": {
       "compile_lines": 0,
@@ -2593,7 +4343,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-45322",
@@ -2622,9 +4372,24 @@
   {
     "cve": "CVE-2023-46218",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "Curl_cookie_add"
+    ],
+    "files": {
+      "Curl_cookie_add": [
+        "curl-curl-8_4_0/lib/cookie.c"
+      ]
+    },
+    "guards": {
+      "Curl_cookie_add": [
+        {
+          "file": "curl-curl-8_4_0/lib/cookie.c",
+          "guards": [
+            "if !defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_COOKIES)"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2635,16 +4400,16 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2023-46850",
     "status": "ok",
     "targets": [
-      "is_hard_reset_method2"
+      "key_method_2_read"
     ],
     "files": {
-      "is_hard_reset_method2": [
+      "key_method_2_read": [
         "openvpn-2.5.5/src/openvpn/ssl.c"
       ]
     },
@@ -2665,19 +4430,43 @@
     "cve": "CVE-2023-48795",
     "status": "ok",
     "targets": [
-      "make_mac",
-      "encrypt_packet",
-      "writebuf_enqueue"
+      "process_packet",
+      "cli_session",
+      "send_msg_newkeys",
+      "recv_msg_newkeys",
+      "recv_msg_kexinit",
+      "read_kex_algos",
+      "svr_algos_initialise",
+      "cli_finished",
+      "cli_dropbear_log"
     ],
     "files": {
-      "make_mac": [
-        "dropbear-DROPBEAR_2022.83/packet.c"
+      "process_packet": [
+        "dropbear-DROPBEAR_2022.83/process-packet.c"
       ],
-      "encrypt_packet": [
-        "dropbear-DROPBEAR_2022.83/packet.c"
+      "cli_session": [
+        "dropbear-DROPBEAR_2022.83/cli-session.c"
       ],
-      "writebuf_enqueue": [
-        "dropbear-DROPBEAR_2022.83/packet.c"
+      "send_msg_newkeys": [
+        "dropbear-DROPBEAR_2022.83/common-kex.c"
+      ],
+      "recv_msg_newkeys": [
+        "dropbear-DROPBEAR_2022.83/common-kex.c"
+      ],
+      "recv_msg_kexinit": [
+        "dropbear-DROPBEAR_2022.83/common-kex.c"
+      ],
+      "read_kex_algos": [
+        "dropbear-DROPBEAR_2022.83/common-kex.c"
+      ],
+      "svr_algos_initialise": [
+        "dropbear-DROPBEAR_2022.83/svr-session.c"
+      ],
+      "cli_finished": [
+        "dropbear-DROPBEAR_2022.83/cli-session.c"
+      ],
+      "cli_dropbear_log": [
+        "dropbear-DROPBEAR_2022.83/cli-session.c"
       ]
     },
     "guards": {},
@@ -2698,7 +4487,8 @@
     "status": "ok",
     "targets": [
       "parse_tunables",
-      "do_test"
+      "do_test",
+      "test_child"
     ],
     "files": {
       "parse_tunables": [
@@ -2708,6 +4498,11 @@
         "glibc-glibc-2.35/argp/bug-argp1.c",
         "glibc-glibc-2.35/argp/bug-argp2.c",
         "glibc-glibc-2.35/argp/tst-argp1.c"
+      ],
+      "test_child": [
+        "glibc-glibc-2.35/elf/tst-env-setuid-tunables.c",
+        "glibc-glibc-2.35/elf/tst-env-setuid.c",
+        "glibc-glibc-2.35/posix/tst-wait-skeleton.c"
       ]
     },
     "guards": {
@@ -2716,6 +4511,14 @@
           "file": "glibc-glibc-2.35/elf/dl-tunables.c",
           "guards": [
             "if TUNABLES_FRONTEND == TUNABLES_FRONTEND_valstring"
+          ]
+        }
+      ],
+      "test_child": [
+        {
+          "file": "glibc-glibc-2.35/elf/tst-env-setuid.c",
+          "guards": [
+            "ifndef test_child"
           ]
         }
       ]
@@ -2728,6 +4531,8 @@
     },
     "build_coverage": 0.0,
     "included_by": [
+      "glibc-glibc-2.35/posix/tst-wait3.c",
+      "glibc-glibc-2.35/posix/tst-wait4.c",
       "glibc-glibc-2.35/sysdeps/pthread/tst-locale2.c"
     ],
     "vex": "under_investigation",
@@ -2738,14 +4543,95 @@
     "cve": "CVE-2023-52425",
     "status": "ok",
     "targets": [
-      "XML_Parse"
+      "XML_Parse",
+      "if",
+      "XML_GetBuffer",
+      "parserCreate",
+      "tmain",
+      "XML_ExternalEntityParserCreate",
+      "parserInit",
+      "XML_ParseBuffer",
+      "XML_ResumeParser",
+      "XML_ParserReset",
+      "usage",
+      "getDebugLevel",
+      "externalEntityInitProcessor2",
+      "contentProcessor",
+      "XML_ParserFree",
+      "get_hash_secret_salt",
+      "XML_SetBillionLaughsAttackProtectionActivationThreshold"
     ],
     "files": {
       "XML_Parse": [
         "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "if": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "XML_GetBuffer": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "parserCreate": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "tmain": [
+        "libexpat-R_2_5_0/expat/xmlwf/xmlwf.c"
+      ],
+      "XML_ExternalEntityParserCreate": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "parserInit": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "XML_ParseBuffer": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "XML_ResumeParser": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "XML_ParserReset": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "usage": [
+        "libexpat-R_2_5_0/expat/xmlwf/xmlwf.c"
+      ],
+      "getDebugLevel": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "externalEntityInitProcessor2": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "contentProcessor": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "XML_ParserFree": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "get_hash_secret_salt": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
+      ],
+      "XML_SetBillionLaughsAttackProtectionActivationThreshold": [
+        "libexpat-R_2_5_0/expat/lib/xmlparse.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "if": [
+        {
+          "file": "libexpat-R_2_5_0/expat/lib/xmlparse.c",
+          "guards": [
+            "ifndef XML_CONTEXT_BYTES"
+          ]
+        }
+      ],
+      "XML_SetBillionLaughsAttackProtectionActivationThreshold": [
+        {
+          "file": "libexpat-R_2_5_0/expat/lib/xmlparse.c",
+          "guards": [
+            "ifdef XML_DTD"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2795,14 +4681,79 @@
     "cve": "CVE-2023-7256",
     "status": "ok",
     "targets": [
-      "sock_initaddress"
+      "sock_initaddress",
+      "pcap_startcapture_remote",
+      "pcap_remoteact_accept",
+      "rpcap_setup_session",
+      "rpcap_remoteact_getsock",
+      "pcap_remoteact_close",
+      "daemon_msg_startcap_req",
+      "sock_recv_dgram",
+      "main_startup",
+      "main_active",
+      "daemon_msg_updatefilter_req",
+      "get_gai_errstring",
+      "sock_present2network",
+      "rpcap_read_packet_msg",
+      "rpcap_msg_err"
     ],
     "files": {
       "sock_initaddress": [
         "libpcap-libpcap-1.9.1/sockutils.c"
+      ],
+      "pcap_startcapture_remote": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
+      ],
+      "pcap_remoteact_accept": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
+      ],
+      "rpcap_setup_session": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
+      ],
+      "rpcap_remoteact_getsock": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
+      ],
+      "pcap_remoteact_close": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
+      ],
+      "daemon_msg_startcap_req": [
+        "libpcap-libpcap-1.9.1/rpcapd/daemon.c"
+      ],
+      "sock_recv_dgram": [
+        "libpcap-libpcap-1.9.1/sockutils.c"
+      ],
+      "main_startup": [
+        "libpcap-libpcap-1.9.1/rpcapd/rpcapd.c"
+      ],
+      "main_active": [
+        "libpcap-libpcap-1.9.1/rpcapd/rpcapd.c"
+      ],
+      "daemon_msg_updatefilter_req": [
+        "libpcap-libpcap-1.9.1/rpcapd/daemon.c"
+      ],
+      "get_gai_errstring": [
+        "libpcap-libpcap-1.9.1/sockutils.c"
+      ],
+      "sock_present2network": [
+        "libpcap-libpcap-1.9.1/sockutils.c"
+      ],
+      "rpcap_read_packet_msg": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
+      ],
+      "rpcap_msg_err": [
+        "libpcap-libpcap-1.9.1/pcap-rpcap.c"
       ]
     },
-    "guards": {},
+    "guards": {
+      "main_active": [
+        {
+          "file": "libpcap-libpcap-1.9.1/rpcapd/rpcapd.c",
+          "guards": [
+            "else "
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2847,9 +4798,462 @@
   {
     "cve": "CVE-2024-2379",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "quic_ssl_ctx",
+      "quic_init_ssl",
+      "cf_verify_peer",
+      "quic_x509_store_setup",
+      "cf_connect_start",
+      "quic_ssl_setup",
+      "conn_set_primary_ip",
+      "qng_verify_peer",
+      "cf_ngtcp2_ctx_clear",
+      "quic_set_client_cert",
+      "keylog_callback",
+      "cf_progress_ingress",
+      "cf_quiche_ctx_clear",
+      "cf_ngtcp2_query",
+      "cf_quiche_query",
+      "recv_pkt",
+      "cf_ngtcp2_connect",
+      "cf_quiche_connect",
+      "cf_socket_open",
+      "h3_data_setup",
+      "cf_process_ingress",
+      "cf_quiche_data_event",
+      "cf_socket_get_host",
+      "Curl_cf_tcp_create",
+      "cb_each_header",
+      "write_resp_raw",
+      "Curl_qlogdir",
+      "cf_udp_setup_quic",
+      "Curl_ngtcp2_ver",
+      "quic_settings",
+      "cf_ngtcp2_destroy",
+      "Curl_quiche_ver",
+      "vquic_recv_packets"
+    ],
+    "files": {
+      "quic_ssl_ctx": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "quic_init_ssl": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_verify_peer": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "quic_x509_store_setup": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_connect_start": [
+        "curl-curl-8_4_0/lib/vquic/curl_msh3.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "quic_ssl_setup": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "conn_set_primary_ip": [
+        "curl-curl-8_4_0/lib/cf-socket.c"
+      ],
+      "qng_verify_peer": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_ngtcp2_ctx_clear": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "quic_set_client_cert": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "keylog_callback": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_progress_ingress": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_quiche_ctx_clear": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_ngtcp2_query": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_quiche_query": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "recv_pkt": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_ngtcp2_connect": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_quiche_connect": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_socket_open": [
+        "curl-curl-8_4_0/lib/cf-socket.c"
+      ],
+      "h3_data_setup": [
+        "curl-curl-8_4_0/lib/vquic/curl_msh3.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_process_ingress": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_quiche_data_event": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "cf_socket_get_host": [
+        "curl-curl-8_4_0/lib/cf-socket.c"
+      ],
+      "Curl_cf_tcp_create": [
+        "curl-curl-8_4_0/lib/cf-socket.c"
+      ],
+      "cb_each_header": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "write_resp_raw": [
+        "curl-curl-8_4_0/lib/vquic/curl_msh3.c",
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "Curl_qlogdir": [
+        "curl-curl-8_4_0/lib/vquic/vquic.c"
+      ],
+      "cf_udp_setup_quic": [
+        "curl-curl-8_4_0/lib/cf-socket.c"
+      ],
+      "Curl_ngtcp2_ver": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "quic_settings": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "cf_ngtcp2_destroy": [
+        "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c"
+      ],
+      "Curl_quiche_ver": [
+        "curl-curl-8_4_0/lib/vquic/curl_quiche.c"
+      ],
+      "vquic_recv_packets": [
+        "curl-curl-8_4_0/lib/vquic/vquic.c"
+      ]
+    },
+    "guards": {
+      "quic_ssl_ctx": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "elif defined(USE_WOLFSSL)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "ifdef USE_OPENSSL"
+          ]
+        }
+      ],
+      "quic_init_ssl": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "elif defined(USE_WOLFSSL)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "elif defined(USE_GNUTLS)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "ifdef USE_OPENSSL"
+          ]
+        }
+      ],
+      "cf_verify_peer": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "quic_x509_store_setup": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "cf_connect_start": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_msh3.c",
+          "guards": [
+            "ifdef USE_MSH3"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "quic_ssl_setup": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "qng_verify_peer": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "cf_ngtcp2_ctx_clear": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "quic_set_client_cert": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "ifdef USE_OPENSSL"
+          ]
+        }
+      ],
+      "keylog_callback": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "elif defined(USE_WOLFSSL)",
+            "if defined(HAVE_SECRET_CALLBACK)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "elif defined(USE_GNUTLS)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)",
+            "ifdef USE_OPENSSL"
+          ]
+        }
+      ],
+      "cf_progress_ingress": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "cf_quiche_ctx_clear": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "cf_ngtcp2_query": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "cf_quiche_query": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "recv_pkt": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "cf_ngtcp2_connect": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "cf_quiche_connect": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "h3_data_setup": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_msh3.c",
+          "guards": [
+            "ifdef USE_MSH3"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "cf_process_ingress": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "cf_quiche_data_event": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "cb_each_header": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "write_resp_raw": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_msh3.c",
+          "guards": [
+            "ifdef USE_MSH3"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        },
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "Curl_qlogdir": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/vquic.c",
+          "guards": [
+            "ifdef ENABLE_QUIC"
+          ]
+        }
+      ],
+      "Curl_ngtcp2_ver": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "quic_settings": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "cf_ngtcp2_destroy": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_ngtcp2.c",
+          "guards": [
+            "if defined(USE_NGTCP2) && defined(USE_NGHTTP3)"
+          ]
+        }
+      ],
+      "Curl_quiche_ver": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/curl_quiche.c",
+          "guards": [
+            "ifdef USE_QUICHE"
+          ]
+        }
+      ],
+      "vquic_recv_packets": [
+        {
+          "file": "curl-curl-8_4_0/lib/vquic/vquic.c",
+          "guards": [
+            "ifdef ENABLE_QUIC"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2860,7 +5264,7 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   },
   {
     "cve": "CVE-2024-2961",
@@ -2889,9 +5293,158 @@
   {
     "cve": "CVE-2024-6387",
     "status": "ok",
-    "targets": [],
-    "files": {},
-    "guards": {},
+    "targets": [
+      "server_accept_loop",
+      "sshlog",
+      "srclimit_check_allow",
+      "monitor_read_log",
+      "close_startup_pipes",
+      "drop_connection",
+      "do_log",
+      "monitor_child_preauth",
+      "fill_default_server_options",
+      "dump_config",
+      "srclimit_init",
+      "mm_log_handler",
+      "mm_request_receive",
+      "main_sigchld_handler",
+      "server_listen",
+      "sshlogv",
+      "initialize_server_options",
+      "process_server_config_line_depth",
+      "sshfatal",
+      "sshlogdie",
+      "conloop",
+      "privsep_preauth",
+      "check_ip_options",
+      "log_level_name",
+      "set_log_handler",
+      "do_host",
+      "lib_contains_symbol",
+      "mm_request_send",
+      "srclimit_done",
+      "close_listen_socks",
+      "sigterm_handler",
+      "should_drop_connection",
+      "main"
+    ],
+    "files": {
+      "server_accept_loop": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "sshlog": [
+        "openssh-portable-V_9_6_P1/log.c"
+      ],
+      "srclimit_check_allow": [
+        "openssh-portable-V_9_6_P1/srclimit.c"
+      ],
+      "monitor_read_log": [
+        "openssh-portable-V_9_6_P1/monitor.c"
+      ],
+      "close_startup_pipes": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "drop_connection": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "do_log": [
+        "openssh-portable-V_9_6_P1/log.c"
+      ],
+      "monitor_child_preauth": [
+        "openssh-portable-V_9_6_P1/monitor.c"
+      ],
+      "fill_default_server_options": [
+        "openssh-portable-V_9_6_P1/servconf.c"
+      ],
+      "dump_config": [
+        "openssh-portable-V_9_6_P1/servconf.c"
+      ],
+      "srclimit_init": [
+        "openssh-portable-V_9_6_P1/srclimit.c"
+      ],
+      "mm_log_handler": [
+        "openssh-portable-V_9_6_P1/monitor_wrap.c"
+      ],
+      "mm_request_receive": [
+        "openssh-portable-V_9_6_P1/monitor_wrap.c"
+      ],
+      "main_sigchld_handler": [
+        "openssh-portable-V_9_6_P1/ssh.c",
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "server_listen": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "sshlogv": [
+        "openssh-portable-V_9_6_P1/log.c"
+      ],
+      "initialize_server_options": [
+        "openssh-portable-V_9_6_P1/servconf.c"
+      ],
+      "process_server_config_line_depth": [
+        "openssh-portable-V_9_6_P1/servconf.c"
+      ],
+      "sshfatal": [
+        "openssh-portable-V_9_6_P1/fatal.c",
+        "openssh-portable-V_9_6_P1/ssh-keyscan.c",
+        "openssh-portable-V_9_6_P1/regress/misc/sk-dummy/fatal.c"
+      ],
+      "sshlogdie": [
+        "openssh-portable-V_9_6_P1/log.c"
+      ],
+      "conloop": [
+        "openssh-portable-V_9_6_P1/ssh-keyscan.c"
+      ],
+      "privsep_preauth": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "check_ip_options": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "log_level_name": [
+        "openssh-portable-V_9_6_P1/log.c"
+      ],
+      "set_log_handler": [
+        "openssh-portable-V_9_6_P1/log.c"
+      ],
+      "do_host": [
+        "openssh-portable-V_9_6_P1/ssh-keyscan.c"
+      ],
+      "lib_contains_symbol": [
+        "openssh-portable-V_9_6_P1/misc.c"
+      ],
+      "mm_request_send": [
+        "openssh-portable-V_9_6_P1/monitor_wrap.c"
+      ],
+      "srclimit_done": [
+        "openssh-portable-V_9_6_P1/srclimit.c"
+      ],
+      "close_listen_socks": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "sigterm_handler": [
+        "openssh-portable-V_9_6_P1/serverloop.c",
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "should_drop_connection": [
+        "openssh-portable-V_9_6_P1/sshd.c"
+      ],
+      "main": [
+        "openssh-portable-V_9_6_P1/hmac.c",
+        "openssh-portable-V_9_6_P1/logintest.c",
+        "openssh-portable-V_9_6_P1/scp.c"
+      ]
+    },
+    "guards": {
+      "main": [
+        {
+          "file": "openssh-portable-V_9_6_P1/hmac.c",
+          "guards": [
+            "ifdef TEST"
+          ]
+        }
+      ]
+    },
     "build": {
       "compile_lines": 0,
       "defines": [],
@@ -2902,6 +5455,6 @@
     "included_by": [],
     "vex": "under_investigation",
     "justification": null,
-    "reason": "no target to evaluate"
+    "reason": "no usable build log; guards cannot be resolved"
   }
 ]

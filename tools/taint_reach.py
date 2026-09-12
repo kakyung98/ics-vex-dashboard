@@ -38,7 +38,7 @@ OUT = os.path.join(BASE, "results", "taint_reach.json")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from callgraph_reach import (  # noqa: E402
-    EXT_C, EXT_CPP, SKIP, _funcname, _parser, build_graph, reachable_from,
+    EXT_C, EXT_CPP, SKIP, _funcname, _parser, build_graph, reachable_from, source_root,
 )
 
 # Reading bytes the process did not author: the boundary an attacker sits behind.
@@ -159,8 +159,7 @@ def is_macro_like(name):
 
 def analyze(cve, targets):
     root = os.path.join(SNAP, cve)
-    sub = [os.path.join(root, d) for d in os.listdir(root)] if os.path.isdir(root) else []
-    src_root = next((s for s in sub if os.path.isdir(s)), root)
+    src_root = source_root(root)             # every tree of a multi-tree snapshot
     defs, defined, nfiles = build_graph(src_root)
     if not defined:
         return {"cve": cve, "status": "no-source", "files": nfiles}
@@ -209,6 +208,14 @@ def decide(row, source, min_resolution=0.5):
     if row.get("call_resolution", 0) < min_resolution:
         return "under_investigation", ("call graph too incomplete (%.2f)"
                                        % row.get("call_resolution", 0))
+    # The entry model needs its structural roots before "no tainted path" means
+    # anything. With neither a public API nor an address-taken function found,
+    # only I/O readers seeded the walk - that is Java, where requests reach code
+    # through reflection and framework dispatch a static graph cannot see.
+    # Spring4Shell (CVE-2022-22965) came out `not_affected` exactly this way.
+    if not row.get("public_api") and not row.get("address_taken"):
+        return "under_investigation", ("entry model incomplete: no public-API or "
+                                       "address-taken roots (reflection/dispatch unseen)")
     return "not_affected", "vulnerable_code_cannot_be_controlled_by_adversary"
 
 
@@ -218,6 +225,8 @@ def main():
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--json", default=OUT)
     a = ap.parse_args()
+    if not a.cve and not a.all:
+        ap.error("give a CVE or --all")     # a bare run once wrote a cve=null row
 
     known = json.load(open(TARGETS, encoding="utf-8")) if os.path.exists(TARGETS) else {}
     cves = ([d for d in sorted(os.listdir(SNAP)) if os.path.isdir(os.path.join(SNAP, d))]
@@ -225,7 +234,7 @@ def main():
     results = []
     if a.all and os.path.exists(a.json):
         try:
-            results = json.load(open(a.json, encoding="utf-8"))
+            results = [r for r in json.load(open(a.json, encoding="utf-8")) if r.get("cve")]
         except Exception:
             results = []
     done = {r.get("cve") for r in results}

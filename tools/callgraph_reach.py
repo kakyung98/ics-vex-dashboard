@@ -121,7 +121,10 @@ _KW = {"if", "for", "while", "switch", "return", "sizeof", "do", "else", "case",
        "defined", "typedef", "struct", "union", "enum", "static", "extern"}
 # a top-level definition starts at column 0; that alone rejects most statements
 _KR_DEF = re.compile(
-    rb"^[A-Za-z_][A-Za-z0-9_ \t\*]*?\b([A-Za-z_]\w*)[ \t]*\("      # ret + name(
+    # the return type is optional on the name's line: BSD/busybox style puts
+    # `static int` on the line above and `readtoken1(...)` at column 0, and the
+    # old mandatory prefix lost busybox ash's whole parser (CVE-2021-42375)
+    rb"^(?:[A-Za-z_][A-Za-z0-9_ \t\*]*?[ \t\*])?([A-Za-z_]\w*)[ \t]*\("  # [ret] name(
     rb"[^;{}()]*\)[ \t]*"                                          # args)
     rb"(?:\r?\n[ \t]*[A-Za-z_][^;{}\n]*;)*"                        # K&R param decls
     rb"[ \t]*\r?\n?[ \t]*\{",                                      # body brace
@@ -130,11 +133,25 @@ _CALL = re.compile(rb"\b([A-Za-z_]\w*)[ \t]*\(")
 
 
 def _match_brace(src, i):
-    """End offset of the block whose '{' is at i, or None."""
-    depth = 0
-    while i < len(src):
+    """End offset of the block whose '{' is at i, or None.
+
+    Braces inside string/char literals and comments do not count: busybox ash's
+    `c != '}'` closed readtoken1 a hundred lines early, cutting the parser code
+    CVE-2021-42375's fix edits (and its callees) out of the function."""
+    depth, n = 0, len(src)
+    while i < n:
         c = src[i:i + 1]
-        if c == b"{":
+        if c in (b'"', b"'"):
+            i += 1
+            while i < n and src[i:i + 1] != c:
+                i += 2 if src[i:i + 1] == b"\\" else 1
+        elif src[i:i + 2] == b"/*":
+            j = src.find(b"*/", i + 2)
+            i = n if j < 0 else j + 1
+        elif src[i:i + 2] == b"//":
+            j = src.find(b"\n", i)
+            i = n if j < 0 else j
+        elif c == b"{":
             depth += 1
         elif c == b"}":
             depth -= 1
@@ -215,10 +232,19 @@ def reachable_from(entries, defs):
     return seen
 
 
+def source_root(root):
+    """The tree to analyse: the snapshot's single source tree, or the whole
+    snapshot when it holds several - CVE-2023-34035 needs spring-security 6.1.0
+    beside spring-framework 6.0.9, and taking the first subdirectory silently
+    left the tree with the vulnerable code out of the graph."""
+    sub = [os.path.join(root, d) for d in os.listdir(root)] if os.path.isdir(root) else []
+    trees = [s for s in sub if os.path.isdir(s)]
+    return trees[0] if len(trees) == 1 else root
+
+
 def analyze(cve, targets):
     root = os.path.join(SNAP, cve)
-    sub = [os.path.join(root, d) for d in os.listdir(root)] if os.path.isdir(root) else []
-    src_root = next((s for s in sub if os.path.isdir(s)), root)
+    src_root = source_root(root)
     defs, defined, nfiles = build_graph(src_root)
     if not defined:
         return {"cve": cve, "status": "no-source", "files": nfiles}
@@ -275,6 +301,8 @@ def main():
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--json", default="")
     a = ap.parse_args()
+    if not a.cve and not a.all:
+        ap.error("give a CVE or --all")     # a bare run once wrote a cve=null row
     ce = json.load(open(CE, encoding="utf-8")) if os.path.exists(CE) else {}
 
     cves = ([d for d in sorted(os.listdir(SNAP)) if os.path.isdir(os.path.join(SNAP, d))]
@@ -284,7 +312,7 @@ def main():
     results = []
     if a.all and os.path.exists(out):
         try:
-            results = json.load(open(out, encoding="utf-8"))
+            results = [r for r in json.load(open(out, encoding="utf-8")) if r.get("cve")]
         except Exception:
             results = []
     done = {r.get("cve") for r in results}

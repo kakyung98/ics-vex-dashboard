@@ -218,10 +218,10 @@ icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-407
 
 | 경로 | 방법 | CVE | 면책 가능 |
 |---|---|---|---|
-| A `patch` | fix 커밋이 수정한 함수 (`extract_vuln_funcs.py`, diff 캐시 `fetch_patches.py`) | 32 | 가능 |
+| A `patch` | fix 커밋이 수정한 함수. fix 커밋은 NVD 레퍼런스, 프로젝트 자체 보안 데이터(curl.se, openssl-library.org), CVE ID가 적힌 커밋 메시지에서 확보 (`extract_vuln_funcs.py`, diff 캐시 `fetch_patches.py`) | 42 | 가능 |
 | B `description` | NVD 설명이 지목 **&&** 그 이름이 스냅샷에 실제 정의됨 (`locate_vuln_funcs.py`) | 28 | 가능 |
 | C `codebert` | Devign 파인튜닝 CodeBERT 랭킹 (`rank_codebert.py`) | 0 | **불가 — 미채택** |
-| — | 미확보 | 40 | 불가 |
+| — | 미확보 | 34 | 불가 |
 
 경로 B는 코드 문맥 필터를 건다 — 토큰이 `_`/CamelCase를 포함하거나, `foo()` 형태로
 호출되거나, "the X function"으로 명시돼야 한다. 그렇지 않으면 `and`·`service`·
@@ -275,10 +275,11 @@ median 랭크가 4,000개 중 450위다. 이 모델은 "이 함수가 일반적�
 ---
 
 
-### 6.4 타깃 커버리지 — 7 → 60
+### 6.4 타깃 커버리지 — 7 → 105 / 106
 
 코드 수준 질문은 타깃 없이는 성립하지 않으므로, 커버리지가 Q2/Q3/Q4를 묶는
-제약이다. 개선은 전부 도메인 난제가 아니라 **수집기 결함**을 고친 결과였다.
+제약이다. 개선의 대부분은 도메인 난제가 아니라 **수집기와 추출기의 결함**을 고친
+결과였다.
 
 | 단계 | 누적 | 고친 것 |
 |---|---|---|
@@ -287,23 +288,53 @@ median 랭크가 4,000개 중 450위다. 이 모델은 "이 함수가 일반적�
 | NVD 설명 지목 (path B) | 52 | 설명이 지목한 이름 ∩ 스냅샷 정의 |
 | NVD 레퍼런스 전량 | 55 | `fetch_nvd.py` 의 `references[:6]` 슬라이싱 |
 | 포지 어댑터 | 55 | gitweb `a=commitdiff`, cgit, kernel.org·openssl GitHub 폴백 |
-| GitHub PR 패치 | **60** | NVD 는 커밋(20)보다 PR(44)을 훨씬 자주 인용 |
+| GitHub PR 패치 | 60 | NVD 는 커밋(20)보다 PR(44)을 훨씬 자주 인용 |
+| 프로젝트 1차 출처 | — | curl.se JSON 의 fix 커밋(6건 모두 실제 수정으로 확인), openssl-library.org 권고의 커밋 링크 |
+| 커밋 메시지 검색 | — | 메시지에 CVE ID 가 적힌 커밋 (GitHub 검색, 37건 중 11건 적중 — 문서·테스트 커밋은 아래 검증에서 걸러짐) |
+| git hunk 헤더 | 70 | 추출기가 `ZLIB_INTERNAL`·`PREFIX` 같은 매크로를 함수명으로 읽던 4건 복구 |
+| 로컬 `git log` 검색 | 78 | 프로젝트별 blobless 미러에서 레퍼런스의 커밋·Fossil·티켓·버그 키로 검색. 이슈 번호는 그 프로젝트 저장소에만 묶음(Terrapin 에서 타 프로젝트 `#445` 가 OpenSSH 커밋에 오매칭) |
+| Debian 트래커 NOTE | 88 | NVD 가 커밋을 인용하지 않는 CVE 의 upstream fix 링크. bugzilla `show_bug.cgi?id=` 를 커밋으로 읽던 패턴 교정 |
+| 추출기 결함 수정 | 101 | K&R 정의(zlib 1.2.12 `inflate` 소실), 파일 간 이동한 함수(OpenSSH `subprocess`), `.c.in`·Perl(`c_rehash`)·Java, merge 커밋의 first-parent diff |
+| 1차 권고 인용 fix | 103 | u-boot·busybox·dropbear·spring 커밋, w1.fi 2022-1 패치, Alpine 패치(upstream 미수정) — 근거를 `ADVISORY_FIX` 에 기록 |
+| 부분 스냅샷(커널) | 104 | fix 가 건드린 파일만 fix 의 부모 커밋에서 수집. `patch-partial` 은 면책 불가, Q2–Q4 미실행 |
+| 파서·문맥 교정 | **105** | 리터럴 속 `'}'` 가 함수를 조기 종료(ash `readtoken1`), 오류 노드로 잘린 tree-sitter 범위, hunk 선행 문맥 속 함수 헤더(CVE-2021-33909 `seq_buf_alloc`), spring-security 6.1.0 추가 |
 
-면책 권한이 있는 path A 가 24 → **32** 로 늘어난 것이 실질적 이득이다.
+**기준선 교정 — 기존 60건 중 일부는 근거가 없었다.** 3건은 타깃 자체가 틀려 제거했다:
+CVE-2021-3517·3518 은 전부 테스트 함수(`test_xmlIO` 등, 루트의 `testapi.c`)였고,
+CVE-2023-48795(Terrapin, 스냅샷은 dropbear)는 libssh2 의 `src/packet.c` diff 가 파일명만
+같은 dropbear `packet.c` 에 대입되어 나온 함수였다. 또 4건에서 fix diff 어디에도 나오지
+않는 함수(`sftp_packetlist_flush` ×3, `nodePush`)가 오귀속으로 들어가 있어 제거했다.
 
-남은 44건:
+**추출 규칙 수정**
+
+- 릴리스 커밋 제외 — 캐시된 diff 의 24%(108개 중 26개)가 릴리스·버전범프 커밋. 같은 CVE 에 fix 커밋이 있으면 제외
+- 표 수 기준선 폐기 → fix 커밋이 닿는 함수의 **합집합**. 기준선은 캐시된 diff 사본 수에 따라 멤버가 바뀌었다. 합집합은 안전한 방향의 오류다 — Q2/Q3 는 모든 타깃이 도달 불가여야만 면책한다
+- 앵커 귀속 = 파일 첫 등장이 아니라 **hunk 위치에서 가장 가까운 등장**
+- 루트의 테스트 파일(`testapi.c`, `runtests.c`) 제외, 헤더 파일의 hunk 문맥은 투표에서 제외(가까운 프로토타입일 뿐)
+- **같은 파일인지는 내용으로 판정** — diff 의 식별자가 후보 파일에 50% 이상 있어야 함. 경로 모양 규칙은 양쪽으로 틀렸다(OpenBSD `usr.bin/ssh/` 와 portable 루트는 같은 파일, libssh2 `src/packet.c` 와 dropbear `packet.c` 는 다른 파일). 결정적 사례에서 식별자 겹침은 0.8·1.0·1.0 대 0.13·0.10 으로 갈렸다. 라이선스 주석의 기여자 이름은 식별자에서 뺀다
+
+**검증** — git 이 hunk 마다 적는 함수명 중 스냅샷에 실제로 존재하는 것을 기준으로 보면, 문맥이 있는
+패치 근거 40건 모두 fix 가 건드린 함수를 타깃이 전부 포함한다(평균 1.000). 이는 **내부 일관성
+지표**이지 타깃이 곧 취약 함수라는 증명은 아니다. CVE-2023-46850 은 fix 가 2.5.5 에 없는
+`tls_process_state` 를 고쳐, 타깃이 이후 리팩터링을 건너 추정된 것이라 약하다.
+
+**측정 후 기각한 경로** — 릴리스 간 diff(12건 중 게이트 통과 1건), OSV 의 `fixed` SHA(릴리스
+커밋을 가리킴), CodeBERT 랭킹(top-20 recall 0.148).
+
+**70 → 105 검증** — 새로 얻은 타깃마다 "fix 가 실제로 바꾼 줄이 스냅샷의 그 함수 안에 있는가"를
+확인했고, 규칙 수정으로 기존 타깃에서 빠진 이름(25건 변동)은 모두 바뀐 줄을 하나도 담지 않은
+문맥 잡음이었다(예: libssh2 `sftp_packet_ask`, libxml2 `xmlBufferCat` 등). 역시 일관성 검사다.
+
+남은 1건과 약한 타깃:
 
 ```
-35  커밋 URL 이 NVD 레퍼런스 어디에도 없음 (배포판 어드바이저리·메일링리스트뿐)
-16  커밋은 있으나 소스를 안 건드림 (릴리스·버전범프 커밋)
- 9  파일이 스냅샷에 없음
- 8  앵커 불일치 (스냅샷 버전 ≠ 패치 부모 커밋)
+1   CVE-2023-28450  fix 가 config.h 의 EDNS_PKTSZ 기본값만 바꿈 — 편집된 함수 없음
+    CVE-2021-33909, CVE-2023-32233  부분 스냅샷(patch-partial) — 면책 불가, Q2–Q4 미실행
+    CVE-2021-42375  fix 커밋 추정 (Claroty 의 트리거 문자 $ { } # ↔ ${#var} 파싱 수정)
+    CVE-2017-13077/13078  AP 측 KRACK 우회 커밋 — 프로토콜 수정이 아님
+    CVE-2022-28391  upstream 미수정, Alpine 패치 기준
+    CVE-2023-46850  fix 가 2.5.5 에 없는 tls_process_state 를 수정
 ```
-
-35건은 KRACK 계열·dnsmasq 2017·구버전 sqlite 같은 오래된 CVE 로, 프로젝트별
-보안 페이지 파서가 필요하다 —— 범용 해법이 없는 구간이다. Fossil(sqlite)은
-체크인 ID 하나로 접근 가능한 raw diff 엔드포인트가 없고 git 미러가 해시를
-재작성하므로 **지원 불가**로 명시했다.
 
 ---
 
