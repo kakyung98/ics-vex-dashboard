@@ -101,20 +101,20 @@ moment the topology changes. Operational context enters only as an **SSVC
 priority**, whose System Exposure is a value the user chooses for a real
 deployment — not a synthetic number.
 
-### The four CISA justification questions
+### The code-level questions
 
-The judgment core is the four CISA justification questions, answered in order,
-rather than a single "did it trigger?" axis:
+The judgment core is three code-level questions, answered in order, rather than a
+single "did it trigger?" axis. CISA's fifth justification,
+`inline_mitigations_already_exist`, is not judged by this project.
 
 ```
 Q1 vulnerable code present?      -> component_not_present / vulnerable_code_not_present
 Q2 on an executed path?          -> vulnerable_code_not_in_execute_path
 Q3 adversary-controllable?       -> vulnerable_code_cannot_be_controlled_by_adversary
-Q4 inline mitigation present?    -> inline_mitigations_already_exist
 (all pass)                       -> affected
 ```
 
-All four questions are now implemented and have been run over the 104 source
+All three questions are implemented and have been run over the 104 source
 snapshots. The rule they share lives in one module, `src/vex_decision.py`, which
 the console's **VEX Flag Decision Logic** page renders from, so the documented rule
 and the executed rule cannot drift apart.
@@ -124,7 +124,6 @@ and the executed rule cannot drift apart.
 | Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
 | Q2 | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
 | Q3 | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
-| Q4 | `tools/mitigation_scan.py` | all 104 `under_investigation` | **0** |
 
 **Source-level analysis clears nothing on this corpus.** That is not a tooling
 failure — it reproduces the public record, where
@@ -172,14 +171,11 @@ were found and fixed, two of them only after they had produced verdicts:
 | K&R definitions | tree-sitter emits ERROR nodes on old-style C and drops the definition — zlib 1.2.8's `inflate.c` alone yields 89 errors and loses `inflate` | callees looked unreachable |
 | Macro-wrapped headers | `ZEXTERN int ZEXPORT inflate OF((...))` parsed to 3 of zlib's public functions | the attack surface looked tiny |
 | Indirect calls | a static graph sees only `f()`; dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible | **6 false `not_affected`** in the first Q3 run |
-| Partial build logs | `clang-format` and configure chatter ("gcc accepts -g... yes") counted as compile lines, so built files looked unbuilt | **5 false `not_affected`** in the first Q4 run |
 
-The fixes are all in the same direction — widen what counts as reachable or
-compiled, never narrow it. A regex scanner supplements the parse for K&R and
-macro-wrapped signatures; every address-taken function becomes a taint root; a
-compile line must start with a compiler and name a source, the log must cover
-half the project, and a file another translation unit `#include`s can never be
-called absent. Each fix removed every false clearance it was aimed at.
+The fixes are all in the same direction — widen what counts as reachable, never
+narrow it. A regex scanner supplements the parse for K&R and macro-wrapped
+signatures, and every address-taken function becomes a taint root. Each fix
+removed every false clearance it was aimed at.
 The seed dataset for this classifier is built by
 `tools/build_justification_seed.py` from `data/code_evidence.json` (34 vuln/patched
 code pairs). The 18 CISA-labelled ICSA justifications (`data/vex_justify_eval.jsonl`)
@@ -312,7 +308,7 @@ sandboxing. All 106 source-available CVEs were run (the 88 that built plus an
 | Still used | By | For |
 |---|---|---|
 | the **2 execution-verified** CVEs (CVE-2020-8177, CVE-2022-32221, both curl) | `src/vex_batch.py` | the only `affected` verdicts in the corpus resting on a run, not an argument |
-| `results/verify_build_logs/` | `tools/mitigation_scan.py` | the compile lines Q4 reads |
+| `results/verify_build_logs/` | — | preserved build output of the closed campaign |
 | `data/source_snapshots/` | Q1–Q4 | the 104 source trees everything below analyses |
 
 The campaign's other outcome labels — `exploit-generated 20`, `build-only 70`,
@@ -393,7 +389,6 @@ logs.
 | 16. Locate the vulnerable function | `tools/extract_vuln_funcs.py`, `tools/locate_vuln_funcs.py` | `data/vuln_funcs.json`, `data/vuln_targets.json` |
 | 17. Q2 execute-path | `tools/callgraph_reach.py --all` | `results/callgraph_reach.json` |
 | 18. Q3 adversary control | `tools/taint_reach.py --all` | `results/taint_reach.json` |
-| 19. Q4 inline mitigations | `tools/mitigation_scan.py` | `results/mitigation_scan.json` |
 | 20. Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
 
 Steps 14-16 must precede 17-19: all three questions judge the same target set,
@@ -510,7 +505,7 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
      `EDNS_PKTSZ` default in `config.h`; no function is edited.
    - **CVE-2021-33909 / CVE-2023-32233** (Linux) have only the files the fix touches,
      at the fix's parent commit (`data/partial_snapshots`). Their targets are real,
-     but the source label `patch-partial` may not clear and Q2-Q4 do not run on them.
+     but the source label `patch-partial` may not clear and Q2/Q3 do not run on them.
    - **CVE-2023-34035** is a Spring Security CVE whose snapshot held only
      spring-framework 6.0.9; spring-security 6.1.0 (the release Spring Boot 3.1.0
      pairs with it) was added beside it.
@@ -520,9 +515,9 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
      KRACK workaround, not a protocol fix; CVE-2022-28391 was never fixed upstream and
      rests on Alpine's patch; CVE-2023-46850's fix edits `tls_process_state`, absent
      from the 2.5.5 snapshot.
-11. Q3's `not-controllable` and Q4's clearance both rest on arguing from absence
-   in an incomplete static view. The guards above make that argument honest, but
-   they also make it rare: on this corpus neither fires. A dynamic track
+11. Q3's `not-controllable` rests on arguing from absence in an incomplete static
+   view. The guards above make that argument honest, but they also make it rare:
+   on this corpus it never clears. A dynamic track
    (fuzzing the tainted entries) is the way to get positive evidence for Q3.
 
 ---

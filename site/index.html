@@ -125,7 +125,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
   <nav class="nav"><div class="navlabel">Menu</div><a class="navtab navtab-main on" href="index.html">ICS-VEXForge</a><a class="navtab" href="sbom-to-cve.html">ICS-SBOM to CVE</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a><a class="navtab" href="vex-decision.html">VEX Flag Decision Logic</a><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a></nav>
 </aside>
 <main class="main">
-<h1 style="margin:0 0 2px">ICS-VEXForge</h1><p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. Source-available CVEs are judged by the four CISA justification questions (Q1&ndash;Q4, Q1 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p><div class="card"><div class="row">
+<h1 style="margin:0 0 2px">ICS-VEXForge</h1><p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. Source-available CVEs are judged by the code questions Q1&ndash;Q3 (Q1 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p><div class="card"><div class="row">
   <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
   <div><label>Deployment exposure</label><br><select id="exp">
     <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
@@ -237,7 +237,7 @@ async function run(){
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q4</span>'
+      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q3</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'

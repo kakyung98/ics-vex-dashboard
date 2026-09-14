@@ -25,7 +25,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(BASE, "data", "source_snapshots")
 # Only the files a fix touches, at the fix's parent commit - for a component with
 # no whole-source snapshot (the Linux kernel). Enough to attribute hunks to
-# functions; never read by Q2-Q4, which need the whole program.
+# functions; never read by Q2/Q3, which need the whole program.
 PARTIAL = os.path.join(BASE, "data", "partial_snapshots")
 
 
