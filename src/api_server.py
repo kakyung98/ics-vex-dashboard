@@ -1146,7 +1146,7 @@ async function run(){
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
     const nextcol = f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q4</span>'
+      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q3</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -1891,7 +1891,7 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are judged by the four CISA justification questions (Q1&ndash;Q4, Q1 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p>' + ANALYZER_HTML)
+                  'Source-available CVEs are judged by the code questions Q1&ndash;Q3 (Q1 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
@@ -1978,16 +1978,14 @@ removed every one of them.</p>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the four CISA questions (Q1&ndash;Q4)</b></div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q1&ndash;Q3)</b></div>
       <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B) judges presence &mdash; held-out macro-F1 <b>0.892</b>, but <b>0.333</b> on the ICS pairs, so no ICS statement rests on it</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub">a reproducer / fuzzing drives the vulnerable path (CWE + patch-diff guided)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q4 &middot; Is an inline mitigation already present?</b><span class="vm-sub">configuration / guard-pattern check on the surrounding code</span></div>
-      <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">All four pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
+      <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
     </div>
 
     <div class="vm-lane vm-no">
@@ -2013,7 +2011,7 @@ removed every one of them.</p>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
 <tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
     <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
-<tr><td class="mono">4</td><td>A code question (Q1&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
+<tr><td class="mono">4</td><td>A code question (Q1&ndash;Q3) clears, the target is trustworthy and the graph complete</td>
     <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
 <tr><td class="mono">5</td><td>Q1&ndash;Q3 all evaluated and all still vulnerable</td>
     <td><span class="pill pill-aff">affected</span></td></tr>
@@ -2026,7 +2024,7 @@ topology changes &mdash; so operational context enters only as an SSVC priority,
 </div>
 
 <div class="card">
-<h2 style="margin:0 0 10px;font-size:17px">The four CISA questions, as implemented</h2>
+<h2 style="margin:0 0 10px;font-size:17px">The code questions, as implemented</h2>
 <table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
 <tbody>__Q_ROWS__</tbody></table>
 </div>
@@ -2053,12 +2051,11 @@ it judged. A model-ranked guess can keep a CVE in the affected pool; it can neve
   <div class="kpi"><div class="kpi-n">__TGT__</div><div class="kpi-l">vulnerable function located</div></div>
   <div class="kpi"><div class="kpi-n">__Q2R__</div><div class="kpi-l">Q2 reachable</div></div>
   <div class="kpi"><div class="kpi-n">__Q3C__</div><div class="kpi-l">Q3 adversary-controllable</div></div>
-  <div class="kpi"><div class="kpi-n">__Q4C__</div><div class="kpi-l">Q4 mitigation clearances</div></div>
   <div class="kpi"><div class="kpi-n">__CLR__</div><div class="kpi-l">clearances from source analysis</div></div>
 </div>
 <p class="hint" style="margin:14px 2px 0"><b>Zero.</b> Neither Q2 nor Q3 cleared a single CVE:
-<span class="mono">unreachable 0</span>, <span class="mono">not-controllable 0</span>, and Q4 cleared none
-either. Once indirect calls are
+<span class="mono">unreachable 0</span>, and the one <span class="mono">not-controllable</span> verdict
+(Spring4Shell) is held by the entry-model gate. Once indirect calls are
 handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
 failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
 <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
@@ -2070,7 +2067,6 @@ already asserted.</p>
    .replace("__SOUND_ROWS__", sound_rows) \
    .replace("__SNAP__", str(c["snapshots"])).replace("__TGT__", str(c["targets_located"])) \
    .replace("__Q2R__", str(c["q2_reachable"])).replace("__Q3C__", str(c["q3_controllable"])) \
-   .replace("__Q4C__", str(c["q4_mitigation_cleared"])) \
    .replace("__CLR__", str(c["clearances_from_source_analysis"]))
 
 

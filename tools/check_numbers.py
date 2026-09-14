@@ -61,16 +61,11 @@ def compute():
     n["q3_controllable"] = c3.get("controllable", 0)
     n["q3_not_controllable"] = c3.get("not-controllable", 0)
 
-    q4 = _j("results", "mitigation_scan.json", default=[])
-    n["q4_rows"] = len(q4)
-    n["q4_mitigation_cleared"] = sum(1 for r in q4 if r.get("vex") == "not_affected")
-
     # A clearance is a `not_affected` outcome, not a raw verdict: Q3's gates
     # (target source, graph completeness, entry-model roots) can hold a
     # not-controllable verdict at under_investigation - Spring4Shell is one.
     n["q3_cleared"] = sum(1 for r in q3 if r.get("vex") == "not_affected")
-    n["clearances_from_source_analysis"] = (n["q2_unreachable"] + n["q3_cleared"]
-                                            + n["q4_mitigation_cleared"])
+    n["clearances_from_source_analysis"] = n["q2_unreachable"] + n["q3_cleared"]
 
     rank = _j("results", "codebert_rank.json", default={})
     if rank:
@@ -133,7 +128,7 @@ def check_docs(n, write):
 
 
 CORPUS_KEYS = ["snapshots", "targets_located", "q2_reachable", "q2_unreachable",
-               "q3_controllable", "q3_not_controllable", "q4_mitigation_cleared",
+               "q3_controllable", "q3_not_controllable",
                "clearances_from_source_analysis"]
 
 

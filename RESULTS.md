@@ -189,12 +189,13 @@ icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-407
 
 ---
 
-## 6. 코드 수준 판정 — CISA 4대 질문 Q1–Q4
+## 6. 코드 수준 판정 — Q1–Q3
 
-네 질문 모두 구현되어 소스 스냅샷 **104건** 위에서 실행됐다. (실행검증 캠페인은
+코드 수준 질문 세 개가 구현되어 소스 스냅샷 **104건** 위에서 실행됐다. CISA 의 다섯 번째
+정당화 사유 `inline_mitigations_already_exist` 는 이 프로젝트에서 판정하지 않는다. (실행검증 캠페인은
 106건을 시도했으나 2건 —— CVE-2021-33909, CVE-2023-32233 —— 은 CVE Processor
 단계에서 즉시 실패해 소스를 받지 못했다. 코드 수준 분석의 모집단은 104다. 이 2건은
-이후 fix 가 건드린 파일만 부분 스냅샷으로 수집해 타깃은 지목했지만, Q2–Q4 는 돌리지 않는다.)
+이후 fix 가 건드린 파일만 부분 스냅샷으로 수집해 타깃은 지목했지만, Q2/Q3 는 돌리지 않는다.)
 Q3 의 `not-controllable` 1건(Spring4Shell)은 진입 모델 게이트가 `under_investigation` 으로
 묶는다 — Java 는 리플렉션·프레임워크 디스패치로 요청이 들어와 정적 그래프가 볼 수 없다. 공유 규칙은
 `src/vex_decision.py` 한 곳에 있고, 콘솔의 **VEX Flag Decision Logic** 페이지가 그
@@ -205,7 +206,6 @@ Q3 의 `not-controllable` 1건(Spring4Shell)은 진입 모델 게이트가 `unde
 | Q1 취약 코드 존재 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS 쌍 0.333 | 0 |
 | Q2 실행 경로 | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
 | Q3 공격자 통제 | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
-| Q4 인라인 완화 | `tools/mitigation_scan.py` | 104건 전부 `under_investigation` | **0** |
 
 **소스 수준 분석은 이 코퍼스에서 아무것도 면책하지 못한다.** 이는 도구의 실패가
 아니라 공개 기록의 재현이다 — CISA OT CSAF 3,984건 전체에서
@@ -250,38 +250,14 @@ median 랭크가 4,000개 중 450위다. 이 모델은 "이 함수가 일반적�
 | K&R 정의 | tree-sitter가 구식 C에서 ERROR를 내고 정의를 잃음 (zlib 1.2.8 `inflate.c` ERROR 89개, `inflate` 소실) | 호출 대상이 도달 불가로 보임 |
 | 매크로 래핑 헤더 | `ZEXTERN int ZEXPORT inflate OF((...))` → 공개 API 3개만 인식 | 공격면이 축소돼 보임 |
 | 간접 호출 | 정적 그래프는 `f()`만 봄; 디스패치 테이블·콜백 (`sqlite3_create_function(..., rtreenode, ...)`) 비가시 | **거짓 `not_affected` 6건** (Q3 초판) |
-| 부분 빌드 로그 | `clang-format`과 configure 출력("gcc accepts -g... yes")을 컴파일 라인으로 셈 | **거짓 `not_affected` 5건** (Q4 초판) |
 
-수정은 모두 같은 방향이다 — 도달 가능/컴파일됨의 범위를 **넓히기만** 하고 좁히지
-않는다. K&R·매크로 서명은 정규식 스캐너가 파서를 보조하고, 주소가 참조되는 모든
-함수를 오염 루트로 편입하며, 컴파일 라인은 컴파일러 토큰으로 시작하고 소스를
-지명해야 하고, 로그가 프로젝트의 절반 이상을 컴파일해야 하며, 다른 번역 단위가
-`#include` 하는 파일은 부재를 주장할 수 없다. 각 수정은 겨냥한 거짓 면책을 전부
-제거했다.
+수정은 모두 같은 방향이다 — 도달 가능의 범위를 **넓히기만** 하고 좁히지 않는다.
+K&R·매크로 서명은 정규식 스캐너가 파서를 보조하고, 주소가 참조되는 모든 함수를
+오염 루트로 편입한다. 각 수정은 겨냥한 거짓 면책을 전부 제거했다.
 
-### 6.3 Q4 판정 근거 분포 (104건 전부 보류)
+### 6.3 타깃 커버리지 — 7 → 105 / 106
 
-```
-55  쓸 만한 빌드 로그 없음
-44  타깃 없음
- 3  로그가 프로젝트 일부만 컴파일 — 부재를 논할 수 없음
- 2  전처리기 가드는 있으나 매크로 정의 여부 확인 불가
- 1  완화 증거 없음
-```
-
-전처리기 가드 사례가 규칙의 핵심이다. zlib CVE-2016-9841 은 `#ifndef ASMINF`
-안에 있지만, `ASMINF` 가 `-D` 플래그에 없다는 사실은 정의 여부에 대해 아무것도
-말하지 않는다 — autoconf 는 매크로를 생성된 `config.h` 에 넣지 커맨드라인에 넣지
-않기 때문이다. 하드닝 플래그(`_FORTIFY_SOURCE`, 스택 프로텍터)는 설계상 면책
-권한이 없다. 오염을 `abort()` 로 바꿀 뿐 DoS 는 남으므로 영향 완화이지 정당화
-사유가 아니다.
-
----
-
-
-### 6.4 타깃 커버리지 — 7 → 105 / 106
-
-코드 수준 질문은 타깃 없이는 성립하지 않으므로, 커버리지가 Q2/Q3/Q4를 묶는
+코드 수준 질문은 타깃 없이는 성립하지 않으므로, 커버리지가 Q2/Q3를 묶는
 제약이다. 개선의 대부분은 도메인 난제가 아니라 **수집기와 추출기의 결함**을 고친
 결과였다.
 
@@ -300,7 +276,7 @@ median 랭크가 4,000개 중 450위다. 이 모델은 "이 함수가 일반적�
 | Debian 트래커 NOTE | 88 | NVD 가 커밋을 인용하지 않는 CVE 의 upstream fix 링크. bugzilla `show_bug.cgi?id=` 를 커밋으로 읽던 패턴 교정 |
 | 추출기 결함 수정 | 101 | K&R 정의(zlib 1.2.12 `inflate` 소실), 파일 간 이동한 함수(OpenSSH `subprocess`), `.c.in`·Perl(`c_rehash`)·Java, merge 커밋의 first-parent diff |
 | 1차 권고 인용 fix | 103 | u-boot·busybox·dropbear·spring 커밋, w1.fi 2022-1 패치, Alpine 패치(upstream 미수정) — 근거를 `ADVISORY_FIX` 에 기록 |
-| 부분 스냅샷(커널) | 104 | fix 가 건드린 파일만 fix 의 부모 커밋에서 수집. `patch-partial` 은 면책 불가, Q2–Q4 미실행 |
+| 부분 스냅샷(커널) | 104 | fix 가 건드린 파일만 fix 의 부모 커밋에서 수집. `patch-partial` 은 면책 불가, Q2/Q3 미실행 |
 | 파서·문맥 교정 | **105** | 리터럴 속 `'}'` 가 함수를 조기 종료(ash `readtoken1`), 오류 노드로 잘린 tree-sitter 범위, hunk 선행 문맥 속 함수 헤더(CVE-2021-33909 `seq_buf_alloc`), spring-security 6.1.0 추가 |
 
 **기준선 교정 — 기존 60건 중 일부는 근거가 없었다.** 3건은 타깃 자체가 틀려 제거했다:
@@ -333,7 +309,7 @@ CVE-2023-48795(Terrapin, 스냅샷은 dropbear)는 libssh2 의 `src/packet.c` di
 
 ```
 1   CVE-2023-28450  fix 가 config.h 의 EDNS_PKTSZ 기본값만 바꿈 — 편집된 함수 없음
-    CVE-2021-33909, CVE-2023-32233  부분 스냅샷(patch-partial) — 면책 불가, Q2–Q4 미실행
+    CVE-2021-33909, CVE-2023-32233  부분 스냅샷(patch-partial) — 면책 불가, Q2/Q3 미실행
     CVE-2021-42375  fix 커밋 추정 (Claroty 의 트리거 문자 $ { } # ↔ ${#var} 파싱 수정)
     CVE-2017-13077/13078  AP 측 KRACK 우회 커밋 — 프로토콜 수정이 아님
     CVE-2022-28391  upstream 미수정, Alpine 패치 기준
