@@ -148,14 +148,16 @@ def main():
         ap.error("pass --cve CVE-XXXX or --all")
 
     out = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
-    for cve in cves:
+    for i, cve in enumerate(cves, 1):
+        if not a.cve and cve in out:                 # resume: skip already-decided
+            continue
         model = formalize(cve, cti.get(cve))
         verdict, detail = decide(model)
         out[cve] = {"cve": cve, "verdict": verdict, "detail": detail, "model": model}
-        print("  %-18s controllability=%-16s  %s" % (cve, verdict, detail))
+        print("  [%3d/%3d] %-18s controllability=%-16s  %s" % (i, len(cves), cve, verdict, detail), flush=True)
         if a.cve:
             print(json.dumps(out[cve], ensure_ascii=False, indent=2))
-    json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)  # incremental
     print("-> %s (%d)" % (OUT, len(out)))
 
 
