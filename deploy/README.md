@@ -43,6 +43,23 @@ install it as a `systemd` service, plus the firewall hint. Defaults: dir
 - `data/cpe_index.json` — built on the server by `tools/build_cpe_index.py`; not in
   the repo (18 MB, regenerable). Delete it and re-run to refresh from NVD.
 
+## Joern — the reachability engine (step 4 of VEX-v2)
+
+The VEX judgment pipeline uses Joern for reachability (Q2). It is a JVM tool and is
+not bundled; until it is on PATH, `tools/joern_reachability.py` returns `unknown`
+and the orchestrator leaves those CVEs `under_investigation` (it never clears on
+unknown). Install it once on the server:
+
+```bash
+# needs a JDK (17+):  sudo apt-get install -y openjdk-17-jdk
+curl -L https://github.com/joernio/joern/releases/latest/download/joern-install.sh | bash
+# the installer adds `joern` to PATH; verify:
+joern --version
+```
+
+Then the same `python tools/vex_judge_v2.py --run --cve CVE-XXXX` starts producing
+real `affected` / `not_affected` verdicts instead of `under_investigation`.
+
 ## Update later
 
 ```bash
