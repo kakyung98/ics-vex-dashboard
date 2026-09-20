@@ -31,6 +31,10 @@ import build_ground_truth as G  # exposure_for(), CWE_NAME
 import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
+try:
+    import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
+except Exception:
+    L0 = None
 
 # Official MITRE CWE names (Title Case). Covers every CWE shown in the
 # collectable-CVE pool + common corpus weaknesses. Overrides the informal
@@ -541,6 +545,37 @@ def vex_for_sbom(sbom, exposure=None):
             prev = by_cve.get(cv["id"])
             if prev is None or rank.get(status, 0) > rank.get(prev["final_vex"], 0):
                 by_cve[cv["id"]] = row
+    # L0+L3: identify via the full NVD CPE index (13,764 products vs the 42-entry
+    # OSS KB), recovering ICS products the KB never had - "Sielco Sistemi Winlog
+    # Lite" -> winlog_lite. Additive: only CVEs the KB pass did not already find.
+    # Vendor evidence GRADES each match (anchored/canonical/co-listed), never a hard
+    # filter. Degrades cleanly to the KB when data/cpe_index.json is absent.
+    if L0 is not None and getattr(L0, "BY_PRODUCT", None):
+        _top = (sbom.get("metadata") or {}).get("component") or {}
+        _av = next((p.get("value") for p in (_top.get("properties") or [])
+                    if p.get("name") == "ics:vendor"), "") or _top.get("publisher") or ""
+        for c in raw:
+            _name = (c.get("name") or "").strip()
+            _ver = (c.get("version") or "").strip()
+            for m in L0.cves_for(c, sbom_vendor=_av):
+                cid = m["cve"]
+                if cid in by_cve:
+                    continue
+                idx = STORE.cve_index.get(cid, {})
+                by_cve[cid] = {
+                    "cve": cid, "component": _name, "version": _ver or "(unpinned)",
+                    "version_pinned": bool(m["version_decided"]),
+                    "version_decided": bool(m["version_decided"]),
+                    "identified_by": "l0-" + m["how"],
+                    "identified_detail": "NVD CPE index (%s, %s)" % (m["vendor"], m["confidence"]),
+                    "severity": idx.get("severity", ""), "cvss": idx.get("cvss"),
+                    "source_collectable": bool(idx.get("source_available") or cid in STORE.pairs),
+                    "av": "", "kev": bool(idx.get("kev")), "epss": idx.get("epss"),
+                    "exposure": exposure or "", "has_code_pair": cid in STORE.pairs,
+                    "final_vex": UNDER_INV, "justification": None,
+                    "basis": "identified via NVD CPE index (L0); vendor evidence: " + m["confidence"],
+                    "evidence_tier": "under-investigation",
+                }
     # Also honor CVEs embedded in the SBOM's own VDR (vulnerabilities[]), e.g. a
     # reverse_sbom SBOM-CVE whose closed-firmware component has no OSS KB match.
     ref2name = {c.get("bom-ref"): (c.get("name") or "") for c in sbom.get("components", [])}
