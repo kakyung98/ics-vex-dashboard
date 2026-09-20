@@ -39,6 +39,14 @@ OUT_SBOM = os.path.join(BASE, "reverse_sbom")
 OUT_DATA = os.path.join(BASE, "data")
 NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
+# KISA "SBOM 데이터필드 정의"(CycloneDX 1.7) 기준 날짜 필드.
+#   properties.SBOM_CREATION_DATE / SBOM_MODIFY_DATE  ->  'YYYY-MM-DD HH:MM:SS'
+#   metadata.timestamp                                ->  ISO-8601(Z)
+# 규격 예시가 앞의 둘을 일시(00:00:00 포함)로 못박고 있어 날짜만 쓰던 것을 교정한다.
+# 세 필드가 어긋나지 않도록 한 곳에서 만든다.
+DOC_DATE_TIME = "2026-04-10 00:00:00"
+DOC_TIMESTAMP = "2026-04-10T00:00:00Z"
+
 # ---------------------------------------------------------------------------
 # 벤더 정규화
 # ---------------------------------------------------------------------------
@@ -181,6 +189,25 @@ def parse_vector(vec):
     return d
 
 
+# ---------------------------------------------------------------------------
+# metadata.component 의 벤더 조직 블록 (manufacturer / supplier)
+# ---------------------------------------------------------------------------
+# KISA 규격은 metadata.component.manufacturer/supplier 를 name + address(country/
+# region/locality) + contact(name/email/phone) 로 정의한다. 그런데 우리는 CISA
+# 어드바이저리에서 벤더 '이름'만 얻고, 수천 개 제3자 벤더의 실제 주소·담당자는
+# 모른다. 문서 저자(DOC_ORG)는 우리 자신이라 완전한 블록을 갖지만, 제3자 벤더는
+# 다르다. 참고: 이미 import 된 org(name, country=None, region=None, contact_name)
+# 헬퍼는 country 가 주어지면 address+contact 까지 채운 블록을 돌려준다.
+def org_full(vendor):
+    """metadata.component 의 제3자 ICS 벤더 조직 블록을 만든다.
+
+    정책 (a): 이름만 assert 한다. 어드바이저리에서 실측되는 값은 벤더명뿐이고
+    주소·담당자는 모르므로, 규격의 address/contact 구조를 NOASSERTION 으로
+    채워 넣기보다 비운다 — 이 저장소의 'Data honesty' 원칙(실측만 assert)에 맞춘다.
+    address/contact 는 CycloneDX 상 선택 필드라 이대로도 유효하다."""
+    return org(vendor)   # org(name) -> {"name": name}
+
+
 def main():
     # authoritative CVSS from NVD (tools/fetch_nvd_cvss_bulk.py) to fill advisory gaps
     _NVD_CVSS = {}
@@ -276,18 +303,20 @@ def main():
                 origin = "vendor-proprietary" if is_closed else "third-party-open-source"
                 if ref not in comps:
                     comps[ref] = {
+                        # --- KISA 규격 components[] 정의 순서 ---
                         "type": "library", "bom-ref": ref, "name": spec["name"],
                         "version": "NOASSERTION",
                         "description": spec.get("desc", ""),
                         "scope": "required",
                         "publisher": spec["publisher"],
-                        "manufacturer": org(spec["publisher"]),
+                        "manufacturer": org(spec["publisher"]),   # 규격: name 만
                         "supplier": org(spec["publisher"]),
                         "tags": sorted(set(spec.get("tags", []))),
-                        "cpe": "cpe:2.3:a:%s:%s:*:*:*:*:*:*:*:*" % (spec["cpe_vendor"], spec["cpe_product"]),
-                        "purl": spec["purl"],
-                        "copyright": "NOASSERTION",
                         "licenses": [{"license": {"id": spec["license"]}}],
+                        "copyright": "NOASSERTION",
+                        "purl": spec["purl"],
+                        # --- CycloneDX 확장 (규격 상위집합: SBOM→CVE 매칭에 필요) ---
+                        "cpe": "cpe:2.3:a:%s:%s:*:*:*:*:*:*:*:*" % (spec["cpe_vendor"], spec["cpe_product"]),
                         "properties": [
                             {"name": "component:origin", "value": origin},
                             {"name": "component:source-availability", "value": tier},
@@ -298,17 +327,20 @@ def main():
                 ref = "mod:%s:firmware" % dev_slug
                 if ref not in comps:
                     comps[ref] = {
+                        # --- KISA 규격 components[] 정의 순서 ---
                         "type": "firmware", "bom-ref": ref,
                         "name": "%s Vendor Firmware/Application" % prod[:48],
                         "version": "NOASSERTION",
                         "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
-                        "scope": "required", "publisher": vend,
-                        "manufacturer": org(vend),
+                        "scope": "required",
+                        "publisher": vend,
+                        "manufacturer": org(vend),   # 규격: name 만
                         "supplier": org(vend),
                         "tags": ["firmware", "vendor-proprietary"],
-                        "purl": "pkg:generic/%s" % slug(prod),
-                        "copyright": "NOASSERTION",
                         "licenses": [{"license": {"id": "NOASSERTION"}}],
+                        "copyright": "NOASSERTION",
+                        "purl": "pkg:generic/%s" % slug(prod),
+                        # --- CycloneDX 확장 ---
                         "properties": [
                             {"name": "component:origin", "value": "vendor-proprietary"},
                             {"name": "component:source-availability", "value": "E"},
@@ -398,6 +430,7 @@ def main():
         advs_sorted = sorted(set(d["advisories"]))
         primary_adv = advs_sorted[0] if advs_sorted else ""
         top = {
+            # --- KISA 규격 metadata.component 정의 순서 ---
             "type": "device", "bom-ref": dev_ref, "name": "%s %s" % (vend, prod),
             "version": "NOASSERTION",
             "description": ("ICS/OT asset '%s' by %s, reverse-built from CISA ICS-CERT advisory %s."
@@ -407,22 +440,24 @@ def main():
             "purl": "pkg:generic/%s@NOASSERTION" % slug(prod),
             "copyright": "NOASSERTION",
             "cpe": "cpe:2.3:o:%s:%s:*:*:*:*:*:*:*:*" % (slug(vend), slug(prod)),
-            "manufacturer": org(vend),
-            "supplier": org(vend),
+            "manufacturer": org_full(vend),
+            "supplier": org_full(vend),
             "tags": sorted(set([base_platform, slug(vend), "ics", "reverse-sbom"])),
             "hashes": [{"alg": "SHA-256", "content": det_sha256(dev_ref)}],
-            # CISA 원본 CSAF 와 1:1 대조하기 위한 키.
-            # cisagov/CSAF: csaf_files/OT/white/<year>/<advisory_id>.json
-            "externalReferences": [{
-                "type": "advisories",
-                "url": "https://www.cisa.gov/news-events/ics-advisories/%s" % primary_adv,
-                "comment": "source ICS-CERT advisory (%s)" % primary_adv,
-            }],
             "licenses": [{"license": {"id": "NOASSERTION"}}],
-            "externalReferences": [{"type": "advisory",
-                "url": ["https://www.cisa.gov/news-events/ics-advisories/%s" % a for a in advs_sorted] or
-                       ["https://www.cisa.gov/news-events/ics-advisories"],
-                "comment": "Source CISA ICS-CERT advisories: %s" % (", ".join(advs_sorted) or "NOASSERTION")}],
+            # externalReferences.url 은 규격/CycloneDX 상 '문자열' 필드다. 이전 코드는
+            # (1) 같은 키를 두 번 정의해 첫 블록이 조용히 사라졌고 (2) url 을 배열로 넣어
+            # 규격을 벗어났다. 여러 어드바이저리는 항목을 여러 개 두어 각 url 을 문자열로.
+            # CISA CSAF 와 1:1 대조 키: cisagov/CSAF csaf_files/OT/white/<year>/<id>.json
+            "externalReferences": [
+                {"type": "advisory",
+                 "url": "https://www.cisa.gov/news-events/ics-advisories/%s" % a,
+                 "comment": "Source CISA ICS-CERT advisory %s" % a}
+                for a in advs_sorted
+            ] or [{"type": "advisory",
+                   "url": "https://www.cisa.gov/news-events/ics-advisories",
+                   "comment": "No source advisory id"}],
+            # --- CycloneDX 확장 (규격 상위집합) ---
             "properties": [
                 {"name": "ics:vendor", "value": vend},
                 {"name": "ics:product", "value": prod},
@@ -438,11 +473,11 @@ def main():
             "serialNumber": "urn:uuid:%s" % uuid.uuid5(NS, "reverse::" + dev_slug),
             "version": 1,
             "properties": [
-                {"name": "SBOM_CREATION_DATE", "value": "2026-04-10"},
-                {"name": "SBOM_MODIFY_DATE", "value": "2026-04-10"},
+                {"name": "SBOM_CREATION_DATE", "value": DOC_DATE_TIME},
+                {"name": "SBOM_MODIFY_DATE", "value": DOC_DATE_TIME},
             ],
             "metadata": {
-                "timestamp": "2026-04-10T00:00:00Z",
+                "timestamp": DOC_TIMESTAMP,
                 "lifecycles": [{"phase": "operations"}],
                 "manufacturer": DOC_ORG,
                 "tools": {"components": [{
