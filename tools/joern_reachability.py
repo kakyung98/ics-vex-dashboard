@@ -155,11 +155,13 @@ def main():
         print("note: joern not on PATH - every verdict will be 'unknown' until installed")
 
     out = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
-    for cve in cves:
+    for i, cve in enumerate(cves, 1):
+        if not a.cve and cve in out:                 # resume: skip already-judged
+            continue
         v, d = reachable(cve, loc.get(cve), cti.get(cve))
         out[cve] = {"cve": cve, "verdict": v, "detail": d}
-        print("  %-18s reachability=%-14s  %s" % (cve, v, d))
-    json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        print("  [%3d/%3d] %-18s reachability=%-14s  %s" % (i, len(cves), cve, v, d), flush=True)
+        json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)  # incremental
     print("-> %s (%d)" % (OUT, len(out)))
 
 

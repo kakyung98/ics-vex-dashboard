@@ -103,6 +103,8 @@ def main():
         if cve not in cti:
             print("  no CTI for %s - skip" % cve)
             continue
+        if not a.cve and cve in done and "error" not in done[cve]:  # resume
+            continue
         res = extract(cve, cti[cve], a.model)
         done[cve] = res
         if a.cve:
