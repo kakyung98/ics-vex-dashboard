@@ -114,6 +114,7 @@ def inject(sbom_path, csaf_path):
 
     top = ((sbom.get("metadata") or {}).get("component") or {})
     top_ref = top.get("bom-ref") or "device:unknown"
+    vend = top.get("publisher") or "NOASSERTION"   # 변형은 장비 벤더를 상속
 
     # 모델별 component
     comps = sbom.setdefault("components", [])
@@ -135,9 +136,19 @@ def inject(sbom_path, csaf_path):
         if info["version_range"]:
             props.append({"name": "ics:version-range", "value": info["version_range"]})
         comp = {
+            # --- KISA 규격 components[] 정의 순서 ---
             "type": "device", "bom-ref": ref, "name": nm or pid,
-            "version": "NOASSERTION", "scope": "required",
+            "version": "NOASSERTION",
             "description": "Product variant enumerated by the source CSAF product_tree.",
+            "scope": "required",
+            "publisher": vend,
+            "manufacturer": {"name": vend},   # 규격: name 만
+            "supplier": {"name": vend},
+            "tags": sorted({"ics", "product-variant", slug(vend)}),
+            "licenses": [{"license": {"id": "NOASSERTION"}}],
+            "copyright": "NOASSERTION",
+            "purl": "pkg:generic/%s@NOASSERTION" % slug(nm or pid),
+            # --- CycloneDX 확장 (모델번호/버전범위 등) ---
             "properties": props,
         }
         if info["cpe"]:
@@ -193,10 +204,15 @@ def inject(sbom_path, csaf_path):
         if not st or not st["affected"]:
             continue
         v["affects"] = [{"ref": vrefs[p]} for p in st["affected"]]
-        props = v.setdefault("properties", [])
+        # 재실행 멱등성: 이전 variant:* 를 걷어내고 다시 넣는다(컴포넌트 레벨과 동일).
+        # 이 dedup 이 없어 재주입마다 variant:affected-count 등이 누적됐다
+        # (디스크 샘플에서 3중복으로 관측됨).
+        props = [p for p in (v.get("properties") or [])
+                 if not p.get("name", "").startswith("variant:")]
         props.append({"name": "variant:affected-count", "value": str(len(st["affected"]))})
         props.append({"name": "variant:not-affected-count", "value": str(len(st["not_affected"]))})
         props.append({"name": "variant:source", "value": "cisa-csaf"})
+        v["properties"] = props
         n_scoped += 1
 
     return sbom, len(names), n_scoped
