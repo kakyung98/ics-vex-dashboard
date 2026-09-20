@@ -1133,7 +1133,6 @@ async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
-  compareNorm(sbom,document.getElementById('exp').value);
   const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});
   if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
@@ -1156,39 +1155,6 @@ async function run(){
   h+='</tbody></table>';
   h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
   o.innerHTML=h;
-}
-let _lastSbom=null,_lastExp=null;
-async function compareNorm(sbom,exp){
-  _lastSbom=sbom;_lastExp=exp;_pidMap=null;
-  const th=parseFloat((document.getElementById('ro-th')||{}).value||0.7);
-  let d=null;
-  try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,exposure:exp,threshold:th})});if(r.ok)d=await r.json();}catch(e){}
-  renderCompare(d);
-}
-function renderCompare(d){
-  const card=document.getElementById('cmp'),body=document.getElementById('cmp-body');
-  if(!d||!d.components){card.style.display='none';return;}
-  card.style.display='';const cm=d.comparison;
-  let h='<div style="overflow:auto"><table><thead><tr><th>Component</th><th>Exact CPE</th><th>RO-normalized CPE (closest)</th><th>RO ratio</th><th>Exact CVEs</th><th>Norm CVEs</th></tr></thead><tbody>';
-  for(const r of d.normalization){const flag=r.matched_by_normalization?' <span class="tag" style="color:var(--und)">fuzzy</span>':'';
-    let ncol;
-    if(r.normalized_match)ncol='<b>'+esc(r.normalized_match)+'</b>'+flag;
-    else if(r.best_match)ncol='<span class="hint">closest: '+esc(r.best_match)+' (&lt; threshold)</span>';
-    else ncol='<span class="hint">—</span>';
-    h+='<tr title="'+(r.matched_string?'RO matched on: '+esc(r.matched_string):'')+'"><td class="mono">'+esc(r.component)+' '+esc(r.version)+'</td>'
-      +'<td>'+(r.exact_match?esc(r.exact_match):'<span class="hint">no exact match</span>')+'</td>'
-      +'<td>'+ncol+'</td>'
-      +'<td class="mono">'+Number(r.ro_ratio).toFixed(2)+'</td><td class="mono">'+r.exact_cve_count+'</td><td class="mono">'+r.normalized_cve_count+'</td></tr>';}
-  h+='</tbody></table></div>';
-  h+='<div class="kpis" style="margin-top:14px">'
-    +'<div class="kpi"><b>'+cm.exact_total+'</b><span>exact CVEs</span></div>'
-    +'<div class="kpi"><b>'+cm.normalized_total+'</b><span>normalized CVEs</span></div>'
-    +'<div class="kpi"><b style="color:var(--safe)">'+cm.both.length+'</b><span>in both</span></div>'
-    +'<div class="kpi"><b style="color:var(--und)">'+cm.only_normalized.length+'</b><span>only via RO</span></div>'
-    +'<div class="kpi"><b style="color:var(--aff)">'+cm.only_exact.length+'</b><span>only exact</span></div></div>';
-  if(cm.only_normalized.length){h+='<div class="ct" style="margin-top:14px">CVEs recovered by RO-normalized CPE ('+cm.only_normalized.length+')</div><div class="hint">'
-    +cm.only_normalized.map(c=>'<a class="mono" href="https://nvd.nist.gov/vuln/detail/'+c+'" target="_blank" rel="noopener" style="margin-right:12px;white-space:nowrap">'+c+'</a>').join('')+'</div>';}
-  body.innerHTML=h;
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
@@ -1846,12 +1812,7 @@ ANALYZER_HTML = """<div class="card"><div class="row">
     <button onclick="document.getElementById('file').click()">Upload JSON</button>
     <button onclick="ex()">Example</button>
     <div id="fname" class="hint" style="margin-top:6px"></div></div>
-</div><div id="out" style="margin-top:12px"></div></div>
-
-<div class="card" id="cmp" style="display:none"><h3 style="margin:0 0 4px">CPE normalization &mdash; exact vs Ratcliff&ndash;Obershelp</h3>
-<p class="hint" style="margin:0 0 8px">Each SBOM component is fuzzy-matched to a CPE with the Ratcliff&ndash;Obershelp similarity (Python difflib); CVEs are re-identified from the normalized CPE and compared to the exact-match CVEs.</p>
-<div class="hint" style="margin:0 0 12px">Similarity threshold <input type="range" id="ro-th" min="0.3" max="1" step="0.05" value="0.7" style="vertical-align:middle;width:180px" oninput="document.getElementById('ro-thv').textContent=Number(this.value).toFixed(2);if(_lastSbom)compareNorm(_lastSbom,_lastExp)"> <b id="ro-thv" class="mono">0.70</b> &middot; components below it stay unmatched (closest CPE still shown)</div>
-<div id="cmp-body"></div></div>"""
+</div><div id="out" style="margin-top:12px"></div></div>"""
 
 CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Dataset axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
 <p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>

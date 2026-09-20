@@ -131,7 +131,6 @@ function cveIdsFor(comp,ver){if(!comp)return [];const vmap=comp.versions||{};let
 // is what makes ambiguity detectable; without it `openssl` silently wins over
 // `openssh` at 0.857.
 function roBest(name){const n=(name||'').toLowerCase();let best=null,br=0,bs=null,second=0;for(const c of KB_COMPS){let cr=0,cs=null;for(const s of [c.name,c.cpe_product,c.key].filter(Boolean)){const r=roRatio(n,s);if(r>cr){cr=r;cs=s;}}if(cr>br){second=br;br=cr;best=c;bs=cs;}else if(cr>second){second=cr;}}return [best,Math.round(br*1000)/1000,bs,Math.round(second*1000)/1000];}
-function compareNormJs(sbom,exp,th){const comps=(sbom.components||[]).filter(c=>c&&c.name).map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rows=[];const ex=new Set(),nm=new Set();for(const [name,ver] of comps){const exact=CVE_KB[name.toLowerCase()];const exIds=cveIdsFor(exact,ver);exIds.forEach(x=>ex.add(x));const rb=roBest(name),nc=rb[0],ratio=rb[1],ms=rb[2];const normalized=ratio>=th?nc:null;const nmIds=cveIdsFor(normalized,ver);nmIds.forEach(x=>nm.add(x));rows.push({component:name,version:ver||'(unpinned)',exact_match:exact?exact.name:null,normalized_match:normalized?normalized.name:null,best_match:nc?nc.name:null,matched_string:ms,ro_ratio:ratio,matched_by_normalization:!!(normalized&&!exact),exact_cve_count:exIds.length,normalized_cve_count:nmIds.length});}const both=[...ex].filter(x=>nm.has(x)).sort();const onlyE=[...ex].filter(x=>!nm.has(x)).sort();const onlyN=[...nm].filter(x=>!ex.has(x)).sort();return {threshold:th,components:comps.length,normalization:rows,comparison:{exact_total:ex.size,normalized_total:nm.size,both:both,only_exact:onlyE,only_normalized:onlyN}};}
 
 // --- component identity and version ranges (mirrors src/sbom_match.py) -------
 // Name similarity must not decide identity: RO scores `openssl` against
@@ -211,12 +210,6 @@ old_run = ("  const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Ty
            "  const d=await r.json();")
 assert old_run in html, "missing run() fetch block"
 html = html.replace(old_run, "  const d=computeVex(sbom,document.getElementById('exp').value);")
-
-# CPE normalization compare: server endpoint -> client-side RO fallback
-old_cmp = ("  try{const r=await fetch('/api/vex_compare',{method:'POST',headers:{'Content-Type':'application/json'},"
-           "body:JSON.stringify({sbom,exposure:exp,threshold:th})});if(r.ok)d=await r.json();}catch(e){}")
-assert old_cmp in html, "missing compareNorm fetch"
-html = html.replace(old_cmp, "  d=compareNormJs(sbom,exp,th);")
 
 # inject client-side engine right before run()
 assert "async function run(){" in html
