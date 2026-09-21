@@ -52,10 +52,13 @@ Parse the SBOM into vendor/product, component/version and CPE/purl, then resolve
 **component relationship**: separate the ICS product (the device — e.g. a Siemens PLC)
 from the **embedded components** it ships (OpenSSL, the Linux kernel, curl). This split
 is what reaches the 27.8% of CVEs whose CPE names an embedded upstream component rather
-than the product; an SBOM that lists only products cannot match them. SBOM parse and
-identity live in `src/cpe_match_l0l3.py` (identifier-first: purl/cpe, then exact name,
-then ICS display-name normalization); the explicit embedded-vs-product layering is the
-piece still being built out.
+than the product; an SBOM that lists only products cannot match them. The layering is
+`src/component_resolve.py`: it classifies each component by CycloneDX `type` plus its
+identifiers into `ics-product` / `product-variant` / `embedded-component`, so Stage 2
+identifies each layer on its own (e.g. a CoDeSys device whose embedded CODESYS runtime
+resolves to `codesys:control_runtime_system` and its 10 CVEs, separately from the
+product). Component identity itself lives in `src/cpe_match_l0l3.py` (identifier-first:
+purl/cpe, then exact name, then ICS display-name normalization).
 
 ### Stage 2 — CVE Identification  (`cpe_match_l0l3.py`, `build_cpe_index.py`)
 
