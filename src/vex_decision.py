@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 """The VEX decision logic, in one place.
 
-Until now the rules lived in three modules that could drift apart:
-  tools/taint_reach.py      the Q3 gate and its evidence-strength guard
+The source-level Q1-Q3 gates are now the VEX-v2 engines (tools/source_locate.py,
+joern_reachability.py, z3_controllability.py, orchestrated by vex_judge_v2.py). The
+other rule surfaces this module keeps aligned with:
   src/vex_source_unavailable.py  the closed-firmware decision tree
   src/vex_batch.py          the evidence ladder over the corpus
 
