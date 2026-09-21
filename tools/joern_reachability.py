@@ -66,11 +66,36 @@ def _joern_env():
     return e
 
 
-def _joern_cmd(bin_path, script):
-    """A subprocess argv for the launcher; .bat must go through cmd on Windows."""
+def _launcher_cmd(bin_path, args):
+    """A subprocess argv for a joern-cli launcher; .bat must go through cmd on Windows."""
     if bin_path.lower().endswith(".bat"):
-        return ["cmd", "/c", bin_path, "--script", script]
-    return [bin_path, "--script", script]
+        return ["cmd", "/c", bin_path] + list(args)
+    return [bin_path] + list(args)
+
+
+def _frontend_bin(lang):
+    """The CPG frontend launcher for a language (c2cpg / javasrc2cpg)."""
+    base = os.path.join(_HOME, "opt", "joern-cli")
+    name = "javasrc2cpg" if lang == "java" else "c2cpg"
+    for ext in (".bat", ""):
+        p = os.path.join(base, name + ext)
+        if os.path.exists(p):
+            return p
+    return shutil.which(name)
+
+
+def _detect_lang(src):
+    """Dominant language of a snapshot, for frontend selection (c / java).
+    The corpus is 101 C/C++ and 3 Java snapshots."""
+    n = {"c": 0, "java": 0}
+    for _root, _dirs, files in os.walk(src):
+        for f in files:
+            e = f.rsplit(".", 1)[-1].lower() if "." in f else ""
+            if e in ("c", "h", "cc", "cpp", "cxx", "hpp"):
+                n["c"] += 1
+            elif e == "java":
+                n["java"] += 1
+    return "java" if n["java"] > n["c"] else "c"
 
 
 _SRC_EXT = (".c", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".java", ".py", ".go", ".js")
@@ -111,29 +136,47 @@ def _run(argv, env, timeout):
         return "", "timeout", True
 
 
-def _query(src_dir, targets, entries):
-    """One Joern script (one CPG build): is ANY target transitively called from an
-    entry method? Entries are the CTI's entry_points, or - when it named none - the
-    call-graph roots (internal methods with no caller), i.e. the library's API surface.
-    A target that is itself a root counts as reachable."""
+def _query(cpg_bin, targets, entries):
+    """Load a pre-built base CPG and apply only the default overlays (base, control
+    flow, type, CALLGRAPH) - NOT the dataflow overlay, whose reaching-definitions pass
+    explodes on some code (dnsmasq's 45 files timed out at 15 min under importCode).
+    The call graph is all reachability needs. Is any target transitively called from an
+    entry (the CTI's entry_points, else the call-graph roots)? A target that is itself a
+    root counts as reachable."""
     tl = "List(%s)" % ", ".join('"%s"' % t for t in targets)
     if entries:
-        el = "List(%s)" % ", ".join('"%s"' % e for e in entries)
-        entry_expr = "%s.flatMap(n => cpg.method.nameExact(n).l)" % el
+        entry_expr = ("List(%s).toSet.intersect(c.method.name.toSet)"
+                      % ", ".join('"%s"' % e for e in entries))
     else:
-        entry_expr = "cpg.method.filter(m => !m.isExternal && m.caller.isEmpty).l"
-    return '''importCode(inputPath="%s")
+        entry_expr = "c.method.filter(m => !m.isExternal && m.caller.isEmpty).name.toSet"
+    # BFS over a name->callees adjacency map (O(V+E)); the old
+    # repeat(_.callee)(_.emit.maxDepth(30)) explored PATHS and exploded on dnsmasq's
+    # densely-connected graph (300s query timeout). Names dedup, so no re-visiting.
+    return '''val c = io.shiftleft.codepropertygraph.cpgloading.CpgLoader.load("%s")
+io.joern.x2cpg.X2Cpg.applyDefaultOverlays(c)
 val targets = %s.toSet
-val defined = cpg.method.name.toSet.intersect(targets)
+val defined = c.method.name.toSet.intersect(targets)
 if (defined.isEmpty) { println("VERDICT:no-target") }
 else {
-  val entryM = %s
-  val entryNames = entryM.name.toSet
-  val reached = entryM.repeat(_.callee)(_.emit.maxDepth(30)).name.toSet ++ entryNames
+  val edges = scala.collection.mutable.Map[String, Set[String]]()
+  c.call.foreach { call =>
+    val caller = call.method.name
+    call.callee.name.foreach { ce => edges(caller) = edges.getOrElse(caller, Set.empty) + ce }
+  }
+  val entryNames: Set[String] = %s
+  var reached = entryNames
+  var frontier = entryNames
+  var iter = 0
+  while (frontier.nonEmpty && iter < 2000) {
+    val nxt = frontier.flatMap(n => edges.getOrElse(n, Set.empty)) -- reached
+    reached = reached ++ nxt
+    frontier = nxt
+    iter += 1
+  }
   val hit = defined.exists(reached.contains)
-  println("VERDICT:" + (if (hit) "reachable" else if (entryM.isEmpty) "no-entry" else "not-reachable"))
+  println("VERDICT:" + (if (hit) "reachable" else if (entryNames.isEmpty) "no-entry" else "not-reachable"))
 }
-''' % (src_dir.replace("\\", "/"), tl, entry_expr)
+''' % (cpg_bin.replace("\\", "/"), tl, entry_expr)
 
 
 def reachable(cve, location, extraction):
@@ -150,16 +193,27 @@ def reachable(cve, location, extraction):
         return "unknown", "snapshot missing"
     if _snapshot_too_big(src):
         return "unknown", "codebase too large for a CPG (skipped)"
+    lang = _detect_lang(src)
+    fe = _frontend_bin(lang)
+    if not fe:
+        return "unknown", "no %s frontend" % lang
     entries = ((extraction or {}).get("reachability") or {}).get("entry_points") or []
+    env = _joern_env()
+    cpg = os.path.join(tempfile.gettempdir(), "vexv2_%s.cpg.bin" % cve)
     script = None
     try:
+        _o, _e, to = _run(_launcher_cmd(fe, ["-o", cpg, src]), env, 600)      # build base CPG
+        if to:
+            return "unknown", "%s CPG build timed out (600s)" % lang
+        if not os.path.exists(cpg):
+            return "unknown", "%s CPG build failed (%s)" % (lang, (_e or _o or "")[-140:])
         with tempfile.NamedTemporaryFile("w", suffix=".sc", delete=False,
                                          encoding="utf-8") as f:
-            f.write(_query(src, funcs, entries))   # one CPG build, all targets
+            f.write(_query(cpg, funcs, entries))
             script = f.name
-        out, err, timed_out = _run(_joern_cmd(jb, script), _joern_env(), 900)
-        if timed_out:
-            return "unknown", "joern: CPG build timed out (900s, large codebase)"
+        out, err, to2 = _run(_launcher_cmd(jb, ["--script", script]), env, 300)   # query
+        if to2:
+            return "unknown", "joern query timed out (300s)"
         line = next((l for l in out.splitlines() if l.startswith("VERDICT:")), "")
         v = line.split(":", 1)[1].strip() if ":" in line else ""
         if v == "reachable":
@@ -174,11 +228,12 @@ def reachable(cve, location, extraction):
     except Exception as e:
         return "unknown", "joern error: %s" % e
     finally:
-        if script and os.path.exists(script):
-            try:
-                os.unlink(script)
-            except OSError:
-                pass
+        for _p in (cpg, script):
+            if _p and os.path.exists(_p):
+                try:
+                    os.unlink(_p)
+                except OSError:
+                    pass
 
 
 def main():
