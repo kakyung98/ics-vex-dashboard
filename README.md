@@ -14,59 +14,88 @@ never in synthetic deployment context.
 
 ---
 
-## Methodology (current) — SBOM→CVE identification, then CVE→VEX judgment
+## Architecture — three stages
 
-Two stages, each rebuilt to be more accurate and more honest than a name-similarity
-match or a single-model verdict.
+An ICS asset SBOM becomes VEX in three stages: resolve the components, identify their
+CVEs, then verify each CVE against the actual source. Each stage was rebuilt to be more
+accurate and more honest than a name-similarity match or a single-model verdict.
 
-### 1. SBOM → CVE identification (precision)
+```
+ICS Asset SBOM
+      │
+      ▼
+┌ Stage 1 · Component Resolution ──────────────────────────────┐
+│  vendor/product · component/version · CPE/purl               │
+│  component relationship:                                     │
+│     ICS product (Siemens PLC)  ─┐                            │
+│     embedded component (OpenSSL / Linux / curl) ─┘ merge     │
+└──────────────────────────────────────────────────────────────┘
+      │
+      ▼
+┌ Stage 2 · CVE Identification ────────────────────────────────┐
+│  NVD CPE index → candidate CVEs                              │
+│  vendor evidence + version evidence → component–CVE mapping  │
+└──────────────────────────────────────────────────────────────┘
+      │
+      ▼
+┌ Stage 3 · VEX Verification ──────────────────────────────────┐
+│  CTI extraction (LLM agent) → vulnerable target resolution   │
+│     (patch → description)                                    │
+│  evidence: Q1 present? · Q2 reach? · Q3 control?             │
+│     → evidence graph → VEX decision                          │
+└──────────────────────────────────────────────────────────────┘
+```
 
-CPE/name-similarity matching against a small catalogue fails on ICS SBOMs in nine
-measured ways (see the **ICS-SBOM to CVE** page). The current matcher
-(`src/cpe_match_l0l3.py`, index from `tools/build_cpe_index.py`) instead:
+### Stage 1 — Component Resolution
 
-- **L0 — the full NVD CPE product index** (13,764 products vs a 42-entry OSS KB), so
+Parse the SBOM into vendor/product, component/version and CPE/purl, then resolve the
+**component relationship**: separate the ICS product (the device — e.g. a Siemens PLC)
+from the **embedded components** it ships (OpenSSL, the Linux kernel, curl). This split
+is what reaches the 27.8% of CVEs whose CPE names an embedded upstream component rather
+than the product; an SBOM that lists only products cannot match them. SBOM parse and
+identity live in `src/cpe_match_l0l3.py` (identifier-first: purl/cpe, then exact name,
+then ICS display-name normalization); the explicit embedded-vs-product layering is the
+piece still being built out.
+
+### Stage 2 — CVE Identification  (`cpe_match_l0l3.py`, `build_cpe_index.py`)
+
+- **NVD CPE index** — the full product index (13,764 products vs a 42-entry OSS KB), so
   vendor ICS products resolve at all: "Sielco Sistemi Winlog Lite <2.07.09" →
-  `winlog_lite`. Identity is identifier-first (purl/cpe), then exact name, then **ICS
-  display-name normalization** (strip vendor prefix + version suffix, test the
-  contiguous n-grams as exact index keys), then fuzzy-only-if-unambiguous. Version is
-  decided against the NVD range as True/False/None (undecidable never read as False).
-- **L3 — vendor evidence grades a match** (`anchored` / `canonical` / `co-listed`)
-  rather than hard-filtering: a hard vendor filter drops the embedded-component layer
-  (a device runs windriver/redhat linux; the vendor differs). `strict=True` is the
-  opt-in precision mode. Measured: over 20,429 reverse_sbom names, exact+normalized
-  resolves 21.2% — normalization does nearly all of it (`results/l0l3_delta.json`).
+  `winlog_lite`. Candidate CVEs come from that product's NVD entries.
+- **Vendor evidence** grades each candidate `anchored` / `canonical` / `co-listed`
+  rather than hard-filtering (a hard filter drops the embedded layer). **Version
+  evidence** decides the installed version against the NVD range as True/False/None
+  (undecidable never read as False). The output is the component–CVE mapping. Measured:
+  over 20,429 reverse_sbom names, exact+normalized resolves 21.2% (`results/l0l3_delta.json`).
 
-Served live from the API (`/api/vex` runs the L0+L3 pass; the static Pages bundle keeps
-the in-browser 42-KB matcher because the 18 MB index cannot ship in the browser — see
-`deploy/`).
+Served live from the API (`/api/vex`); the static Pages bundle keeps the in-browser
+42-KB matcher because the 18 MB index cannot ship in the browser (see `deploy/`).
 
-### 2. CVE → VEX judgment (VEX-v2, for source-collectable CVEs)
+### Stage 3 — VEX Verification  (source-collectable CVEs)
 
-The judgment keeps the CISA justification vocabulary but swaps the engines: an LLM
-agent structures the CTI, then a solver/analysis tool **decides** each gate — the
-model never emits the verdict itself.
+Keeps the CISA justification vocabulary but swaps the engines: an LLM agent structures
+the CTI, then a solver / static-analysis tool **decides** each gate — the model never
+emits the verdict itself; "unknown" never clears.
 
-```
-CTI (NVD desc + CWE + refs)
-  └─(1) LLM agent  tools/cti_extract.py  (Ollama qwen2.5-coder:14b, $0)
-        → { vulnerable component, function(s), reachability info, controllability info }
-  └─(2) source search  tools/source_locate.py   present? (CTI funcs, else patch fallback + func_index)
-        absent → not_affected / vulnerable_code_not_present
-  └─(3) reachability  tools/joern_reachability.py   Joern CPG: reachable from an entry point?
-        no → not_affected / vulnerable_code_not_in_execute_path   (earlier gate)
-  └─(4) controllability  tools/z3_controllability.py   Z3: attacker inputs satisfy the trigger?
-        (only run when reachable) no → not_affected / vulnerable_code_cannot_be_controlled_by_adversary
-  └─(5) orchestrator  tools/vex_judge_v2.py   present ∧ reachable ∧ controllable → affected
-        any gate unknown before a hard "no" → under_investigation (unknown never clears)
-```
+- **CTI extraction (LLM agent)** — `tools/cti_extract.py` (Ollama qwen2.5-coder:14b, $0)
+  extracts {vulnerable component, function(s), reachability info, controllability info}
+  from NVD desc + CWE + refs.
+- **Vulnerable target resolution** — `tools/source_locate.py`: the CTI's function names
+  when it named any, else the patch-localised targets (patch → description fallback),
+  checked against `func_index`.
+- **Evidence verification** — three gates, in flow order:
+  - **Q1 present?** absent → not_affected / vulnerable_code_not_present
+  - **Q2 reachable?** `tools/joern_reachability.py` (Joern CPG) — no → not_affected /
+    vulnerable_code_not_in_execute_path  *(the earlier gate)*
+  - **Q3 controllable?** `tools/z3_controllability.py` (Z3, run only when reachable) — no
+    → not_affected / vulnerable_code_cannot_be_controlled_by_adversary
+- **Evidence graph → VEX decision** — `tools/vex_judge_v2.py`: present ∧ reachable ∧
+  controllable → affected; any gate unknown before a hard "no" → under_investigation.
 
-Joern is a JVM tool and is not bundled; until it is installed the reachability gate
-returns `unknown` and those CVEs stay `under_investigation` (`deploy/README.md` has the
-install). The older engines this replaces — the fine-tuned Q1 judge
-(`tools/judge_ics_cves.py`), the static call-graph Q2 (`tools/callgraph_reach.py`) and
-the taint Q3 (`tools/taint_reach.py`) — are documented in the sections below and will be
-removed once VEX-v2 has been run over the full 104-snapshot set.
+Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). The older
+engines this replaces — the fine-tuned Q1 judge (`tools/judge_ics_cves.py`), the static
+call-graph Q2 (`tools/callgraph_reach.py`), the taint Q3 (`tools/taint_reach.py`) — are
+documented below and get removed once VEX-v2 has run over the full 104-snapshot set.
 
 ## Why this exists — public ICS VEX is essentially absent
 
