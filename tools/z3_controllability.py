@@ -23,6 +23,7 @@ import argparse
 import ast
 import json
 import os
+import re
 
 import z3
 
@@ -65,51 +66,109 @@ def _mk_var(v):
     return z3.Int(v["name"])
 
 
-def _to_z3(node, env):
-    """Whitelisted Python-AST -> Z3 expression. Raises on anything unexpected."""
+def _normalize(t):
+    """LLMs mix C-style operators into the trigger; make it valid Python."""
+    t = t.replace("&&", " and ").replace("||", " or ")
+    return re.sub(r"!(?!=)", " not ", t)     # logical not, but keep !=
+
+
+_STR2INT = {}
+
+
+def _str_const(s):
+    """A string literal -> a distinct symbolic integer, so `x == 'foo'` is decidable."""
+    if s not in _STR2INT:
+        _STR2INT[s] = len(_STR2INT) + 1
+    return _STR2INT[s]
+
+
+def _as_bool(e):
+    """Coerce an expression to a Z3 Bool (an int in a boolean position means != 0)."""
+    if isinstance(e, bool):
+        return z3.BoolVal(e)
+    if isinstance(e, (int, float)):
+        return z3.BoolVal(e != 0)
+    if z3.is_bool(e):
+        return e
+    return e != 0
+
+
+_FRESH = [0]
+
+
+def _fresh(env, owner, kind):
+    """A fresh symbolic variable for an opaque atom (function call, membership)."""
+    _FRESH[0] += 1
+    nm = "_f%d" % _FRESH[0]
+    env[nm] = z3.Bool(nm) if kind == "bool" else z3.Int(nm)
+    owner[nm] = "attacker"
+    return env[nm]
+
+
+def _to_z3(node, env, owner):
+    """Python-AST -> Z3. Permissive: an undeclared name / string / call / membership
+    becomes a fresh symbolic (attacker-owned) atom rather than a parse failure, so a
+    well-formed predicate is decidable even when the LLM did not declare every term."""
     if isinstance(node, ast.Expression):
-        return _to_z3(node.body, env)
+        return _to_z3(node.body, env, owner)
     if isinstance(node, ast.BoolOp):
-        return _OPS[type(node.op)]([_to_z3(v, env) for v in node.values])
+        return _OPS[type(node.op)]([_as_bool(_to_z3(v, env, owner)) for v in node.values])
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
-        return _OPS[ast.Not]([_to_z3(node.operand, env)])
-    if isinstance(node, ast.BinOp):
-        return _OPS[type(node.op)](_to_z3(node.left, env), _to_z3(node.right, env))
+        return z3.Not(_as_bool(_to_z3(node.operand, env, owner)))
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        return -_to_z3(node.operand, env, owner)
+    if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
+        return _OPS[type(node.op)](_to_z3(node.left, env, owner), _to_z3(node.right, env, owner))
     if isinstance(node, ast.Compare) and len(node.ops) == 1:
-        return _OPS[type(node.ops[0])](_to_z3(node.left, env), _to_z3(node.comparators[0], env))
+        op = type(node.ops[0])
+        if op in (ast.In, ast.NotIn):
+            return _fresh(env, owner, "bool")           # membership is opaque
+        return _OPS[op](_to_z3(node.left, env, owner), _to_z3(node.comparators[0], env, owner))
     if isinstance(node, ast.Name):
-        if node.id in env:
-            return env[node.id]
         if node.id in ("True", "False"):
             return z3.BoolVal(node.id == "True")
-        raise ValueError("undeclared name %r" % node.id)
+        if node.id not in env:
+            env[node.id] = z3.Int(node.id)              # auto-declare
+            owner.setdefault(node.id, "attacker")
+        return env[node.id]
     if isinstance(node, ast.Constant):
         if isinstance(node.value, bool):
             return z3.BoolVal(node.value)
         if isinstance(node.value, (int, float)):
             return node.value
+        if isinstance(node.value, str):
+            return _str_const(node.value)
         raise ValueError("unsupported constant")
+    if isinstance(node, ast.Call):
+        return _fresh(env, owner, "int")                # opaque function result
     raise ValueError("unsupported node %s" % type(node).__name__)
 
 
 def decide(model):
-    """(verdict, detail) from a formalised constraint model, using Z3."""
+    """(verdict, detail) from a formalised constraint model, using Z3.
+
+    Only a genuinely empty trigger is 'no model'; declared variables are optional
+    because _to_z3 auto-declares any term the LLM named in the predicate."""
     trigger = (model or {}).get("trigger") or ""
-    vs = (model or {}).get("variables") or []
-    if not trigger or not vs:
+    if not trigger.strip():
         return "unknown", "no formal model produced"
+    trigger = _normalize(trigger)
+    vs = (model or {}).get("variables") or []
     env = {v["name"]: _mk_var(v) for v in vs if v.get("name")}
+    owner = {v["name"]: (v.get("owner") or "attacker") for v in vs if v.get("name")}
     try:
-        expr = _to_z3(ast.parse(trigger, mode="eval"), env)
+        expr = _as_bool(_to_z3(ast.parse(trigger, mode="eval"), env, owner))
     except Exception as e:
         return "unknown", "unparseable trigger: %s" % e
     s = z3.Solver()
     s.add(expr)
     # pin environment variables the attacker cannot change to their default values
-    owner = {v["name"]: v.get("owner") for v in vs}
     for name, val in (model.get("environment_fixed") or {}).items():
         if name in env and owner.get(name) == "environment":
-            s.add(env[name] == val)
+            try:
+                s.add(env[name] == val)
+            except Exception:
+                pass
     r = s.check()
     if r == z3.sat:
         return "controllable", "attacker inputs satisfy the trigger under env defaults"
