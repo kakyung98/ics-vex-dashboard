@@ -1975,11 +1975,11 @@ removed every one of them.</p>
   <div class="vm-split">
     <div class="vm-lane vm-yes">
       <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q1&ndash;Q3)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub"><b>SecureBERT</b> routes CVE&harr;component &rarr; <b>CodeBERT</b> matches the code to the vuln/patched reference &rarr; fine-tuned <b>sLLM</b> (Qwen2.5-Coder-7B) judges presence &mdash; held-out macro-F1 <b>0.892</b>, but <b>0.333</b> on the ICS pairs, so no ICS statement rests on it</span></div>
+      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub">static call-graph reachability (<span class="mono">tools/callgraph_reach.py</span>); a triggering execution / PoC is the strongest confirmation</span></div>
+      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub">a reproducer / fuzzing drives the vulnerable path (CWE + patch-diff guided)</span></div>
+      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
     </div>

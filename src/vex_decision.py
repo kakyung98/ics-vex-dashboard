@@ -68,26 +68,26 @@ TARGET_SOURCES = {
 QUESTIONS = [
     {"id": "Q1", "ask": "Is the vulnerable code present?",
      "clears_with": ["component_not_present", "vulnerable_code_not_present"],
-     "how": "SBOM component match; fix-commit construct present in the build",
+     "how": "the CTI-located vulnerable function is defined in the collected source "
+            "(tools/source_locate.py; CTI function names, else the patch-localised "
+            "targets, checked against the snapshot function index)",
      "state": "implemented",
-     "result": "the fine-tuned judge scores macro-F1 0.892 held-out but collapses "
-               "to `affected` on the 34 ICS pairs (macro-F1 0.333), so no ICS "
-               "statement currently rests on its output"},
+     "result": "over the 104 source-collectable CVEs: present 92, component-only 12 "
+               "(the function could not be located)"},
     {"id": "Q2", "ask": "Is it on an executed path?",
      "clears_with": ["vulnerable_code_not_in_execute_path"],
-     "how": "static call graph from all entry points (tools/callgraph_reach.py)",
+     "how": "Joern CPG call-graph reachability from entry points "
+            "(tools/joern_reachability.py, call-graph-only - no dataflow)",
      "state": "implemented",
-     "result": "reachable 100, target-not-found 4, no-source 0 - unreachable 0; Java trees parse now, so no snapshot is unreadable"},
+     "result": "over the 104 source-collectable CVEs: reachable 65, not-reachable 1, "
+               "unknown 38 (16 oversized snapshots skipped, 12 with no located function)"},
     {"id": "Q3", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
-     "how": "the same call graph walked only from tainted entries - I/O readers, "
-            "public-header API, and every address-taken function "
-            "(tools/taint_reach.py)",
+     "how": "Z3 decides whether attacker-controlled inputs satisfy the trigger, from "
+            "an LLM formalisation of the CTI (tools/z3_controllability.py)",
      "state": "implemented",
-     "result": "controllable 99, target-not-found 4, no-source 0 - not-controllable 1 "
-               "(Spring4Shell, held at under_investigation: Java's reflection and "
-               "framework dispatch leave the entry model without API or indirect "
-               "roots), clearances 0"},
+     "result": "controllable 56, not-controllable 3, unknown 45 (trigger not "
+               "formalisable to SMT); the model formalises, the solver decides"},
 ]
 
 # --- why the call graph is walked conservatively ------------------------------
