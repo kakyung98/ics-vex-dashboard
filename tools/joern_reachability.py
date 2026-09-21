@@ -73,6 +73,44 @@ def _joern_cmd(bin_path, script):
     return [bin_path, "--script", script]
 
 
+_SRC_EXT = (".c", ".cc", ".cpp", ".cxx", ".h", ".hpp", ".java", ".py", ".go", ".js")
+
+
+def _snapshot_too_big(src, max_files=4000):
+    """A CPG for a huge tree (glibc/linux/u-boot) explodes on the dataflow pass and
+    never finishes; skip it rather than burn the timeout. Counts source files."""
+    n = 0
+    for _root, _dirs, files in os.walk(src):
+        n += sum(1 for f in files if f.endswith(_SRC_EXT))
+        if n > max_files:
+            return True
+    return False
+
+
+def _run(argv, env, timeout):
+    """Run joern with a hard timeout that also kills the JVM grandchild. Windows
+    subprocess timeout only kills the `cmd` child, orphaning java (seen churning
+    12 CPU-hours on glibc); taskkill /T takes the whole tree down.
+    Returns (stdout, stderr, timed_out)."""
+    p = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         text=True, env=env)
+    try:
+        out, err = p.communicate(timeout=timeout)
+        return out, err, False
+    except subprocess.TimeoutExpired:
+        try:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)],
+                           capture_output=True)
+        except Exception:
+            pass
+        try:
+            p.kill()
+            p.communicate(timeout=30)
+        except Exception:
+            pass
+        return "", "timeout", True
+
+
 def _query(src_dir, targets, entries):
     """One Joern script (one CPG build): is ANY target transitively called from an
     entry method? Entries are the CTI's entry_points, or - when it named none - the
@@ -110,6 +148,8 @@ def reachable(cve, location, extraction):
     src = os.path.join(SNAP, cve, snap) if snap else None
     if not src or not os.path.isdir(src):
         return "unknown", "snapshot missing"
+    if _snapshot_too_big(src):
+        return "unknown", "codebase too large for a CPG (skipped)"
     entries = ((extraction or {}).get("reachability") or {}).get("entry_points") or []
     script = None
     try:
@@ -117,9 +157,10 @@ def reachable(cve, location, extraction):
                                          encoding="utf-8") as f:
             f.write(_query(src, funcs, entries))   # one CPG build, all targets
             script = f.name
-        r = subprocess.run(_joern_cmd(jb, script), capture_output=True,
-                           text=True, timeout=2400, env=_joern_env())
-        line = next((l for l in r.stdout.splitlines() if l.startswith("VERDICT:")), "")
+        out, err, timed_out = _run(_joern_cmd(jb, script), _joern_env(), 900)
+        if timed_out:
+            return "unknown", "joern: CPG build timed out (900s, large codebase)"
+        line = next((l for l in out.splitlines() if l.startswith("VERDICT:")), "")
         v = line.split(":", 1)[1].strip() if ":" in line else ""
         if v == "reachable":
             return "reachable", "joern: a located function is reachable from an entry point"
@@ -129,7 +170,7 @@ def reachable(cve, location, extraction):
             return "unknown", "joern: located functions not present in the CPG"
         if v == "no-entry":
             return "unknown", "joern: no entry model"
-        return "unknown", "joern: no verdict (%s)" % ((r.stderr or "")[-160:] or "no output")
+        return "unknown", "joern: no verdict (%s)" % ((err or "")[-160:] or "no output")
     except Exception as e:
         return "unknown", "joern error: %s" % e
     finally:
