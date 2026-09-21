@@ -31,6 +31,7 @@ from cti_extract import _ollama  # shared Ollama client
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CTI = os.path.join(BASE, "data", "cti_extractions.json")
 LOC = os.path.join(BASE, "data", "source_locations.json")
+REACH = os.path.join(BASE, "data", "reachability.json")
 OUT = os.path.join(BASE, "data", "controllability.json")
 
 _SYS = (
@@ -143,8 +144,19 @@ def main():
 
     cti = json.load(open(CTI, encoding="utf-8")) if os.path.exists(CTI) else {}
     loc = json.load(open(LOC, encoding="utf-8")) if os.path.exists(LOC) else {}
-    cves = [a.cve] if a.cve else sorted(loc) if a.all else None
-    if not cves:
+    reach = json.load(open(REACH, encoding="utf-8")) if os.path.exists(REACH) else {}
+    if a.cve:
+        cves = [a.cve]
+    elif a.all:
+        # VEX flow: reachability (Joern) is the earlier gate, so controllability only
+        # matters where the code is reachable. Skip the rest - they are already decided.
+        if reach:
+            cves = sorted(c for c in loc if reach.get(c, {}).get("verdict") == "reachable")
+            print("  gating on reachability: %d reachable of %d located" % (len(cves), len(loc)))
+        else:
+            cves = sorted(loc)
+            print("  note: no reachability.json yet - run joern_reachability first; processing all")
+    else:
         ap.error("pass --cve CVE-XXXX or --all")
 
     out = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
