@@ -95,10 +95,12 @@ emits the verdict itself; "unknown" never clears.
 - **Evidence graph → VEX decision** — `tools/vex_judge_v2.py`: present ∧ reachable ∧
   controllable → affected; any gate unknown before a hard "no" → under_investigation.
 
-Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). The older
-engines this replaces — the fine-tuned Q1 judge (`tools/judge_ics_cves.py`), the static
-call-graph Q2 (`tools/callgraph_reach.py`), the taint Q3 (`tools/taint_reach.py`) — are
-documented below and get removed once VEX-v2 has run over the full 104-snapshot set.
+Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the
+104 source-collectable CVEs, VEX-v2 gives 39 `affected`, 3 `not_affected` and 62
+`under_investigation` (`results/vex_v2_summary.json`). The older source-level engines it
+replaced — the fine-tuned Q1 judge, the static call-graph Q2 and the taint Q3 — have been
+**removed** now that it is validated; some sections further below still describe that
+earlier approach and are being retired.
 
 ## Why this exists — public ICS VEX is essentially absent
 
