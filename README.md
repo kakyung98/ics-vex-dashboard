@@ -96,7 +96,7 @@ emits the verdict itself; "unknown" never clears.
   controllable → affected; any gate unknown before a hard "no" → under_investigation.
 
 Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the
-104 source-collectable CVEs, VEX-v2 gives 39 `affected`, 3 `not_affected` and 62
+104 source-collectable CVEs, VEX-v2 gives 53 `affected`, 6 `not_affected` and 45
 `under_investigation` (`results/vex_v2_summary.json`). The older source-level engines it
 replaced — the fine-tuned Q1 judge, the static call-graph Q2 and the taint Q3 — have been
 **removed** now that it is validated; some sections further below still describe that
@@ -189,150 +189,20 @@ moment the topology changes. Operational context enters only as an **SSVC
 priority**, whose System Exposure is a value the user chooses for a real
 deployment — not a synthetic number.
 
-### The code-level questions
+### The code-level questions — see Stage 3 above
 
-The judgment core is three code-level questions, answered in order, rather than a
-single "did it trigger?" axis. CISA's fifth justification,
-`inline_mitigations_already_exist`, is not judged by this project.
+The source-level judgment (Q1 present, Q2 reachable, Q3 controllable, each settling a
+CISA justification) is the **VEX-v2** pipeline in
+[Stage 3 — VEX Verification](#stage-3--vex-verification): CTI extraction by an LLM
+agent, `source_locate`, Joern reachability and Z3 controllability. Over the 104
+source-collectable CVEs it gives **53 `affected`, 6 `not_affected`, 45
+`under_investigation`** (`results/vex_v2_summary.json`); a verdict only clears on
+positive evidence, so an undecided gate stays `under_investigation`.
 
-```
-Q1 vulnerable code present?      -> component_not_present / vulnerable_code_not_present
-Q2 on an executed path?          -> vulnerable_code_not_in_execute_path
-Q3 adversary-controllable?       -> vulnerable_code_cannot_be_controlled_by_adversary
-(all pass)                       -> affected
-```
-
-All three questions are implemented and have been run over the 104 source
-snapshots. The rule they share lives in one module, `src/vex_decision.py`, which
-the console's **VEX Flag Decision Logic** page renders from, so the documented rule
-and the executed rule cannot drift apart.
-
-| Q | Tool | Result on 104 snapshots | Clearances |
-|---|---|---|---|
-| Q1 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892; collapses on the ICS pairs (0.333) | 0 |
-| Q2 | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
-| Q3 | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
-
-**Source-level analysis clears nothing on this corpus.** That is not a tooling
-failure — it reproduces the public record, where
-`vulnerable_code_cannot_be_controlled_by_adversary` and
-`inline_mitigations_already_exist` have each been used **0 times** across CISA's
-3,984 OT documents. The only justifications that survive here are
-`component_not_present` and what upstream already asserted.
-
-#### Locating the vulnerable function — three paths, three clearance rights
-
-Every code-level question needs to know *which function* to judge, and a
-judgment is only as strong as the evidence that picked that function. So the
-path is recorded and it bounds the verdict (`data/vuln_targets.json`):
-
-| Path | How | CVEs | May clear? |
-|---|---|---|---|
-| A `patch` | the function the upstream fix edits. The fix commit comes from NVD references, the Debian security tracker, the project's own advisory data (curl.se, openssl-library.org, w1.fi), a local `git log` search of the project's history (`tools/git_grep_fix_commits.py`), or a commit whose message names the CVE; diffs cached by `tools/fetch_patches.py`, functions read by `tools/extract_vuln_funcs.py` | 75 | yes |
-| A `patch-partial` | as A, on only the files the fix touches at its parent commit (the two Linux CVEs) | 2 | **no** — no whole program to argue from |
-| B `description` | the NVD text names it *and* that name is really defined in the snapshot (`tools/locate_vuln_funcs.py`) | 28 | yes |
-| C `codebert` | a Devign-fine-tuned CodeBERT ranks candidates (`tools/rank_codebert.py`) | 0 | **no — not adopted** |
-| — | not identified (CVE-2023-28450: the fix only changes a `#define` default) | 1 | no |
-
-Path B filters on code context — a token must carry `_`/CamelCase, be written as
-a call, or be named "the X function" — because otherwise ordinary English words
-that happen to be function names (`and`, `service`, `process`) match. Export
-macros (`ZLIB_INTERNAL`) and libc primitives the text mentions as the *called*
-function (`memset`) are rejected outright.
-
-**Path C is a measured negative result.** Scored against the then-known targets,
-the ranker reaches top-1 0.056, top-5 0.111, **top-20 0.148** — about 7x random
-(0.021) but with the true function at median rank 450 of 4,000. The model
-answers "does this function look generally risky", not "is this the function
-this CVE is about", so 85% of the time the real target is not in the top 20.
-It is therefore never used to set a status; those CVEs stay
-`under_investigation`. Numbers in `results/codebert_rank.json`.
-
-#### Why the static analysis is walked conservatively
-
-In static analysis **"not found" and "not there" look identical**, and every such
-confusion points the same way: toward a false clearance. Three real instances
-were found and fixed, two of them only after they had produced verdicts:
-
-| Incompleteness | What it did | Cost |
-|---|---|---|
-| K&R definitions | tree-sitter emits ERROR nodes on old-style C and drops the definition — zlib 1.2.8's `inflate.c` alone yields 89 errors and loses `inflate` | callees looked unreachable |
-| Macro-wrapped headers | `ZEXTERN int ZEXPORT inflate OF((...))` parsed to 3 of zlib's public functions | the attack surface looked tiny |
-| Indirect calls | a static graph sees only `f()`; dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible | **6 false `not_affected`** in the first Q3 run |
-
-The fixes are all in the same direction — widen what counts as reachable, never
-narrow it. A regex scanner supplements the parse for K&R and macro-wrapped
-signatures, and every address-taken function becomes a taint root. Each fix
-removed every false clearance it was aimed at.
-The seed dataset for this classifier is built by
-`tools/build_justification_seed.py` from `data/code_evidence.json` (34 vuln/patched
-code pairs). The 18 CISA-labelled ICSA justifications (`data/vex_justify_eval.jsonl`)
-are kept only as a **reference list of the real published labels**, not as a scored
-benchmark — see the note below on why they cannot serve as ground truth.
-
-#### Fine-tuned judge — baseline results
-
-To learn Q1 at scale, the seed is enlarged into a 23,538-row, class-balanced
-C/C++ VEX-judgment corpus (`tools/build_vexc_dataset.py`, from DiverseVul,
-PrimeVul, CVEfixes-C, BigVul, and the project seed; published as the
-[`vexc-instruct`](https://github.com/kakyung98/vexc-instruct) dataset) and a
-**Qwen2.5-Coder-7B-Instruct** model is QLoRA fine-tuned on it
-(`tools/train_vex_justifier.py`; r=16, α=32, 1 epoch, 12k subsample). It is
-evaluated greedily by `tools/eval_vex_justifier.py` on a **held-out split** —
-rows the trainer never saw, separated with the training shuffle seed so there is
-no leakage:
-
-| Metric (held-out test, n=800, never trained) | Score |
-|---|---|
-| `affected` F1 | 0.888 |
-| `not_affected` F1 | 0.897 |
-| **macro-F1 / accuracy** | **0.892 / 0.892** |
-
-This is the one honest performance number: the input is real code and the labels
-are backed by the fix commit. It says the corpus teaches **Q1 (is the vulnerable
-construct present?)** well. It does **not** claim Q2/Q3 — those need whole-program
-context the function-level data lacks, which is why reachability goes to program
-analysis (`tools/callgraph_reach.py`) and a fuzzing track, not the model alone.
-
-> **Why there is no "CISA-gold accuracy" here.** The 18 published ICSA flags are
-> **vendor assertions about proprietary product builds**, not verified facts, and
-> the corresponding product source is not obtainable. A code judge cannot be
-> scored against them: with no source to feed, the model only emits its default
-> lean, so any such number measures nothing. They define the label vocabulary and
-> motivate the task — they are not a test set.
-
-#### Applying the judge to the ICS target population — negative result
-
-The held-out F1 above is measured on the training corpus's own distribution. To
-see what the judge does on *our* population, `tools/build_ics_groundtruth.py`
-assembles the **34 CVEs** that have full vuln/patched functions in
-`data/code_evidence.json` into `data/ics_gt_pairs.jsonl`.
-`tools/judge_ics_cves.py` then runs the fine-tuned judge over both sides of each
-pair (gold: vulnerable → `affected`, patched → `not_affected`) and joins the static
-Q2 verdict from `results/callgraph_reach.json`.
-
-The result (`results/ics_cve_judgments.json`) is a **collapse to `affected`**:
-
-| ICS pairs, n=34 CVEs / 68 examples | Value |
-|---|---|
-| vulnerable side | TP 34, FN 0 |
-| patched side | TN 0, FP 34 |
-| `affected` recall / precision | 1.000 / 0.500 |
-| **macro-F1** | **0.333** (vs 0.892 held-out) |
-
-The judge answers `affected` for every input, so it never separates the patched
-build from the vulnerable one on this data. The cause is **not** input truncation
-(these functions are short — median 437 chars, none clipped) and **not** identical
-pairs (all 34 differ). It is an unexplained distribution gap between the
-patch-pair corpus the judge was trained on and these ICS pairs, and it is the
-honest counterweight to the 0.892: **the held-out number does not transfer to the
-target population as-is.** It also cannot be read as a clean test — these ICS CVEs
-overlap the training corpus, so a working judge would score *optimistically* here,
-not at chance.
-
-Q2 coverage from the static call graph on the same rows: 8 `reachable`,
-5 `target-not-found`, 21 with no entry. The 2 execution-verified CVEs carry no
-code pair and are outside this table.
+The earlier engines that filled this section — a fine-tuned Q1 judge
+(`judge_ics_cves.py`), a static call-graph Q2 (`callgraph_reach.py`) and a taint Q3
+(`taint_reach.py`) — have been removed. CISA'''s fifth justification,
+`inline_mitigations_already_exist`, is still not judged by this project.
 
 ---
 
@@ -471,16 +341,19 @@ logs.
 | 10. Compare / evaluate | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | console reports |
 | 11. Justification seed | `tools/build_justification_seed.py` | `data/vex_justify_seed.jsonl`, `data/vex_justify_eval.jsonl` |
 | 12. ICS ground-truth pairs | `tools/build_ics_groundtruth.py` | `data/ics_gt_pairs.jsonl` |
-| 13. Judge the ICS population | `tools/judge_ics_cves.py` | `results/ics_cve_judgments.json` |
-| 14. Cache fix-commit diffs | `tools/fetch_patches.py` | `data/patches/<CVE>/<sha>.diff` |
-| 15. Index snapshot functions | `tools/build_func_index.py` | `data/func_index/` (gitignored, rebuildable) |
-| 16. Locate the vulnerable function | `tools/extract_vuln_funcs.py`, `tools/locate_vuln_funcs.py` | `data/vuln_funcs.json`, `data/vuln_targets.json` |
-| 17. Q2 execute-path | `tools/callgraph_reach.py --all` | `results/callgraph_reach.json` |
-| 18. Q3 adversary control | `tools/taint_reach.py --all` | `results/taint_reach.json` |
-| 20. Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
+| 13. Cache fix-commit diffs | `tools/fetch_patches.py` | `data/patches/<CVE>/<sha>.diff` |
+| 14. Index snapshot functions | `tools/build_func_index.py` | `data/func_index/` (gitignored, rebuildable) |
+| 15. Locate vulnerable functions (patch fallback) | `tools/extract_vuln_funcs.py`, `tools/locate_vuln_funcs.py` | `data/vuln_targets.json` |
+| **VEX-v2** 1. CTI extraction | `tools/cti_extract.py --all` | `data/cti_extractions.json` (Ollama) |
+| **VEX-v2** 2. Q1 source locate | `tools/source_locate.py --all` | `data/source_locations.json` |
+| **VEX-v2** 3. Q2 reachability | `tools/joern_reachability.py --all` | `data/reachability.json` (Joern) |
+| **VEX-v2** 4. Q3 controllability | `tools/z3_controllability.py --all` | `data/controllability.json` (Z3) |
+| **VEX-v2** 5. Final VEX | `tools/vex_judge_v2.py --all`, `tools/summarize_vex_v2.py` | `data/vex_v2.json`, `results/vex_v2_summary.json` |
+| Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `site/*.html`, `site/*.json` |
 
-Steps 14-16 must precede 17-19: all three questions judge the same target set,
-and `data/vuln_targets.json` is what records which path identified it.
+The VEX-v2 steps run in gate order (reachability before controllability, which only
+runs where reachable); `data/vuln_targets.json` is the patch-based fallback when the
+CTI does not name the vulnerable function. VEX-v2 outputs are gitignored (regenerable).
 
 Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 14's
 `build_sbom_index.py` is not run by `build_site.py`, so run it separately. Steps 12/13 need the fine-tuned adapter in
@@ -527,15 +400,19 @@ python tools/compare_cisa_csaf.py --csaf-repo /tmp/CSAF
 python tools/eval_variant_derivation.py
 python tools/build_justification_seed.py
 
-python tools/build_ics_groundtruth.py
-python tools/judge_ics_cves.py          # needs a GPU + models/vex-justifier-lora
+# VEX-v2 source-level judgment (needs Ollama running + Joern on PATH):
+python tools/cti_extract.py --all
+python tools/source_locate.py --all
+python tools/joern_reachability.py --all
+python tools/z3_controllability.py --all
+python tools/vex_judge_v2.py --all && python tools/summarize_vex_v2.py
 
 python tools/build_sbom_index.py && python tools/build_site.py
 ```
 
-The execution-verification step (build → exploit → verify) runs a local
-Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
-`execution-verified` tier empty and keeps only the upstream-asserted verdicts.
+VEX-v2 needs a local Ollama (the CTI agent, `qwen2.5-coder:14b`) and Joern for
+reachability (`deploy/README.md` has the install); until Joern is present that gate
+returns `unknown` and those CVEs stay `under_investigation`.
 
 ---
 
@@ -546,15 +423,16 @@ Ollama + Docker sandbox orchestrator per CVE; skipping it leaves the
    the evidence.
 2. Independent model-level derivation reaches recall 1.000 but precision 0.291,
    bounded by the public data (CISA does not enumerate the not-affected models).
-3. The 18 public CISA flags are **vendor assertions about proprietary builds** and
-   the product source is not obtainable, so they cannot score a code-level judge;
-   they are a reference vocabulary, not a test set. The judge's only honest number
-   is the held-out F1 (0.892) on code-grounded patch pairs.
-4. The fine-tuned judge is validated for **Q1 (presence)** only; Q2/Q3 answers from
-   the model are reasoning, not proof.
-5. That Q1 validation does not transfer: on the 34 ICS vuln/patched pairs the judge
-   collapses to `affected` (macro-F1 0.333), so no ICS statement currently rests on
-   its output.
+3. The 18 public CISA flags are **vendor assertions about proprietary builds** and the
+   product source is not obtainable, so they are a reference vocabulary, not a scored
+   test set for any code-level judgment.
+4. VEX-v2's Q3 rests on the **LLM's formalisation** of the CTI into a small predicate over
+   labelled variables, decided by Z3 — a decision procedure over that model, not a proof
+   about the real program's path constraints; 14 CVEs had no formalisable trigger and
+   stay `under_investigation`.
+5. VEX-v2's Q2 (Joern) is **call-graph only** (no dataflow) and falls back to the
+   call-graph roots as entry points when the CTI names none; 16 oversized snapshots
+   (glibc/linux/u-boot…) are skipped to `unknown` rather than risk a false clearance.
 6. Version comparison is impossible **on the reverse-built SBOM corpus** — every
    component version there is `NOASSERTION`. Where real versions exist, matching
    them against NVD ranges works: `tools/eval_version_match.py` scores
