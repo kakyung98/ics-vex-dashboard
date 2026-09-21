@@ -159,9 +159,11 @@ val defined = c.method.name.toSet.intersect(targets)
 if (defined.isEmpty) { println("VERDICT:no-target") }
 else {
   val edges = scala.collection.mutable.Map[String, Set[String]]()
-  c.call.foreach { call =>
-    val caller = call.method.name
-    call.callee.name.foreach { ce => edges(caller) = edges.getOrElse(caller, Set.empty) + ce }
+  c.method.foreach { m =>
+    try {
+      val cs = m.callee.name.toSet
+      if (cs.nonEmpty) edges(m.name) = edges.getOrElse(m.name, Set.empty) ++ cs
+    } catch { case _: Throwable => () }
   }
   val entryNames: Set[String] = %s
   var reached = entryNames
@@ -211,11 +213,15 @@ def reachable(cve, location, extraction):
                                          encoding="utf-8") as f:
             f.write(_query(cpg, funcs, entries))
             script = f.name
-        out, err, to2 = _run(_launcher_cmd(jb, ["--script", script]), env, 300)   # query
-        if to2:
-            return "unknown", "joern query timed out (300s)"
-        line = next((l for l in out.splitlines() if l.startswith("VERDICT:")), "")
-        v = line.split(":", 1)[1].strip() if ":" in line else ""
+        v, err = "", ""
+        for _attempt in (1, 2):                                # retry once on a
+            out, err, to2 = _run(_launcher_cmd(jb, ["--script", script]), env, 300)
+            if to2:
+                return "unknown", "joern query timed out (300s)"
+            line = next((l for l in out.splitlines() if l.startswith("VERDICT:")), "")
+            v = line.split(":", 1)[1].strip() if ":" in line else ""
+            if v:
+                break                                          # transient repl error
         if v == "reachable":
             return "reachable", "joern: a located function is reachable from an entry point"
         if v == "not-reachable":
