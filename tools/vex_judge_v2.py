@@ -69,9 +69,10 @@ def _v(cve, vex, just, basis, ev):
 
 
 def _run_chain(cves):
-    """Run steps 1-4 for the given CVEs so the caches exist."""
+    """Run the steps for the given CVEs so the caches exist. VEX flow order:
+    reachability (Joern) is the earlier gate, so it runs before controllability (Z3)."""
     scripts = [("cti_extract.py", "1 CTI"), ("source_locate.py", "2 source"),
-               ("z3_controllability.py", "3 z3"), ("joern_reachability.py", "4 joern")]
+               ("joern_reachability.py", "3 joern"), ("z3_controllability.py", "4 z3")]
     for cve in cves:
         for sc, label in scripts:
             print("  run step %s for %s" % (label, cve))

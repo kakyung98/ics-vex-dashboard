@@ -53,10 +53,10 @@ CTI (NVD desc + CWE + refs)
         → { vulnerable component, function(s), reachability info, controllability info }
   └─(2) source search  tools/source_locate.py   present? (CTI funcs, else patch fallback + func_index)
         absent → not_affected / vulnerable_code_not_present
-  └─(4) reachability  tools/joern_reachability.py   Joern CPG: reachable from an entry point?
-        no → not_affected / vulnerable_code_not_in_execute_path
-  └─(3) controllability  tools/z3_controllability.py   Z3: attacker inputs satisfy the trigger?
-        no → not_affected / vulnerable_code_cannot_be_controlled_by_adversary
+  └─(3) reachability  tools/joern_reachability.py   Joern CPG: reachable from an entry point?
+        no → not_affected / vulnerable_code_not_in_execute_path   (earlier gate)
+  └─(4) controllability  tools/z3_controllability.py   Z3: attacker inputs satisfy the trigger?
+        (only run when reachable) no → not_affected / vulnerable_code_cannot_be_controlled_by_adversary
   └─(5) orchestrator  tools/vex_judge_v2.py   present ∧ reachable ∧ controllable → affected
         any gate unknown before a hard "no" → under_investigation (unknown never clears)
 ```
