@@ -4,13 +4,13 @@
   "method": "CTI(LLM agent) -> source locate -> Joern reachability -> Z3 controllability -> CISA justification",
   "population": 104,
   "final_vex": {
-    "under_investigation": 62,
-    "affected": 39,
-    "not_affected": 3
+    "affected": 40,
+    "under_investigation": 60,
+    "not_affected": 4
   },
   "justifications": {
     "vulnerable_code_cannot_be_controlled_by_adversary": 2,
-    "vulnerable_code_not_in_execute_path": 1
+    "vulnerable_code_not_in_execute_path": 2
   },
   "gates": {
     "q1_present": {
@@ -18,9 +18,9 @@
       "component_only": 12
     },
     "q2_reachable_joern": {
-      "unknown": 38,
-      "reachable": 65,
-      "not-reachable": 1
+      "unknown": 35,
+      "reachable": 67,
+      "not-reachable": 2
     },
     "q3_controllable_z3": {
       "controllable": 56,
@@ -28,7 +28,7 @@
       "not-controllable": 3
     }
   },
-  "note": "affected = present AND reachable(Joern) AND controllable(Z3); unknown never clears (-> under_investigation). Joern is call-graph-only (no dataflow); 16 oversized snapshots skipped.",
+  "note": "affected = present AND reachable(Joern) AND controllable(Z3); unknown never clears (-> under_investigation). Joern is call-graph-only (no dataflow); oversized snapshots are skipped to unknown.",
   "cves": [
     {
       "cve": "CVE-2015-7547",
@@ -59,7 +59,7 @@
       "component": "zlib",
       "evidence": {
         "q1": "present",
-        "reachability": "unknown",
+        "reachability": "reachable",
         "controllability": "unknown"
       }
     },
@@ -175,12 +175,12 @@
     },
     {
       "cve": "CVE-2018-25032",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
       "component": "zlib",
       "evidence": {
         "q1": "present",
-        "reachability": "unknown",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -868,12 +868,12 @@
     },
     {
       "cve": "CVE-2022-37434",
-      "final_vex": "under_investigation",
-      "justification": null,
+      "final_vex": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
       "component": "zlib",
       "evidence": {
         "q1": "present",
-        "reachability": "unknown",
+        "reachability": "not-reachable",
         "controllability": "controllable"
       }
     },
