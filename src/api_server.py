@@ -324,8 +324,12 @@ class Store:
             parts = cve.split("-")
             ev = self.code_ev.get(cve) or {}
             repo = ev.get("repo")
+            # source-level verdict wins: where VEX-v2 analysed this CVE (source collected),
+            # the index shows that affected/not_affected instead of the corpus-default
+            # under_investigation, so every page reading cve_index reflects the real result.
+            _v2 = self.vex_v2.get(cve)
             self.cve_index[cve] = {
-                "cve": cve, "vex": w["final_vex"],
+                "cve": cve, "vex": (_v2["vex"] if _v2 else w["final_vex"]),
                 "severity": sev if sev in srank else "unrated",
                 "cvss": self.cvss.get(cve),
                 "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
@@ -412,14 +416,19 @@ class Store:
         # canonical CWE per CVE (non-empty), so counts match the CVE's real weakness
         _a_cwe = {cve: self.cve_index[cve]["cwe"] for cve in a_worst}
         _cwe_ctr = Counter(c for c in _a_cwe.values() if c)
+        # "collected" = the CVEs we actually snapshotted AND ran through VEX-v2 — its keys are
+        # exactly the source snapshots (104), so vex_v2 membership is the ground truth. The
+        # looser has_code_pair/collected_src tags over-count (they claimed 106). by_vex shows the
+        # VEX-v2 verdict where we have one (else the corpus default), so the dataset panel matches
+        # the source-level result instead of a blanket under_investigation.
+        _analyzed = lambda cve: cve in self.vex_v2
         self.tier_a = {
             "total_cves": len(a_worst),
-            "code_collected": sum(1 for cve, w in a_worst.items()
-                                   if w.get("has_code_pair") or cve in self.collected_src),
-            "pending_collection": sum(1 for cve, w in a_worst.items()
-                                      if not (w.get("has_code_pair") or cve in self.collected_src)),
+            "code_collected": sum(1 for cve in a_worst if _analyzed(cve)),
+            "pending_collection": sum(1 for cve in a_worst if not _analyzed(cve)),
             "kev": sum(1 for w in a_worst.values() if w.get("kev")),
-            "by_vex": dict(Counter(w["final_vex"] for w in a_worst.values())),
+            "by_vex": dict(Counter((self.vex_v2[cve]["vex"] if _analyzed(cve) else w["final_vex"])
+                                    for cve, w in a_worst.items())),
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
             "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
                         _cwe_ctr.most_common()],
