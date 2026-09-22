@@ -32,6 +32,7 @@ def main():
         x = v2[cve]
         rows.append({"cve": cve, "final_vex": x["final_vex"],
                      "justification": x.get("justification"),
+                     "basis": x.get("basis"),      # the per-CVE reason (evidence tier)
                      "component": (loc.get(cve) or {}).get("component"),
                      "evidence": {"q1": (loc.get(cve) or {}).get("q1"),
                                   "reachability": (reach.get(cve) or {}).get("verdict"),

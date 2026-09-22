@@ -2,15 +2,20 @@
 # -*- coding: utf-8 -*-
 """VEX-v2 · step 5 — orchestrator: combine the engines into a final VEX.
 
-Three gates, in order, each mapped to the CISA justification it settles. A gate is
-only ever cleared by positive evidence; "unknown" stops at under_investigation and
-never clears (the project's "not found != not there" rule).
+All 104 CVEs have the product source collected, so the analysis is COMPLETE for each one
+and none may rest in `under_investigation` (which the VEX spec reserves for "not yet
+analysed"). VEX puts the burden of proof on not_affected: vulnerable code present in the
+product is `affected` by default; not_affected must be positively EARNED. So the solvers
+only ever DOWNGRADE on positive refutation - they are evidence, not required upgrade gates.
 
-  1 present?       source_locate (step 2)   absent  -> not_affected / vulnerable_code_not_present
-  2 reachable?     joern (step 4)            no      -> not_affected / vulnerable_code_not_in_execute_path
-  3 controllable?  z3 (step 3)               no      -> not_affected / vulnerable_code_cannot_be_controlled_by_adversary
-  1&2&3 all yes                              -> affected
-  any gate unknown before a hard no          -> under_investigation
+  present?      source_locate   absent          -> not_affected / vulnerable_code_not_present
+  reachable?    joern           REFUTES (no path)-> not_affected / vulnerable_code_not_in_execute_path
+  controllable? z3              strengthens only  (never refutes - unreliable labelling)
+  otherwise (present, not refuted)               -> affected
+
+Only two refutations clear a CVE, both grounded in artifacts: source-absence and a real CPG
+showing no path to the function. Joern being unavailable, or Z3's "not-controllable", never
+un-affects anything (the affected basis just records weaker/stronger evidence in `ev`).
 
 Reads the step 1-4 caches (run those first, or `--run` to run them here). The vuln
 function is located from the CTI extraction, falling back to the patch (step 2).
@@ -37,30 +42,36 @@ def judge(cve, loc, reach, ctrl):
     ev = {"q1": (loc or {}).get("q1"),
           "reachability": (reach or {}).get("verdict"),
           "controllability": (ctrl or {}).get("verdict")}
-    # gate 1 — presence
+    # These 104 all have the product source collected, so the analysis is COMPLETE for every
+    # one - none may rest in under_investigation (a VEX status the spec reserves for "not yet
+    # analysed"). VEX puts the burden of proof on not_affected: vulnerable code present in the
+    # product is `affected` by default, and not_affected must be positively EARNED. So the
+    # solvers only ever DOWNGRADE on positive refutation; when they cannot refute, the verdict
+    # stays affected, and `ev` records how strong the evidence is.
+
+    # gate 1 — presence: the one place we can prove not_present (function absent from source).
     if loc is None or ev["q1"] == "absent":
         return _v(cve, NOT_AFF, "vulnerable_code_not_present",
                   "the vulnerable function is not defined in the collected source", ev)
-    if ev["q1"] == "component_only":
-        return _v(cve, UNDER, None,
-                  "component present but the vulnerable function could not be located", ev)
-    # gate 2 — reachability (Joern)
+    # gate 2 — reachability (Joern) can REFUTE: a real CPG showing the located function on no
+    # path from any entry point. (Joern being unavailable/no-entry does NOT un-affect anything.)
     if ev["reachability"] == "not-reachable":
         return _v(cve, NOT_AFF, "vulnerable_code_not_in_execute_path",
                   "no located function is reachable from an entry point (joern)", ev)
-    if ev["reachability"] != "reachable":
-        return _v(cve, UNDER, None,
-                  "reachability undecided (%s)" % (ev["reachability"] or "not run"), ev)
-    # gate 3 — controllability (Z3)
-    if ev["controllability"] == "not-controllable":
-        return _v(cve, NOT_AFF, "vulnerable_code_cannot_be_controlled_by_adversary",
-                  "the trigger needs an environment value the attacker cannot set (z3)", ev)
-    if ev["controllability"] != "controllable":
-        return _v(cve, UNDER, None,
-                  "controllability undecided (%s)" % (ev["controllability"] or "not run"), ev)
-    # all three cleared
-    return _v(cve, AFFECTED, None,
-              "vulnerable code present, reachable (joern) and adversary-controllable (z3)", ev)
+    # gate 3 — controllability (Z3) does NOT refute: its "not-controllable" rests on the LLM's
+    # attacker-vs-environment labelling, which is unreliable and solver-indistinguishable from a
+    # genuine environment gate, so it can only STRENGTHEN an affected verdict, never clear it.
+
+    # affected — the vulnerable code is present and not refuted. The basis states the tier:
+    if ev["reachability"] == "reachable" and ev["controllability"] == "controllable":
+        basis = "present, reachable (joern) and adversary-controllable (z3)"    # strongest
+    elif ev["reachability"] == "reachable":
+        basis = "present and reachable (joern); adversary control not confirmed"
+    elif ev["q1"] == "component_only":
+        basis = "vulnerable component present; specific function not localised in source"
+    else:
+        basis = "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)"
+    return _v(cve, AFFECTED, None, basis, ev)
 
 
 def _v(cve, vex, just, basis, ev):

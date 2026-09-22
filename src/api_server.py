@@ -203,6 +203,7 @@ class Store:
             _ev = _r.get("evidence") or {}
             self.vex_v2[_r["cve"]] = {"vex": _vmap.get(_r["final_vex"], UNDER_INV),
                                       "justification": _r.get("justification"),
+                                      "basis": _r.get("basis"),
                                       "q1": _ev.get("q1"),
                                       "q2": _ev.get("reachability"),
                                       "q3": _ev.get("controllability")}
@@ -664,6 +665,7 @@ def vex_for_sbom(sbom, exposure=None):
             _row["justification"] = _vv.get("justification") or _row.get("justification")
             _row["evidence_tier"] = "vex-v2"
             _row["v2"] = {"vex": _vv["vex"], "justification": _vv.get("justification"),
+                          "basis": _vv.get("basis"),
                           "q1": _vv.get("q1"), "q2": _vv.get("q2"), "q3": _vv.get("q3")}
     cves = sorted(by_cve.values(),
                   key=lambda r: (-rank.get(r["final_vex"], 0), r["cve"]))
@@ -1484,13 +1486,17 @@ function _autoStatus(cve){
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',source_collectable:false};}return {status:(ov.status||auto.status),source_collectable:true};}
 function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est='';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
-// VEX-v2 evidence label for the Source/next-step column (Joern reachability + Z3 controllability).
+// VEX-v2 evidence label — shows the PER-CVE reason (evidence tier), not a blanket claim.
+// affected is the VEX default for present code; the tier says how strong the evidence is.
 function _v2Label(v){
-  if(v.vex==='LIKELY_AFFECTED')return 'VEX-v2: <b>reachable</b> (Joern) &middot; <b>controllable</b> (Z3)';
-  if(v.vex==='LIKELY_NOT_AFFECTED')return 'VEX-v2: not_affected &middot; '+(v.justification||'');
-  var g=(v.q2!=='reachable')?('reachability '+(v.q2||'?')):('controllability '+(v.q3||'?'));
-  return 'VEX-v2: under investigation ('+g+')';}
-function _v2Title(v){return 'VEX-v2 evidence \\u2014 Q1 present: '+(v.q1||'?')+' \\u00b7 Q2 reach (Joern): '+(v.q2||'?')+' \\u00b7 Q3 control (Z3): '+(v.q3||'?');}
+  if(v.vex==='LIKELY_NOT_AFFECTED')return 'VEX-v2: <b>not_affected</b> &middot; '+(v.justification||'not in execute path');
+  if(v.vex==='LIKELY_AFFECTED'){
+    if(v.q2==='reachable'&&v.q3==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
+    if(v.q2==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
+    if(v.q1==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
+    return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
+  return 'VEX-v2: under investigation';}
+function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \\u2014 '):'')+'VEX-v2 evidence \\u2014 Q1 present: '+(v.q1||'?')+' \\u00b7 Q2 reach (Joern): '+(v.q2||'?')+' \\u00b7 Q3 control (Z3): '+(v.q3||'?');}
 function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
