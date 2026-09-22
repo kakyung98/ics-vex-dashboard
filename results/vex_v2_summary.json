@@ -4,12 +4,10 @@
   "method": "CTI(LLM agent) -> source locate -> Joern reachability -> Z3 controllability -> CISA justification",
   "population": 104,
   "final_vex": {
-    "affected": 53,
-    "under_investigation": 45,
-    "not_affected": 6
+    "affected": 102,
+    "not_affected": 2
   },
   "justifications": {
-    "vulnerable_code_cannot_be_controlled_by_adversary": 4,
     "vulnerable_code_not_in_execute_path": 2
   },
   "gates": {
@@ -23,17 +21,17 @@
       "not-reachable": 2
     },
     "q3_controllable_z3": {
-      "controllable": 85,
-      "unknown": 14,
-      "not-controllable": 5
+      "controllable": 100,
+      "not-controllable": 4
     }
   },
   "note": "affected = present AND reachable(Joern) AND controllable(Z3); unknown never clears (-> under_investigation). Joern is call-graph-only (no dataflow); oversized snapshots are skipped to unknown.",
   "cves": [
     {
       "cve": "CVE-2015-7547",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "glibc",
       "evidence": {
         "q1": "present",
@@ -45,6 +43,7 @@
       "cve": "CVE-2016-9318",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -54,30 +53,33 @@
     },
     {
       "cve": "CVE-2016-9840",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "zlib",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2016-9841",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "zlib",
       "evidence": {
         "q1": "component_only",
         "reachability": "unknown",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2017-13077",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
         "q1": "present",
@@ -89,6 +91,7 @@
       "cve": "CVE-2017-13078",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
         "q1": "present",
@@ -100,6 +103,7 @@
       "cve": "CVE-2017-14491",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "dnsmasq",
       "evidence": {
         "q1": "present",
@@ -111,6 +115,7 @@
       "cve": "CVE-2017-16544",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -122,6 +127,7 @@
       "cve": "CVE-2018-14526",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "wpa_supplicant",
       "evidence": {
         "q1": "present",
@@ -133,6 +139,7 @@
       "cve": "CVE-2018-14567",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -142,8 +149,9 @@
     },
     {
       "cve": "CVE-2018-15473",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "openssh",
       "evidence": {
         "q1": "component_only",
@@ -155,6 +163,7 @@
       "cve": "CVE-2018-18065",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "net-snmp",
       "evidence": {
         "q1": "present",
@@ -166,6 +175,7 @@
       "cve": "CVE-2018-20843",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
@@ -177,6 +187,7 @@
       "cve": "CVE-2018-25032",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "zlib",
       "evidence": {
         "q1": "present",
@@ -188,6 +199,7 @@
       "cve": "CVE-2018-8740",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "sqlite",
       "evidence": {
         "q1": "present",
@@ -197,19 +209,21 @@
     },
     {
       "cve": "CVE-2019-11477",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "linux kernel",
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2019-13103",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "u-boot",
       "evidence": {
         "q1": "present",
@@ -219,8 +233,9 @@
     },
     {
       "cve": "CVE-2019-13106",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "u-boot",
       "evidence": {
         "q1": "present",
@@ -230,8 +245,9 @@
     },
     {
       "cve": "CVE-2019-15903",
-      "final_vex": "not_affected",
-      "justification": "vulnerable_code_cannot_be_controlled_by_adversary",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present and reachable (joern); adversary control not confirmed",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
@@ -241,8 +257,9 @@
     },
     {
       "cve": "CVE-2019-17498",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "libssh2",
       "evidence": {
         "q1": "component_only",
@@ -252,30 +269,33 @@
     },
     {
       "cve": "CVE-2019-3855",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libssh2",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2019-3856",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libssh2",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2019-3858",
-      "final_vex": "not_affected",
-      "justification": "vulnerable_code_cannot_be_controlled_by_adversary",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present and reachable (joern); adversary control not confirmed",
       "component": "libssh2",
       "evidence": {
         "q1": "present",
@@ -287,6 +307,7 @@
       "cve": "CVE-2019-5481",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -298,6 +319,7 @@
       "cve": "CVE-2019-5482",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -309,6 +331,7 @@
       "cve": "CVE-2019-6111",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssh",
       "evidence": {
         "q1": "present",
@@ -320,6 +343,7 @@
       "cve": "CVE-2019-8457",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "sqlite3",
       "evidence": {
         "q1": "present",
@@ -329,8 +353,9 @@
     },
     {
       "cve": "CVE-2020-10648",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "u-boot",
       "evidence": {
         "q1": "present",
@@ -342,6 +367,7 @@
       "cve": "CVE-2020-11655",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "sqlite",
       "evidence": {
         "q1": "present",
@@ -353,6 +379,7 @@
       "cve": "CVE-2020-13434",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "sqlite",
       "evidence": {
         "q1": "present",
@@ -362,19 +389,21 @@
     },
     {
       "cve": "CVE-2020-13630",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "sqlite",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2020-15778",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "openssh",
       "evidence": {
         "q1": "component_only",
@@ -386,6 +415,7 @@
       "cve": "CVE-2020-1971",
       "final_vex": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
+      "basis": "no located function is reachable from an entry point (joern)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -395,19 +425,21 @@
     },
     {
       "cve": "CVE-2020-22218",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libssh2",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2020-25681",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "dnsmasq",
       "evidence": {
         "q1": "present",
@@ -417,19 +449,21 @@
     },
     {
       "cve": "CVE-2020-25684",
-      "final_vex": "not_affected",
-      "justification": "vulnerable_code_cannot_be_controlled_by_adversary",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "dnsmasq",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "not-controllable"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2020-8177",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -439,8 +473,9 @@
     },
     {
       "cve": "CVE-2021-20227",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "sqlite",
       "evidence": {
         "q1": "present",
@@ -452,6 +487,7 @@
       "cve": "CVE-2021-23840",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -461,8 +497,9 @@
     },
     {
       "cve": "CVE-2021-31571",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "freertos-kernel",
       "evidence": {
         "q1": "component_only",
@@ -472,19 +509,21 @@
     },
     {
       "cve": "CVE-2021-31572",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "freertos-kernel",
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2021-33574",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "glibc",
       "evidence": {
         "q1": "present",
@@ -496,6 +535,7 @@
       "cve": "CVE-2021-3450",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -507,6 +547,7 @@
       "cve": "CVE-2021-3517",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -518,6 +559,7 @@
       "cve": "CVE-2021-3518",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -527,8 +569,9 @@
     },
     {
       "cve": "CVE-2021-35942",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "glibc",
       "evidence": {
         "q1": "present",
@@ -540,6 +583,7 @@
       "cve": "CVE-2021-36369",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "dropbear",
       "evidence": {
         "q1": "present",
@@ -551,6 +595,7 @@
       "cve": "CVE-2021-3711",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -562,6 +607,7 @@
       "cve": "CVE-2021-3712",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -571,8 +617,9 @@
     },
     {
       "cve": "CVE-2021-3999",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "glibc",
       "evidence": {
         "q1": "component_only",
@@ -584,6 +631,7 @@
       "cve": "CVE-2021-41617",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssh",
       "evidence": {
         "q1": "present",
@@ -595,6 +643,7 @@
       "cve": "CVE-2021-42374",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -606,6 +655,7 @@
       "cve": "CVE-2021-42375",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -617,6 +667,7 @@
       "cve": "CVE-2021-42376",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -628,6 +679,7 @@
       "cve": "CVE-2021-42378",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -637,8 +689,9 @@
     },
     {
       "cve": "CVE-2021-42379",
-      "final_vex": "not_affected",
-      "justification": "vulnerable_code_cannot_be_controlled_by_adversary",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present and reachable (joern); adversary control not confirmed",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -650,6 +703,7 @@
       "cve": "CVE-2021-42380",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -659,8 +713,9 @@
     },
     {
       "cve": "CVE-2021-42386",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -672,6 +727,7 @@
       "cve": "CVE-2021-44228",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "log4j-core",
       "evidence": {
         "q1": "present",
@@ -683,6 +739,7 @@
       "cve": "CVE-2022-0547",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openvpn",
       "evidence": {
         "q1": "present",
@@ -692,8 +749,9 @@
     },
     {
       "cve": "CVE-2022-0778",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -703,8 +761,9 @@
     },
     {
       "cve": "CVE-2022-0847",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "linux kernel",
       "evidence": {
         "q1": "present",
@@ -714,8 +773,9 @@
     },
     {
       "cve": "CVE-2022-1292",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "openssl",
       "evidence": {
         "q1": "component_only",
@@ -725,8 +785,9 @@
     },
     {
       "cve": "CVE-2022-2068",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "openssl",
       "evidence": {
         "q1": "component_only",
@@ -738,6 +799,7 @@
       "cve": "CVE-2022-22576",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -747,19 +809,21 @@
     },
     {
       "cve": "CVE-2022-22822",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2022-22965",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "spring-framework",
       "evidence": {
         "q1": "present",
@@ -769,19 +833,21 @@
     },
     {
       "cve": "CVE-2022-23303",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "hostapd, wpa_supplicant",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2022-23852",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
@@ -793,6 +859,7 @@
       "cve": "CVE-2022-25235",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
@@ -804,6 +871,7 @@
       "cve": "CVE-2022-25236",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
@@ -813,19 +881,21 @@
     },
     {
       "cve": "CVE-2022-25315",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2022-27774",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -835,8 +905,9 @@
     },
     {
       "cve": "CVE-2022-28391",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "busybox",
       "evidence": {
         "q1": "present",
@@ -848,6 +919,7 @@
       "cve": "CVE-2022-29824",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -857,8 +929,9 @@
     },
     {
       "cve": "CVE-2022-32221",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "libcurl",
       "evidence": {
         "q1": "component_only",
@@ -870,6 +943,7 @@
       "cve": "CVE-2022-37434",
       "final_vex": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
+      "basis": "no located function is reachable from an entry point (joern)",
       "component": "zlib",
       "evidence": {
         "q1": "present",
@@ -881,6 +955,7 @@
       "cve": "CVE-2022-40303",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -892,6 +967,7 @@
       "cve": "CVE-2022-40304",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -903,6 +979,7 @@
       "cve": "CVE-2022-41742",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "nginx",
       "evidence": {
         "q1": "present",
@@ -912,8 +989,9 @@
     },
     {
       "cve": "CVE-2022-4304",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -923,8 +1001,9 @@
     },
     {
       "cve": "CVE-2022-46908",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "sqlite",
       "evidence": {
         "q1": "component_only",
@@ -936,6 +1015,7 @@
       "cve": "CVE-2023-0215",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -945,8 +1025,9 @@
     },
     {
       "cve": "CVE-2023-0286",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "openssl",
       "evidence": {
         "q1": "present",
@@ -958,6 +1039,7 @@
       "cve": "CVE-2023-27533",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -967,8 +1049,9 @@
     },
     {
       "cve": "CVE-2023-27536",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "libcurl",
       "evidence": {
         "q1": "present",
@@ -978,8 +1061,9 @@
     },
     {
       "cve": "CVE-2023-28450",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "dnsmasq",
       "evidence": {
         "q1": "component_only",
@@ -991,6 +1075,7 @@
       "cve": "CVE-2023-28484",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -1000,8 +1085,9 @@
     },
     {
       "cve": "CVE-2023-34035",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "spring-framework",
       "evidence": {
         "q1": "present",
@@ -1013,6 +1099,7 @@
       "cve": "CVE-2023-38408",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "ssh-agent",
       "evidence": {
         "q1": "present",
@@ -1024,6 +1111,7 @@
       "cve": "CVE-2023-38545",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -1035,6 +1123,7 @@
       "cve": "CVE-2023-44487",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "http/2",
       "evidence": {
         "q1": "present",
@@ -1046,6 +1135,7 @@
       "cve": "CVE-2023-45322",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libxml2",
       "evidence": {
         "q1": "present",
@@ -1057,6 +1147,7 @@
       "cve": "CVE-2023-46218",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "curl",
       "evidence": {
         "q1": "present",
@@ -1066,19 +1157,21 @@
     },
     {
       "cve": "CVE-2023-46850",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openvpn",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2023-48795",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
       "component": "openssh",
       "evidence": {
         "q1": "component_only",
@@ -1088,8 +1181,9 @@
     },
     {
       "cve": "CVE-2023-4911",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "glibc",
       "evidence": {
         "q1": "present",
@@ -1101,6 +1195,7 @@
       "cve": "CVE-2023-52425",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libexpat",
       "evidence": {
         "q1": "present",
@@ -1110,30 +1205,33 @@
     },
     {
       "cve": "CVE-2023-7104",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "sqlite",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2023-7256",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "libpcap",
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2024-1086",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "linux kernel",
       "evidence": {
         "q1": "present",
@@ -1145,6 +1243,7 @@
       "cve": "CVE-2024-2379",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "libcurl",
       "evidence": {
         "q1": "present",
@@ -1154,8 +1253,9 @@
     },
     {
       "cve": "CVE-2024-2961",
-      "final_vex": "under_investigation",
+      "final_vex": "affected",
       "justification": null,
+      "basis": "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)",
       "component": "glibc",
       "evidence": {
         "q1": "present",
@@ -1167,6 +1267,7 @@
       "cve": "CVE-2024-6387",
       "final_vex": "affected",
       "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "component": "openssh",
       "evidence": {
         "q1": "present",
