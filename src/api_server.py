@@ -1295,13 +1295,18 @@ async function openCves(dim,value,scope,label){
       '<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>VEX</th><th style="text-align:center">CVSS</th><th style="text-align:center">KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
     for(const f of d.cves){const c=C[f.vex]||'var(--ink3)';
       const rid='v2r_'+f.cve.replace(/[^A-Za-z0-9]/g,'_');
-      h+='<tr'+(f.v2?' class="clk" onclick="toggleV2(\\''+rid+'\\')"':'')+'><td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+f.cve+'</a></td>'
+      // with a VEX-v2 reason, the CVE id toggles the reason (NVD link moves into the panel);
+      // without one, it stays a plain NVD link since there is nothing to expand.
+      const idcell=f.v2
+        ?'<td class="idcell"><span style="color:var(--acc,#58a6ff);text-decoration:underline;cursor:pointer">'+f.cve+'</span></td>'
+        :'<td class="idcell"><a href="https://nvd.nist.gov/vuln/detail/'+f.cve+'" target="_blank" rel="noopener">'+f.cve+'</a></td>';
+      h+='<tr'+(f.v2?' class="clk" onclick="toggleV2(\\''+rid+'\\')"':'')+'>'+idcell
         +'<td><span class="badge" style="background:'+c+'22;color:'+c+'">'+(L[f.vex]||f.vex)+'</span></td>'
         +'<td class="mono" style="text-align:center" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td><td class="mono" style="text-align:center">'+(f.kev?'KEV':'')+'</td>'
         +'<td>'+_v2Reach(f.v2)+'</td>'
         +'<td>'+esc(f.vendor)+'</td><td class="hint">'+esc(f.component||'')+'</td>'
         +'<td class="mono">'+(f.repo_url?'<a href="'+f.repo_url+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">repo</a>':'')+'</td></tr>';
-      if(f.v2)h+='<tr id="'+rid+'" style="display:none"><td colspan="8" style="background:var(--bg2,#0d1117);border-top:0">'+_v2Reason(f.v2)+'</td></tr>';}
+      if(f.v2)h+='<tr id="'+rid+'" style="display:none"><td colspan="8" style="background:var(--bg2,#0d1117);border-top:0">'+_v2Reason(f.cve,f.v2,f.repo_url)+'</td></tr>';}
     document.getElementById('mbody').innerHTML=h+'</tbody></table></div>';
   }catch(e){document.getElementById('mbody').innerHTML='<span class="err">error loading CVEs</span>';}
 }
@@ -1312,16 +1317,19 @@ function _v2Reach(v2){if(!v2)return '<span class="hint">—</span>';
   if(v2.justification)return '<span class="mono" style="font-size:12px">not in exec path</span>';
   var p=['present'];if(v2.q2==='reachable')p.push('reachable');if(v2.q3==='controllable')p.push('controllable');
   return '<span class="mono" style="font-size:12px">'+p.join(' · ')+'</span>';}
-// expandable per-CVE reason: the basis sentence + the three gate results
-function _v2Reason(v2){
+// expandable per-CVE reason: the basis sentence + the three gate results + external links
+function _v2Reason(cve,v2,repo){
   if(!v2)return '';
   var gate=function(lbl,val,ok){var col=(ok===true?'var(--safe,#3fb950)':ok===false?'var(--bad,#f85149)':'var(--ink3)');
     return '<div style="display:flex;gap:10px;align-items:center"><span class="hint" style="min-width:190px">'+lbl+'</span><span class="mono" style="color:'+col+'">'+esc(val==null?'not analysed':String(val))+'</span></div>';};
+  var links='<a href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">NVD &#8599;</a>'
+    +(repo?' &middot; <a href="'+repo+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">source repo &#8599;</a>':'');
   return '<div style="padding:10px 6px;font-size:13px">'
     +'<div style="margin-bottom:8px"><b>Reason:</b> '+esc(v2.basis||'')+(v2.justification?' <span class="hint">('+esc(v2.justification)+')</span>':'')+'</div>'
     +gate('Q1 · vulnerable code present',v2.q1,v2.q1==='present'?true:(v2.q1==='absent'?false:null))
     +gate('Q2 · reachable (Joern CPG)',v2.q2,v2.q2==='reachable'?true:(v2.q2==='not-reachable'?false:null))
     +gate('Q3 · adversary-controllable (Z3)',v2.q3,v2.q3==='controllable'?true:(v2.q3==='not-controllable'?false:null))
+    +'<div style="margin-top:8px" class="hint">'+links+'</div>'
     +'</div>';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});
 function bar(counts,order,cmap,total,dim,scope,lmap){
