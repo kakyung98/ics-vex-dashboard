@@ -352,10 +352,14 @@ class Store:
             # under_investigation 이 왜 그렇게 많은지를 설명하는 축
             sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
             sc = sw.get("source_class") or "vendor-proprietary"
-            # 실제로 소스를 수집한 CVE 는 'code obtained' 로 승격한다 —
-            # 사전 분류 태그가 아니라 "수집 완료" 사실을 반영해 위/아래 패널을 일치시킨다.
-            if cve in self.collected_src or cve in self.pairs:
+            # "code obtained" must mean code we ACTUALLY collected+analysed = the VEX-v2 set
+            # (104, exactly the source snapshots). Make the bucket exactly that: promote the
+            # analysed CVEs, and demote any tagged code-available we did NOT actually obtain to
+            # "open source, code not collected". This keeps every "obtained/collected" panel at 104.
+            if cve in self.vex_v2:
                 sc = "code-available"
+            elif sc == "code-available":
+                sc = "oss-attributed"
             cve_src[cve] = sc
         # unique CVE count by CVE-ID year
         yr = Counter()
