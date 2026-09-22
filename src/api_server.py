@@ -1089,6 +1089,7 @@ h1{margin:.2em 0;font-size:clamp(30px,3.6vw,44px)}.sub{color:var(--ink2);max-wid
 h3{font-size:18px}.hint{font-size:13px}
 .nav{display:flex;flex-direction:column;gap:3px;margin-top:20px}
 .nav .navlabel{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);font-weight:700;margin:14px 8px 4px}
+.nav .navlabel-sep{margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
 .navtab{font-size:15px;font-weight:600;text-decoration:none;color:var(--ink2);padding:10px 14px;border-radius:9px;border:1px solid transparent;white-space:nowrap}
 .navtab:hover{color:var(--ink);background:var(--card2)}
 .navtab.on{color:var(--accent);background:var(--card2);border-color:var(--line)}
@@ -2336,21 +2337,35 @@ PAGES = {
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
 }
-_NAV = [("analyzer", "index.html", "ICS-VEXForge"),
+# Two sections: the ANALYZER (interactive tools that take an SBOM and produce a VEX
+# judgement, in pipeline order) and the DATASET (the reference corpus those tools are
+# grounded in). Order within each follows the workflow / primary-first.
+_NAV_GROUPS = [
+    ("Analyzer", [
+        ("analyzer", "index.html", "ICS-VEXForge"),
         ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
+        ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
+    ]),
+    ("Dataset", [
+        ("dataset", "dataset.html", "CVE Dataset"),
+        ("ics-sbom", "ics-sbom.html", "Synthetic SBOM"),
         ("source", "source.html", "ICS-CERT Advisories (CISA)"),
         ("published-vex", "published-vex.html", "Published VEX (CISA)"),
-        ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
-        ("dataset", "dataset.html", "CVE Dataset"),
-        ("ics-sbom", "ics-sbom.html", "Synthetic SBOM")]
+    ]),
+]
+# flat view for any code that just needs the (key, href, label) triples
+_NAV = [item for _, items in _NAV_GROUPS for item in items]
 
 
 def nav_html(active):
-    tabs = "".join(
-        f'<a class="navtab{" navtab-main" if key == "analyzer" else ""}'
-        f'{" on" if key == active else ""}" href="{href}">{label}</a>'
-        for key, href, label in _NAV)
-    return f'<nav class="nav"><div class="navlabel">Menu</div>{tabs}</nav>'
+    parts = ['<nav class="nav">']
+    for gi, (group, items) in enumerate(_NAV_GROUPS):
+        parts.append(f'<div class="navlabel{" navlabel-sep" if gi else ""}">{group}</div>')
+        for key, href, label in items:
+            cls = "navtab" + (" navtab-main" if key == "analyzer" else "") + (" on" if key == active else "")
+            parts.append(f'<a class="{cls}" href="{href}">{label}</a>')
+    parts.append('</nav>')
+    return "".join(parts)
 
 
 def make_page(active):
