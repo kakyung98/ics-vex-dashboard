@@ -81,9 +81,47 @@ try:
     JAVA_LANG = Language(tree_sitter_java.language())
 except Exception:                                   # optional grammar
     JAVA_LANG = None
-# The K&R scanner is shared with callgraph_reach.py, so a definition the Q2 graph
-# can see is also one a target can be attributed to.
-from callgraph_reach import _KR_DEF, _KW, _match_brace
+# K&R function-definition scanner (previously shared with the now-removed
+# callgraph_reach.py; inlined here, its remaining consumer).
+_KW = {"if", "for", "while", "switch", "return", "sizeof", "do", "else", "case",
+       "defined", "typedef", "struct", "union", "enum", "static", "extern"}
+# a top-level definition starts at column 0; that alone rejects most statements
+_KR_DEF = re.compile(
+    # the return type is optional on the name's line: BSD/busybox style puts
+    # `static int` on the line above and `readtoken1(...)` at column 0
+    rb"^(?:[A-Za-z_][A-Za-z0-9_ \t\*]*?[ \t\*])?([A-Za-z_]\w*)[ \t]*\("  # [ret] name(
+    rb"[^;{}()]*\)[ \t]*"                                          # args)
+    rb"(?:\r?\n[ \t]*[A-Za-z_][^;{}\n]*;)*"                        # K&R param decls
+    rb"[ \t]*\r?\n?[ \t]*\{",                                      # body brace
+    re.M)
+
+
+def _match_brace(src, i):
+    """End offset of the block whose '{' is at i, or None. Braces inside
+    string/char literals and comments do not count."""
+    depth, n = 0, len(src)
+    while i < n:
+        c = src[i:i + 1]
+        if c in (b'"', b"'"):
+            i += 1
+            while i < n and src[i:i + 1] != c:
+                i += 2 if src[i:i + 1] == b"\\" else 1
+        elif src[i:i + 2] == b"/*":
+            j = src.find(b"*/", i + 2)
+            i = n if j < 0 else j + 1
+        elif src[i:i + 2] == b"//":
+            j = src.find(b"\n", i)
+            i = n if j < 0 else j
+        elif c == b"{":
+            depth += 1
+        elif c == b"}":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return None
+
+
 _PERL_SUB = re.compile(rb"^sub[ \t]+([A-Za-z_]\w*)[^\n{]*\{", re.M)
 
 
