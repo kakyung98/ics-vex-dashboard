@@ -8,14 +8,17 @@ analysed"). VEX puts the burden of proof on not_affected: vulnerable code presen
 product is `affected` by default; not_affected must be positively EARNED. So the solvers
 only ever DOWNGRADE on positive refutation - they are evidence, not required upgrade gates.
 
-  present?      source_locate   absent          -> not_affected / vulnerable_code_not_present
-  reachable?    joern           REFUTES (no path)-> not_affected / vulnerable_code_not_in_execute_path
-  controllable? z3              strengthens only  (never refutes - unreliable labelling)
-  otherwise (present, not refuted)               -> affected
+  present?      source_locate   absent -> not_affected / vulnerable_code_not_present
+  reachable?    joern           strengthens only (see below)
+  controllable? z3              strengthens only (never refutes - unreliable labelling)
+  otherwise (present, not refuted)     -> affected
 
-Only two refutations clear a CVE, both grounded in artifacts: source-absence and a real CPG
-showing no path to the function. Joern being unavailable, or Z3's "not-controllable", never
-un-affects anything (the affected basis just records weaker/stronger evidence in `ev`).
+Only source-absence (Q1) soundly clears a CVE. Q2 and Q3 only STRENGTHEN an affected verdict,
+they never refute: a collected library snapshot has no consumer, so its true entry points (the
+exported API) are outside the graph, and Joern "not reachable from an in-snapshot root"
+false-negatives on the very functions that are the attack surface (it did so on zlib `inflate`
+and openssl `GENERAL_NAME_cmp`). "No in-snapshot path" does not meet VEX's burden of proof, so
+not-reachable no longer clears - only positive "reachable" is used, as an evidence tier.
 
 Reads the step 1-4 caches (run those first, or `--run` to run them here). The vuln
 function is located from the CTI extraction, falling back to the patch (step 2).
@@ -53,22 +56,26 @@ def judge(cve, loc, reach, ctrl):
     if loc is None or ev["q1"] == "absent":
         return _v(cve, NOT_AFF, "vulnerable_code_not_present",
                   "the vulnerable function is not defined in the collected source", ev)
-    # gate 2 — reachability (Joern) can REFUTE: a real CPG showing the located function on no
-    # path from any entry point. (Joern being unavailable/no-entry does NOT un-affect anything.)
-    if ev["reachability"] == "not-reachable":
-        return _v(cve, NOT_AFF, "vulnerable_code_not_in_execute_path",
-                  "no located function is reachable from an entry point (joern)", ev)
-    # gate 3 — controllability (Z3) does NOT refute: its "not-controllable" rests on the LLM's
-    # attacker-vs-environment labelling, which is unreliable and solver-indistinguishable from a
-    # genuine environment gate, so it can only STRENGTHEN an affected verdict, never clear it.
+    # gate 2 — reachability (Joern) only STRENGTHENS; it does NOT refute. A collected library
+    # snapshot has no consumer, so its real entry points (the exported API) are not in the graph;
+    # Joern's "not reachable from an in-snapshot root" then false-negatives on functions that ARE
+    # the attack surface (e.g. zlib `inflate`, openssl `GENERAL_NAME_cmp`). "No in-snapshot path"
+    # does not meet VEX's burden of proof for not_affected, so not-reachable never clears - only
+    # a positive "reachable" is used, as an evidence tier.
 
-    # affected — the vulnerable code is present and not refuted. The basis states the tier:
+    # gate 3 — controllability (Z3) likewise only strengthens (its "not-controllable" rests on the
+    # LLM's attacker-vs-environment labelling, which is unreliable).
+
+    # affected — the vulnerable code is present and not soundly refuted. Basis states the tier:
     if ev["reachability"] == "reachable" and ev["controllability"] == "controllable":
         basis = "present, reachable (joern) and adversary-controllable (z3)"    # strongest
     elif ev["reachability"] == "reachable":
         basis = "present and reachable (joern); adversary control not confirmed"
     elif ev["q1"] == "component_only":
         basis = "vulnerable component present; specific function not localised in source"
+    elif ev["reachability"] == "not-reachable":
+        basis = ("present; no path from an in-snapshot entry, but the library's caller is external "
+                 "so that does not refute reachability - not cleared")
     else:
         basis = "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)"
     return _v(cve, AFFECTED, None, basis, ev)

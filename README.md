@@ -86,30 +86,36 @@ emits the verdict itself; "unknown" never clears.
 - **Vulnerable target resolution** — `tools/source_locate.py`: the CTI's function names
   when it named any, else the patch-localised targets (patch → description fallback),
   checked against `func_index`.
-All 104 CVEs have the product source collected, so the analysis is **complete** for each —
+All 107 CVEs have the product source collected, so the analysis is **complete** for each —
 none rests in `under_investigation` (the VEX spec reserves that for "not yet analysed"). VEX
 puts the burden of proof on `not_affected`: **vulnerable code present in the product is
 `affected` by default**, and `not_affected` must be positively *earned*. So the analyzers only
-ever *downgrade* on positive refutation; they are evidence, not required upgrade gates.
+ever *downgrade* on a **sound** positive refutation; they are evidence, not required upgrade gates.
 
 - **Q1 present?** `tools/source_locate.py` — absent → not_affected / vulnerable_code_not_present.
-- **Q2 reachable?** `tools/joern_reachability.py` (Joern CPG) — a real CPG showing the function
-  on **no path from any entry** *refutes* → not_affected / vulnerable_code_not_in_execute_path.
-  Joern being unavailable or finding no entry model does **not** un-affect anything.
-- **Q3 controllable?** `tools/z3_controllability.py` (Z3) only *strengthens* an affected verdict;
-  it never refutes. Its `not-controllable` rests on the LLM's attacker-vs-environment variable
-  labelling, which is unreliable and solver-indistinguishable from a genuine environment gate, so
-  it cannot clear a CVE. (Z3 numeric atoms are tried as unbounded integers, then as fixed-width
-  bit-vectors, so an overflow-driven trigger (CWE-190) is not mislabelled.)
+  This is the only sound machine refutation: if the vulnerable function is not defined in the
+  collected source, the code is not present.
+- **Q2 reachable?** `tools/joern_reachability.py` (Joern CPG) only *strengthens* an affected
+  verdict — it does **not** refute. A collected library snapshot has no consumer, so its real
+  entry points (the exported API) are outside the graph, and Joern's "not reachable from an
+  in-snapshot root" false-negatives on the very functions that are the attack surface (it did so
+  on zlib `inflate` and openssl `GENERAL_NAME_cmp`). "No in-snapshot path" does not meet VEX's
+  burden of proof, so only a positive `reachable` is used, as an evidence tier.
+- **Q3 controllable?** `tools/z3_controllability.py` (Z3) likewise only *strengthens*; it never
+  refutes. Its `not-controllable` rests on the LLM's attacker-vs-environment variable labelling,
+  which is unreliable and solver-indistinguishable from a genuine environment gate. (Z3 numeric
+  atoms are tried as unbounded integers, then as fixed-width bit-vectors, so an overflow-driven
+  trigger (CWE-190) is not mislabelled.)
 - **VEX decision** — `tools/vex_judge_v2.py`: present ∧ not-refuted → **affected** (the basis
   records the evidence tier: Joern-reachable + Z3-controllable = strongest, down to
-  presence-only); the two refutations above → **not_affected**.
+  presence-only); only Q1 source-absence → **not_affected**.
 
 Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the
-104 source-collectable CVEs, VEX-v2 gives 102 `affected` (67 with positive Joern-reachability
-evidence, 64 of those also Z3-controllable; the rest present-but-not-refuted) and 2
-`not_affected` (both Joern-proven not-in-execute-path), 0 `under_investigation`
-(`results/vex_v2_summary.json`). The older source-level engines it
+107 source-collectable CVEs, VEX-v2 gives **107 `affected`** (67 with positive Joern-reachability
+evidence, 64 of those also Z3-controllable; the rest present-but-not-refuted), **0 `not_affected`**
+and **0 `under_investigation`** (`results/vex_v2_summary.json`) — sound source-only `not_affected`
+needs the consumer context a library snapshot lacks, so the pipeline confirms exploitability and
+grades evidence rather than clearing CVEs it cannot soundly clear. The older source-level engines it
 replaced — the fine-tuned Q1 judge, the static call-graph Q2 and the taint Q3 — have been
 **removed** now that it is validated; some sections further below still describe that
 earlier approach and are being retired.
@@ -205,17 +211,19 @@ deployment — not a synthetic number.
 
 The source-level judgment is the **VEX-v2** pipeline in
 [Stage 3 — VEX Verification](#stage-3--vex-verification): CTI extraction by an LLM
-agent, `source_locate`, Joern reachability and Z3 controllability. Because all 104 CVEs
+agent, `source_locate`, Joern reachability and Z3 controllability. Because all 107 CVEs
 have the product source collected, the analysis is complete for each, so it gives
-**102 `affected`, 2 `not_affected`, 0 `under_investigation`**
+**107 `affected`, 0 `not_affected`, 0 `under_investigation`**
 (`results/vex_v2_summary.json`). VEX makes `affected` the default for present vulnerable
-code and puts the burden of proof on `not_affected`, so the analyzers only *downgrade* on
-positive refutation: the 2 `not_affected` both rest on Joern non-reachability
-(`vulnerable_code_not_in_execute_path`), and Q3 controllability only ever *strengthens* an
-affected verdict (it never clears a CVE, because a not-controllable result depends on the
-LLM's attacker/environment labelling rather than on positive evidence). Each affected
+code and puts the burden of proof on `not_affected`, so the analyzers only *downgrade* on a
+**sound** refutation — and the only sound machine refutation is Q1 source-absence. Joern
+reachability and Z3 controllability only ever *strengthen* an affected verdict: Joern
+"not reachable" false-negatives on a library's own attack-surface functions (its consumer,
+which defines the real entry points, is not in the snapshot — it did so on zlib `inflate`),
+and Z3 "not-controllable" depends on the LLM's attacker/environment labelling. Each affected
 verdict's `basis` records its evidence tier (Joern-reachable + Z3-controllable = strongest,
-down to present-but-not-refuted).
+down to present-but-not-refuted). Sound source-only `not_affected` needs deployment/consumer
+context a library snapshot lacks, so the pipeline confirms and grades rather than clearing.
 
 The earlier engines that filled this section — a fine-tuned Q1 judge
 (`judge_ics_cves.py`), a static call-graph Q2 (`callgraph_reach.py`) and a taint Q3
@@ -430,9 +438,10 @@ python tools/build_sbom_index.py && python tools/build_site.py
 
 VEX-v2 needs a local Ollama (the CTI agent uses `qwen2.5-coder:14b`; the Z3 formaliser
 uses the general `qwen2.5:14b`) and Joern for reachability (`deploy/README.md` has the
-install). Joern only ever *refutes* (proves not-in-execute-path); until it is present, or
-where it cannot build a CPG, the verdict falls back to the `affected` presence-baseline
-rather than `under_investigation`.
+install). Joern only ever *strengthens* an affected verdict (a positive `reachable` is the
+top evidence tier); it never refutes, because "not reachable from an in-snapshot entry" is a
+false negative for a library whose caller is external. Where Joern is absent or cannot build a
+CPG, the verdict falls back to the `affected` presence-baseline rather than `under_investigation`.
 
 ---
 
@@ -452,10 +461,11 @@ rather than `under_investigation`.
    affected verdict (a not-controllable result depends on the LLM's attacker/environment
    labelling, which is unreliable, so it is never used to clear a CVE).
 5. VEX-v2's Q2 (Joern) is **call-graph only** (no dataflow) and falls back to the
-   call-graph roots as entry points when the CTI names none; 16 oversized snapshots
-   (glibc/linux/u-boot…) cannot build a CPG and so are not *refuted* — they stay on the
-   `affected` presence-baseline (the `basis` marks them present-but-not-reachability-analysed),
-   never silently cleared.
+   call-graph roots as entry points when the CTI names none. Because a collected library has no
+   consumer, "not reachable from an in-snapshot root" is a **false negative** for its exported
+   attack-surface functions (seen on zlib `inflate`, openssl `GENERAL_NAME_cmp`), so Q2 is used
+   only to *strengthen* (positive `reachable`), never to refute. Oversized snapshots
+   (glibc/linux/u-boot…) that cannot build a CPG likewise stay on the `affected` presence-baseline.
 6. Version comparison is impossible **on the reverse-built SBOM corpus** — every
    component version there is `NOASSERTION`. Where real versions exist, matching
    them against NVD ranges works: `tools/eval_version_match.py` scores
