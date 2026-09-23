@@ -334,10 +334,10 @@ function _v2Reason(cve,v2,repo){
   var q1ok=(v2.q1==='present'), q2ok=(q1ok&&v2.q2==='reachable');
   var q1txt=(v2.q1==='present'?'present':v2.q1==='component_only'?'component present; vulnerable function not located':v2.q1==='absent'?'not present':(v2.q1||'?'));
   var g1=gate('Q1 · vulnerable code present',q1txt,v2.q1==='present'?true:(v2.q1==='absent'?false:null));
-  var g2=q1ok?gate('Q2 · reachable (Joern CPG)',(v2.q2==='reachable'?'reachable':v2.q2==='not-reachable'?'not reachable':'not analysed (no CPG / no entry)'),v2.q2==='reachable'?true:(v2.q2==='not-reachable'?false:null))
+  var g2=q1ok?gate('Q2 · reachable (Joern CPG)',(v2.q2==='reachable'?'reachable':v2.q2==='not-reachable'?'no in-snapshot path (library caller is external \u2014 not a refutation)':'not analysed (no CPG / no entry)'),v2.q2==='reachable'?true:null)
              :gate('Q2 · reachable (Joern CPG)','not evaluated \u2014 vulnerable function not located',null);
   var g3=q2ok?gate('Q3 · adversary-controllable (Z3)',(v2.q3==='controllable'?'controllable':v2.q3==='not-controllable'?'not controllable':'undetermined'),v2.q3==='controllable'?true:(v2.q3==='not-controllable'?false:null))
-             :gate('Q3 · adversary-controllable (Z3)','not evaluated \u2014 '+(!q1ok?'vulnerable function not located':v2.q2==='not-reachable'?'code not in execution path':'reachability not confirmed'),null);
+             :gate('Q3 · adversary-controllable (Z3)','not evaluated \u2014 '+(!q1ok?'vulnerable function not located':'reachability not confirmed'),null);
   var links='<a href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">NVD &#8599;</a>'
     +(repo?' &middot; <a href="'+repo+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">source repo &#8599;</a>':'');
   return '<div style="padding:10px 6px;font-size:13px">'
