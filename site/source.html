@@ -328,26 +328,32 @@ function _v2Reach(v2){if(!v2)return '<span class="hint">—</span>';
   else if(v2.q1==='component_only')p=['component only'];
   else p=[v2.q1||'?'];
   return '<span class="mono" style="font-size:12px">'+p.join(' · ')+'</span>';}
-// expandable per-CVE reason. The three gates are a PIPELINE (present -> reachable ->
-// controllable): Q3 is decided by Z3 only when the code is present AND reachable, so a gate
-// the flow never reached reads "not evaluated" instead of a raw value that would contradict
-// the earlier gate (e.g. "function not located" must not sit next to "controllable").
+// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q1) decides the
+// verdict; reachability (Q2) and controllability (Q3) are OPTIONAL evidence that only raise
+// confidence, so they are shown as optional rows (green tick when confirmed, else neutral /
+// "not applicable"), never as a red refutation next to an affected verdict.
 function _v2Reason(cve,v2,repo){
   if(!v2)return '';
-  var gate=function(lbl,val,ok){var col=(ok===true?'var(--safe,#3fb950)':ok===false?'var(--bad,#f85149)':'var(--ink3)');
-    return '<div style="display:flex;gap:10px;align-items:flex-start"><span class="hint" style="min-width:215px">'+lbl+'</span><span class="mono" style="color:'+col+'">'+esc(String(val))+'</span></div>';};
-  var q1ok=(v2.q1==='present'), q2ok=(q1ok&&v2.q2==='reachable');
-  var q1txt=(v2.q1==='present'?'present':v2.q1==='component_only'?'component present; vulnerable function not located':v2.q1==='absent'?'not present':(v2.q1||'?'));
-  var g1=gate('Q1 · vulnerable code present',q1txt,v2.q1==='present'?true:(v2.q1==='absent'?false:null));
-  var g2=q1ok?gate('Q2 · reachable (Joern CPG)',(v2.q2==='reachable'?'reachable':v2.q2==='not-reachable'?'no in-snapshot path (library caller is external \u2014 not a refutation)':'not analysed (no CPG / no entry)'),v2.q2==='reachable'?true:null)
-             :gate('Q2 · reachable (Joern CPG)','not evaluated \u2014 vulnerable function not located',null);
-  var g3=q2ok?gate('Q3 · adversary-controllable (Z3)',(v2.q3==='controllable'?'controllable':v2.q3==='not-controllable'?'not controllable':'undetermined'),v2.q3==='controllable'?true:(v2.q3==='not-controllable'?false:null))
-             :gate('Q3 · adversary-controllable (Z3)','not evaluated \u2014 '+(!q1ok?'vulnerable function not located':'reachability not confirmed'),null);
+  var q1ok=(v2.q1==='present'), q2reach=(v2.q2==='reachable');
+  var decided=(v2.q1==='present'?'vulnerable code present (Q1)'
+              :v2.q1==='component_only'?'vulnerable component present; function not located (Q1)'
+              :'vulnerable code NOT present (Q1)');
+  var opt=function(lbl,val,ok){var col=(ok?'var(--safe,#3fb950)':'var(--ink3)');
+    return '<div style="display:flex;gap:10px;align-items:flex-start"><span class="hint" style="min-width:150px">'+lbl+'</span><span class="mono" style="color:'+col+'">'+esc(val)+'</span></div>';};
+  var q2txt=q2reach?'reachable \u2713'
+           :(!q1ok?'not applicable (function not located)'
+            :v2.q2==='not-reachable'?'no in-snapshot path (library caller external \u2014 not a refutation)'
+            :'not analysed (oversized / no CPG)');
+  var q3txt=(q1ok&&q2reach)?(v2.q3==='controllable'?'controllable \u2713':v2.q3==='not-controllable'?'not controllable':'undetermined')
+           :'not applicable';
   var links='<a href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">NVD &#8599;</a>'
     +(repo?' &middot; <a href="'+repo+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">source repo &#8599;</a>':'');
   return '<div style="padding:10px 6px;font-size:13px">'
-    +'<div style="margin-bottom:8px"><b>Reason:</b> '+esc(v2.basis||'')+(v2.justification?' <span class="hint">('+esc(v2.justification)+')</span>':'')+'</div>'
-    +g1+g2+g3
+    +'<div style="margin-bottom:6px"><b>Reason:</b> '+esc(v2.basis||'')+(v2.justification?' <span class="hint">('+esc(v2.justification)+')</span>':'')+'</div>'
+    +'<div style="margin-bottom:8px"><b>Decided at:</b> <span class="mono">'+decided+'</span>'+(v2.tier?' <span class="hint">&middot; evidence tier: <b>'+esc(v2.tier)+'</b></span>':'')+'</div>'
+    +'<div class="hint" style="margin:6px 0 3px">Optional source evidence (raises confidence, not required for the verdict):</div>'
+    +opt('&middot; reachable (Joern)',q2txt,q2reach)
+    +opt('&middot; controllable (Z3)',q3txt,q1ok&&q2reach&&v2.q3==='controllable')
     +'<div style="margin-top:8px" class="hint">'+links+'</div>'
     +'</div>';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});

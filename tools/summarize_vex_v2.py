@@ -33,17 +33,20 @@ def main():
         rows.append({"cve": cve, "final_vex": x["final_vex"],
                      "justification": x.get("justification"),
                      "basis": x.get("basis"),      # the per-CVE reason (evidence tier)
+                     "evidence_tier": x.get("evidence_tier"),
                      "component": (loc.get(cve) or {}).get("component"),
                      "evidence": {"q1": (loc.get(cve) or {}).get("q1"),
                                   "reachability": (reach.get(cve) or {}).get("verdict"),
                                   "controllability": (ctrl.get(cve) or {}).get("verdict")}})
     summary = {
-        "generated": "2026-09-21",
+        "generated": "2026-09-27",
         "test": "VEX-v2 judgment over source-collectable CVEs",
-        "method": "CTI(LLM agent) -> source locate -> Joern reachability -> Z3 "
-                  "controllability -> CISA justification",
+        "method": "CTI(LLM agent) -> source locate (presence, decides) -> optional Joern "
+                  "reachability + Z3 controllability (evidence tier only)",
         "population": len(v2),
         "final_vex": dict(collections.Counter(x["final_vex"] for x in v2.values())),
+        "evidence_tier": dict(collections.Counter(
+            x.get("evidence_tier") for x in v2.values())),
         "justifications": dict(collections.Counter(
             x["justification"] for x in v2.values() if x.get("justification"))),
         "gates": {
@@ -51,9 +54,10 @@ def main():
             "q2_reachable_joern": dict(collections.Counter(x["verdict"] for x in reach.values())),
             "q3_controllable_z3": dict(collections.Counter(x["verdict"] for x in ctrl.values())),
         },
-        "note": "affected = present AND reachable(Joern) AND controllable(Z3); unknown "
-                "never clears (-> under_investigation). Joern is call-graph-only (no "
-                "dataflow); oversized snapshots are skipped to unknown.",
+        "note": "VEX justifications are a hierarchy: presence (Q1) decides (present -> affected, "
+                "absent -> not_affected). Reachability (Joern) and controllability (Z3) are "
+                "OPTIONAL - they only raise the evidence_tier, they never refute (a library "
+                "snapshot has no consumer, so not-reachable false-negatives on the API itself).",
         "cves": rows,
     }
     json.dump(summary, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)

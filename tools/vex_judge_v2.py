@@ -8,17 +8,21 @@ analysed"). VEX puts the burden of proof on not_affected: vulnerable code presen
 product is `affected` by default; not_affected must be positively EARNED. So the solvers
 only ever DOWNGRADE on positive refutation - they are evidence, not required upgrade gates.
 
-  present?      source_locate   absent -> not_affected / vulnerable_code_not_present
-  reachable?    joern           strengthens only (see below)
-  controllable? z3              strengthens only (never refutes - unreliable labelling)
-  otherwise (present, not refuted)     -> affected
+The VEX justifications are a HIERARCHY; the verdict is settled at the shallowest level, and
+reachability/controllability are OPTIONAL - they grade confidence, they never decide:
 
-Only source-absence (Q1) soundly clears a CVE. Q2 and Q3 only STRENGTHEN an affected verdict,
-they never refute: a collected library snapshot has no consumer, so its true entry points (the
-exported API) are outside the graph, and Joern "not reachable from an in-snapshot root"
-false-negatives on the very functions that are the attack surface (it did so on zlib `inflate`
-and openssl `GENERAL_NAME_cmp`). "No in-snapshot path" does not meet VEX's burden of proof, so
-not-reachable no longer clears - only positive "reachable" is used, as an evidence tier.
+  Level 1  present?   source_locate  absent -> not_affected / vulnerable_code_not_present
+  (decides everything else) present    -> affected
+  Level 2  reachable? joern (OPTIONAL) positive "reachable" only STRENGTHENS the tier
+  Level 3  control.?  z3    (OPTIONAL) positive "controllable" only STRENGTHENS the tier
+
+Only source-absence (Level 1) soundly clears a CVE. Q2/Q3 never refute: a collected library
+snapshot has no consumer, so its true entry points (the exported API) are outside the graph, and
+Joern "not reachable from an in-snapshot root" false-negatives on the attack-surface API itself
+(zlib `inflate`, openssl `GENERAL_NAME_cmp`); Z3 "not-controllable" rests on unreliable LLM
+labelling. So most CVEs are decided at Level 1 alone; Q2/Q3 are run only to raise the evidence
+tier where they are meaningful. Each verdict carries `evidence_tier`:
+  verified (reachable+controllable) > reachable > component > present   [not-present for not_affected]
 
 Reads the step 1-4 caches (run those first, or `--run` to run them here). The vuln
 function is located from the CTI extraction, falling back to the patch (step 2).
@@ -41,49 +45,48 @@ OUT = os.path.join(BASE, "data", "vex_v2.json")
 AFFECTED, NOT_AFF, UNDER = "affected", "not_affected", "under_investigation"
 
 
+# Reachability (Q2) and controllability (Q3) are OPTIONAL enrichment: they only grade how much
+# source evidence backs an `affected` verdict, they never decide it. Strongest first.
+def _tier(ev):
+    if ev["reachability"] == "reachable" and ev["controllability"] == "controllable":
+        return ("verified",
+                "present, reachable (joern) and adversary-controllable (z3)")
+    if ev["reachability"] == "reachable":
+        return ("reachable",
+                "present and reachable (joern); adversary control not confirmed")
+    if ev["q1"] == "component_only":
+        return ("component",
+                "vulnerable component present; specific function not localised in source")
+    return ("present",
+            "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)")
+
+
 def judge(cve, loc, reach, ctrl):
     ev = {"q1": (loc or {}).get("q1"),
           "reachability": (reach or {}).get("verdict"),
           "controllability": (ctrl or {}).get("verdict")}
-    # These 104 all have the product source collected, so the analysis is COMPLETE for every
-    # one - none may rest in under_investigation (a VEX status the spec reserves for "not yet
-    # analysed"). VEX puts the burden of proof on not_affected: vulnerable code present in the
-    # product is `affected` by default, and not_affected must be positively EARNED. So the
-    # solvers only ever DOWNGRADE on positive refutation; when they cannot refute, the verdict
-    # stays affected, and `ev` records how strong the evidence is.
-
-    # gate 1 — presence: the one place we can prove not_present (function absent from source).
+    # VEX justifications form a HIERARCHY; return at the SHALLOWEST level that settles the CVE,
+    # and never sit in under_investigation (the source is collected, so the analysis is complete).
+    #
+    #   Level 1 - presence  : the only sound machine refutation for a source snapshot.
+    #   Level 2 - reachable : OPTIONAL. Not a refutation - a library snapshot has no consumer, so
+    #                         Joern "not reachable from an in-snapshot root" false-negatives on the
+    #                         attack-surface API itself (zlib `inflate`, openssl `GENERAL_NAME_cmp`).
+    #                         A positive "reachable" only strengthens confidence.
+    #   Level 3 - control.  : OPTIONAL. Z3 "not-controllable" rests on the LLM's attacker/environment
+    #                         labelling (unreliable), so it too only strengthens.
+    #
+    # So the verdict is decided at Level 1 (presence); Q2/Q3 are not required and only set the tier.
     if loc is None or ev["q1"] == "absent":
         return _v(cve, NOT_AFF, "vulnerable_code_not_present",
-                  "the vulnerable function is not defined in the collected source", ev)
-    # gate 2 — reachability (Joern) only STRENGTHENS; it does NOT refute. A collected library
-    # snapshot has no consumer, so its real entry points (the exported API) are not in the graph;
-    # Joern's "not reachable from an in-snapshot root" then false-negatives on functions that ARE
-    # the attack surface (e.g. zlib `inflate`, openssl `GENERAL_NAME_cmp`). "No in-snapshot path"
-    # does not meet VEX's burden of proof for not_affected, so not-reachable never clears - only
-    # a positive "reachable" is used, as an evidence tier.
-
-    # gate 3 — controllability (Z3) likewise only strengthens (its "not-controllable" rests on the
-    # LLM's attacker-vs-environment labelling, which is unreliable).
-
-    # affected — the vulnerable code is present and not soundly refuted. Basis states the tier:
-    if ev["reachability"] == "reachable" and ev["controllability"] == "controllable":
-        basis = "present, reachable (joern) and adversary-controllable (z3)"    # strongest
-    elif ev["reachability"] == "reachable":
-        basis = "present and reachable (joern); adversary control not confirmed"
-    elif ev["q1"] == "component_only":
-        basis = "vulnerable component present; specific function not localised in source"
-    elif ev["reachability"] == "not-reachable":
-        basis = ("present; no path from an in-snapshot entry, but the library's caller is external "
-                 "so that does not refute reachability - not cleared")
-    else:
-        basis = "vulnerable code present; not refuted (reachability not analysable - no CPG/entry)"
-    return _v(cve, AFFECTED, None, basis, ev)
+                  "the vulnerable function is not defined in the collected source", "not-present", ev)
+    tier, basis = _tier(ev)                      # present -> affected; Q2/Q3 grade the confidence
+    return _v(cve, AFFECTED, None, basis, tier, ev)
 
 
-def _v(cve, vex, just, basis, ev):
+def _v(cve, vex, just, basis, tier, ev):
     return {"cve": cve, "final_vex": vex, "justification": just,
-            "basis": basis, "evidence": ev}
+            "basis": basis, "evidence_tier": tier, "evidence": ev}
 
 
 def _run_chain(cves):
