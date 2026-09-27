@@ -125,7 +125,20 @@ source evidence backs it:
 | `present` | 27 | present; reachability not confirmable (oversized / library caller external) |
 | `component` | 13 | component present; specific function not located |
 
-So 67 of the 107 carry positive reachability evidence; the rest rest on confirmed presence. The older source-level engines it
+So 67 of the 107 carry positive reachability evidence; the rest rest on confirmed presence.
+
+**Sound `not_affected`/`fixed` on the other side — `tools/fixed_check.py` (patch-signature).** The
+107 are deliberately *vulnerable-version* snapshots, which is why the code-level verdict is all
+`affected`. The sound way to clear a build is not reachability but the **fix itself**: each CVE's
+fix commit turns specific vulnerable lines into fixed ones (`data/code_evidence.json` stores both),
+so `fixed_check` reads that exact code and reports `fixed` when the distinctive fix lines are present
+and the vulnerable ones are gone (≥2 anchors, so a stray `return NULL;` cannot clear a build).
+Demonstrated on zlib (`results/vex_v2_fixed_demo.json`): the same CVE at its vulnerable version vs a
+patched 1.2.13 snapshot flips CVE-2016-9840/9841/2022-37434 to `fixed`, with **0 false-clears over
+all 107** vulnerable snapshots. Unlike Joern reachability this needs no consumer/entry model, so it
+is a sound complement ready to wire in as an optional `Q1b` gate.
+
+The older source-level engines VEX-v2
 replaced — the fine-tuned Q1 judge, the static call-graph Q2 and the taint Q3 — have been
 **removed** now that it is validated; some sections further below still describe that
 earlier approach and are being retired.
@@ -303,7 +316,7 @@ sandboxing. All 106 source-available CVEs were run (the 88 that built plus an
 |---|---|---|
 | the **2 execution-verified** CVEs (CVE-2020-8177, CVE-2022-32221, both curl) | `src/vex_batch.py` | the only `affected` verdicts in the corpus resting on a run, not an argument |
 | `results/verify_build_logs/` | — | preserved build output of the closed campaign |
-| `data/source_snapshots/` | Q1–Q4 | the 104 source trees everything below analyses |
+| `data/source_snapshots/` | Q1–Q4 | the 107 source trees everything below analyses |
 
 The campaign's other outcome labels — `exploit-generated 20`, `build-only 70`,
 `failed 14` — are a **historical record of a pipeline this repository can no
@@ -317,10 +330,11 @@ Failure analysis shows the misses are dominated by memory-corruption CWEs whose
 trigger produces no observable effect without sanitizer instrumentation, while
 both successes are logic-class bugs with a visible effect.
 
-Two of the failures — **CVE-2021-33909 and CVE-2023-32233** — died in the
-CVE-processor step before any source was downloaded, so no snapshot exists for
-them. That is why the code-level analysis below has a population of **104**, not
-106: `data/source_snapshots/` holds the CVEs whose source was actually
+Two of the failures — **CVE-2021-33909 and CVE-2023-32233** — had originally died
+in the CVE-processor step before any source was downloaded; they were later
+collected directly from the upstream release tags (linux-5.13.3 / linux-6.3.1),
+along with ntp 4.2.8p13 for CVE-2020-11868, bringing the code-level population to
+**107**. `data/source_snapshots/` holds every CVE whose source was actually
 collected.
 
 The two execution-verified CVEs are **CVE-2020-8177** and **CVE-2022-32221** (both
