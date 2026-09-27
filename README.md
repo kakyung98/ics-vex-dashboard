@@ -375,6 +375,45 @@ logs.
 
 ---
 
+## Repository layout
+
+```
+ICS-VEX/
+├── src/                          core modules (13)
+│   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
+│   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
+│   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
+│   ├── build_reverse_sbom.py     advisory → CycloneDX 1.7 SBOM (KISA field spec)
+│   ├── sbom_match.py             SBOM → CVE matching
+│   ├── vex_batch.py / vex_pipeline.py   corpus-level VEX batch
+│   └── vex_source_unavailable.py decision tree for source-uncollectable CVEs
+├── tools/                        57 pipeline scripts, incl. Stage 3 (VEX-v2):
+│   ├── cti_extract.py            CTI → structured info (Ollama)
+│   ├── source_locate.py          Q1 presence — decides the verdict
+│   ├── joern_reachability.py     Q2 reachability (optional evidence tier)
+│   ├── z3_controllability.py     Q3 controllability (optional evidence tier)
+│   ├── vex_judge_v2.py           hierarchy verdict + evidence_tier
+│   ├── fixed_check.py            patch-signature — sound not_affected/fixed
+│   ├── summarize_vex_v2.py       results/vex_v2_summary.json
+│   ├── build_func_index.py · extract_vuln_funcs.py · oss_repos.py   source index / collection map
+│   ├── build_site.py · build_cpe_index.py · build_sbom_index.py     static site + indexes
+│   └── fetch_*.py · collect_*.py                                     data collection
+├── data/                         caches, snapshots, indexes (most gitignored, regenerable)
+│   ├── source_snapshots/<CVE>/   107 collected source trees (gitignored)
+│   ├── code_evidence.json        fix hunks (vuln vs patched) → feeds fixed_check
+│   ├── nvd_cache.json · cisa_advisories.json · vuln_targets.json
+│   └── {cti_extractions,source_locations,reachability,controllability,vex_v2}.json  (VEX-v2 caches, gitignored)
+├── reverse_sbom/                 3,765 advisory → CycloneDX SBOMs
+├── results/                      eval outputs (vex_v2_summary.json, vex_v2_fixed_demo.json, …)
+├── site/                         static dashboard: 10 HTML + JSON, auto-deployed to GitHub Pages
+├── deploy/                       Joern / deployment notes
+├── .github/workflows/pages.yml   deploys site/ on push to main
+└── README.md · RESULTS.md · requirements.txt
+```
+
+Data/output directories are gitignored where regenerable (`.gitignore` lists them); the code
+lives in `src/` and `tools/`, the deployed dashboard in `site/`.
+
 ## Pipeline
 
 | Step | Script | Output |
@@ -399,11 +438,14 @@ logs.
 | **VEX-v2** 3. Q2 reachability | `tools/joern_reachability.py --all` | `data/reachability.json` (Joern) |
 | **VEX-v2** 4. Q3 controllability | `tools/z3_controllability.py --all` | `data/controllability.json` (Z3) |
 | **VEX-v2** 5. Final VEX | `tools/vex_judge_v2.py --all`, `tools/summarize_vex_v2.py` | `data/vex_v2.json`, `results/vex_v2_summary.json` |
+| **VEX-v2** (opt) Patch-signature | `tools/fixed_check.py` | `results/vex_v2_fixed_demo.json` |
 | Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `site/*.html`, `site/*.json` |
 
-The VEX-v2 steps run in gate order (reachability before controllability, which only
-runs where reachable); `data/vuln_targets.json` is the patch-based fallback when the
-CTI does not name the vulnerable function. VEX-v2 outputs are gitignored (regenerable).
+In VEX-v2 the **presence check (Q1) decides the verdict**; reachability (Joern) and
+controllability (Z3) are optional and only set the `evidence_tier`. `data/vuln_targets.json`
+is the patch-based fallback when the CTI does not name the vulnerable function, and
+`fixed_check.py` is the sound `fixed`/not_affected complement. VEX-v2 outputs are gitignored
+(regenerable).
 
 Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 14's
 `build_sbom_index.py` is not run by `build_site.py`, so run it separately. Steps 12/13 need the fine-tuned adapter in
