@@ -111,11 +111,21 @@ ever *downgrade* on a **sound** positive refutation; they are evidence, not requ
   presence-only); only Q1 source-absence → **not_affected**.
 
 Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the
-107 source-collectable CVEs, VEX-v2 gives **107 `affected`** (67 with positive Joern-reachability
-evidence, 64 of those also Z3-controllable; the rest present-but-not-refuted), **0 `not_affected`**
-and **0 `under_investigation`** (`results/vex_v2_summary.json`) — sound source-only `not_affected`
-needs the consumer context a library snapshot lacks, so the pipeline confirms exploitability and
-grades evidence rather than clearing CVEs it cannot soundly clear. The older source-level engines it
+107 source-collectable CVEs, VEX-v2 gives **107 `affected`**, **0 `not_affected`**, **0
+`under_investigation`** (`results/vex_v2_summary.json`) — sound source-only `not_affected` needs
+the consumer context a library snapshot lacks, so the pipeline confirms exploitability and grades
+evidence rather than clearing CVEs it cannot soundly clear. Because presence decides the verdict
+and Q2/Q3 are optional enrichment, each verdict carries an **`evidence_tier`** that says how much
+source evidence backs it:
+
+| tier | count | meaning |
+|---|---|---|
+| `verified` | 64 | present + Joern-reachable + Z3-controllable (strongest) |
+| `reachable` | 3 | present + Joern-reachable |
+| `present` | 27 | present; reachability not confirmable (oversized / library caller external) |
+| `component` | 13 | component present; specific function not located |
+
+So 67 of the 107 carry positive reachability evidence; the rest rest on confirmed presence. The older source-level engines it
 replaced — the fine-tuned Q1 judge, the static call-graph Q2 and the taint Q3 — have been
 **removed** now that it is validated; some sections further below still describe that
 earlier approach and are being retired.
