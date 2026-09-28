@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ssrc.jnu.ac.kr/schemas/vex_platform_schema.json",
+  "title": "ICS-VEXForge → Platform VEX Document",
+  "description": "VEX interface between ICS-VEXForge and the integrated security management platform (output = platform input). OpenVEX/CSAF-compatible vocabulary extended with evidence/risk/provenance.",
+  "type": "object",
+  "required": ["schema_version", "generator", "generated_at", "spec", "statement_count", "statements"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"type": "string", "examples": ["1.0"]},
+    "generator": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "org": {"type": "string"}
+      }
+    },
+    "generated_at": {"type": "string", "format": "date-time"},
+    "spec": {"type": "string", "const": "openvex-compatible"},
+    "asset": {
+      "type": ["object", "null"],
+      "required": ["asset_id"],
+      "properties": {
+        "asset_id": {"type": "string"},
+        "product": {"type": ["string", "null"]},
+        "vendor": {"type": ["string", "null"]},
+        "sbom_ref": {"type": ["string", "null"]}
+      }
+    },
+    "statement_count": {"type": "integer", "minimum": 0},
+    "statements": {"type": "array", "items": {"$ref": "#/$defs/VexStatement"}}
+  },
+  "$defs": {
+    "VexStatement": {
+      "type": "object",
+      "required": ["statement_id", "vulnerability", "product", "status", "justification", "evidence", "risk", "provenance", "last_updated"],
+      "additionalProperties": false,
+      "properties": {
+        "statement_id": {"type": "string"},
+        "vulnerability": {
+          "type": "object",
+          "required": ["cve"],
+          "properties": {
+            "cve": {"type": "string", "pattern": "^CVE-\\d{4}-\\d+$"},
+            "cwe": {"type": "array", "items": {"type": "string", "pattern": "^CWE-\\d+$"}},
+            "title": {"type": ["string", "null"]},
+            "aliases": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "product": {
+          "type": "object",
+          "required": ["product_id", "name", "version"],
+          "properties": {
+            "product_id": {"type": "string"},
+            "name": {"type": "string"},
+            "version": {"type": "string"},
+            "vendor": {"type": ["string", "null"]},
+            "purl": {"type": ["string", "null"]},
+            "cpe": {"type": ["string", "null"]},
+            "ics_device": {"type": ["string", "null"]}
+          }
+        },
+        "status": {"type": "string", "enum": ["affected", "not_affected", "fixed", "under_investigation"]},
+        "justification": {
+          "type": ["string", "null"],
+          "enum": [null, "component_not_present", "vulnerable_code_not_present", "vulnerable_code_not_in_execute_path", "vulnerable_code_cannot_be_controlled_by_adversary", "inline_mitigations_already_exist"]
+        },
+        "action_statement": {"type": ["string", "null"]},
+        "impact_statement": {"type": ["string", "null"]},
+        "evidence": {
+          "type": "object",
+          "required": ["tier", "basis", "decided_by", "gates"],
+          "properties": {
+            "tier": {"type": "string", "enum": ["verified", "reachable", "present", "component", "sbom-evidenced", "not-present", "under-investigation"]},
+            "basis": {"type": "string"},
+            "decided_by": {"type": "string", "enum": ["presence", "source-absence", "sbom"]},
+            "method": {"type": "string"},
+            "gates": {
+              "type": "object",
+              "required": ["presence"],
+              "properties": {
+                "presence": {"type": ["string", "null"], "enum": [null, "present", "component_only", "absent"]},
+                "reachability": {"type": ["string", "null"], "enum": [null, "reachable", "not-reachable", "unknown"]},
+                "controllability": {"type": ["string", "null"], "enum": [null, "controllable", "not-controllable", "unknown"]}
+              }
+            }
+          }
+        },
+        "risk": {
+          "type": "object",
+          "required": ["severity", "cvss", "kev"],
+          "properties": {
+            "severity": {"type": "string", "enum": ["critical", "high", "medium", "low", "unrated"]},
+            "cvss": {
+              "type": "object",
+              "properties": {
+                "score": {"type": ["number", "null"], "minimum": 0, "maximum": 10},
+                "vector": {"type": ["string", "null"]},
+                "version": {"type": ["string", "null"]}
+              }
+            },
+            "kev": {"type": "boolean"},
+            "epss": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
+            "attack_vector": {"type": ["string", "null"], "enum": [null, "N", "A", "L", "P"]},
+            "ssvc": {
+              "type": ["object", "null"],
+              "properties": {
+                "priority": {"type": ["string", "null"], "enum": [null, "act", "attend", "track*", "track"]},
+                "vector": {"type": ["string", "null"]}
+              }
+            }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "advisory": {"type": ["string", "null"]},
+            "source_repo": {"type": ["string", "null"]},
+            "analyzed_version": {"type": ["string", "null"]},
+            "references": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "last_updated": {"type": "string", "format": "date-time"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "not_affected"}}},
+          "then": {"properties": {"justification": {"type": "string", "minLength": 1}}}
+        }
+      ]
+    }
+  }
+}
