@@ -384,12 +384,46 @@ otherwise an identity.
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
 | **#3** | SBOM → CVE identification precision | **0.9749** (TP 973 / FP 25) | ≥ 0.80 | 998 of 11,277 predictions (**8.8%** carry a label) |
-| **#4** | VEX affected-judgment precision | **0.9216** (TP 47 / FP 4) | ≥ 0.85 | 51 of 61 GT cases (vulnerable builds) |
+| **#4** | VEX affected-judgment precision | **0.9200** (TP 46 / FP 4) | ≥ 0.85 | 50 of 58 GT cases, population 104 |
 
 ```bash
 python tools/build_cpe_match_gt.py && python tools/eval_cpe_match_precision.py
-python tools/build_vex_gt.py && python tools/eval_vex_precision.py --sut data/vex_v2_pregate.json
+
+# #4 over the 104 the test document names (a clean subset of the 107 collected since)
+python tools/build_vex_gt.py --population results/_vuln_targets_104.json \
+                             --out data/vex_gt_104doc.jsonl
+python tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl \
+                                   --sut data/vex_v2_pregate.json
 ```
+
+**Population vs scored count — they are not the same number, in either item.** The
+certification document fixes #4's population at 104 CVEs, and
+`results/_vuln_targets_104.json` holds exactly that set, so the figure above is measured over
+it. But a ground truth earned from evidence cannot label every member: 53 of the 104 are
+patch-signature-inconclusive, 5 are patch/NVD disagreements, 1 execution run did not
+discriminate. Forcing the remaining cases into the score would require assuming unlabelled
+CVEs are `affected` (the SUT answers `affected` for all of them, so FP becomes structurally
+0 and precision is the identity 1.0), filling them from vendor assertions (a claim with no
+source adjudicating a code-level verdict), or counting undecidable as FP (charging the SUT
+for a gap in the answer key). So the claim is **"precision over the evidence-labelled subset
+of a 104 population"**, never "precision over 104".
+
+```
+104  population (results/_vuln_targets_104.json)
+ ├─ 53  patch signature inconclusive
+ ├─  5  patch signature vs NVD disagreement -> held out as conflict
+ └─  1  execution run did not discriminate
+ ↓
+ 54  CVEs labelled  ->  58 (CVE, build) cases
+ └─  8  patched builds — source vex_judge_v2 never ran against
+ ↓
+ 50  scored  ->  precision 0.9200
+```
+
+Measured over all 107 collected snapshots instead, it is 0.9216 (TP 47 / FP 4,
+`results/vex_precision_pregate.json`): the three CVEs added since the document was written
+contribute one labelled case, and the four false positives are identical, so the population
+choice does not carry the result.
 
 **#3 ground truth** (`tools/build_cpe_match_gt.py` → `data/cpe_match_eval.jsonl`, 6,518 records,
 2,652 CVEs, 471 vendors) comes from CISA CSAF `affects` assertions cross-checked against NVD
@@ -412,16 +446,17 @@ product from the same shared-code CVE. What the figure does **not** cover:
   `fedoraproject:fedora` for a Siemens component. A negative has to lie inside the system's output
   space to ever fire.
 
-**#4 ground truth** (`tools/build_vex_gt.py` → `data/vex_gt_104.jsonl`, 61 cases over 56 CVEs) uses
+**#4 ground truth** (`tools/build_vex_gt.py` → `data/vex_gt_104doc.jsonl`, 58 cases over 54 CVEs
+for the 104 population; `data/vex_gt_104.jsonl` is the same build over all 107) uses
 `execution_verified` and `patch_verified` only; `vendor_asserted` is excluded because a claim with no
 source behind it cannot adjudicate a code-level verdict. Its `not_affected` side exists at all
 because the evidence is **paired** — execution gives "vulnerable version crashes / patched version
 does not", the patch signature gives "vulnerable lines survive / fix lines present" — so one record
-yields two cases. A label is therefore about a **build, not a CVE**, and the 9 patched-build cases are
-held out: `vex_judge_v2`'s caches are keyed by CVE, not by snapshot path, so its cached verdicts
+yields two cases. A label is therefore about a **build, not a CVE**, and the 8 patched-build cases
+are held out: `vex_judge_v2`'s caches are keyed by CVE, not by snapshot path, so its cached verdicts
 cannot stand in for a run against `data/fixed_releases/`.
 
-> **The gated system's #4 figure is circular, and 0.9216 is the pre-gate number.** The patch gate
+> **The gated system's #4 figure is circular, and 0.9200 is the pre-gate number.** The patch gate
 > decides from the fix signature plus the NVD range — the same two authorities the GT's
 > `patch_verified` labels come from. With the gate live, FP falls to 0 and precision reads 1.0000 by
 > construction, not by merit; `tools/eval_vex_precision.py` detects this and prints a `!! CIRCULAR`
@@ -523,7 +558,7 @@ lives in `src/` and `tools/`, the deployed dashboard in `site/`.
 | **VEX-v2** 5b. Pre-gate baseline | `tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.json` | `data/vex_v2_pregate.json` |
 | **VEX-v2** (opt) Patch-signature CLI | `tools/fixed_check.py --cve X --snapshot D` | `results/vex_v2_fixed_demo.json` |
 | Test item #3 | `tools/build_cpe_match_gt.py`, `tools/eval_cpe_match_precision.py` | `data/cpe_match_eval.jsonl`, `results/cpe_match_precision.json` |
-| Test item #4 | `tools/build_vex_gt.py`, `tools/eval_vex_precision.py` | `data/vex_gt_104.jsonl`, `results/vex_precision.json` |
+| Test item #4 | `tools/build_vex_gt.py --population results/_vuln_targets_104.json --out data/vex_gt_104doc.jsonl`, `tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl --sut data/vex_v2_pregate.json` | `data/vex_gt_104doc.jsonl`, `results/vex_precision_104.json` |
 | Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `site/*.html`, `site/*.json` |
 
 In VEX-v2 the **patch gate (Q0) runs first** and the **presence check (Q1) decides the rest**;
@@ -589,8 +624,8 @@ python tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.jso
 
 # certification test items #3 / #4 — ground truth, then precision
 python tools/build_cpe_match_gt.py && python tools/eval_cpe_match_precision.py
-python tools/build_vex_gt.py
-python tools/eval_vex_precision.py --sut data/vex_v2_pregate.json   # non-circular figure
+python tools/build_vex_gt.py --population results/_vuln_targets_104.json --out data/vex_gt_104doc.jsonl
+python tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl --sut data/vex_v2_pregate.json
 
 python tools/build_sbom_index.py && python tools/build_site.py
 ```
