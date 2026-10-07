@@ -37,12 +37,15 @@ import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(BASE, "tools")
+sys.path.insert(0, os.path.join(BASE, "src"))
+import patch_gate as PG
 F = {k: os.path.join(BASE, "data", v) for k, v in {
     "cti": "cti_extractions.json", "loc": "source_locations.json",
     "reach": "reachability.json", "ctrl": "controllability.json"}.items()}
 OUT = os.path.join(BASE, "data", "vex_v2.json")
 
 AFFECTED, NOT_AFF, UNDER = "affected", "not_affected", "under_investigation"
+FIXED = "fixed"          # CSAF product_status.fixed — remediated, not "never affected"
 
 
 # Reachability (Q2) and controllability (Q3) are OPTIONAL enrichment: they only grade how much
@@ -61,10 +64,27 @@ def _tier(ev):
             "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)")
 
 
-def judge(cve, loc, reach, ctrl):
+def judge(cve, loc, reach, ctrl, gate=None):
     ev = {"q1": (loc or {}).get("q1"),
           "reachability": (reach or {}).get("verdict"),
           "controllability": (ctrl or {}).get("verdict")}
+    # Level 0 - already patched? Presence (Level 1) answers "is the vulnerable function
+    # here", never "is the fix here", so a snapshot taken at the release that FIXED the
+    # CVE still came out affected (dnsmasq 2.78 for CVE-2017-14491). src/patch_gate
+    # clears a CVE only when the fix's own lines are present AND NVD's product-matched
+    # range no longer covers the version, so it can fail to clear a patched build but
+    # does not clear a vulnerable one. CSAF files this under product_status.fixed, not
+    # known_not_affected: the code was there and has been remediated.
+    if gate and gate.get("cleared"):
+        ev["patched"] = "fixed"
+        r = _v(cve, FIXED, None,
+               "fix present in the collected source (%s) and NVD's affected range no "
+               "longer covers %s" % (gate.get("file") or "patched hunk", gate.get("version")),
+               "patch-verified", ev)
+        r["patch_gate"] = gate
+        return r
+    if gate:
+        ev["patched"] = "no"
     # VEX justifications form a HIERARCHY; return at the SHALLOWEST level that settles the CVE,
     # and never sit in under_investigation (the source is collected, so the analysis is complete).
     #
@@ -94,6 +114,8 @@ def _run_chain(cves):
     reachability (Joern) is the earlier gate, so it runs before controllability (Z3)."""
     scripts = [("cti_extract.py", "1 CTI"), ("source_locate.py", "2 source"),
                ("joern_reachability.py", "3 joern"), ("z3_controllability.py", "4 z3")]
+    # the patch gate reads data/patches/ and the NVD range cache directly, so it needs
+    # no step of its own in this chain
     for cve in cves:
         for sc, label in scripts:
             print("  run step %s for %s" % (label, cve))
@@ -106,6 +128,11 @@ def main():
     ap.add_argument("--cve")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--run", action="store_true", help="run steps 1-4 first")
+    ap.add_argument("--no-patch-gate", action="store_true",
+                    help="skip Level 0; reproduces the pre-gate verdicts")
+    ap.add_argument("--out", help="write elsewhere than data/vex_v2.json (use with "
+                                  "--no-patch-gate to keep the pre-gate baseline that "
+                                  "the only non-circular #4 figure is measured on)")
     a = ap.parse_args()
 
     if a.run and a.cve:
@@ -116,15 +143,20 @@ def main():
     if not cves:
         ap.error("pass --cve CVE-XXXX or --all")
 
-    out = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
+    ranges = json.load(open(os.path.join(BASE, "data", "cve_version_ranges.json"),
+                            encoding="utf-8")) if not a.no_patch_gate else {}
+    out_path = a.out or OUT
+    out = json.load(open(out_path, encoding="utf-8")) if os.path.exists(out_path) else {}
     tally = {}
     for cve in cves:
-        r = judge(cve, data["loc"].get(cve), data["reach"].get(cve), data["ctrl"].get(cve))
+        gate = None if a.no_patch_gate else PG.decide(cve, ranges=ranges, locs=data["loc"])
+        r = judge(cve, data["loc"].get(cve), data["reach"].get(cve), data["ctrl"].get(cve),
+                  gate)
         out[cve] = r
         tally[r["final_vex"]] = tally.get(r["final_vex"], 0) + 1
         print("  %-18s %-20s %s" % (cve, r["final_vex"], r["justification"] or r["basis"]))
-    json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("tally:", tally, "->", OUT)
+    json.dump(out, open(out_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print("tally:", tally, "->", out_path)
 
 
 if __name__ == "__main__":

@@ -92,9 +92,21 @@ puts the burden of proof on `not_affected`: **vulnerable code present in the pro
 `affected` by default**, and `not_affected` must be positively *earned*. So the analyzers only
 ever *downgrade* on a **sound** positive refutation; they are evidence, not required upgrade gates.
 
+- **Q0 already patched?** `src/patch_gate.py` → **fixed** (CSAF `product_status.fixed`). Presence
+  answers "is the vulnerable function here", never "is the fix here", so a snapshot taken at the
+  release that *fixed* the CVE still came out `affected` — dnsmasq 2.78 for CVE-2017-14491, curl
+  8.0.1 for CVE-2023-27533. The gate clears a CVE only when **two independent authorities agree**:
+  the fix commit's distinctive added lines are present and its removed lines are gone
+  (`tools/fixed_check`, ≥1 fix line actually found), **and** NVD's *product-matched* affected range
+  no longer covers the snapshot version. Either alone mislabels — "no vulnerable lines matched" is
+  produced just as readily by a failed file match as by a patched build, and a shared-code CVE's
+  range list carries co-listed products' bounds (CVE-2024-6387 ships NetApp's 10.0.0 beside
+  OpenSSH's, which clears an openssh 9.6p1 snapshot that sits inside openssh 8.6–9.8). Requiring
+  both keeps the gate sound in the direction that matters: it may fail to clear a patched build
+  (costing recall) but does not clear a vulnerable one.
 - **Q1 present?** `tools/source_locate.py` — absent → not_affected / vulnerable_code_not_present.
-  This is the only sound machine refutation: if the vulnerable function is not defined in the
-  collected source, the code is not present.
+  This is the only sound machine refutation *of presence*: if the vulnerable function is not
+  defined in the collected source, the code is not present.
 - **Q2 reachable?** `tools/joern_reachability.py` (Joern CPG) only *strengthens* an affected
   verdict — it does **not** refute. A collected library snapshot has no consumer, so its real
   entry points (the exported API) are outside the graph, and Joern's "not reachable from an
@@ -106,17 +118,20 @@ ever *downgrade* on a **sound** positive refutation; they are evidence, not requ
   which is unreliable and solver-indistinguishable from a genuine environment gate. (Z3 numeric
   atoms are tried as unbounded integers, then as fixed-width bit-vectors, so an overflow-driven
   trigger (CWE-190) is not mislabelled.)
-- **VEX decision** — `tools/vex_judge_v2.py`: present ∧ not-refuted → **affected** (the basis
-  records the evidence tier: Joern-reachable + Z3-controllable = strongest, down to
-  presence-only); only Q1 source-absence → **not_affected**.
+- **VEX decision** — `tools/vex_judge_v2.py`: patched → **fixed**; else present ∧ not-refuted →
+  **affected** (the basis records the evidence tier: Joern-reachable + Z3-controllable = strongest,
+  down to presence-only); only Q1 source-absence → **not_affected**.
 
-Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the
-107 source-collectable CVEs, VEX-v2 gives **107 `affected`**, **0 `not_affected`**, **0
-`under_investigation`** (`results/vex_v2_summary.json`) — sound source-only `not_affected` needs
-the consumer context a library snapshot lacks, so the pipeline confirms exploitability and grades
-evidence rather than clearing CVEs it cannot soundly clear. Because presence decides the verdict
-and Q2/Q3 are optional enrichment, each verdict carries an **`evidence_tier`** that says how much
-source evidence backs it:
+Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the 107
+source-collectable CVEs, VEX-v2 gives **103 `affected`**, **4 `fixed`**, **0 `not_affected`**, **0
+`under_investigation`**. The four are the snapshots the patch gate cleared (CVE-2017-14491,
+CVE-2019-11477, CVE-2023-27533, CVE-2023-27536) — **0 false clears**: every CVE the gate cleared is
+one the ground truth independently labels not-affected, and no CVE labelled affected was cleared.
+Sound source-only `not_affected` still needs the consumer context a library snapshot lacks, so
+outside the patch gate the pipeline confirms exploitability and grades evidence rather than clearing
+CVEs it cannot soundly clear. `--no-patch-gate` reproduces the earlier 107-`affected` baseline
+(`data/vex_v2_pregate.json`). Because presence decides the verdict and Q2/Q3 are optional
+enrichment, each verdict carries an **`evidence_tier`** that says how much source evidence backs it:
 
 | tier | count | meaning |
 |---|---|---|
@@ -127,16 +142,18 @@ source evidence backs it:
 
 So 67 of the 107 carry positive reachability evidence; the rest rest on confirmed presence.
 
-**Sound `not_affected`/`fixed` on the other side — `tools/fixed_check.py` (patch-signature).** The
-107 are deliberately *vulnerable-version* snapshots, which is why the code-level verdict is all
-`affected`. The sound way to clear a build is not reachability but the **fix itself**: each CVE's
-fix commit turns specific vulnerable lines into fixed ones (`data/code_evidence.json` stores both),
-so `fixed_check` reads that exact code and reports `fixed` when the distinctive fix lines are present
-and the vulnerable ones are gone (≥2 anchors, so a stray `return NULL;` cannot clear a build).
-Demonstrated on zlib (`results/vex_v2_fixed_demo.json`): the same CVE at its vulnerable version vs a
-patched 1.2.13 snapshot flips CVE-2016-9840/9841/2022-37434 to `fixed`, with **0 false-clears over
-all 107** vulnerable snapshots. Unlike Joern reachability this needs no consumer/entry model, so it
-is a sound complement ready to wire in as an optional `Q1b` gate.
+**Sound `fixed` on the other side — the patch gate (`src/patch_gate.py`), now wired in as Q0.** The
+107 are mostly *vulnerable-version* snapshots, which is why the code-level verdict was all
+`affected`. The sound way to clear a build is not reachability but the **fix itself**: each CVE's fix
+commit turns specific vulnerable lines into fixed ones, so the gate reads that exact code and
+reports `fixed` when the distinctive fix lines are present and the vulnerable ones are gone. Hunks
+come from the **91 downloaded fix-commit diffs** in `data/patches/`, not the 15 stored in
+`data/code_evidence.json`, which is what makes the coverage usable; the hunk from the file where
+`source_locations.json` put the vulnerable function is read first, because a fix commit touches more
+than the vulnerability (zlib's CVE-2016-9840 commit also bumps the version string in `zlib.h`, and
+judging from that hunk convicts an unrelated file). Unlike Joern reachability this needs no
+consumer/entry model. `tools/fixed_check.py` remains the single-CVE CLI and
+`results/vex_v2_fixed_demo.json` the zlib vulnerable-vs-patched demonstration.
 
 The older source-level engines VEX-v2
 replaced — the fine-tuned Q1 judge, the static call-graph Q2 and the taint Q3 — have been
@@ -234,12 +251,14 @@ deployment — not a synthetic number.
 
 The source-level judgment is the **VEX-v2** pipeline in
 [Stage 3 — VEX Verification](#stage-3--vex-verification): CTI extraction by an LLM
-agent, `source_locate`, Joern reachability and Z3 controllability. Because all 107 CVEs
-have the product source collected, the analysis is complete for each, so it gives
-**107 `affected`, 0 `not_affected`, 0 `under_investigation`**
-(`results/vex_v2_summary.json`). VEX makes `affected` the default for present vulnerable
-code and puts the burden of proof on `not_affected`, so the analyzers only *downgrade* on a
-**sound** refutation — and the only sound machine refutation is Q1 source-absence. Joern
+agent, the Q0 patch gate, `source_locate`, Joern reachability and Z3 controllability. Because
+all 107 CVEs have the product source collected, the analysis is complete for each, so it gives
+**103 `affected`, 4 `fixed`, 0 `not_affected`, 0 `under_investigation`**
+(`results/vex_v2_summary.json`; `--no-patch-gate` reproduces the earlier all-107-`affected`
+baseline). VEX makes `affected` the default for present vulnerable code and puts the burden of
+proof on `not_affected`, so the analyzers only *downgrade* on a **sound** refutation — the fix
+being positively present (Q0, corroborated by NVD's product-matched range) or the vulnerable
+code being absent (Q1). Joern
 reachability and Z3 controllability only ever *strengthen* an affected verdict: Joern
 "not reachable" false-negatives on a library's own attack-surface functions (its consumer,
 which defines the real entry points, is not in the snapshot — it did so on zlib `inflate`),
@@ -356,6 +375,66 @@ logs.
 
 ---
 
+## Certification test items #3 / #4 — precision, measured
+
+Two precision metrics with an acceptance threshold, each scored against a ground truth
+built **only** from authorities the system under test does not read — the test is
+otherwise an identity.
+
+| item | metric | result | acceptance | scored over |
+|---|---|---|---|---|
+| **#3** | SBOM → CVE identification precision | **0.9749** (TP 973 / FP 25) | ≥ 0.80 | 998 of 11,277 predictions (**8.8%** carry a label) |
+| **#4** | VEX affected-judgment precision | **0.9216** (TP 47 / FP 4) | ≥ 0.85 | 51 of 61 GT cases (vulnerable builds) |
+
+```bash
+python tools/build_cpe_match_gt.py && python tools/eval_cpe_match_precision.py
+python tools/build_vex_gt.py && python tools/eval_vex_precision.py --sut data/vex_v2_pregate.json
+```
+
+**#3 ground truth** (`tools/build_cpe_match_gt.py` → `data/cpe_match_eval.jsonl`, 6,518 records,
+2,652 CVEs, 471 vendors) comes from CISA CSAF `affects` assertions cross-checked against NVD
+applicability — never from `data/cpe_index.json`, which is what the matcher itself reads. Negatives
+are authority-derived: a version at or past CISA's own fixed boundary, and a co-listed vendor's
+product from the same shared-code CVE. What the figure does **not** cover:
+
+- **91.2% of predictions carry no label.** 57% are CVEs the GT does not enumerate for that
+  component; 34% are *unadjudicable* — CISA says the ICS product is affected while NVD files the CVE
+  against an embedded third party (Siemens JT2Go ↔ `drawings_software_development_kit`), so the two
+  authorities disagree about what the CVE is filed against, not about what the component is.
+  Charging those as FPs would penalise the matcher for a gap in the ground truth.
+- **41.9% of the corpus is excluded up front** (`data/cpe_match_eval_layerB.jsonl`): pairs where the
+  ICS name appears nowhere in NVD, so no name-based matcher can reach the answer.
+- **1,711 of 4,624 components (37%) are abstentions** — the matcher declined to identify. Legitimate
+  under a precision-only metric, and disclosed because it is a free lift to the score.
+- 32 CISA/NVD version-range disagreements are held out as `conflict` rather than labelled verified.
+- The 377 co-listed-vendor negatives are **unreachable for this SUT** and reported as such, not
+  deleted: `cves_for` returns `(product, vendor-of-that-product-entry)`, so it can never emit
+  `fedoraproject:fedora` for a Siemens component. A negative has to lie inside the system's output
+  space to ever fire.
+
+**#4 ground truth** (`tools/build_vex_gt.py` → `data/vex_gt_104.jsonl`, 61 cases over 56 CVEs) uses
+`execution_verified` and `patch_verified` only; `vendor_asserted` is excluded because a claim with no
+source behind it cannot adjudicate a code-level verdict. Its `not_affected` side exists at all
+because the evidence is **paired** — execution gives "vulnerable version crashes / patched version
+does not", the patch signature gives "vulnerable lines survive / fix lines present" — so one record
+yields two cases. A label is therefore about a **build, not a CVE**, and the 9 patched-build cases are
+held out: `vex_judge_v2`'s caches are keyed by CVE, not by snapshot path, so its cached verdicts
+cannot stand in for a run against `data/fixed_releases/`.
+
+> **The gated system's #4 figure is circular, and 0.9216 is the pre-gate number.** The patch gate
+> decides from the fix signature plus the NVD range — the same two authorities the GT's
+> `patch_verified` labels come from. With the gate live, FP falls to 0 and precision reads 1.0000 by
+> construction, not by merit; `tools/eval_vex_precision.py` detects this and prints a `!! CIRCULAR`
+> warning naming the shared-oracle cases. The non-circular slice (`--independent`,
+> execution-verified only) is n=1 and says nothing. So the quotable figure is measured on
+> `data/vex_v2_pregate.json` (`vex_judge_v2 --all --no-patch-gate`), and the gate's own result is
+> reported separately as **4 clears, 0 false clears**.
+
+Both ground truths ship a manifest (`*_manifest.json`) recording the seed, sampling caps, evidence
+mix, and every exclusion with its reason.
+
+---
+
 ## Data honesty
 
 - **Real:** device ↔ CVE ↔ CWE ↔ CVSS from CISA ICS-CERT (3,767 advisories,
@@ -379,21 +458,24 @@ logs.
 
 ```
 ICS-VEX/
-├── src/                          core modules (13)
+├── src/                          core modules (14)
 │   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
 │   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
 │   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
 │   ├── build_reverse_sbom.py     advisory → CycloneDX 1.7 SBOM (KISA field spec)
 │   ├── sbom_match.py             SBOM → CVE matching
+│   ├── patch_gate.py             Q0 — already patched? fix signature + NVD range (both required)
 │   ├── vex_batch.py / vex_pipeline.py   corpus-level VEX batch
 │   └── vex_source_unavailable.py decision tree for source-uncollectable CVEs
-├── tools/                        57 pipeline scripts, incl. Stage 3 (VEX-v2):
+├── tools/                        60 pipeline scripts, incl. Stage 3 (VEX-v2):
 │   ├── cti_extract.py            CTI → structured info (Ollama)
 │   ├── source_locate.py          Q1 presence — decides the verdict
 │   ├── joern_reachability.py     Q2 reachability (optional evidence tier)
 │   ├── z3_controllability.py     Q3 controllability (optional evidence tier)
-│   ├── vex_judge_v2.py           hierarchy verdict + evidence_tier
-│   ├── fixed_check.py            patch-signature — sound not_affected/fixed
+│   ├── vex_judge_v2.py           hierarchy verdict + evidence_tier (Q0 patch gate first)
+│   ├── fixed_check.py            patch-signature single-CVE CLI
+│   ├── build_cpe_match_gt.py · eval_cpe_match_precision.py   test item #3 GT + scorer
+│   ├── build_vex_gt.py · eval_vex_precision.py               test item #4 GT + scorer
 │   ├── summarize_vex_v2.py       results/vex_v2_summary.json
 │   ├── build_func_index.py · extract_vuln_funcs.py · oss_repos.py   source index / collection map
 │   ├── build_site.py · build_cpe_index.py · build_sbom_index.py     static site + indexes
@@ -437,15 +519,19 @@ lives in `src/` and `tools/`, the deployed dashboard in `site/`.
 | **VEX-v2** 2. Q1 source locate | `tools/source_locate.py --all` | `data/source_locations.json` |
 | **VEX-v2** 3. Q2 reachability | `tools/joern_reachability.py --all` | `data/reachability.json` (Joern) |
 | **VEX-v2** 4. Q3 controllability | `tools/z3_controllability.py --all` | `data/controllability.json` (Z3) |
-| **VEX-v2** 5. Final VEX | `tools/vex_judge_v2.py --all`, `tools/summarize_vex_v2.py` | `data/vex_v2.json`, `results/vex_v2_summary.json` |
-| **VEX-v2** (opt) Patch-signature | `tools/fixed_check.py` | `results/vex_v2_fixed_demo.json` |
+| **VEX-v2** 5. Final VEX (Q0 gate incl.) | `tools/vex_judge_v2.py --all`, `tools/summarize_vex_v2.py` | `data/vex_v2.json`, `results/vex_v2_summary.json` |
+| **VEX-v2** 5b. Pre-gate baseline | `tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.json` | `data/vex_v2_pregate.json` |
+| **VEX-v2** (opt) Patch-signature CLI | `tools/fixed_check.py --cve X --snapshot D` | `results/vex_v2_fixed_demo.json` |
+| Test item #3 | `tools/build_cpe_match_gt.py`, `tools/eval_cpe_match_precision.py` | `data/cpe_match_eval.jsonl`, `results/cpe_match_precision.json` |
+| Test item #4 | `tools/build_vex_gt.py`, `tools/eval_vex_precision.py` | `data/vex_gt_104.jsonl`, `results/vex_precision.json` |
 | Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `site/*.html`, `site/*.json` |
 
-In VEX-v2 the **presence check (Q1) decides the verdict**; reachability (Joern) and
-controllability (Z3) are optional and only set the `evidence_tier`. `data/vuln_targets.json`
-is the patch-based fallback when the CTI does not name the vulnerable function, and
-`fixed_check.py` is the sound `fixed`/not_affected complement. VEX-v2 outputs are gitignored
-(regenerable).
+In VEX-v2 the **patch gate (Q0) runs first** and the **presence check (Q1) decides the rest**;
+reachability (Joern) and controllability (Z3) are optional and only set the `evidence_tier`.
+`data/vuln_targets.json` is the patch-based fallback when the CTI does not name the vulnerable
+function. Keep `data/vex_v2_pregate.json` around: it is the baseline the only non-circular test
+item #4 figure is measured on, since the gate and that GT's `patch_verified` labels share an
+oracle. VEX-v2 outputs are gitignored (regenerable).
 
 Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 14's
 `build_sbom_index.py` is not run by `build_site.py`, so run it separately. Steps 12/13 need the fine-tuned adapter in
@@ -497,7 +583,14 @@ python tools/cti_extract.py --all
 python tools/source_locate.py --all
 python tools/joern_reachability.py --all
 python tools/z3_controllability.py --all
+python tools/fetch_patch_refs.py && python tools/fetch_patches.py   # Q0 patch gate inputs
 python tools/vex_judge_v2.py --all && python tools/summarize_vex_v2.py
+python tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.json
+
+# certification test items #3 / #4 — ground truth, then precision
+python tools/build_cpe_match_gt.py && python tools/eval_cpe_match_precision.py
+python tools/build_vex_gt.py
+python tools/eval_vex_precision.py --sut data/vex_v2_pregate.json   # non-circular figure
 
 python tools/build_sbom_index.py && python tools/build_site.py
 ```
@@ -508,6 +601,12 @@ install). Joern only ever *strengthens* an affected verdict (a positive `reachab
 top evidence tier); it never refutes, because "not reachable from an in-snapshot entry" is a
 false negative for a library whose caller is external. Where Joern is absent or cannot build a
 CPG, the verdict falls back to the `affected` presence-baseline rather than `under_investigation`.
+
+The Q0 patch gate needs no model — it reads `data/patches/*/*.diff` and the NVD range cache
+(`data/cve_version_ranges.json`) directly. Score test item #4 against
+`data/vex_v2_pregate.json`, not the gated output: the gate and that ground truth's
+`patch_verified` labels rest on the same two authorities, so the gated run reads 1.0000 by
+construction and the scorer prints a `!! CIRCULAR` warning saying so.
 
 ---
 
