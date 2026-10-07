@@ -1,0 +1,74 @@
+{
+  "test": "VEX affected-judgment precision (시험항목 #4) — ground truth",
+  "population_source_collected": 104,
+  "population_source": "results/_vuln_targets_104.json",
+  "evidence_types_included": [
+    "execution_verified",
+    "patch_verified"
+  ],
+  "evidence_types_excluded": [
+    "vendor_asserted",
+    "advisory_verified"
+  ],
+  "exclusion_reason": "a vendor or advisory assertion carries no source, so it cannot adjudicate a code-level verdict; including it would let the benchmark grade the SUT against the same class of claim the SUT exists to replace",
+  "counts": {
+    "cases": 58,
+    "cves_covered": 54,
+    "by_status": {
+      "affected": 48,
+      "not_affected": 10
+    },
+    "by_evidence_type": {
+      "patch_verified": 56,
+      "execution_verified": 2
+    },
+    "by_type_and_status": {
+      "patch_verified/affected": 47,
+      "patch_verified/not_affected": 9,
+      "execution_verified/not_affected": 1,
+      "execution_verified/affected": 1
+    }
+  },
+  "excluded": {
+    "execution_non_discriminating": 1,
+    "patch_inconclusive": 53,
+    "patch_nvd_conflict": 5
+  },
+  "conflict_cases": [
+    {
+      "cve": "CVE-2016-9318",
+      "build": "vulnerable",
+      "reason": "patch signature says fixed but NVD range still covers 2.9.4",
+      "detail": "fix-lines 0/0, vuln-lines 0/3 in parser.c"
+    },
+    {
+      "cve": "CVE-2020-10648",
+      "build": "vulnerable",
+      "reason": "patch signature says fixed but NVD range still covers 2020.04",
+      "detail": "fix-lines 13/13, vuln-lines 0/2 in image-sig.c"
+    },
+    {
+      "cve": "CVE-2020-8177",
+      "build": "vulnerable",
+      "reason": "patch signature says fixed but NVD range still covers 7.64.0",
+      "detail": "fix-lines 3/4, vuln-lines 0/0 in tool_getparam.c"
+    },
+    {
+      "cve": "CVE-2021-42374",
+      "build": "vulnerable",
+      "reason": "patch signature says fixed but NVD range still covers 1.30.1",
+      "detail": "fix-lines 2/2, vuln-lines 0/0 in decompress_unlzma.c"
+    },
+    {
+      "cve": "CVE-2024-6387",
+      "build": "vulnerable",
+      "reason": "patch signature says fixed but NVD range still covers 9.6p1",
+      "detail": "fix-lines 31/45, vuln-lines 0/22 in log.c"
+    }
+  ],
+  "corroboration": {
+    "patch+nvd": 9
+  },
+  "labelling_unit": "one (CVE, build) pair — the same CVE is affected in its vulnerable snapshot and not_affected in its patched release, so a label is about a build, never about a CVE",
+  "precedence": "execution_verified overrides patch_verified for the same (CVE, build): one observed the fault, the other inferred it"
+}

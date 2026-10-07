@@ -375,11 +375,22 @@ def patch_cases(limit_cves=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", help="comma-separated CVEs, for a quick pass")
+    ap.add_argument("--population", help="JSON file whose keys fix the population "
+                                         "(e.g. results/_vuln_targets_104.json for the "
+                                         "104 the test document names, a clean subset "
+                                         "of the 107 snapshots collected since)")
+    ap.add_argument("--out", help="write elsewhere than data/vex_gt_104.jsonl")
     a = ap.parse_args()
     limit = set(a.only.split(",")) if a.only else None
+    population = None
+    if a.population:
+        population = set(json.load(open(a.population, encoding="utf-8")))
+        limit = population & limit if limit else population
 
     pairs = load_execution_pairs()
     exec_rows, exec_skipped = execution_cases(pairs)
+    if population is not None:
+        exec_rows = [r for r in exec_rows if r["cve_id"] in population]
     patch_rows, patch_skipped, patch_conflicts = patch_cases(limit)
 
     # execution outranks patch signature for the same (CVE, build): it observed the
@@ -399,7 +410,8 @@ def main():
 
     order = ["test_case_id", "cve_id", "expected_status", "evidence_type",
              "evidence_reference", "review_status"]
-    with open(OUT, "w", encoding="utf-8") as f:
+    out_path = a.out or OUT
+    with open(out_path, "w", encoding="utf-8") as f:
         for r in rows:
             f.write(json.dumps({**{k: r[k] for k in order},
                                 **{k: v for k, v in r.items() if k.startswith("_")}},
@@ -408,10 +420,12 @@ def main():
     status = collections.Counter(r["expected_status"] for r in rows)
     etype = collections.Counter(r["evidence_type"] for r in rows)
     mix = collections.Counter((r["evidence_type"], r["expected_status"]) for r in rows)
-    population = len(os.listdir(SNAP))
+    pop_n = len(population) if population is not None else len(os.listdir(SNAP))
     manifest = {
         "test": "VEX affected-judgment precision (시험항목 #4) — ground truth",
-        "population_source_collected": population,
+        "population_source_collected": pop_n,
+        "population_source": (a.population if a.population
+                              else "data/source_snapshots/ (all collected)"),
         "evidence_types_included": ["execution_verified", "patch_verified"],
         "evidence_types_excluded": ["vendor_asserted", "advisory_verified"],
         "exclusion_reason": "a vendor or advisory assertion carries no source, so it "
@@ -433,11 +447,13 @@ def main():
         "precedence": "execution_verified overrides patch_verified for the same "
                       "(CVE, build): one observed the fault, the other inferred it",
     }
-    json.dump(manifest, open(MANIFEST, "w", encoding="utf-8"),
+    man_path = (os.path.splitext(out_path)[0] + "_manifest.json") if a.out else MANIFEST
+    json.dump(manifest, open(man_path, "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)
 
     print("=== 시험항목 #4 GT ===")
-    print("  population (source-collected) : %d CVEs" % population)
+    print("  population (source-collected) : %d CVEs  [%s]"
+          % (pop_n, a.population or "all snapshots"))
     print("  cases                         : %d  (CVEs covered: %d)"
           % (len(rows), len({r["cve_id"] for r in rows})))
     print("  by status                     : %s" % dict(status))
@@ -453,8 +469,8 @@ def main():
         print("  not_affected corroboration    : %s" % dict(corr))
     if not status.get("not_affected"):
         print("  WARNING: no not_affected label — precision would be the identity 1.0")
-    print("->", OUT)
-    print("->", MANIFEST)
+    print("->", out_path)
+    print("->", man_path)
 
 
 if __name__ == "__main__":
