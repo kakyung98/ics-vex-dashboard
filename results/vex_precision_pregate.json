@@ -1,0 +1,59 @@
+{
+  "test": "VEX affected-judgment precision (시험항목 #4)",
+  "sut": "tools/vex_judge_v2 (cached: data\\vex_v2_pregate.json)",
+  "ground_truth": "data\\vex_gt_104.jsonl",
+  "gt_evidence_types": [
+    "execution_verified",
+    "patch_verified"
+  ],
+  "build_scored": "vulnerable",
+  "scope": "all evidence types",
+  "patch_gate_live": false,
+  "shared_oracle_cases": 50,
+  "gt_cases_total": 61,
+  "gt_cases_other_build": 9,
+  "gt_cases_not_in_sut": 1,
+  "positive_class": "affected",
+  "TP": 47,
+  "FP": 4,
+  "TN": 0,
+  "FN": 0,
+  "classified_affected": 51,
+  "precision": 0.9216,
+  "recall": 1.0,
+  "acceptance_criterion": "precision >= 0.85",
+  "pass": true,
+  "fp_cases": [
+    {
+      "cve": "CVE-2017-14491",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 19/21, vuln-lines 0/2 in rfc1035.c",
+      "sut_basis": "present, reachable (joern) and adversary-controllable (z3)"
+    },
+    {
+      "cve": "CVE-2019-11477",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 8/10, vuln-lines 0/5 in tcp_input.c",
+      "sut_basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)"
+    },
+    {
+      "cve": "CVE-2023-27533",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 7/7, vuln-lines 0/0 in telnet.c",
+      "sut_basis": "present, reachable (joern) and adversary-controllable (z3)"
+    },
+    {
+      "cve": "CVE-2023-27536",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 3/3, vuln-lines 0/0 in url.c",
+      "sut_basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)"
+    }
+  ],
+  "fn_cases": [],
+  "circularity_warning": null,
+  "unscored_note": "patched-build GT cases need vex_judge_v2 re-run against data/fixed_releases/<CVE>; its caches are keyed by CVE, not by snapshot path, so the cached verdicts cannot stand in"
+}
