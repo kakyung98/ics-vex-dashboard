@@ -1,0 +1,26 @@
+{
+  "test": "SBOM CVE-identification precision (시험항목 #3)",
+  "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
+  "sut_mode": "recall-safe (default)",
+  "ground_truth": "data\\cpe_match_eval_104.jsonl",
+  "gt_labels": 48,
+  "gt_conflicts_held_out": 0,
+  "gt_unreachable_for_this_sut": {
+    "vendor": 60
+  },
+  "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN product; the SUT reports (product, vendor-of-that-product) so it can never emit them. The product axis is scored by closed-world rule instead.",
+  "sut_runs": 17,
+  "sut_abstained": 5,
+  "TP": 39,
+  "FP": 0,
+  "scored": 39,
+  "unlabelled_predictions": 1582,
+  "unadjudicable_predictions": 42,
+  "unadjudicable_reason": "SUT resolved the product the component name itself carries, but the GT's vendor-anchored CPE names a different (usually embedded) product for that CVE; the authorities disagree on filing, not on identity",
+  "labelled_share_pct": 2.35,
+  "fp_by_axis": {},
+  "precision": 1.0,
+  "acceptance_criterion": "precision >= 0.80",
+  "pass": true,
+  "fp_examples": []
+}
