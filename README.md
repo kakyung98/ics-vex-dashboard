@@ -383,8 +383,7 @@ otherwise an identity.
 
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
-| **#3** | SBOM → CVE identification precision | **1.0000** (TP 42 / FP 0) | ≥ 0.80 | 42 predictions, population 104 — no FP can fire, see below |
-| **#3** | *same SUT, whole corpus (supporting)* | **0.9749** (TP 973 / FP 25) | ≥ 0.80 | 998 of 11,277 predictions (8.8% labelled) |
+| **#3** | SBOM → CVE identification precision | **0.9749** (TP 973 / FP 25) | ≥ 0.80 | 998 of 11,277 predictions (**8.8%** carry a label) |
 | **#4** | VEX affected-judgment precision | **0.9200** (TP 46 / FP 4) | ≥ 0.85 | 50 of 58 GT cases, population 104 |
 
 The evaluation datasets are bundled on their own in [`benchmark/`](benchmark/) — answer
@@ -392,67 +391,40 @@ keys, the SUT's predictions and the results, enough to re-score without running 
 pipeline. `tools/build_benchmark_bundle.py` assembles it and `--check` verifies it against
 the live sources, so a rebuilt ground truth cannot leave a stale copy behind unnoticed.
 
-### One dataset, two stages
+### One corpus, two populations — on purpose
 
-Both items are scoped to the **same population: the 104 source-available CVEs**. They come
-from one corpus — CISA ICS-CERT advisories (3,765 advisories, 11,336 CVEs, rendered as
-CycloneDX in `reverse_sbom/`) — filtered by whether the component's source could be
-collected, which held for 104 CVEs, 0.9%. #3 identifies CVEs from the SBOM, #4 judges
-whether the identified CVEs affect the build, so the two items are consecutive stages over
-one dataset rather than two datasets.
+Both items come from one corpus: CISA ICS-CERT advisories (3,765 advisories, 11,336 CVEs,
+rendered as CycloneDX in `reverse_sbom/`). Their populations differ, and that is a design
+constraint rather than an inconsistency.
 
 ```
-CISA advisories 3,765 / CVEs 11,336              single dataset
+CISA advisories 3,765 / CVEs 11,336              one corpus
   │
-  └── filter: source collectable  ->  104 CVEs     the population for BOTH items
+  ├── item #3   SBOM -> CVE identification       whole corpus
+  │                                              precision 0.9749 (TP 973 / FP 25)
+  │
+  └── filter: source collectable  ->  104 CVEs
         │
-        ├── item #3   SBOM -> CVE identification    precision 1.0000 (TP 42 / FP 0)
-        │
-        └── item #4   impact judgment of those CVEs precision 0.9200 (TP 46 / FP 4)
+        └── item #4   impact judgment            precision 0.9200 (TP 46 / FP 4)
 ```
 
-Every one of the 104 is in the corpus, spread across 97 advisories, and the chain is
-traceable end to end — `icsa-16-103-01c` (Siemens ROX II) → the embedded component →
-CVE-2015-7547 → the glibc snapshot → the VEX verdict.
+**#3 is independent of the VEX stage and must stay so.** Identification needs no source
+code, so scoping it by source availability would import a condition belonging to #4 alone.
+The dependency runs one way: #4 is a stage downstream of #3, and #3 must not know anything
+about it. The test document's #3 dataset says the same — an ICS SBOM, component-level
+vendor/product/version, CPE/PURL where available, NVD and advisory data — with no source
+condition anywhere in it.
 
-**#3 over the 104 cannot produce a false positive, and the 1.0000 has to be read with that
-stated.** The ground truth is not the limit — it was rebuilt from the whole corpus's
-stratified sample to a 104-scoped uncapped harvest, 124 → 1,114 records, and the scored
-count moved 39 → 42. The bottleneck is whether the SUT emits a prediction at all:
+Scoping #3 to the 104 was tried, and the numbers showed the mistake: the matcher declined
+to identify 516 of 543 components (95%, against 37% over the whole corpus) because the
+104's vendor-anchored components are Siemens device names, leaving 42 scored predictions
+with no false positive able to fire. That run is kept in
+`results/cpe_match_precision_104.json` as a record of the dead end; it is not a submitted
+figure.
 
-- the matcher **declines to identify 516 of 543 components (95%)**. The 104's
-  vendor-anchored components are Siemens device names, and `identify_product` refuses an
-  ambiguous fuzzy match rather than guessing, so nothing is emitted to be scored. Over the
-  whole corpus that abstention rate is 37%.
-- the 279 co-listed-vendor negatives are outside the SUT's output space, and the 278
-  version negatives are filtered by its own range check before becoming predictions.
-
-So `results/cpe_match_precision.json` — the same SUT over the whole corpus, **0.9749 with
-TP 973 / FP 25 over 998 scored predictions** — is kept and bundled alongside as
-`item3/result_full_corpus.json`. It is the run where negatives demonstrably fire, and it is
-what answers "why is FP zero" when the 104-scoped figure is questioned. Quoting the
-104-scoped number alone invites that question with no answer; quoting both says the
-population is the one the document fixes and the discriminating power was measured too.
-
-Note that the source filter and #3's Layer A/B split are independent: the first sets the
-population, the second bounds what #3 can score, and only 1.7% of the Layer A CVEs #3 can
-score over the whole corpus have collectable source.
-
-```bash
-# #3 over the same 104 (uncapped: the population is already small)
-python tools/build_cpe_match_gt.py --population results/_vuln_targets_104.json \
-                                   --per-vendor 0 --out data/cpe_match_eval_104.jsonl
-python tools/eval_cpe_match_precision.py --data data/cpe_match_eval_104.jsonl \
-                                         --out results/cpe_match_precision_104.json
-# supporting: the same SUT over the whole corpus, where negatives fire
-python tools/build_cpe_match_gt.py && python tools/eval_cpe_match_precision.py
-
-# #4 over the 104 the test document names (a clean subset of the 107 collected since)
-python tools/build_vex_gt.py --population results/_vuln_targets_104.json \
-                             --out data/vex_gt_104doc.jsonl
-python tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl \
-                                   --sut data/vex_v2_pregate.json
-```
+Every one of the 104 is nonetheless inside the corpus, spread across 97 advisories, so the
+chain from #3's input to #4's verdict is traceable end to end — `icsa-16-103-01c` (Siemens
+ROX II) → the embedded component → CVE-2015-7547 → the glibc snapshot → the VEX verdict.
 
 **Population vs scored count — they are not the same number, in either item.** The
 certification document fixes #4's population at 104 CVEs, and
