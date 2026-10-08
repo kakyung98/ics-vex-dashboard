@@ -174,7 +174,7 @@ def version_match(ver, entries):
     return False if verdicts else None
 
 
-def harvest():
+def harvest(population=None):
     """Walk the corpus and split every CISA-asserted pair into Layer A / Layer B.
 
     Also records, per asset, the normalized names of every component the SBOM
@@ -194,6 +194,8 @@ def harvest():
                                     if c.get("name")}
         for vuln in sbom.get("vulnerabilities") or []:
             cve = vuln.get("id")
+            if population is not None and cve not in population:
+                continue
             nvd = detail.get(cve)
             if not nvd:
                 continue
@@ -258,7 +260,17 @@ def to_gt(rec, idx):
 
 def stratify(rows, per_vendor, seed):
     """Siemens alone is 58% of the corpus (38,099 pairs). Cap per vendor so the
-    benchmark does not become a Siemens-naming benchmark."""
+    benchmark does not become a Siemens-naming benchmark.
+
+    per_vendor=0 means no cap, for a run already scoped to a small population: there
+    the cap is the wrong instrument, because it discards real pairs from a set that
+    only has hundreds. The vendor mix is recorded in the manifest instead, so the
+    skew is visible rather than silently corrected away.
+    """
+    if not per_vendor:
+        out = list(rows)
+        random.Random(seed).shuffle(out)
+        return out
     rnd = random.Random(seed)
     by = collections.defaultdict(list)
     for r in rows:
@@ -421,7 +433,10 @@ def build_negatives(layer_a, detail, seed, ratio=1.0):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--per-vendor", type=int, default=40,
-                    help="max positive pairs per vendor (anti-skew cap)")
+                    help="max positive pairs per vendor (anti-skew cap); 0 = no cap")
+    ap.add_argument("--population", help="JSON file whose keys fix the CVE population "
+                                         "(e.g. results/_vuln_targets_104.json)")
+    ap.add_argument("--out", help="write elsewhere than data/cpe_match_eval.jsonl")
     ap.add_argument("--seed", type=int, default=20261007)
     ap.add_argument("--neg-ratio", type=float, default=1.0,
                     help="negatives per positive (raises/lowers how harsh precision is)")
@@ -430,7 +445,9 @@ def main():
     a = ap.parse_args()
 
     detail = json.load(open(NVD_DETAIL, encoding="utf-8"))
-    layer_a, layer_b = harvest()
+    population = (set(json.load(open(a.population, encoding="utf-8")))
+                  if a.population else None)
+    layer_a, layer_b = harvest(population)
     print("harvested  Layer A (vendor-anchored) : %d pairs" % len(layer_a))
     print("           Layer B (embedded only)   : %d pairs  -> excluded, logged" % len(layer_b))
 
@@ -448,10 +465,14 @@ def main():
             len(negs), "" if len(negs) >= want
             else "   (families exhausted; %d requested)" % want))
 
-    with open(OUT, "w", encoding="utf-8") as f:
+    out_path = a.out or OUT
+    stem = os.path.splitext(out_path)[0]
+    out_b = (stem + "_layerB.jsonl") if a.out else OUT_B
+    man_path = (stem + "_manifest.json") if a.out else MANIFEST
+    with open(out_path, "w", encoding="utf-8") as f:
         for r in gt:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
-    with open(OUT_B, "w", encoding="utf-8") as f:
+    with open(out_b, "w", encoding="utf-8") as f:
         for r in layer_b:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
@@ -467,7 +488,12 @@ def main():
         "generated_from": {"corpus": "reverse_sbom/ (CISA CSAF)",
                            "applicability": "data/nvd_cpe_detail.json (NVD)"},
         "evidence_sources": ["CISA", "NVD"],
-        "seed": a.seed, "per_vendor_cap": a.per_vendor,
+        "population": a.population or "reverse_sbom/ (whole corpus)",
+        "population_cves": len(population) if population else None,
+        "seed": a.seed,
+        "per_vendor_cap": a.per_vendor or "none",
+        "vendor_mix": dict(collections.Counter(
+            r["component"]["vendor"] for r in gt if r["applicable"]).most_common(12)),
         "neg_ratio_requested": a.neg_ratio,
         "neg_ratio_achieved": round((len(gt) - n_pos) / n_pos, 3) if n_pos else 0.0,
         "counts": {"total": len(gt), "applicable_true": n_pos,
@@ -490,16 +516,16 @@ def main():
                         "bounds like '<4.3.4', which pin no affected version). It must "
                         "never be read as False.",
     }
-    json.dump(manifest, open(MANIFEST, "w", encoding="utf-8"),
+    json.dump(manifest, open(man_path, "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)
 
     print("\napplicable    : true=%d  false=%d" % (n_pos, len(gt) - n_pos))
     print("neg families  : %s" % dict(fam))
     print("version_match : true=%d false=%d undecidable=%d" % (vm[True], vm[False], vm[None]))
     print("review_status : %s" % dict(rs))
-    print("->", OUT)
-    print("->", OUT_B)
-    print("->", MANIFEST)
+    print("->", out_path)
+    print("->", out_b)
+    print("->", man_path)
 
 
 if __name__ == "__main__":
