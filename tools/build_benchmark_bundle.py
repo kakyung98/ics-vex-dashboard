@@ -35,41 +35,32 @@ OUT = os.path.join(BASE, "benchmark")
 
 # bundled path -> (source path, what it is)
 # bundled path -> (source path, one line on what it is)
-# Both items are scoped to the same 104 source-available CVEs, so the two folders hold
-# the same population at two stages. item3/result_full_corpus.json is the supporting
-# measurement over the whole corpus, kept because the 104-scoped #3 run cannot produce
-# a false positive (see README) and the wider run can.
+# #3 is scored over the whole corpus and #4 over the 104 CVEs whose source could be
+# collected. The populations differ on purpose: identification needs no source, so
+# filtering #3 by source availability would import a condition belonging to #4.
 FILES = {
-    "item3/population.json": (
-        "results/_vuln_targets_104.json",
-        "The 104 source-available CVEs — the population for BOTH items"),
     "item3/input.jsonl": (
         "data/bench_input_item3.jsonl",
         "INPUT: 543 SBOM components as the SUT receives them — the messy advisory "
         "string, never the CPE the answer key holds (tools/build_benchmark_inputs.py)"),
     "item3/ground_truth.jsonl": (
-        "data/cpe_match_eval_104.jsonl",
-        "GT 1,114 records (557 applicable / 557 not), from CISA CSAF affects assertions "
-        "cross-checked against NVD applicability"),
+        "data/cpe_match_eval.jsonl",
+        "GT 6,518 records over 2,652 CVEs and 471 vendors, from CISA CSAF affects "
+        "assertions cross-checked against NVD applicability"),
     "item3/excluded.jsonl": (
-        "data/cpe_match_eval_104_layerB.jsonl",
-        "2,261 pairs excluded up front: the ICS name appears nowhere in NVD, so no "
+        "data/cpe_match_eval_layerB.jsonl",
+        "22,810 pairs excluded up front: the ICS name appears nowhere in NVD, so no "
         "name-based matcher can reach the answer. Kept so the exclusion is auditable"),
     "item3/manifest.json": (
-        "data/cpe_match_eval_104_manifest.json",
+        "data/cpe_match_eval_manifest.json",
         "How the GT was built: population, vendor mix, negative families, exclusions"),
     "item3/result.json": (
-        "results/cpe_match_precision_104.json",
-        "Scored over the 104: precision 1.0000 (TP 42 / FP 0) — read the README on why "
-        "FP cannot fire at this scope"),
-    "item3/result_full_corpus.json": (
         "results/cpe_match_precision.json",
-        "Supporting: the same SUT over the whole corpus, precision 0.9749 "
-        "(TP 973 / FP 25), where negatives do fire"),
+        "Scored: precision 0.9749 (TP 973 / FP 25) over 998 of 11,277 predictions"),
 
     "item4/population.json": (
         "results/_vuln_targets_104.json",
-        "The same 104 CVEs"),
+        "The 104 source-available CVEs — #4's population; #3 has no such filter"),
     "item4/input.jsonl": (
         "data/bench_input_item4.jsonl",
         "INPUT: 54 CVEs with the source/patch evidence available per CVE "
@@ -109,32 +100,20 @@ the two folders are one population at two consecutive stages.
 
 | file | what | size |
 |---|---|---|
-| `population.json` | the 104 CVEs | 104 keys |
-| `input.jsonl` | **what the SUT is fed**: components as the SBOM spells them | 543 records |
-| `ground_truth.jsonl` | answer key, applicable true/false | 1,114 records |
-| `excluded.jsonl` | pairs excluded up front, with reason | 2,261 |
+| `input.jsonl` | **what the SUT is fed**: components as the SBOM spells them | 2,913 records |
+| `ground_truth.jsonl` | answer key, applicable true/false | 6,518 records |
+| `excluded.jsonl` | pairs excluded up front, with reason | 22,810 |
 | `manifest.json` | how the GT was built | — |
-| `result.json` | the scored run | TP 42 / FP 0 |
-| `result_full_corpus.json` | supporting run over the whole corpus | TP 973 / FP 25 |
+| `result.json` | the scored run | TP 973 / FP 25 |
 
-**Read `result.json` with its limit stated.** Precision is 1.0000 over 42 scored
-predictions and **no false positive can fire at this scope** — it is not "nothing was
-wrong", it is "there was no chance to be wrong":
-
-- the matcher declines to identify 516 of 543 components (95%). The 104's vendor-anchored
-  components are Siemens device names, and `identify_product` refuses an ambiguous fuzzy
-  match rather than guessing, so no prediction is emitted to be scored.
-- the 279 co-listed-vendor negatives are outside the SUT's output space: `cves_for`
-  returns `(product, vendor-of-that-product-entry)`, so it can never emit a foreign
-  vendor's own product for a Siemens component.
-- the 278 version negatives are filtered by the SUT's own range check before they could
-  become predictions.
-
-Enlarging the GT does not move this: it was rebuilt from 124 to 1,114 records and the
-scored count went 39 -> 42. The bottleneck is whether the SUT answers, not the size of the
-answer key. `result_full_corpus.json` is included for this reason — over the whole corpus
-the same SUT emits 998 scored predictions and 25 false positives, so the negatives
-demonstrably do fire, and 0.9749 is the figure with discriminating power.
+**Read `result.json` with its coverage stated.** Precision is 0.9749 over 998 scored
+predictions, which is 8.8% of the 11,277 the matcher emits. 57% of the rest are CVEs the
+ground truth does not enumerate for that component, and 34% are cases where CISA says the
+ICS product is affected while NVD files the CVE against an embedded third party — the two
+authorities disagree about what the CVE is filed against, not about what the component is.
+The matcher also declines to identify 1,711 of 4,624 components (37%) rather than guess at
+an ambiguous name; abstaining costs recall and is free under a precision-only metric, so it
+is disclosed here.
 
 ## item4/ — VEX impact judgment
 

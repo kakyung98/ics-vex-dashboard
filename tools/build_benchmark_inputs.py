@@ -9,6 +9,12 @@ snapshot directories. A reviewer cannot check a measurement without seeing what 
 fed in, and the test document specifies an input schema for each item, so both are
 written out explicitly here.
 
+#3 is scoped to the whole corpus, deliberately: identification needs no source code,
+so filtering its population by source availability would import a condition that
+belongs to #4 alone. #4 keeps the 104 because code-level judgment cannot proceed
+without source. The dependency runs one way — #4 is a stage downstream of #3, and #3
+must not know anything about it.
+
 What goes in is what the SUT actually receives — not the answer. #3's input carries
 the component exactly as the SBOM spells it ("Siemens SCALANCE XF206-1 (6GK5206-1BC00
 -2AF2) <V5.2.6"), never the CPE product the ground truth holds; resolving that messy
@@ -34,7 +40,7 @@ import os
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BENCH = os.path.join(BASE, "benchmark")
-GT3 = os.path.join(BENCH, "item3", "ground_truth.jsonl")
+GT3 = os.path.join(BASE, "data", "cpe_match_eval.jsonl")   # whole corpus
 GT4 = os.path.join(BENCH, "item4", "ground_truth.jsonl")
 LOCS = os.path.join(BASE, "data", "source_locations.json")
 VFUNCS = os.path.join(BASE, "data", "vuln_funcs.json")
@@ -56,21 +62,36 @@ def item3_inputs():
     component once and emits a CVE set, so the input is deduplicated to match what
     actually gets run.
     """
-    seen, out = set(), []
+    # mirror the scorer's own case filter: a component is only run when the ground
+    # truth knows its authoritative product, which comes from an applicable record or
+    # a version-family negative. Without this the input file would list 2,929 cases
+    # while 2,913 are actually scored, and the file would describe a run that never
+    # happened.
+    runnable, order, info = set(), [], {}
     for line in open(GT3, encoding="utf-8"):
         if not line.strip():
             continue
         r = json.loads(line)
-        si = r.get("_sut_input") or {}
-        key = (r["component_id"], si.get("version"))
-        if key in seen:
+        if r.get("review_status") == "conflict":
             continue
-        seen.add(key)
+        si = r.get("_sut_input") or {}
+        key = (r["component_id"], r["component"]["version"])
+        if key not in info:
+            info[key] = (r["component_id"], si)
+            order.append(key)
+        if r["applicable"] or r.get("_negative_family") == "version":
+            runnable.add(key)
+
+    out = []
+    for key in order:
+        if key not in runnable:
+            continue
+        cid, si = info[key]
         out.append({
             "test_case_id": "SBOM-IN-%04d" % (len(out) + 1),
             "asset_id": si.get("asset_id"),
             "component": {
-                "component_id": r["component_id"],
+                "component_id": cid,
                 # what the SBOM says, not what the answer key says
                 "vendor": si.get("publisher"),
                 "product": si.get("name"),

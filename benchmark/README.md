@@ -17,32 +17,20 @@ the two folders are one population at two consecutive stages.
 
 | file | what | size |
 |---|---|---|
-| `population.json` | the 104 CVEs | 104 keys |
-| `input.jsonl` | **what the SUT is fed**: components as the SBOM spells them | 543 records |
-| `ground_truth.jsonl` | answer key, applicable true/false | 1,114 records |
-| `excluded.jsonl` | pairs excluded up front, with reason | 2,261 |
+| `input.jsonl` | **what the SUT is fed**: components as the SBOM spells them | 2,913 records |
+| `ground_truth.jsonl` | answer key, applicable true/false | 6,518 records |
+| `excluded.jsonl` | pairs excluded up front, with reason | 22,810 |
 | `manifest.json` | how the GT was built | — |
-| `result.json` | the scored run | TP 42 / FP 0 |
-| `result_full_corpus.json` | supporting run over the whole corpus | TP 973 / FP 25 |
+| `result.json` | the scored run | TP 973 / FP 25 |
 
-**Read `result.json` with its limit stated.** Precision is 1.0000 over 42 scored
-predictions and **no false positive can fire at this scope** — it is not "nothing was
-wrong", it is "there was no chance to be wrong":
-
-- the matcher declines to identify 516 of 543 components (95%). The 104's vendor-anchored
-  components are Siemens device names, and `identify_product` refuses an ambiguous fuzzy
-  match rather than guessing, so no prediction is emitted to be scored.
-- the 279 co-listed-vendor negatives are outside the SUT's output space: `cves_for`
-  returns `(product, vendor-of-that-product-entry)`, so it can never emit a foreign
-  vendor's own product for a Siemens component.
-- the 278 version negatives are filtered by the SUT's own range check before they could
-  become predictions.
-
-Enlarging the GT does not move this: it was rebuilt from 124 to 1,114 records and the
-scored count went 39 -> 42. The bottleneck is whether the SUT answers, not the size of the
-answer key. `result_full_corpus.json` is included for this reason — over the whole corpus
-the same SUT emits 998 scored predictions and 25 false positives, so the negatives
-demonstrably do fire, and 0.9749 is the figure with discriminating power.
+**Read `result.json` with its coverage stated.** Precision is 0.9749 over 998 scored
+predictions, which is 8.8% of the 11,277 the matcher emits. 57% of the rest are CVEs the
+ground truth does not enumerate for that component, and 34% are cases where CISA says the
+ICS product is affected while NVD files the CVE against an embedded third party — the two
+authorities disagree about what the CVE is filed against, not about what the component is.
+The matcher also declines to identify 1,711 of 4,624 components (37%) rather than guess at
+an ambiguous name; abstaining costs recall and is free under a precision-only metric, so it
+is disclosed here.
 
 ## item4/ — VEX impact judgment
 
