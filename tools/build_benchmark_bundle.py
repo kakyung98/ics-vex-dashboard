@@ -43,6 +43,10 @@ FILES = {
     "item3/population.json": (
         "results/_vuln_targets_104.json",
         "The 104 source-available CVEs — the population for BOTH items"),
+    "item3/input.jsonl": (
+        "data/bench_input_item3.jsonl",
+        "INPUT: 543 SBOM components as the SUT receives them — the messy advisory "
+        "string, never the CPE the answer key holds (tools/build_benchmark_inputs.py)"),
     "item3/ground_truth.jsonl": (
         "data/cpe_match_eval_104.jsonl",
         "GT 1,114 records (557 applicable / 557 not), from CISA CSAF affects assertions "
@@ -66,6 +70,10 @@ FILES = {
     "item4/population.json": (
         "results/_vuln_targets_104.json",
         "The same 104 CVEs"),
+    "item4/input.jsonl": (
+        "data/bench_input_item4.jsonl",
+        "INPUT: 54 CVEs with the source/patch evidence available per CVE "
+        "(tools/build_benchmark_inputs.py)"),
     "item4/ground_truth.jsonl": (
         "data/vex_gt_104doc.jsonl",
         "GT 58 (CVE, build) cases over 54 CVEs, from execution pairs and fix-commit "
@@ -102,6 +110,7 @@ the two folders are one population at two consecutive stages.
 | file | what | size |
 |---|---|---|
 | `population.json` | the 104 CVEs | 104 keys |
+| `input.jsonl` | **what the SUT is fed**: components as the SBOM spells them | 543 records |
 | `ground_truth.jsonl` | answer key, applicable true/false | 1,114 records |
 | `excluded.jsonl` | pairs excluded up front, with reason | 2,261 |
 | `manifest.json` | how the GT was built | — |
@@ -132,6 +141,7 @@ demonstrably do fire, and 0.9749 is the figure with discriminating power.
 | file | what | size |
 |---|---|---|
 | `population.json` | the same 104 CVEs | 104 keys |
+| `input.jsonl` | **what the SUT is fed**: CVE + source/patch evidence | 54 records |
 | `ground_truth.jsonl` | answer key, affected / not_affected | 58 cases, 54 CVEs |
 | `predictions.json` | the SUT output being scored | 107 verdicts |
 | `manifest.json` | how the GT was built | — |
@@ -172,6 +182,16 @@ CSAF and NVD applicability, never from `data/cpe_index.json`, the matcher's own 
 because a claim with no source cannot adjudicate a code-level verdict. Where the two
 authorities disagree the record is held out as `conflict` rather than labelled verified —
 55 in #3, 5 in #4.
+
+## Input, answer key, output — the three the reviewer needs
+
+`input.jsonl` is what the system receives, `ground_truth.jsonl` is the answer, and
+`result.json` (item4 also `predictions.json`) is what it produced. #3's input carries the
+component exactly as the advisory spells it — `Siemens SCALANCE XF206-1
+(6GK5206-1BC00-2AF2) <V5.2.6` — and never the CPE product the answer key holds, because
+resolving that string is the task being scored. `cpe` and `purl` are null throughout: the
+ICS advisory corpus publishes no component-level identifiers, which is a finding about the
+data rather than a gap in the file.
 
 ## Re-score from this bundle
 
