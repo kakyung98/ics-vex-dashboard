@@ -1,0 +1,56 @@
+{
+  "test": "SBOM CVE-identification precision (시험항목 #3) — ground truth",
+  "generated_from": {
+    "corpus": "reverse_sbom/ (CISA CSAF)",
+    "applicability": "data/nvd_cpe_detail.json (NVD)"
+  },
+  "evidence_sources": [
+    "CISA",
+    "NVD"
+  ],
+  "population": "results/_vuln_targets_104.json",
+  "population_cves": 104,
+  "seed": 20261007,
+  "per_vendor_cap": "none",
+  "vendor_mix": {
+    "siemens": 476,
+    "openssl": 32,
+    "busybox": 13,
+    "libexpat_project": 6,
+    "sqlite": 6,
+    "apache": 6,
+    "linux": 4,
+    "gnu": 4,
+    "openbsd": 3,
+    "redlion": 2,
+    "openvpn": 2,
+    "zlib": 2
+  },
+  "neg_ratio_requested": 1.0,
+  "neg_ratio_achieved": 1.0,
+  "counts": {
+    "total": 1114,
+    "applicable_true": 557,
+    "applicable_false": 557,
+    "negative_families": {
+      "vendor": 279,
+      "version": 278
+    }
+  },
+  "version_match": {
+    "true": 15,
+    "false": 333,
+    "undecidable": 766
+  },
+  "review_status": {
+    "verified": 1059,
+    "conflict": 55
+  },
+  "exclusions": {
+    "layer_b_embedded_only": 2261,
+    "layer_b_reason": "CISA asserts the ICS product is affected but NVD's CPE is a third-party component (e.g. Schneider ProLeiT -> redis:redis); the ICS name is absent from NVD, so no name-based matcher can reach the answer",
+    "cisa_nvd_conflict": 55,
+    "conflict_reason": "CISA range says affected, NVD applicability says not (e.g. CVE-2024-22771: CISA 1.02-4.02 vs NVD 1.03-4.03); held out rather than labelled verified"
+  },
+  "scoring_note": "version_match=None means undecidable (CISA publishes upper bounds like '<4.3.4', which pin no affected version). It must never be read as False."
+}

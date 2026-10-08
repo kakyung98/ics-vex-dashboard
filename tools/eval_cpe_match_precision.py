@@ -134,6 +134,10 @@ def load_gt(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=DATA)
+    ap.add_argument("--out", help="write elsewhere than results/cpe_match_precision.json. "
+                                  "Pass it when scoring a non-default --data: the fixed "
+                                  "output path silently overwrote the whole-corpus result "
+                                  "with a 104-scoped one once already")
     ap.add_argument("--strict", action="store_true",
                     help="SUT precision mode: drop co-listed-vendor CVEs")
     a = ap.parse_args()
@@ -238,8 +242,9 @@ def main():
     if res["labelled_share_pct"] < 50 and unlabelled:
         print("  NOTE: under half the predictions carry a GT label; the figure "
               "describes the labelled slice only.")
-    json.dump(res, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("->", OUT)
+    out_path = a.out or OUT
+    json.dump(res, open(out_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print("->", out_path)
 
 
 if __name__ == "__main__":

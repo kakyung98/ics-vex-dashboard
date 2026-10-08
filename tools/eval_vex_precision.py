@@ -40,6 +40,8 @@ def main():
                     choices=["vulnerable", "patched", "all"])
     ap.add_argument("--gt", default=GT)
     ap.add_argument("--sut", default=SUT)
+    ap.add_argument("--out", help="write elsewhere than results/vex_precision.json; "
+                                  "pass it when scoring a non-default --gt/--sut")
     ap.add_argument("--independent", action="store_true",
                     help="score only GT cases whose evidence the patch gate does not "
                          "read (execution_verified), so the SUT and the GT do not "
@@ -153,8 +155,9 @@ def main():
         for x in fp_rows:
             print("    %-16s %-16s %s" % (x["cve"], x["evidence_type"],
                                           (x["gt_detail"] or "")[:52]))
-    json.dump(res, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("->", OUT)
+    out_path = a.out or OUT
+    json.dump(res, open(out_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print("->", out_path)
 
 
 if __name__ == "__main__":

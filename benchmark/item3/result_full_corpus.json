@@ -1,0 +1,255 @@
+{
+  "test": "SBOM CVE-identification precision (시험항목 #3)",
+  "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
+  "sut_mode": "recall-safe (default)",
+  "ground_truth": "data\\cpe_match_eval.jsonl",
+  "gt_labels": 5992,
+  "gt_conflicts_held_out": 32,
+  "gt_unreachable_for_this_sut": {
+    "vendor": 377
+  },
+  "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN product; the SUT reports (product, vendor-of-that-product) so it can never emit them. The product axis is scored by closed-world rule instead.",
+  "sut_runs": 2913,
+  "sut_abstained": 1711,
+  "TP": 973,
+  "FP": 25,
+  "scored": 998,
+  "unlabelled_predictions": 6430,
+  "unadjudicable_predictions": 3849,
+  "unadjudicable_reason": "SUT resolved the product the component name itself carries, but the GT's vendor-anchored CPE names a different (usually embedded) product for that CVE; the authorities disagree on filing, not on identity",
+  "labelled_share_pct": 8.85,
+  "fp_by_axis": {
+    "product": 25
+  },
+  "precision": 0.9749,
+  "acceptance_criterion": "precision >= 0.80",
+  "pass": true,
+  "fp_examples": [
+    {
+      "component": "Mitsubishi Electric  FX3G-xMy/ES-A x=14,24,40,60, y=T,R vers:all/*",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx3u-16mr\\/es_firmware"
+      ],
+      "cve": "CVE-2014-6271",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric  FX3G-xMy/ES-A x=14,24,40,60, y=T,R vers:all/*",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx3u-16mr\\/es_firmware"
+      ],
+      "cve": "CVE-2014-7169",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 29.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "OSIsoft LLC Applications using PI Asset Framework (AF) Client <= PI AF",
+      "sut_product": "pi_asset_framework_client",
+      "correct_products": [
+        "pi_data_archive",
+        "pi_vision"
+      ],
+      "cve": "CVE-2024-3467",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric  FX3U-xMy/ES-A x=16,32,48,64,80,128, y=T,R vers:al",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx3u-16mr\\/es_firmware"
+      ],
+      "cve": "CVE-2014-6271",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric  FX3U-xMy/ES-A x=16,32,48,64,80,128, y=T,R vers:al",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx3u-16mr\\/es_firmware"
+      ],
+      "cve": "CVE-2014-7169",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens PSS(R)CAPE CAPE_14_installations_installed_from_material_dated",
+      "sut_product": "pss_cape",
+      "correct_products": [
+        "codemeter"
+      ],
+      "cve": "CVE-2021-20093",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens PSS(R)CAPE CAPE_14_installations_installed_from_material_dated",
+      "sut_product": "pss_cape",
+      "correct_products": [
+        "codemeter"
+      ],
+      "cve": "CVE-2021-20094",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens PSS(R)CAPE CAPE_14_installations_installed_from_material_dated",
+      "sut_product": "pss_cape",
+      "correct_products": [
+        "codemeter"
+      ],
+      "cve": "CVE-2021-41057",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers 28.011",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric  FX3UC-xMT/z x=16,32,64,96, z=D,DSS vers:all/*",
+      "sut_product": "xz",
+      "correct_products": [
+        "fx3u-16mr\\/es_firmware"
+      ],
+      "cve": "CVE-2022-1271",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric FX5UJ-xMy/ES-A* x=24,40,60, y=T,R vers:all/*",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx5u-32mt\\/es_firmware"
+      ],
+      "cve": "CVE-2014-6271",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric FX5UJ-xMy/ES-A* x=24,40,60, y=T,R vers:all/*",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx5u-32mt\\/es_firmware"
+      ],
+      "cve": "CVE-2014-7169",
+      "axis": "product"
+    }
+  ]
+}
