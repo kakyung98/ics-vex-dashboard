@@ -1,0 +1,570 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:bc425850-cf9e-5883-b1a9-6749d208516a",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10 00:00:00"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10 00:00:00"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-26-260-07",
+      "name": "Schneider Electric PowerChute Serial Shutdown",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'PowerChute Serial Shutdown' by Schneider Electric, reverse-built from CISA ICS-CERT advisory icsa-26-260-07.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "purl": "pkg:generic/powerchute-serial-shutdown@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:schneider-electric:powerchute-serial-shutdown:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "linux",
+        "reverse-sbom",
+        "schneider-electric"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c0bdbe96071bd6c822d39a49d7bb6eb8f7b1a2bad6394a2a019d6c355a1ccca0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-260-07",
+          "comment": "Source CISA ICS-CERT advisory icsa-26-260-07"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Schneider Electric"
+        },
+        {
+          "name": "ics:product",
+          "value": "PowerChute Serial Shutdown"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "linux"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-26-260-07"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-26-260-07",
+      "dependsOn": [
+        "pkg:oss:linux-kernel",
+        "variant:schneider-electric-powerchute-serial-shutdown-vers-intdot-1-5",
+        "variant:schneider-electric-powerchute-serial-shutdown-1-6",
+        "variant:microsoft-windows",
+        "variant:red-hat-enterprise-linux",
+        "variant:suse-enterprise-linux",
+        "variant:powerchute-serial-shutdown-version-1-6-installed-on-microsoft-windows",
+        "variant:powerchute-serial-shutdown-version-1-6-installed-on-red-hat-enterprise-linux",
+        "variant:powerchute-serial-shutdown-version-1-6-installed-on-suse-enterprise-linux"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:linux-kernel",
+      "name": "Linux Kernel",
+      "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
+      "scope": "required",
+      "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/linux",
+      "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-powerchute-serial-shutdown-vers-intdot-1-5",
+      "name": "Schneider Electric PowerChute™ Serial Shutdown vers:intdot/<=1.5",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/schneider-electric-powerchute-serial-shutdown-vers-intdot-1-5@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:intdot/<=1.5"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-powerchute-serial-shutdown-1-6",
+      "name": "Schneider Electric PowerChute™ Serial Shutdown 1.6",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/schneider-electric-powerchute-serial-shutdown-1-6@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:microsoft-windows",
+      "name": "Microsoft Windows",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/microsoft-windows@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:red-hat-enterprise-linux",
+      "name": "Red Hat Enterprise Linux",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/red-hat-enterprise-linux@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0004"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:suse-enterprise-linux",
+      "name": "SUSE Enterprise Linux",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/suse-enterprise-linux@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0005"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:powerchute-serial-shutdown-version-1-6-installed-on-microsoft-windows",
+      "name": "PowerChute™ Serial Shutdown Version 1.6 installed on Microsoft Windows",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/powerchute-serial-shutdown-version-1-6-installed-on-microsoft-windows@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0006"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:powerchute-serial-shutdown-version-1-6-installed-on-red-hat-enterprise-linux",
+      "name": "PowerChute™ Serial Shutdown Version 1.6 installed on Red Hat Enterprise Linux",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/powerchute-serial-shutdown-version-1-6-installed-on-red-hat-enterprise-linux@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0007"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:powerchute-serial-shutdown-version-1-6-installed-on-suse-enterprise-linux",
+      "name": "PowerChute™ Serial Shutdown Version 1.6 installed on SUSE Enterprise Linux",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/powerchute-serial-shutdown-version-1-6-installed-on-suse-enterprise-linux@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0008"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-26-260-07:CVE-2026-13348",
+      "id": "CVE-2026-13348",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-260-07"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:schneider-electric-powerchute-serial-shutdown-vers-intdot-1-5"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-260-07"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

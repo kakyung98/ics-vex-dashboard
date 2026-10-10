@@ -105,12 +105,62 @@ def variants_of(csaf):
     return out
 
 
+def enrich_placeholder(sbom, names, csaf_path):
+    """Single-product advisory: fill the `mod:` placeholder from CSAF.
+
+    Half the OT corpus (1,796 advisories) publishes one product and no
+    `relationships`, so there is no model variant to enumerate and `inject` used to
+    skip the file outright. The placeholder it left behind was named
+    "<X> Vendor Firmware/Application" with no version — nothing a matcher can
+    identify, which is most of why it abstains on 49% of these components. CSAF does
+    carry the real string ("WellinTech KingView: <6.53"), so it is copied in.
+
+    The version range stays in `ics:version-range` and `version` stays NOASSERTION:
+    `<6.53` is a bound, not a pinned version, and writing a bound into `version`
+    would make every downstream version comparison read it as an installed version —
+    the same confusion that once turned a CSAF `<2022.4` fixed-bound into a phantom
+    installed version in the ground truth.
+    """
+    pid, info = next(iter(names.items()))
+    nm = (info.get("name") or "").strip()
+    if not nm:
+        return False
+    mod = next((c for c in sbom.get("components") or []
+                if str(c.get("bom-ref", "")).startswith("mod:")), None)
+    if mod is None:
+        return False
+
+    props = [x for x in (mod.get("properties") or [])
+             if not str(x.get("name", "")).startswith(("ics:", "variant:"))]
+    props += [{"name": "variant:csaf-product-id", "value": pid},
+              {"name": "variant:source", "value": "cisa-csaf"}]
+    for m in info.get("models") or []:
+        props.append({"name": "ics:model-number", "value": m})
+    for k in info.get("skus") or []:
+        props.append({"name": "ics:sku", "value": k})
+    if info.get("version_range"):
+        props.append({"name": "ics:version-range", "value": info["version_range"]})
+
+    mod["name"] = nm
+    mod["description"] = ("Single product enumerated by the source CSAF "
+                          "product_tree; the advisory declares no model variants.")
+    mod["purl"] = "pkg:generic/%s@NOASSERTION" % slug(nm)
+    mod["properties"] = props
+    if info.get("cpe"):
+        mod["cpe"] = info["cpe"]
+    return True
+
+
 def inject(sbom_path, csaf_path):
     sbom = json.load(open(sbom_path, encoding="utf-8"))
     csaf = json.load(open(csaf_path, encoding="utf-8"))
     names = variants_of(csaf)
     if len(names) < 2:
-        return None  # 모델이 하나뿐이면 변형 단위가 의미 없다
+        # no model variants to enumerate, but the one product CSAF does name is
+        # still better than the placeholder the SBOM builder left
+        if len(names) == 1 and enrich_placeholder(sbom, names, csaf_path):
+            return sbom, 0, 0, "enriched"
+        return None
 
     top = ((sbom.get("metadata") or {}).get("component") or {})
     top_ref = top.get("bom-ref") or "device:unknown"
@@ -215,7 +265,7 @@ def inject(sbom_path, csaf_path):
         v["properties"] = props
         n_scoped += 1
 
-    return sbom, len(names), n_scoped
+    return sbom, len(names), n_scoped, "variants"
 
 
 def main():
@@ -226,7 +276,7 @@ def main():
 
     src = csaf_sources(a.csaf_repo)
     print("CSAF 원본 확보: %d ICSA" % len(src))
-    n_done = n_var = n_scoped = 0
+    n_done = n_var = n_scoped = n_enriched = 0
     for aid, cpath in sorted(src.items()):
         sp = os.path.join(SBOM, "%s_SBOM-CVE.json" % aid)
         if not os.path.exists(sp):
@@ -234,15 +284,19 @@ def main():
         r = inject(sp, cpath)
         if not r:
             continue
-        sbom, nv, ns = r
+        sbom, nv, ns, kind = r
         if not a.dry_run:
             json.dump(sbom, open(sp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-        n_done += 1
-        n_var += nv
-        n_scoped += ns
+        if kind == "enriched":
+            n_enriched += 1
+        else:
+            n_done += 1
+            n_var += nv
+            n_scoped += ns
     print("주입한 SBOM        : %d" % n_done)
     print("추가된 모델 변형   : %d" % n_var)
     print("모델로 좁힌 취약점 : %d" % n_scoped)
+    print("단일제품 이름 보강 : %d" % n_enriched)
     if a.dry_run:
         print("(dry-run — 파일을 쓰지 않았다)")
 

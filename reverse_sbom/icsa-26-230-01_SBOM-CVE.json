@@ -1,0 +1,683 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:82a64c0d-c631-5f21-9ce0-3b059e440587",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-04-10 00:00:00"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-04-10 00:00:00"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-04-10T00:00:00Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": [
+                "https://kakyung98.github.io/ics-vex-dashboard/"
+              ],
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-26-230-01",
+      "name": "CISA Malcolm",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Malcolm' by CISA, reverse-built from CISA ICS-CERT advisory icsa-26-230-01.",
+      "scope": "required",
+      "publisher": "CISA",
+      "purl": "pkg:generic/malcolm@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:cisa:malcolm:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "CISA"
+      },
+      "supplier": {
+        "name": "CISA"
+      },
+      "tags": [
+        "cisa",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "006ad5cdddce1682ef9bfb23b5de3e701d020a0e1bbaba6d8d493b31ff8fcbc9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01",
+          "comment": "Source CISA ICS-CERT advisory icsa-26-230-01"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "CISA"
+        },
+        {
+          "name": "ics:product",
+          "value": "Malcolm"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-26-230-01",
+      "dependsOn": [
+        "pkg:oss:nginx",
+        "variant:cisa-malcolm-26-06-1",
+        "variant:cisa-malcolm-26-07-0",
+        "variant:cisa-malcolm-26-07-1"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:nginx",
+      "name": "nginx",
+      "version": "NOASSERTION",
+      "description": "Web server and reverse proxy serving the supervisory UI and REST API.",
+      "scope": "required",
+      "publisher": "F5 / nginx",
+      "manufacturer": {
+        "name": "F5 / nginx"
+      },
+      "supplier": {
+        "name": "F5 / nginx"
+      },
+      "tags": [
+        "oss",
+        "reverse-proxy",
+        "web"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/nginx",
+      "cpe": "cpe:2.3:a:f5:nginx:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:cisa-malcolm-26-06-1",
+      "name": "CISA Malcolm <26.06.1",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "CISA",
+      "manufacturer": {
+        "name": "CISA"
+      },
+      "supplier": {
+        "name": "CISA"
+      },
+      "tags": [
+        "cisa",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/cisa-malcolm-26-06-1@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<26.06.1"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:cisa-malcolm-26-07-0",
+      "name": "CISA Malcolm <26.07.0",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "CISA",
+      "manufacturer": {
+        "name": "CISA"
+      },
+      "supplier": {
+        "name": "CISA"
+      },
+      "tags": [
+        "cisa",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/cisa-malcolm-26-07-0@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<26.07.0"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:cisa-malcolm-26-07-1",
+      "name": "CISA Malcolm <=26.07.1",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "CISA",
+      "manufacturer": {
+        "name": "CISA"
+      },
+      "supplier": {
+        "name": "CISA"
+      },
+      "tags": [
+        "cisa",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/cisa-malcolm-26-07-1@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=26.07.1"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-26-230-01:CVE-2026-19670",
+      "id": "CVE-2026-19670",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:cisa-malcolm-26-07-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-26-230-01:CVE-2026-19671",
+      "id": "CVE-2026-19671",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:cisa-malcolm-26-07-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-26-230-01:CVE-2026-55676",
+      "id": "CVE-2026-55676",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:cisa-malcolm-26-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-26-230-01:CVE-2026-63133",
+      "id": "CVE-2026-63133",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:cisa-malcolm-26-07-0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-26-230-01:CVE-2026-63134",
+      "id": "CVE-2026-63134",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:cisa-malcolm-26-07-0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-26-230-01:CVE-2026-63177",
+      "id": "CVE-2026-63177",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-230-01"
+      },
+      "ratings": [],
+      "cwes": [],
+      "affects": [
+        {
+          "ref": "variant:cisa-malcolm-26-07-0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-230-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}
