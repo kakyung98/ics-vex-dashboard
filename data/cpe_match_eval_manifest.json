@@ -8,32 +8,48 @@
     "CISA",
     "NVD"
   ],
+  "population": "reverse_sbom/ (whole corpus)",
+  "population_cves": null,
   "seed": 20261007,
   "per_vendor_cap": 40,
+  "vendor_mix": {
+    "johnsoncontrols": 107,
+    "windriver": 93,
+    "jtekt": 84,
+    "aveva": 81,
+    "fujielectric": 66,
+    "codesys": 62,
+    "mitsubishielectric": 57,
+    "treck": 52,
+    "wago": 51,
+    "emerson": 49,
+    "schneider-electric": 48,
+    "rockwellautomation": 47
+  },
   "neg_ratio_requested": 1.0,
-  "neg_ratio_achieved": 0.281,
+  "neg_ratio_achieved": 0.418,
   "counts": {
-    "total": 6518,
+    "total": 7215,
     "applicable_true": 5088,
-    "applicable_false": 1430,
+    "applicable_false": 2127,
     "negative_families": {
-      "version": 1053,
-      "vendor": 377
+      "version": 1748,
+      "vendor": 379
     }
   },
   "version_match": {
-    "true": 173,
-    "false": 1085,
-    "undecidable": 5260
+    "true": 210,
+    "false": 1785,
+    "undecidable": 5220
   },
   "review_status": {
-    "verified": 6486,
-    "conflict": 32
+    "verified": 7178,
+    "conflict": 37
   },
   "exclusions": {
-    "layer_b_embedded_only": 22810,
+    "layer_b_embedded_only": 22853,
     "layer_b_reason": "CISA asserts the ICS product is affected but NVD's CPE is a third-party component (e.g. Schneider ProLeiT -> redis:redis); the ICS name is absent from NVD, so no name-based matcher can reach the answer",
-    "cisa_nvd_conflict": 32,
+    "cisa_nvd_conflict": 37,
     "conflict_reason": "CISA range says affected, NVD applicability says not (e.g. CVE-2024-22771: CISA 1.02-4.02 vs NVD 1.03-4.03); held out rather than labelled verified"
   },
   "scoring_note": "version_match=None means undecidable (CISA publishes upper bounds like '<4.3.4', which pin no affected version). It must never be read as False."

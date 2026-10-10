@@ -96,6 +96,6 @@ data rather than a gap in the file.
 
 ## Rebuild the ground truths
 
-    python tools/build_cpe_match_gt.py --population results/_vuln_targets_104.json                                        --per-vendor 0 --out data/cpe_match_eval_104.jsonl
-    python tools/build_vex_gt.py --population results/_vuln_targets_104.json                                  --out data/vex_gt_104doc.jsonl
+    python tools/build_cpe_match_gt.py --population data/vex_population_104.json                                        --per-vendor 0 --out data/cpe_match_eval_104.jsonl
+    python tools/build_vex_gt.py --population data/vex_population_104.json                                  --out data/vex_gt_104doc.jsonl
     python tools/build_benchmark_bundle.py

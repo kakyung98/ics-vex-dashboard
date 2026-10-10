@@ -216,10 +216,10 @@ ICSA advisory  ->  reverse-built SBOM (reverse_sbom/<icsa-id>_SBOM-CVE.json)  ->
 
 | Axis | Count | Meaning |
 |---|---|---|
-| ICSA advisories collected | **3,767** | 2010–2026, complete |
+| ICSA advisories collected | **3,845** | 2010–2026, complete |
 | → SBOMs built (advisories with CVEs) | **3,695** | one VEX document each |
 | ICSA × CVE = statements | **13,025** | the judgment unit (1:1 with a VEX statement) |
-| unique CVEs | **11,336** | vulnerability population |
+| unique CVEs | **11,550** | vulnerability population |
 
 A VEX statement is **product × vulnerability × status**, so the judgment unit is
 the **statement**, never a bare CVE. Statements per advisory: median 1, max 490.
@@ -383,7 +383,7 @@ otherwise an identity.
 
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
-| **#3** | SBOM → CVE identification precision | **0.9749** (TP 973 / FP 25) | ≥ 0.80 | 998 of 11,277 predictions (**8.8%** carry a label) |
+| **#3** | SBOM → CVE identification precision | **0.9846** (TP 1,026 / FP 16) | ≥ 0.80 | 1,042 of 12,090 predictions (**8.6%** carry a label) |
 | **#4** | VEX affected-judgment precision | **0.9200** (TP 46 / FP 4) | ≥ 0.85 | 50 of 58 GT cases, population 104 |
 
 The evaluation datasets are bundled on their own in [`benchmark/`](benchmark/) — answer
@@ -393,15 +393,15 @@ the live sources, so a rebuilt ground truth cannot leave a stale copy behind unn
 
 ### One corpus, two populations — on purpose
 
-Both items come from one corpus: CISA ICS-CERT advisories (3,765 advisories, 11,336 CVEs,
+Both items come from one corpus: CISA ICS-CERT advisories (3,845 advisories, 11,550 CVEs,
 rendered as CycloneDX in `reverse_sbom/`). Their populations differ, and that is a design
 constraint rather than an inconsistency.
 
 ```
-CISA advisories 3,765 / CVEs 11,336              one corpus
+CISA advisories 3,845 / CVEs 11,550              one corpus
   │
   ├── item #3   SBOM -> CVE identification       whole corpus
-  │                                              precision 0.9749 (TP 973 / FP 25)
+  │                                              precision 0.9846 (TP 1,026 / FP 16)
   │
   └── filter: source collectable  ->  104 CVEs
         │
@@ -428,7 +428,7 @@ ROX II) → the embedded component → CVE-2015-7547 → the glibc snapshot → 
 
 **Population vs scored count — they are not the same number, in either item.** The
 certification document fixes #4's population at 104 CVEs, and
-`results/_vuln_targets_104.json` holds exactly that set, so the figure above is measured over
+`data/vex_population_104.json` holds exactly that set, so the figure above is measured over
 it. But a ground truth earned from evidence cannot label every member: 53 of the 104 are
 patch-signature-inconclusive, 5 are patch/NVD disagreements, 1 execution run did not
 discriminate. Forcing the remaining cases into the score would require assuming unlabelled
@@ -439,7 +439,7 @@ for a gap in the answer key). So the claim is **"precision over the evidence-lab
 of a 104 population"**, never "precision over 104".
 
 ```
-104  population (results/_vuln_targets_104.json)
+104  population (data/vex_population_104.json)
  ├─ 53  patch signature inconclusive
  ├─  5  patch signature vs NVD disagreement -> held out as conflict
  └─  1  execution run did not discriminate
@@ -468,7 +468,7 @@ product from the same shared-code CVE. What the figure does **not** cover:
   Charging those as FPs would penalise the matcher for a gap in the ground truth.
 - **41.9% of the corpus is excluded up front** (`data/cpe_match_eval_layerB.jsonl`): pairs where the
   ICS name appears nowhere in NVD, so no name-based matcher can reach the answer.
-- **1,711 of 4,624 components (37%) are abstentions** — the matcher declined to identify. Legitimate
+- **1,803 of 3,263 components (55%) are abstentions** — the matcher declined to identify. Legitimate
   under a precision-only metric, and disclosed because it is a free lift to the score.
 - 32 CISA/NVD version-range disagreements are held out as `conflict` rather than labelled verified.
 - The 377 co-listed-vendor negatives are **unreachable for this SUT** and reported as such, not
@@ -502,8 +502,8 @@ mix, and every exclusion with its reason.
 
 ## Data honesty
 
-- **Real:** device ↔ CVE ↔ CWE ↔ CVSS from CISA ICS-CERT (3,767 advisories,
-  11,336 CVEs); KEV/EPSS signals; OSS vulnerable/patched code (34 CVEs, GitHub fix
+- **Real:** device ↔ CVE ↔ CWE ↔ CVSS from CISA ICS-CERT (3,845 advisories,
+  11,550 CVEs); KEV/EPSS signals; OSS vulnerable/patched code (34 CVEs, GitHub fix
   commits); the CISA CSAF `product_tree` / `product_status` used as ground truth.
 - **Synthetic:** the component inventory around each device, and the
   `ics:network-exposure` attribute — the latter is **not used for status** (it
@@ -550,7 +550,7 @@ ICS-VEX/
 │   ├── code_evidence.json        fix hunks (vuln vs patched) → feeds fixed_check
 │   ├── nvd_cache.json · cisa_advisories.json · vuln_targets.json
 │   └── {cti_extractions,source_locations,reachability,controllability,vex_v2}.json  (VEX-v2 caches, gitignored)
-├── reverse_sbom/                 3,765 advisory → CycloneDX SBOMs
+├── reverse_sbom/                 3,845 advisory → CycloneDX SBOMs
 ├── results/                      eval outputs (vex_v2_summary.json, vex_v2_fixed_demo.json, …)
 ├── site/                         static dashboard: 10 HTML + JSON, auto-deployed to GitHub Pages
 ├── deploy/                       Joern / deployment notes
@@ -588,7 +588,7 @@ lives in `src/` and `tools/`, the deployed dashboard in `site/`.
 | **VEX-v2** 5b. Pre-gate baseline | `tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.json` | `data/vex_v2_pregate.json` |
 | **VEX-v2** (opt) Patch-signature CLI | `tools/fixed_check.py --cve X --snapshot D` | `results/vex_v2_fixed_demo.json` |
 | Test item #3 | `tools/build_cpe_match_gt.py`, `tools/eval_cpe_match_precision.py` | `data/cpe_match_eval.jsonl`, `results/cpe_match_precision.json` |
-| Test item #4 | `tools/build_vex_gt.py --population results/_vuln_targets_104.json --out data/vex_gt_104doc.jsonl`, `tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl --sut data/vex_v2_pregate.json` | `data/vex_gt_104doc.jsonl`, `results/vex_precision_104.json` |
+| Test item #4 | `tools/build_vex_gt.py --population data/vex_population_104.json --out data/vex_gt_104doc.jsonl`, `tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl --sut data/vex_v2_pregate.json` | `data/vex_gt_104doc.jsonl`, `results/vex_precision_104.json` |
 | Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `site/*.html`, `site/*.json` |
 
 In VEX-v2 the **patch gate (Q0) runs first** and the **presence check (Q1) decides the rest**;
@@ -654,7 +654,7 @@ python tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.jso
 
 # certification test items #3 / #4 — ground truth, then precision
 python tools/build_cpe_match_gt.py && python tools/eval_cpe_match_precision.py
-python tools/build_vex_gt.py --population results/_vuln_targets_104.json --out data/vex_gt_104doc.jsonl
+python tools/build_vex_gt.py --population data/vex_population_104.json --out data/vex_gt_104doc.jsonl
 python tools/eval_vex_precision.py --gt data/vex_gt_104doc.jsonl --sut data/vex_v2_pregate.json
 
 python tools/build_sbom_index.py && python tools/build_site.py

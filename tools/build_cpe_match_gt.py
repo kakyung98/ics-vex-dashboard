@@ -435,7 +435,7 @@ def main():
     ap.add_argument("--per-vendor", type=int, default=40,
                     help="max positive pairs per vendor (anti-skew cap); 0 = no cap")
     ap.add_argument("--population", help="JSON file whose keys fix the CVE population "
-                                         "(e.g. results/_vuln_targets_104.json)")
+                                         "(e.g. data/vex_population_104.json)")
     ap.add_argument("--out", help="write elsewhere than data/cpe_match_eval.jsonl")
     ap.add_argument("--seed", type=int, default=20261007)
     ap.add_argument("--neg-ratio", type=float, default=1.0,

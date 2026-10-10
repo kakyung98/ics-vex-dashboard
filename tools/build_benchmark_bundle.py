@@ -59,7 +59,7 @@ FILES = {
         "Scored: precision 0.9749 (TP 973 / FP 25) over 998 of 11,277 predictions"),
 
     "item4/population.json": (
-        "results/_vuln_targets_104.json",
+        "data/vex_population_104.json",
         "The 104 source-available CVEs — #4's population; #3 has no such filter"),
     "item4/input.jsonl": (
         "data/bench_input_item4.jsonl",
@@ -180,9 +180,9 @@ data rather than a gap in the file.
 
 ## Rebuild the ground truths
 
-    python tools/build_cpe_match_gt.py --population results/_vuln_targets_104.json \
+    python tools/build_cpe_match_gt.py --population data/vex_population_104.json \
                                        --per-vendor 0 --out data/cpe_match_eval_104.jsonl
-    python tools/build_vex_gt.py --population results/_vuln_targets_104.json \
+    python tools/build_vex_gt.py --population data/vex_population_104.json \
                                  --out data/vex_gt_104doc.jsonl
     python tools/build_benchmark_bundle.py
 """
