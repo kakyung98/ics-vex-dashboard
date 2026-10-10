@@ -120,6 +120,20 @@ def representative_version(rng):
     return rng.get("startIncl")
 
 
+def circular_cves(comp):
+    """CVEs this component must not be scored on.
+
+    `link:circular-cves` is written by tools/link_oss_components for libraries the
+    SBOM holds only because a CVE->OSS catalog attributed that CVE to them. The link
+    stays — the product really does contain the library — but the CVE that produced
+    the component cannot also be the CVE that tests finding it.
+    """
+    for p in comp.get("properties") or []:
+        if p.get("name") == "link:circular-cves":
+            return {c.strip() for c in str(p.get("value") or "").split(",") if c.strip()}
+    return set()
+
+
 def anchored_cpes(publisher, nvd_entries):
     """EVERY NVD CPE whose vendor is the component's own publisher.
 
@@ -182,7 +196,7 @@ def harvest(population=None):
     negative when the asset does not actually ship that component.
     """
     detail = json.load(open(NVD_DETAIL, encoding="utf-8"))
-    layer_a, layer_b = [], []
+    layer_a, layer_b, circular = [], [], []
     for path in sorted(glob.glob(os.path.join(CORPUS, "*.json"))):
         try:
             sbom = json.load(open(path, encoding="utf-8"))
@@ -204,6 +218,16 @@ def harvest(population=None):
                 comp = comps.get(ref)
                 if not comp:
                     continue
+                if cve in circular_cves(comp):
+                    # tools/link_oss_components attached this CVE to a library that
+                    # the same CVE is what put in the SBOM (tier A, catalog-derived).
+                    # Scoring it would credit the matcher for finding what the data
+                    # was built from, so it is logged out rather than labelled.
+                    circular.append({"asset_id": asset_id, "bom_ref": ref,
+                                     "cve_id": cve, "name": comp.get("name"),
+                                     "reason": "component was derived from this CVE "
+                                               "(OSS catalog attribution)"})
+                    continue
                 rec = {"asset_id": asset_id, "bom_ref": ref, "cve_id": cve,
                        "name": comp.get("name"), "publisher": comp.get("publisher")}
                 entries = anchored_cpes(comp.get("publisher"), nvd)
@@ -217,7 +241,7 @@ def harvest(population=None):
                                 "range_source": src,
                                 "version": representative_version(rng)})
                     layer_a.append(rec)
-    return layer_a, layer_b
+    return layer_a, layer_b, circular
 
 
 def to_gt(rec, idx):
@@ -447,9 +471,10 @@ def main():
     detail = json.load(open(NVD_DETAIL, encoding="utf-8"))
     population = (set(json.load(open(a.population, encoding="utf-8")))
                   if a.population else None)
-    layer_a, layer_b = harvest(population)
+    layer_a, layer_b, circular = harvest(population)
     print("harvested  Layer A (vendor-anchored) : %d pairs" % len(layer_a))
     print("           Layer B (embedded only)   : %d pairs  -> excluded, logged" % len(layer_b))
+    print("           circular OSS links        : %d pairs  -> held out of scoring" % len(circular))
 
     sampled = stratify(layer_a, a.per_vendor, a.seed)
     gt = [to_gt(r, i + 1) for i, r in enumerate(sampled)]
@@ -502,6 +527,10 @@ def main():
         "version_match": {"true": vm[True], "false": vm[False], "undecidable": vm[None]},
         "review_status": dict(rs),
         "exclusions": {
+            "circular_oss_links": len(circular),
+            "circular_reason": "tools/link_oss_components attached the CVE to a library "
+                               "that the same CVE put in the SBOM (OSS catalog tier A); "
+                               "kept in the SBOM, held out of scoring",
             "layer_b_embedded_only": len(layer_b),
             "layer_b_reason": "CISA asserts the ICS product is affected but NVD's CPE "
                               "is a third-party component (e.g. Schneider ProLeiT -> "
