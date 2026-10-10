@@ -376,7 +376,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", help="comma-separated CVEs, for a quick pass")
     ap.add_argument("--population", help="JSON file whose keys fix the population "
-                                         "(e.g. results/_vuln_targets_104.json for the "
+                                         "(e.g. data/vex_population_104.json for the "
                                          "104 the test document names, a clean subset "
                                          "of the 107 snapshots collected since)")
     ap.add_argument("--out", help="write elsewhere than data/vex_gt_104.jsonl")
