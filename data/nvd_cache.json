@@ -1,4 +1,184 @@
 {
+ "CVE-2013-0169": {
+  "cwes": [
+   "CWE-310"
+  ],
+  "description": "The TLS protocol 1.1 and 1.2 and the DTLS protocol 1.0 and 1.2, as used in OpenSSL, OpenJDK, PolarSSL, and other products, do not properly consider timing side-channel attacks on a MAC check requirement during the processing of malformed CBC padding, which allows remote attackers to conduct distinguishing attacks and plaintext-recovery attacks via statistical analysis of timing data for crafted packets, aka the \"Lucky Thirteen\" issue.",
+  "id": "CVE-2013-0169",
+  "lastModified": "2026-06-16T23:48:53.660",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 2.6,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:H/Au:N/C:P/I:N/A:N"
+  },
+  "published": "2013-02-08T19:55:01.030",
+  "references": [
+   "http://blog.fuseyism.com/index.php/2013/02/20/security-icedtea-2-1-6-2-2-6-2-3-7-for-openjdk-7-released/",
+   "http://lists.apple.com/archives/security-announce/2013/Sep/msg00002.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2013-April/101366.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2013-02/msg00020.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2013-03/msg00000.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2013-03/msg00002.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-0076": {
+  "cwes": [
+   "CWE-310"
+  ],
+  "description": "The Montgomery ladder implementation in OpenSSL through 1.0.0l does not ensure that certain swap operations have a constant-time behavior, which makes it easier for local users to obtain ECDSA nonces via a FLUSH+RELOAD cache side-channel attack.",
+  "id": "CVE-2014-0076",
+  "lastModified": "2026-06-17T00:02:12.837",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 1.9,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "AV:L/AC:M/Au:N/C:P/I:N/A:N"
+  },
+  "published": "2014-03-25T13:25:21.977",
+  "references": [
+   "http://advisories.mageia.org/MGASA-2014-0165.html",
+   "http://eprint.iacr.org/2014/140",
+   "http://git.openssl.org/gitweb/?p=openssl.git%3Ba=commit%3Bh=2198be3483259de374f91e57d247d0fc667aef29",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10629",
+   "http://lists.opensuse.org/opensuse-security-announce/2016-03/msg00011.html",
+   "http://lists.opensuse.org/opensuse-updates/2014-04/msg00007.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-0160": {
+  "cwes": [
+   "CWE-125"
+  ],
+  "description": "The (1) TLS and (2) DTLS implementations in OpenSSL 1.0.1 before 1.0.1g do not properly handle Heartbeat Extension packets, which allows remote attackers to obtain sensitive information from process memory via crafted packets that trigger a buffer over-read, as demonstrated by reading private keys, related to d1_both.c and t1_lib.c, aka the Heartbleed bug.",
+  "id": "CVE-2014-0160",
+  "lastModified": "2026-06-17T00:02:24.467",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+  },
+  "published": "2014-04-07T22:55:03.893",
+  "references": [
+   "http://advisories.mageia.org/MGASA-2014-0165.html",
+   "http://blog.fox-it.com/2014/04/08/openssl-heartbleed-bug-live-blog/",
+   "http://cogentdatahub.com/ReleaseNotes.html",
+   "http://download.schneider-electric.com/files?p_Doc_Ref=SEVD%202014-119-01",
+   "http://git.openssl.org/gitweb/?p=openssl.git%3Ba=commit%3Bh=96db9023b881d7cd9f379b0c154650d6c108e9a3",
+   "http://heartbleed.com/"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Analyzed"
+ },
+ "CVE-2014-0195": {
+  "cwes": [
+   "CWE-120"
+  ],
+  "description": "The dtls1_reassemble_fragment function in d1_both.c in OpenSSL before 0.9.8za, 1.0.0 before 1.0.0m, and 1.0.1 before 1.0.1h does not properly validate fragment lengths in DTLS ClientHello messages, which allows remote attackers to execute arbitrary code or cause a denial of service (buffer overflow and application crash) via a long non-initial fragment.",
+  "id": "CVE-2014-0195",
+  "lastModified": "2026-06-17T00:02:28.647",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 6.8,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:M/Au:N/C:P/I:P/A:P"
+  },
+  "published": "2014-06-05T21:55:06.147",
+  "references": [
+   "http://aix.software.ibm.com/aix/efixes/security/openssl_advisory9.asc",
+   "http://h30499.www3.hp.com/t5/HP-Security-Research-Blog/Once-Bled-Twice-Shy-OpenSSL-CVE-2014-0195/ba-p/6501048",
+   "http://h30499.www3.hp.com/t5/HP-Security-Research-Blog/ZDI-14-173-CVE-2014-0195-OpenSSL-DTLS-Fragment-Out-of-Bounds/ba-p/6501002",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10629",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136470.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136473.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-0198": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "The do_ssl3_write function in s3_pkt.c in OpenSSL 1.x through 1.0.1g, when SSL_MODE_RELEASE_BUFFERS is enabled, does not properly manage a buffer pointer during certain recursive calls, which allows remote attackers to cause a denial of service (NULL pointer dereference and application crash) via vectors that trigger an alert condition.",
+  "id": "CVE-2014-0198",
+  "lastModified": "2026-06-17T00:02:29.623",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 4.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:M/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2014-05-06T10:44:05.470",
+  "references": [
+   "http://advisories.mageia.org/MGASA-2014-0204.html",
+   "http://aix.software.ibm.com/aix/efixes/security/openssl_advisory9.asc",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10629",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=KB29195",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136470.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136473.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-0221": {
+  "cwes": [],
+  "description": "The dtls1_get_message_fragment function in d1_both.c in OpenSSL before 0.9.8za, 1.0.0 before 1.0.0m, and 1.0.1 before 1.0.1h allows remote attackers to cause a denial of service (recursion and client crash) via a DTLS hello message in an invalid DTLS handshake.",
+  "id": "CVE-2014-0221",
+  "lastModified": "2026-06-17T00:02:32.707",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 4.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:M/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2014-06-05T21:55:06.207",
+  "references": [
+   "http://aix.software.ibm.com/aix/efixes/security/openssl_advisory9.asc",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10629",
+   "http://linux.oracle.com/errata/ELSA-2014-1053.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136470.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136473.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2015-04/msg00016.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-0224": {
+  "cwes": [
+   "CWE-326"
+  ],
+  "description": "OpenSSL before 0.9.8za, 1.0.0 before 1.0.0m, and 1.0.1 before 1.0.1h does not properly restrict processing of ChangeCipherSpec messages, which allows man-in-the-middle attackers to trigger use of a zero-length master key in certain OpenSSL-to-OpenSSL communications, and consequently hijack sessions or obtain sensitive information, via a crafted TLS handshake, aka the \"CCS Injection\" vulnerability.",
+  "id": "CVE-2014-0224",
+  "lastModified": "2026-06-17T00:02:33.540",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.4,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+  },
+  "published": "2014-06-05T21:55:07.817",
+  "references": [
+   "http://aix.software.ibm.com/aix/efixes/security/openssl_advisory9.asc",
+   "http://ccsinjection.lepidum.co.jp",
+   "http://dev.mysql.com/doc/relnotes/workbench/en/wb-news-6-1-7.html",
+   "http://esupport.trendmicro.com/solution/en-US/1103813.aspx",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10629",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=KB29195"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
  "CVE-2014-1912": {
   "cwes": [
    "CWE-119"
@@ -23,6 +203,335 @@
    "http://pastebin.com/raw.php?i=GHXSmNEg"
   ],
   "source": "cve@mitre.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-3470": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "The ssl3_send_client_key_exchange function in s3_clnt.c in OpenSSL before 0.9.8za, 1.0.0 before 1.0.0m, and 1.0.1 before 1.0.1h, when an anonymous ECDH cipher suite is used, allows remote attackers to cause a denial of service (NULL pointer dereference and client crash) by triggering a NULL certificate value.",
+  "id": "CVE-2014-3470",
+  "lastModified": "2026-06-17T00:08:14.657",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 4.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:M/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2014-06-05T21:55:07.880",
+  "references": [
+   "http://aix.software.ibm.com/aix/efixes/security/openssl_advisory9.asc",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10629",
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=KB29195",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136470.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2014-August/136473.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2015-03/msg00027.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2014-3566": {
+  "cwes": [
+   "CWE-310",
+   "CWE-329"
+  ],
+  "description": "The SSL protocol 3.0, as used in OpenSSL through 1.0.1i and other products, uses nondeterministic CBC padding, which makes it easier for man-in-the-middle attackers to obtain cleartext data via a padding-oracle attack, aka the \"POODLE\" issue.",
+  "id": "CVE-2014-3566",
+  "lastModified": "2026-06-17T00:08:29.637",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 3.4,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N"
+  },
+  "published": "2014-10-15T00:55:02.137",
+  "references": [
+   "ftp://ftp.netbsd.org/pub/NetBSD/security/advisories/NetBSD-SA2014-015.txt.asc",
+   "http://advisories.mageia.org/MGASA-2014-0416.html",
+   "http://aix.software.ibm.com/aix/efixes/security/openssl_advisory11.asc",
+   "http://archives.neohapsis.com/archives/bugtraq/2014-10/0101.html",
+   "http://archives.neohapsis.com/archives/bugtraq/2014-10/0103.html",
+   "http://askubuntu.com/questions/537196/how-do-i-patch-workaround-sslv3-poodle-vulnerability-cve-2014-3566"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0207": {
+  "cwes": [],
+  "description": "The dtls1_listen function in d1_lib.c in OpenSSL 1.0.2 before 1.0.2a does not properly isolate the state information of independent data streams, which allows remote attackers to cause a denial of service (application crash) via crafted DTLS traffic, as demonstrated by DTLS 1.0 traffic to a DTLS 1.2 server.",
+  "id": "CVE-2015-0207",
+  "lastModified": "2026-06-17T00:19:43.763",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:00.067",
+  "references": [
+   "http://marc.info/?l=bugtraq&m=143748090628601&w=2",
+   "http://marc.info/?l=bugtraq&m=144050155601375&w=2",
+   "http://marc.info/?l=bugtraq&m=144050297101809&w=2",
+   "http://www.oracle.com/technetwork/security-advisory/cpuoct2017-3236626.html",
+   "http://www.oracle.com/technetwork/topics/security/bulletinapr2015-2511959.html",
+   "http://www.oracle.com/technetwork/topics/security/cpujan2016-2367955.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0209": {
+  "cwes": [],
+  "description": "Use-after-free vulnerability in the d2i_ECPrivateKey function in crypto/ec/ec_asn1.c in OpenSSL before 0.9.8zf, 1.0.0 before 1.0.0r, 1.0.1 before 1.0.1m, and 1.0.2 before 1.0.2a might allow remote attackers to cause a denial of service (memory corruption and application crash) or possibly have unspecified other impact via a malformed Elliptic Curve (EC) private-key file that is improperly handled during import.",
+  "id": "CVE-2015-0209",
+  "lastModified": "2026-06-17T00:19:44.020",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 6.8,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:M/Au:N/C:P/I:P/A:P"
+  },
+  "published": "2015-03-19T22:59:02.617",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10680",
+   "http://lists.apple.com/archives/security-announce/2015/Jun/msg00002.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152733.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152734.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152844.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-May/156823.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0285": {
+  "cwes": [
+   "CWE-310"
+  ],
+  "description": "The ssl3_client_hello function in s3_clnt.c in OpenSSL 1.0.2 before 1.0.2a does not ensure that the PRNG is seeded before proceeding with a handshake, which makes it easier for remote attackers to defeat cryptographic protection mechanisms by sniffing the network and then conducting a brute-force attack.",
+  "id": "CVE-2015-0285",
+  "lastModified": "2026-06-17T00:19:54.433",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 4.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:M/Au:N/C:P/I:N/A:N"
+  },
+  "published": "2015-03-19T22:59:03.723",
+  "references": [
+   "http://marc.info/?l=bugtraq&m=143748090628601&w=2",
+   "http://marc.info/?l=bugtraq&m=144050155601375&w=2",
+   "http://marc.info/?l=bugtraq&m=144050297101809&w=2",
+   "http://www.fortiguard.com/advisory/2015-03-24-openssl-vulnerabilities-march-2015",
+   "http://www.oracle.com/technetwork/security-advisory/cpuoct2017-3236626.html",
+   "http://www.oracle.com/technetwork/topics/security/bulletinapr2015-2511959.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0287": {
+  "cwes": [
+   "CWE-17"
+  ],
+  "description": "The ASN1_item_ex_d2i function in crypto/asn1/tasn_dec.c in OpenSSL before 0.9.8zf, 1.0.0 before 1.0.0r, 1.0.1 before 1.0.1m, and 1.0.2 before 1.0.2a does not reinitialize CHOICE and ADB data structures, which might allow attackers to cause a denial of service (invalid write operation and memory corruption) by leveraging an application that relies on ASN.1 structure reuse.",
+  "id": "CVE-2015-0287",
+  "lastModified": "2026-06-17T00:19:54.780",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:05.770",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10680",
+   "http://lists.apple.com/archives/security-announce/2015/Jun/msg00002.html",
+   "http://lists.apple.com/archives/security-announce/2015/Sep/msg00001.html",
+   "http://lists.apple.com/archives/security-announce/2015/Sep/msg00008.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152733.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152734.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0288": {
+  "cwes": [],
+  "description": "The X509_to_X509_REQ function in crypto/x509/x509_req.c in OpenSSL before 0.9.8zf, 1.0.0 before 1.0.0r, 1.0.1 before 1.0.1m, and 1.0.2 before 1.0.2a might allow attackers to cause a denial of service (NULL pointer dereference and application crash) via an invalid certificate key.",
+  "id": "CVE-2015-0288",
+  "lastModified": "2026-06-17T00:19:54.990",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:06.880",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10680",
+   "http://lists.apple.com/archives/security-announce/2015/Jun/msg00002.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152733.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152734.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152844.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-May/156823.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0289": {
+  "cwes": [],
+  "description": "The PKCS#7 implementation in OpenSSL before 0.9.8zf, 1.0.0 before 1.0.0r, 1.0.1 before 1.0.1m, and 1.0.2 before 1.0.2a does not properly handle a lack of outer ContentInfo, which allows attackers to cause a denial of service (NULL pointer dereference and application crash) by leveraging an application that processes arbitrary PKCS#7 data and providing malformed data with ASN.1 encoding, related to crypto/pkcs7/pk7_doit.c and crypto/pkcs7/pk7_lib.c.",
+  "id": "CVE-2015-0289",
+  "lastModified": "2026-06-17T00:19:55.190",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:07.833",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10680",
+   "http://lists.apple.com/archives/security-announce/2015/Jun/msg00002.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152733.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152734.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152844.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-May/156823.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0290": {
+  "cwes": [
+   "CWE-17"
+  ],
+  "description": "The multi-block feature in the ssl3_write_bytes function in s3_pkt.c in OpenSSL 1.0.2 before 1.0.2a on 64-bit x86 platforms with AES NI support does not properly handle certain non-blocking I/O cases, which allows remote attackers to cause a denial of service (pointer corruption and application crash) via unspecified vectors.",
+  "id": "CVE-2015-0290",
+  "lastModified": "2026-06-17T00:19:55.390",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:08.787",
+  "references": [
+   "http://marc.info/?l=bugtraq&m=143748090628601&w=2",
+   "http://marc.info/?l=bugtraq&m=144050155601375&w=2",
+   "http://marc.info/?l=bugtraq&m=144050297101809&w=2",
+   "http://www.oracle.com/technetwork/security-advisory/cpuoct2017-3236626.html",
+   "http://www.oracle.com/technetwork/topics/security/bulletinapr2015-2511959.html",
+   "http://www.oracle.com/technetwork/topics/security/cpujan2016-2367955.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0291": {
+  "cwes": [],
+  "description": "The sigalgs implementation in t1_lib.c in OpenSSL 1.0.2 before 1.0.2a allows remote attackers to cause a denial of service (NULL pointer dereference and daemon crash) by using an invalid signature_algorithms extension in the ClientHello message during a renegotiation.",
+  "id": "CVE-2015-0291",
+  "lastModified": "2026-06-17T00:19:55.517",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:09.660",
+  "references": [
+   "http://marc.info/?l=bugtraq&m=143748090628601&w=2",
+   "http://marc.info/?l=bugtraq&m=144050155601375&w=2",
+   "http://marc.info/?l=bugtraq&m=144050297101809&w=2",
+   "http://www.fortiguard.com/advisory/2015-03-24-openssl-vulnerabilities-march-2015",
+   "http://www.oracle.com/technetwork/security-advisory/cpuoct2017-3236626.html",
+   "http://www.oracle.com/technetwork/topics/security/bulletinapr2015-2511959.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0292": {
+  "cwes": [
+   "CWE-119"
+  ],
+  "description": "Integer underflow in the EVP_DecodeUpdate function in crypto/evp/encode.c in the base64-decoding implementation in OpenSSL before 0.9.8za, 1.0.0 before 1.0.0m, and 1.0.1 before 1.0.1h allows remote attackers to cause a denial of service (memory corruption) or possibly have unspecified other impact via crafted base64 data that triggers a buffer overflow.",
+  "id": "CVE-2015-0292",
+  "lastModified": "2026-06-17T00:19:55.637",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:P/I:P/A:P"
+  },
+  "published": "2015-03-19T22:59:10.690",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10680",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152733.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152734.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152844.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2015-03/msg00027.html",
+   "http://marc.info/?l=bugtraq&m=143213830203296&w=2"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-0293": {
+  "cwes": [
+   "CWE-20"
+  ],
+  "description": "The SSLv2 implementation in OpenSSL before 0.9.8zf, 1.0.0 before 1.0.0r, 1.0.1 before 1.0.1m, and 1.0.2 before 1.0.2a allows remote attackers to cause a denial of service (s2_lib.c assertion failure and daemon exit) via a crafted CLIENT-MASTER-KEY message.",
+  "id": "CVE-2015-0293",
+  "lastModified": "2026-06-17T00:19:55.807",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 5.0,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:11.537",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10680",
+   "http://lists.apple.com/archives/security-announce/2015/Jun/msg00002.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152733.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152734.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-March/152844.html",
+   "http://lists.fedoraproject.org/pipermail/package-announce/2015-May/156823.html"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2015-1787": {
+  "cwes": [
+   "CWE-20"
+  ],
+  "description": "The ssl3_get_client_key_exchange function in s3_srvr.c in OpenSSL 1.0.2 before 1.0.2a, when client authentication and an ephemeral Diffie-Hellman ciphersuite are enabled, allows remote attackers to cause a denial of service (daemon crash) via a ClientKeyExchange message with a length of zero.",
+  "id": "CVE-2015-1787",
+  "lastModified": "2026-06-17T00:22:59.543",
+  "metric": {
+   "method": "CVSSv2",
+   "score": 2.6,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "AV:N/AC:H/Au:N/C:N/I:N/A:P"
+  },
+  "published": "2015-03-19T22:59:12.473",
+  "references": [
+   "http://marc.info/?l=bugtraq&m=143748090628601&w=2",
+   "http://marc.info/?l=bugtraq&m=144050155601375&w=2",
+   "http://marc.info/?l=bugtraq&m=144050297101809&w=2",
+   "http://www.oracle.com/technetwork/security-advisory/cpuoct2017-3236626.html",
+   "http://www.oracle.com/technetwork/topics/security/bulletinapr2015-2511959.html",
+   "http://www.oracle.com/technetwork/topics/security/cpujan2016-2367955.html"
+  ],
+  "source": "secalert@redhat.com",
   "vulnStatus": "Modified"
  },
  "CVE-2015-7547": {
@@ -99,6 +608,32 @@
    "http://seclists.org/fulldisclosure/2019/Sep/7",
    "http://seclists.org/fulldisclosure/2020/Aug/20",
    "http://www.openwall.com/lists/oss-security/2016/03/11/16"
+  ],
+  "source": "secalert@redhat.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2016-2177": {
+  "cwes": [
+   "CWE-190"
+  ],
+  "description": "OpenSSL through 1.0.2h incorrectly uses pointer arithmetic for heap-buffer boundary checks, which might allow remote attackers to cause a denial of service (integer overflow and application crash) or possibly have unspecified other impact by leveraging unexpected malloc behavior, related to s3_srvr.c, ssl_sess.c, and t1_lib.c.",
+  "id": "CVE-2016-2177",
+  "lastModified": "2026-06-17T00:43:35.550",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 9.8,
+   "severity": "critical",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2016-06-20T01:59:02.087",
+  "references": [
+   "http://kb.juniper.net/InfoCenter/index?page=content&id=JSA10759",
+   "http://lists.opensuse.org/opensuse-security-announce/2016-09/msg00022.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2016-09/msg00023.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2016-09/msg00024.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2016-09/msg00031.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2016-10/msg00005.html"
   ],
   "source": "secalert@redhat.com",
   "vulnStatus": "Modified"
@@ -385,6 +920,221 @@
   "source": "cret@cert.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2017-13079": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) that supports IEEE 802.11w allows reinstallation of the Integrity Group Temporal Key (IGTK) during the four-way handshake, allowing an attacker within radio range to spoof frames from access points to clients.",
+  "id": "CVE-2017-13079",
+  "lastModified": "2026-06-17T01:04:29.550",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.367",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00020.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00023.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00024.html",
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13080": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) allows reinstallation of the Group Temporal Key (GTK) during the group key handshake, allowing an attacker within radio range to replay frames from access points to clients.",
+  "id": "CVE-2017-13080",
+  "lastModified": "2026-06-17T01:04:29.767",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.397",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00020.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00023.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00024.html",
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13081": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) that supports IEEE 802.11w allows reinstallation of the Integrity Group Temporal Key (IGTK) during the group key handshake, allowing an attacker within radio range to spoof frames from access points to clients.",
+  "id": "CVE-2017-13081",
+  "lastModified": "2026-06-17T01:04:30.043",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.443",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00020.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00023.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00024.html",
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13082": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) that supports IEEE 802.11r allows reinstallation of the Pairwise Transient Key (PTK) Temporal Key (TK) during the fast BSS transmission (FT) handshake, allowing an attacker within radio range to replay, decrypt, or spoof frames.",
+  "id": "CVE-2017-13082",
+  "lastModified": "2026-06-17T01:04:30.257",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 8.1,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.473",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2020-02/msg00021.html",
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519",
+   "http://www.oracle.com/technetwork/security-advisory/cpuapr2018-3678067.html",
+   "http://www.oracle.com/technetwork/security-advisory/cpujan2018-3236628.html"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13084": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) allows reinstallation of the Station-To-Station-Link (STSL) Transient Key (STK) during the PeerKey handshake, allowing an attacker within radio range to replay, decrypt, or spoof frames.",
+  "id": "CVE-2017-13084",
+  "lastModified": "2026-06-17T01:04:30.590",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 6.8,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.520",
+  "references": [
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.kb.cert.org/vuls/id/228519",
+   "http://www.securityfocus.com/bid/101274",
+   "http://www.securitytracker.com/id/1039576",
+   "http://www.securitytracker.com/id/1039577",
+   "http://www.securitytracker.com/id/1039581"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13086": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) allows reinstallation of the Tunneled Direct-Link Setup (TDLS) Peer Key (TPK) during the TDLS handshake, allowing an attacker within radio range to replay, decrypt, or spoof frames.",
+  "id": "CVE-2017-13086",
+  "lastModified": "2026-06-17T01:04:30.753",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 6.8,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.553",
+  "references": [
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519",
+   "http://www.securityfocus.com/bid/101274",
+   "http://www.securitytracker.com/id/1039573",
+   "http://www.securitytracker.com/id/1039576"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13087": {
+  "cwes": [
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) that support 802.11v allows reinstallation of the Group Temporal Key (GTK) when processing a Wireless Network Management (WNM) Sleep Mode Response frame, allowing an attacker within radio range to replay frames from access points to clients.",
+  "id": "CVE-2017-13087",
+  "lastModified": "2026-06-17T01:04:30.940",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.600",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00020.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00023.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00024.html",
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-13088": {
+  "cwes": [
+   "CWE-323",
+   "CWE-330"
+  ],
+  "description": "Wi-Fi Protected Access (WPA and WPA2) that support 802.11v allows reinstallation of the Integrity Group Temporal Key (IGTK) when processing a Wireless Network Management (WNM) Sleep Mode Response frame, allowing an attacker within radio range to replay frames from access points to clients.",
+  "id": "CVE-2017-13088",
+  "lastModified": "2026-06-17T01:04:31.153",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:A/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+  },
+  "published": "2017-10-17T13:29:00.630",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00020.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00023.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2017-10/msg00024.html",
+   "http://www.arubanetworks.com/assets/alert/ARUBA-PSA-2017-007.txt",
+   "http://www.debian.org/security/2017/dsa-3999",
+   "http://www.kb.cert.org/vuls/id/228519"
+  ],
+  "source": "cret@cert.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2017-14491": {
   "cwes": [
    "CWE-787"
@@ -535,6 +1285,33 @@
    "http://www.securityfocus.com/bid/95814",
    "http://www.securitytracker.com/id/1037717",
    "https://access.redhat.com/errata/RHSA-2018:2185"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2017-3737": {
+  "cwes": [
+   "CWE-125",
+   "CWE-787"
+  ],
+  "description": "OpenSSL 1.0.2 (starting from version 1.0.2b) introduced an \"error state\" mechanism. The intent was that if a fatal error occurred during a handshake then OpenSSL would move into the error state and would immediately fail if you attempted to continue the handshake. This works as designed for the explicit handshake functions (SSL_do_handshake(), SSL_accept() and SSL_connect()), however due to a bug it does not work correctly if SSL_read() or SSL_write() is called directly. In that scenario, if the handshake fails then a fatal error will be returned in the initial function call. If SSL_read()/SSL_write() is subsequently called by the application for the same SSL object then it will succeed and the data is passed without being decrypted/encrypted directly from the SSL/TLS record layer. In order to exploit this issue an application bug would have to be present that resulted in a call to SSL_read()/SSL_write() being issued after having already received a fatal error. OpenSSL version 1.0.2b-1.0.2m are affected. Fixed in OpenSSL 1.0.2n. OpenSSL 1.1.0 is not affected.",
+  "id": "CVE-2017-3737",
+  "lastModified": "2026-06-17T01:18:49.363",
+  "metric": {
+   "method": "CVSSv3",
+   "score": 5.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+  },
+  "published": "2017-12-07T16:29:00.193",
+  "references": [
+   "http://www.oracle.com/technetwork/security-advisory/cpuapr2018-3678067.html",
+   "http://www.oracle.com/technetwork/security-advisory/cpujan2018-3236628.html",
+   "http://www.oracle.com/technetwork/security-advisory/cpujul2018-4258247.html",
+   "http://www.securityfocus.com/bid/102103",
+   "http://www.securitytracker.com/id/1039978",
+   "https://access.redhat.com/errata/RHSA-2018:0998"
   ],
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
@@ -1539,6 +2316,83 @@
    "https://github.com/the-tcpdump-group/libpcap/commit/a5a36d9e82dde7265e38fe1f87b7f11c461c29f6"
   ],
   "source": "cve@mitre.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2019-1547": {
+  "cwes": [],
+  "description": "Normally in OpenSSL EC groups always have a co-factor present and this is used in side channel resistant code paths. However, in some cases, it is possible to construct a group using explicit parameters (instead of using a named curve). In those cases it is possible that such a group does not have the cofactor present. This can occur even where all the parameters match a known named curve. If such a curve is used then OpenSSL falls back to non-side channel resistant code paths which may result in full key recovery during an ECDSA signature operation. In order to be vulnerable an attacker would have to have the ability to time the creation of a large number of signatures where explicit parameters with no co-factor present are in use by an application using libcrypto. For the avoidance of doubt libssl is not vulnerable because explicit parameters are never used. Fixed in OpenSSL 1.1.1d (Affected 1.1.1-1.1.1c). Fixed in OpenSSL 1.1.0l (Affected 1.1.0-1.1.0k). Fixed in OpenSSL 1.0.2t (Affected 1.0.2-1.0.2s).",
+  "id": "CVE-2019-1547",
+  "lastModified": "2026-06-17T02:28:43.530",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 4.7,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N"
+  },
+  "published": "2019-09-10T17:15:11.750",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2019-09/msg00054.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2019-09/msg00072.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2019-10/msg00012.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2019-10/msg00016.html",
+   "http://packetstormsecurity.com/files/154467/Slackware-Security-Advisory-openssl-Updates.html",
+   "https://arxiv.org/abs/1909.01785"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2019-1549": {
+  "cwes": [
+   "CWE-330"
+  ],
+  "description": "OpenSSL 1.1.1 introduced a rewritten random number generator (RNG). This was intended to include protection in the event of a fork() system call in order to ensure that the parent and child processes did not share the same RNG state. However this protection was not being used in the default case. A partial mitigation for this issue is that the output from a high precision timer is mixed into the RNG state so the likelihood of a parent and child process sharing state is significantly reduced. If an application already calls OPENSSL_init_crypto() explicitly using OPENSSL_INIT_ATFORK then this problem does not occur at all. Fixed in OpenSSL 1.1.1d (Affected 1.1.1-1.1.1c).",
+  "id": "CVE-2019-1549",
+  "lastModified": "2026-06-17T02:28:43.740",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+  },
+  "published": "2019-09-10T17:15:11.813",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=1b0fe00e2704b5e20334a16d3c9099d1ba2ef1be",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/GY6SNRJP2S7Y42GIIDO3HXPNMDYN2U3A/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/ZN4VVQJ3JDCHGIHV4Y2YTXBYQZ6PWQ7E/",
+   "https://seclists.org/bugtraq/2019/Oct/1",
+   "https://security.netapp.com/advisory/ntap-20190919-0002/",
+   "https://support.f5.com/csp/article/K44070243"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2019-1563": {
+  "cwes": [
+   "CWE-203",
+   "CWE-327"
+  ],
+  "description": "In situations where an attacker receives automated notification of the success or failure of a decryption attempt an attacker, after sending a very large number of messages to be decrypted, can recover a CMS/PKCS7 transported encryption key or decrypt any RSA encrypted message that was encrypted with the public RSA key, using a Bleichenbacher padding oracle attack. Applications are not affected if they use a certificate together with the private RSA key to the CMS_decrypt or PKCS7_decrypt functions to select the correct recipient info to decrypt. Fixed in OpenSSL 1.1.1d (Affected 1.1.1-1.1.1c). Fixed in OpenSSL 1.1.0l (Affected 1.1.0-1.1.0k). Fixed in OpenSSL 1.0.2t (Affected 1.0.2-1.0.2s).",
+  "id": "CVE-2019-1563",
+  "lastModified": "2026-10-08T22:16:52.290",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 3.7,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N"
+  },
+  "published": "2019-09-10T17:15:11.890",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2019-09/msg00054.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2019-09/msg00072.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2019-10/msg00012.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2019-10/msg00016.html",
+   "http://packetstormsecurity.com/files/154467/Slackware-Security-Advisory-openssl-Updates.html",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=08229ad838c50f644d7e928e2eef147b4308ad64"
+  ],
+  "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
  "CVE-2019-15903": {
@@ -2552,6 +3406,58 @@
   "source": "security@apache.org",
   "vulnStatus": "Analyzed"
  },
+ "CVE-2020-1967": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "Server or client applications that call the SSL_check_chain() function during or after a TLS 1.3 handshake may crash due to a NULL pointer dereference as a result of incorrect handling of the \"signature_algorithms_cert\" TLS extension. The crash occurs if an invalid or unrecognised signature algorithm is received from the peer. This could be exploited by a malicious peer in a Denial of Service attack. OpenSSL version 1.1.1d, 1.1.1e, and 1.1.1f are affected by this issue. This issue did not affect OpenSSL versions prior to 1.1.1d. Fixed in OpenSSL 1.1.1g (Affected 1.1.1d-1.1.1f).",
+  "id": "CVE-2020-1967",
+  "lastModified": "2026-10-08T21:17:24.923",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2020-04-21T14:15:11.287",
+  "references": [
+   "http://lists.opensuse.org/opensuse-security-announce/2020-07/msg00004.html",
+   "http://lists.opensuse.org/opensuse-security-announce/2020-07/msg00011.html",
+   "http://packetstormsecurity.com/files/157527/OpenSSL-signature_algorithms_cert-Denial-Of-Service.html",
+   "http://seclists.org/fulldisclosure/2020/May/5",
+   "http://www.openwall.com/lists/oss-security/2020/04/22/2",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=eb563247aef3e83dda7679c43f9649270462e5b1"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2020-1968": {
+  "cwes": [
+   "CWE-203"
+  ],
+  "description": "The Raccoon attack exploits a flaw in the TLS specification which can lead to an attacker being able to compute the pre-master secret in connections which have used a Diffie-Hellman (DH) based ciphersuite. In such a case this would result in the attacker being able to eavesdrop on all encrypted communications sent over that TLS connection. The attack can only be exploited if an implementation re-uses a DH secret across multiple TLS connections. Note that this issue only impacts DH ciphersuites and not ECDH ciphersuites. This issue affects OpenSSL 1.0.2 which is out of support and no longer receiving public updates. OpenSSL 1.1.1 is not vulnerable to this issue. Fixed in OpenSSL 1.0.2w (Affected 1.0.2-1.0.2v).",
+  "id": "CVE-2020-1968",
+  "lastModified": "2026-06-17T03:02:44.550",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 3.7,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N"
+  },
+  "published": "2020-09-09T14:15:12.507",
+  "references": [
+   "https://lists.debian.org/debian-lts-announce/2020/09/msg00016.html",
+   "https://security.gentoo.org/glsa/202210-02",
+   "https://security.netapp.com/advisory/ntap-20200911-0004/",
+   "https://usn.ubuntu.com/4504-1/",
+   "https://www.openssl.org/news/secadv/20200909.txt",
+   "https://www.oracle.com//security-alerts/cpujul2021.html"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2020-1971": {
   "cwes": [
    "CWE-476"
@@ -2915,6 +3821,32 @@
   "source": "f5sirt@f5.com",
   "vulnStatus": "Modified"
  },
+ "CVE-2021-23839": {
+  "cwes": [
+   "CWE-327"
+  ],
+  "description": "OpenSSL 1.0.2 supports SSLv2. If a client attempts to negotiate SSLv2 with a server that is configured to support both SSLv2 and more recent SSL and TLS versions then a check is made for a version rollback attack when unpadding an RSA signature. Clients that support SSL or TLS versions greater than SSLv2 are supposed to use a special form of padding. A server that supports greater than SSLv2 is supposed to reject connection attempts from a client where this special form of padding is present, because this indicates that a version rollback has occurred (i.e. both client and server support greater than SSLv2, and yet this is the version that is being requested). The implementation of this padding check inverted the logic so that the connection attempt is accepted if the padding is present, and rejected if it is absent. This means that such as server will accept a connection if a version rollback attack has occurred. Further the server will erroneously reject a connection if a normal SSLv2 connection attempt is made. Only OpenSSL 1.0.2 servers from version 1.0.2s to 1.0.2x are affected by this issue. In order to be vulnerable a 1.0.2 server must: 1) have configured SSLv2 support at compile time (this is off by default), 2) have configured SSLv2 support at runtime (this is off by default), 3) have configured SSLv2 ciphersuites (these are not in the default ciphersuite list) OpenSSL 1.1.1 does not have SSLv2 support and therefore is not vulnerable to this issue. The underlying error is in the implementation of the RSA_padding_check_SSLv23() function. This also affects the RSA_SSLV23_PADDING padding mode used by various other functions. Although 1.1.1 does not support SSLv2 the RSA_padding_check_SSLv23() function still exists, as does the RSA_SSLV23_PADDING padding mode. Applications that directly call that function or use that padding mode will encounter this issue. However since there is no support for the SSLv2 protocol in 1.1.1 this is considered a bug and not a security issue in that version. OpenSSL 1.0.2 is out of support and no longer receiving public updates. Premium support customers of OpenSSL 1.0.2 should upgrade to 1.0.2y. Other users should upgrade to 1.1.1j. Fixed in OpenSSL 1.0.2y (Affected 1.0.2s-1.0.2x).",
+  "id": "CVE-2021-23839",
+  "lastModified": "2026-06-17T03:38:54.457",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 3.7,
+   "severity": "low",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:L/A:N"
+  },
+  "published": "2021-02-16T17:15:13.190",
+  "references": [
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-637483.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=30919ab80a478f2d81f2e9acdcca3fa4740cd547",
+   "https://kb.pulsesecure.net/articles/Pulse_Security_Advisories/SA44846",
+   "https://security.netapp.com/advisory/ntap-20210219-0009/",
+   "https://security.netapp.com/advisory/ntap-20240621-0006/",
+   "https://www.openssl.org/news/secadv/20210216.txt"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2021-23840": {
   "cwes": [
    "CWE-190"
@@ -2937,6 +3869,32 @@
    "https://kb.pulsesecure.net/articles/Pulse_Security_Advisories/SA44846",
    "https://kc.mcafee.com/corporate/index?page=content&id=SB10366",
    "https://lists.apache.org/thread.html/r58af02e294bd07f487e2c64ffc0a29b837db5600e33b6e698b9d696b%40%3Cissues.bookkeeper.apache.org%3E"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-23841": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "The OpenSSL public API function X509_issuer_and_serial_hash() attempts to create a unique hash value based on the issuer and serial number data contained within an X509 certificate. However it fails to correctly handle any errors that may occur while parsing the issuer field (which might occur if the issuer field is maliciously constructed). This may subsequently result in a NULL pointer deref and a crash leading to a potential denial of service attack. The function X509_issuer_and_serial_hash() is never directly called by OpenSSL itself so applications are only vulnerable if they use this function directly and they use it on certificates that may have been obtained from untrusted sources. OpenSSL versions 1.1.1i and below are affected by this issue. Users of these versions should upgrade to OpenSSL 1.1.1j. OpenSSL versions 1.0.2x and below are affected by this issue. However OpenSSL 1.0.2 is out of support and no longer receiving public updates. Premium support customers of OpenSSL 1.0.2 should upgrade to 1.0.2y. Other users should upgrade to 1.1.1j. Fixed in OpenSSL 1.1.1j (Affected 1.1.1-1.1.1i). Fixed in OpenSSL 1.0.2y (Affected 1.0.2-1.0.2x).",
+  "id": "CVE-2021-23841",
+  "lastModified": "2026-06-17T03:38:54.823",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2021-02-16T17:15:13.377",
+  "references": [
+   "http://seclists.org/fulldisclosure/2021/May/67",
+   "http://seclists.org/fulldisclosure/2021/May/68",
+   "http://seclists.org/fulldisclosure/2021/May/70",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-637483.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=122a19ab48091c657f7cb1fb3af9fc07bd557bbf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=8252ee4d90f3f2004d3d0aeeed003ad49c9a7807"
   ],
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
@@ -3129,6 +4087,32 @@
    "https://bugs.eclipse.org/bugs/show_bug.cgi?id=572608"
   ],
   "source": "emo@eclipse.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-28831": {
+  "cwes": [
+   "CWE-755"
+  ],
+  "description": "decompress_gunzip.c in BusyBox through 1.32.1 mishandles the error bit on the huft_build result pointer, with a resultant invalid free or segmentation fault, via malformed gzip data.",
+  "id": "CVE-2021-28831",
+  "lastModified": "2026-06-17T03:46:57.420",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2021-03-19T05:15:13.150",
+  "references": [
+   "https://git.busybox.net/busybox/commit/?id=f25d254dfd4243698c31a4f3153d4ac72aa9e9bd",
+   "https://lists.debian.org/debian-lts-announce/2021/04/msg00001.html",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/3UDQGJRECXFS5EZVDH2OI45FMO436AC4/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/Z7ZIFKPRR32ZYA3WAA2NXFA3QHHOU6FJ/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/ZASBW7QRRLY5V2R44MQ4QQM4CZIDHM2U/",
+   "https://security.gentoo.org/glsa/202105-09"
+  ],
+  "source": "cve@mitre.org",
   "vulnStatus": "Modified"
  },
  "CVE-2021-30004": {
@@ -3489,6 +4473,32 @@
   "source": "secalert@redhat.com",
   "vulnStatus": "Modified"
  },
+ "CVE-2021-3449": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "An OpenSSL TLS server may crash if sent a maliciously crafted renegotiation ClientHello message from a client. If a TLSv1.2 renegotiation ClientHello omits the signature_algorithms extension (where it was present in the initial ClientHello), but includes a signature_algorithms_cert extension then a NULL pointer dereference will result, leading to a crash and a denial of service attack. A server is only vulnerable if it has TLSv1.2 and renegotiation enabled (which is the default configuration). OpenSSL TLS clients are not impacted by this issue. All OpenSSL 1.1.1 versions are affected by this issue. Users of these versions should upgrade to OpenSSL 1.1.1k. OpenSSL 1.0.2 is not impacted by this issue. Fixed in OpenSSL 1.1.1k (Affected 1.1.1-1.1.1j).",
+  "id": "CVE-2021-3449",
+  "lastModified": "2026-10-08T22:17:11.243",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2021-03-25T15:15:13.450",
+  "references": [
+   "http://www.openwall.com/lists/oss-security/2021/03/27/1",
+   "http://www.openwall.com/lists/oss-security/2021/03/27/2",
+   "http://www.openwall.com/lists/oss-security/2021/03/28/3",
+   "http://www.openwall.com/lists/oss-security/2021/03/28/4",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-389290.pdf",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-772220.pdf"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2021-3450": {
   "cwes": [
    "CWE-295"
@@ -3777,6 +4787,30 @@
   "source": "security@apache.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2021-4160": {
+  "cwes": [],
+  "description": "There is a carry propagation bug in the MIPS32 and MIPS64 squaring procedure. Many EC algorithms are affected, including some of the TLS 1.3 default curves. Impact was not analyzed in detail, because the pre-requisites for attack are considered unlikely and include reusing private keys. Analysis suggests that attacks against RSA and DSA as a result of this defect would be very difficult to perform and are not believed likely. Attacks against DH are considered just feasible (although very difficult) because most of the work necessary to deduce information about a private key may be performed offline. The amount of resources required for such an attack would be significant. However, for an attack on TLS to be meaningful, the server would have to share the DH private key among multiple clients, which is no longer an option since CVE-2016-0701. This issue affects OpenSSL versions 1.0.2, 1.1.1 and 3.0.0. It was addressed in the releases of 1.1.1m and 3.0.1 on the 15th of December 2021. For the 1.0.2 release it is addressed in git commit 6fc1aaaf3 that is available to premium support customers only. It will be made available in 1.0.2zc when it is released. The issue only affects OpenSSL on MIPS platforms. Fixed in OpenSSL 3.0.1 (Affected 3.0.0). Fixed in OpenSSL 1.1.1m (Affected 1.1.1-1.1.1l). Fixed in OpenSSL 1.0.2zc-dev (Affected 1.0.2-1.0.2zb).",
+  "id": "CVE-2021-4160",
+  "lastModified": "2026-06-17T04:19:08.210",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+  },
+  "published": "2022-01-28T22:15:15.133",
+  "references": [
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-637483.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=3bf7b73ea7123045b8f972badc67ed6878e6c37f",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=6fc1aaaf303185aa5e483e06bdfae16daa9193a7",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=e9e726506cd2a3fd9c0f12daf8cc1fe934c7dddb",
+   "https://security.gentoo.org/glsa/202210-02",
+   "https://security.netapp.com/advisory/ntap-20240621-0006/"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2021-41617": {
   "cwes": [],
   "description": "sshd in OpenSSH 6.2 through 8.x before 8.8, when certain non-default configurations are used, allows privilege escalation because supplemental groups are not initialized as expected. Helper programs for AuthorizedKeysCommand and AuthorizedPrincipalsCommand may run with privileges associated with group memberships of the sshd process, if the configuration specifies running the command as a different user.",
@@ -3821,6 +4855,32 @@
    "https://github.com/embedthis/goahead/issues/305"
   ],
   "source": "cve@mitre.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-42373": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "A NULL pointer dereference in Busybox's man applet leads to denial of service when a section name is supplied but no page argument is given",
+  "id": "CVE-2021-42373",
+  "lastModified": "2026-06-17T04:09:42.827",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.5,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2021-11-15T21:15:07.473",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
   "vulnStatus": "Modified"
  },
  "CVE-2021-42374": {
@@ -3901,6 +4961,33 @@
   "source": "reefs@jfrog.com",
   "vulnStatus": "Modified"
  },
+ "CVE-2021-42377": {
+  "cwes": [
+   "CWE-590",
+   "CWE-763"
+  ],
+  "description": "An attacker-controlled pointer free in Busybox's hush applet leads to denial of service and possible code execution when processing a crafted shell command, due to the shell mishandling the &&& string. This may be used for remote code execution under rare conditions of filtered command input.",
+  "id": "CVE-2021-42377",
+  "lastModified": "2026-06-17T04:09:43.390",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 9.8,
+   "severity": "critical",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2021-11-15T21:15:07.700",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
+  "vulnStatus": "Modified"
+ },
  "CVE-2021-42378": {
   "cwes": [
    "CWE-416"
@@ -3968,6 +5055,136 @@
    "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
   },
   "published": "2021-11-15T21:15:07.857",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-42381": {
+  "cwes": [
+   "CWE-416"
+  ],
+  "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the hash_init function",
+  "id": "CVE-2021-42381",
+  "lastModified": "2026-06-17T04:09:43.970",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.2,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2021-11-15T21:15:07.913",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-42382": {
+  "cwes": [
+   "CWE-416"
+  ],
+  "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the getvar_s function",
+  "id": "CVE-2021-42382",
+  "lastModified": "2026-06-17T04:09:44.120",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.2,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2021-11-15T21:15:07.963",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-42383": {
+  "cwes": [
+   "CWE-416"
+  ],
+  "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the evaluate function",
+  "id": "CVE-2021-42383",
+  "lastModified": "2026-06-17T04:09:44.273",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.2,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2021-11-15T21:15:08.017",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-42384": {
+  "cwes": [
+   "CWE-416"
+  ],
+  "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the handle_special function",
+  "id": "CVE-2021-42384",
+  "lastModified": "2026-06-17T04:09:44.427",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.2,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2021-11-15T21:15:08.070",
+  "references": [
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
+   "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6T2TURBYYJGBMQTTN2DSOAIQGP7WCPGV/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/UQXGOGWBIYWOIVXJVRKHZR34UMEHQBXS/",
+   "https://security.netapp.com/advisory/ntap-20211223-0002/",
+   "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog"
+  ],
+  "source": "reefs@jfrog.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2021-42385": {
+  "cwes": [
+   "CWE-416"
+  ],
+  "description": "A use-after-free in Busybox's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the evaluate function",
+  "id": "CVE-2021-42385",
+  "lastModified": "2026-06-17T04:09:44.577",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.2,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2021-11-15T21:15:08.123",
   "references": [
    "https://claroty.com/team82/research/unboxing-busybox-14-vulnerabilities-uncovered-by-claroty-jfrog",
    "https://jfrog.com/blog/unboxing-busybox-14-new-vulnerabilities-uncovered-by-claroty-and-jfrog/",
@@ -4269,6 +5486,84 @@
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2022-1343": {
+  "cwes": [
+   "CWE-295"
+  ],
+  "description": "The function `OCSP_basic_verify` verifies the signer certificate on an OCSP response. In the case where the (non-default) flag OCSP_NOCHECKS is used then the response will be positive (meaning a successful verification) even in the case where the response signing certificate fails to verify. It is anticipated that most users of `OCSP_basic_verify` will not use the OCSP_NOCHECKS flag. In this case the `OCSP_basic_verify` function will return a negative value (indicating a fatal error) in the case of a certificate verification failure. The normal expected return value in this case would be 0. This issue also impacts the command line OpenSSL \"ocsp\" application. When verifying an ocsp response with the \"-no_cert_checks\" option the command line application will report that the verification is successful even though it has in fact failed. In this case the incorrect successful response will also be accompanied by error messages showing the failure and contradicting the apparently successful result. Fixed in OpenSSL 3.0.3 (Affected 3.0.0,3.0.1,3.0.2).",
+  "id": "CVE-2022-1343",
+  "lastModified": "2026-06-17T04:22:15.263",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+  },
+  "published": "2022-05-03T16:15:18.873",
+  "references": [
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-953464.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=2eda98790c5c2741d76d23cc1e74b0dc4f4b391a",
+   "https://security.netapp.com/advisory/ntap-20220602-0009/",
+   "https://www.openssl.org/news/secadv/20220503.txt",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-953464.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=2eda98790c5c2741d76d23cc1e74b0dc4f4b391a"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2022-1434": {
+  "cwes": [
+   "CWE-327"
+  ],
+  "description": "The OpenSSL 3.0 implementation of the RC4-MD5 ciphersuite incorrectly uses the AAD data as the MAC key. This makes the MAC key trivially predictable. An attacker could exploit this issue by performing a man-in-the-middle attack to modify data being sent from one endpoint to an OpenSSL 3.0 recipient such that the modified data would still pass the MAC integrity check. Note that data sent from an OpenSSL 3.0 endpoint to a non-OpenSSL 3.0 endpoint will always be rejected by the recipient and the connection will fail at that point. Many application protocols require data to be sent from the client to the server first. Therefore, in such a case, only an OpenSSL 3.0 server would be impacted when talking to a non-OpenSSL 3.0 client. If both endpoints are OpenSSL 3.0 then the attacker could modify data being sent in both directions. In this case both clients and servers could be affected, regardless of the application protocol. Note that in the absence of an attacker this bug means that an OpenSSL 3.0 endpoint communicating with a non-OpenSSL 3.0 endpoint will fail to complete the handshake when using this ciphersuite. The confidentiality of data is not impacted by this issue, i.e. an attacker cannot decrypt data that has been encrypted using this ciphersuite - they can only modify it. In order for this attack to work both endpoints must legitimately negotiate the RC4-MD5 ciphersuite. This ciphersuite is not compiled by default in OpenSSL 3.0, and is not available within the default provider or the default ciphersuite list. This ciphersuite will never be used if TLSv1.3 has been negotiated. In order for an OpenSSL 3.0 endpoint to use this ciphersuite the following must have occurred: 1) OpenSSL must have been compiled with the (non-default) compile time option enable-weak-ssl-ciphers 2) OpenSSL must have had the legacy provider explicitly loaded (either through application code or via configuration) 3) The ciphersuite must have been explicitly added to the ciphersuite list 4) The libssl security level must have been set to 0 (default is 1) 5) A version of SSL/TLS below TLSv1.3 must have been negotiated 6) Both endpoints must negotiate the RC4-MD5 ciphersuite in preference to any others that both endpoints have in common Fixed in OpenSSL 3.0.3 (Affected 3.0.0,3.0.1,3.0.2).",
+  "id": "CVE-2022-1434",
+  "lastModified": "2026-06-17T04:22:26.790",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:H/A:N"
+  },
+  "published": "2022-05-03T16:15:18.917",
+  "references": [
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-953464.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=7d56a74a96828985db7354a55227a511615f732b",
+   "https://security.netapp.com/advisory/ntap-20220602-0009/",
+   "https://www.openssl.org/news/secadv/20220503.txt",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-953464.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=7d56a74a96828985db7354a55227a511615f732b"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2022-1473": {
+  "cwes": [
+   "CWE-459"
+  ],
+  "description": "The OPENSSL_LH_flush() function, which empties a hash table, contains a bug that breaks reuse of the memory occuppied by the removed hash table entries. This function is used when decoding certificates or keys. If a long lived process periodically decodes certificates or keys its memory usage will expand without bounds and the process might be terminated by the operating system causing a denial of service. Also traversing the empty hash table entries will take increasingly more time. Typically such long lived processes might be TLS clients or TLS servers configured to accept client certificate authentication. The function was added in the OpenSSL 3.0 version thus older releases are not affected by the issue. Fixed in OpenSSL 3.0.3 (Affected 3.0.0,3.0.1,3.0.2).",
+  "id": "CVE-2022-1473",
+  "lastModified": "2026-06-17T04:22:31.053",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2022-05-03T16:15:18.957",
+  "references": [
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-953464.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=64c85430f95200b6b51fe9475bd5203f7c19daf1",
+   "https://security.gentoo.org/glsa/202210-02",
+   "https://security.netapp.com/advisory/ntap-20220602-0009/",
+   "https://www.openssl.org/news/secadv/20220503.txt",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-953464.pdf"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2022-2068": {
   "cwes": [
    "CWE-78"
@@ -4291,6 +5586,32 @@
    "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=9639817dac8bbbaa64d09efad7464ccc405527c7",
    "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/6WZZBKUHQFGSKGNXXKICSRPL7AMVW5M5/",
    "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/VCMNWKERPBKOEBNL7CLTTX3ZZCZLH7XA/"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2022-2097": {
+  "cwes": [
+   "CWE-327"
+  ],
+  "description": "AES OCB mode for 32-bit x86 platforms using the AES-NI assembly optimised implementation will not encrypt the entirety of the data under some circumstances. This could reveal sixteen bytes of data that was preexisting in the memory that wasn't written. In the special case of \"in place\" encryption, sixteen bytes of the plaintext would be revealed. Since OpenSSL does not support OCB based cipher suites for TLS and DTLS, they are both unaffected. Fixed in OpenSSL 3.0.5 (Affected 3.0.0-3.0.4). Fixed in OpenSSL 1.1.1q (Affected 1.1.1-1.1.1p).",
+  "id": "CVE-2022-2097",
+  "lastModified": "2026-06-17T04:41:16.520",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+  },
+  "published": "2022-07-05T11:15:08.340",
+  "references": [
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-332410.pdf",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=919925673d6c9cfed3c1085497f5dfbbed5fc431",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=a98f339ddd7e8f487d6e0088d4a9a42324885a93",
+   "https://lists.debian.org/debian-lts-announce/2023/02/msg00019.html",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/R6CK57NBQFTPUMXAPJURCGXUYT76NQAK/",
+   "https://lists.fedoraproject.org/archives/list/package-announce%40lists.fedoraproject.org/message/V6567JERRHHJW2GNGJGKDRNHR7SNPZK7/"
   ],
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
@@ -4461,6 +5782,32 @@
    "https://www.debian.org/security/2022/dsa-5040"
   ],
   "source": "cve@mitre.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2022-2274": {
+  "cwes": [
+   "CWE-787"
+  ],
+  "description": "The OpenSSL 3.0.4 release introduced a serious bug in the RSA implementation for X86_64 CPUs supporting the AVX512IFMA instructions. This issue makes the RSA implementation with 2048 bit private keys incorrect on such machines and memory corruption will happen during the computation. As a consequence of the memory corruption an attacker may be able to trigger a remote code execution on the machine performing the computation. SSL/TLS servers or other servers using 2048 bit RSA private keys running on machines supporting AVX512IFMA instructions of the X86_64 architecture are affected by this issue.",
+  "id": "CVE-2022-2274",
+  "lastModified": "2026-06-17T04:41:36.360",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 9.8,
+   "severity": "critical",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+  },
+  "published": "2022-07-01T08:15:07.687",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=4d8a88c134df634ba610ff8db1eb8478ac5fd345",
+   "https://github.com/openssl/openssl/issues/18625",
+   "https://security.netapp.com/advisory/ntap-20220715-0010/",
+   "https://www.openssl.org/news/secadv/20220705.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git%3Ba=commitdiff%3Bh=4d8a88c134df634ba610ff8db1eb8478ac5fd345",
+   "https://github.com/openssl/openssl/issues/18625"
+  ],
+  "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
  "CVE-2022-22822": {
@@ -4873,6 +6220,30 @@
   "source": "cve@mitre.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2022-30065": {
+  "cwes": [
+   "CWE-416"
+  ],
+  "description": "A use-after-free in Busybox 1.35-x's awk applet leads to denial of service and possibly code execution when processing a crafted awk pattern in the copyvar function.",
+  "id": "CVE-2022-30065",
+  "lastModified": "2026-07-07T19:16:47.807",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.8,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+  },
+  "published": "2022-05-18T15:15:10.240",
+  "references": [
+   "https://bugs.busybox.net/show_bug.cgi?id=14781",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-333517.pdf",
+   "https://bugs.busybox.net/show_bug.cgi?id=14781",
+   "https://cert-portal.siemens.com/productcert/pdf/ssa-333517.pdf"
+  ],
+  "source": "cve@mitre.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2022-30767": {
   "cwes": [
    "CWE-120"
@@ -5000,6 +6371,32 @@
   "source": "cve@mitre.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2022-3602": {
+  "cwes": [
+   "CWE-787"
+  ],
+  "description": "A buffer overrun can be triggered in X.509 certificate verification, specifically in name constraint checking. Note that this occurs after certificate chain signature verification and requires either a CA to have signed the malicious certificate or for the application to continue certificate verification despite failure to construct a path to a trusted issuer. An attacker can craft a malicious email address to overflow four attacker-controlled bytes on the stack. This buffer overflow could result in a crash (causing a denial of service) or potentially remote code execution. Many platforms implement stack overflow protections which would mitigate against the risk of remote code execution. The risk may be further mitigated based on stack layout for any given platform/compiler. Pre-announcements of CVE-2022-3602 described this issue as CRITICAL. Further analysis based on some of the mitigating factors described above have led this to be downgraded to HIGH. Users are still encouraged to upgrade to a new version as soon as possible. In a TLS client, this can be triggered by connecting to a malicious server. In a TLS server, this can be triggered if the server requests client authentication and a malicious client connects. Fixed in OpenSSL 3.0.7 (Affected 3.0.0,3.0.1,3.0.2,3.0.3,3.0.4,3.0.5,3.0.6).",
+  "id": "CVE-2022-3602",
+  "lastModified": "2026-06-17T04:59:49.620",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2022-11-01T18:15:10.983",
+  "references": [
+   "http://packetstormsecurity.com/files/169687/OpenSSL-Security-Advisory-20221101.html",
+   "http://www.openwall.com/lists/oss-security/2022/11/01/15",
+   "http://www.openwall.com/lists/oss-security/2022/11/01/16",
+   "http://www.openwall.com/lists/oss-security/2022/11/01/17",
+   "http://www.openwall.com/lists/oss-security/2022/11/01/18",
+   "http://www.openwall.com/lists/oss-security/2022/11/01/19"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2022-37434": {
   "cwes": [
    "CWE-787",
@@ -5025,6 +6422,32 @@
    "http://www.openwall.com/lists/oss-security/2022/08/09/1"
   ],
   "source": "cve@mitre.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2022-3786": {
+  "cwes": [
+   "CWE-120"
+  ],
+  "description": "A buffer overrun can be triggered in X.509 certificate verification, specifically in name constraint checking. Note that this occurs after certificate chain signature verification and requires either a CA to have signed a malicious certificate or for an application to continue certificate verification despite failure to construct a path to a trusted issuer. An attacker can craft a malicious email address in a certificate to overflow an arbitrary number of bytes containing the `.' character (decimal 46) on the stack. This buffer overflow could result in a crash (causing a denial of service). In a TLS client, this can be triggered by connecting to a malicious server. In a TLS server, this can be triggered if the server requests client authentication and a malicious client connects.\n\n",
+  "id": "CVE-2022-3786",
+  "lastModified": "2026-06-17T05:00:18.193",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2022-11-01T18:15:11.047",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=c42165b5706e42f67ef8ef4c351a9a4c5d21639a",
+   "https://www.openssl.org/news/secadv/20221101.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=c42165b5706e42f67ef8ef4c351a9a4c5d21639a",
+   "https://www.intel.com/content/www/us/en/security-center/advisory/intel-sa-00789.html",
+   "https://www.kb.cert.org/vuls/id/794340",
+   "https://www.openssl.org/news/secadv/20221101.txt"
+  ],
+  "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
  "CVE-2022-40303": {
@@ -5183,6 +6606,32 @@
   "source": "cve@mitre.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2022-4203": {
+  "cwes": [
+   "CWE-125"
+  ],
+  "description": "A read buffer overrun can be triggered in X.509 certificate verification,\nspecifically in name constraint checking. Note that this occurs\nafter certificate chain signature verification and requires either a\nCA to have signed the malicious certificate or for the application to\ncontinue certificate verification despite failure to construct a path\nto a trusted issuer.\n\nThe read buffer overrun might result in a crash which could lead to\na denial of service attack. In theory it could also result in the disclosure\nof private memory contents (such as private keys, or sensitive plaintext)\nalthough we are not aware of any working exploit leading to memory\ncontents disclosure as of the time of release of this advisory.\n\nIn a TLS client, this can be triggered by connecting to a malicious\nserver. In a TLS server, this can be triggered if the server requests\nclient authentication and a malicious client connects.",
+  "id": "CVE-2022-4203",
+  "lastModified": "2026-06-17T05:20:14.500",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 4.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-02-24T15:15:11.980",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=c927a3492698c254637da836762f9b1f86cffabc",
+   "https://security.gentoo.org/glsa/202402-08",
+   "https://www.openssl.org/news/secadv/20230207.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=c927a3492698c254637da836762f9b1f86cffabc",
+   "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2023-0003",
+   "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2022-42252": {
   "cwes": [
    "CWE-444"
@@ -5258,6 +6707,32 @@
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2022-4450": {
+  "cwes": [
+   "CWE-415"
+  ],
+  "description": "The function PEM_read_bio_ex() reads a PEM file from a BIO and parses and\ndecodes the \"name\" (e.g. \"CERTIFICATE\"), any header data and the payload data.\nIf the function succeeds then the \"name_out\", \"header\" and \"data\" arguments are\npopulated with pointers to buffers containing the relevant decoded data. The\ncaller is responsible for freeing those buffers. It is possible to construct a\nPEM file that results in 0 bytes of payload data. In this case PEM_read_bio_ex()\nwill return a failure code but will populate the header argument with a pointer\nto a buffer that has already been freed. If the caller also frees this buffer\nthen a double free will occur. This will most likely lead to a crash. This\ncould be exploited by an attacker who has the ability to supply malicious PEM\nfiles for parsing to achieve a denial of service attack.\n\nThe functions PEM_read_bio() and PEM_read() are simple wrappers around\nPEM_read_bio_ex() and therefore these functions are also directly affected.\n\nThese functions are also called indirectly by a number of other OpenSSL\nfunctions including PEM_X509_INFO_read_bio_ex() and\nSSL_CTX_use_serverinfo_file() which are also vulnerable. Some OpenSSL internal\nuses of these functions are not vulnerable because the caller does not free the\nheader argument if PEM_read_bio_ex() returns a failure code. These locations\ninclude the PEM_read_bio_TYPE() functions as well as the decoders introduced in\nOpenSSL 3.0.\n\nThe OpenSSL asn1parse command line application is also impacted by this issue.",
+  "id": "CVE-2022-4450",
+  "lastModified": "2026-06-17T05:20:54.027",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-02-08T20:15:23.973",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=63bcf189be73a9cc1264059bed6f57974be74a83",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=bbcf509bd046b34cca19c766bbddc31683d0858b",
+   "https://security.gentoo.org/glsa/202402-08",
+   "https://www.openssl.org/news/secadv/20230207.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=63bcf189be73a9cc1264059bed6f57974be74a83",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=bbcf509bd046b34cca19c766bbddc31683d0858b"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2022-46908": {
   "cwes": [],
   "description": "SQLite through 3.40.0, when relying on --safe for execution of an untrusted CLI script, does not properly implement the azProhibitedFunctions protection mechanism, and instead allows UDF functions such as WRITEFILE.",
@@ -5308,6 +6783,58 @@
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
+ "CVE-2023-0216": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "An invalid pointer dereference on read can be triggered when an\napplication tries to load malformed PKCS7 data with the\nd2i_PKCS7(), d2i_PKCS7_bio() or d2i_PKCS7_fp() functions.\n\nThe result of the dereference is an application crash which could\nlead to a denial of service attack. The TLS implementation in OpenSSL\ndoes not call this function however third party applications might\ncall these functions on untrusted data.",
+  "id": "CVE-2023-0216",
+  "lastModified": "2026-06-17T05:25:02.767",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-02-08T20:15:24.160",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=934a04f0e775309cadbef0aa6b9692e1b12a76c6",
+   "https://security.gentoo.org/glsa/202402-08",
+   "https://www.openssl.org/news/secadv/20230207.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=934a04f0e775309cadbef0aa6b9692e1b12a76c6",
+   "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2023-0003",
+   "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-0217": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "An invalid pointer dereference on read can be triggered when an\napplication tries to check a malformed DSA public key by the\nEVP_PKEY_public_check() function. This will most likely lead\nto an application crash. This function can be called on public\nkeys supplied from untrusted sources which could allow an attacker\nto cause a denial of service attack.\n\nThe TLS implementation in OpenSSL does not call this function\nbut applications might call the function if there are additional\nsecurity requirements imposed by standards such as FIPS 140-3.",
+  "id": "CVE-2023-0217",
+  "lastModified": "2026-06-17T05:25:02.927",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-02-08T20:15:24.213",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=23985bac83fd50c8e29431009302b5442f985096",
+   "https://security.gentoo.org/glsa/202402-08",
+   "https://www.openssl.org/news/secadv/20230207.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=23985bac83fd50c8e29431009302b5442f985096",
+   "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2023-0003",
+   "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
  "CVE-2023-0286": {
   "cwes": [
    "CWE-843"
@@ -5330,6 +6857,110 @@
    "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2f7530077e0ef79d98718138716bc51ca0cad658",
    "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=fd2af07dc083a350c959147097003a14a5e8ac4d",
    "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-0401": {
+  "cwes": [
+   "CWE-476"
+  ],
+  "description": "A NULL pointer can be dereferenced when signatures are being\nverified on PKCS7 signed or signedAndEnveloped data. In case the hash\nalgorithm used for the signature is known to the OpenSSL library but\nthe implementation of the hash algorithm is not available the digest\ninitialization will fail. There is a missing check for the return\nvalue from the initialization function which later leads to invalid\nusage of the digest API most likely leading to a crash.\n\nThe unavailability of an algorithm can be caused by using FIPS\nenabled configuration of providers or more commonly by not loading\nthe legacy provider.\n\nPKCS7 data is processed by the SMIME library calls and also by the\ntime stamp (TS) library calls. The TLS implementation in OpenSSL does\nnot call these functions however third party applications would be\naffected if they call these functions to verify signatures on untrusted\ndata.",
+  "id": "CVE-2023-0401",
+  "lastModified": "2026-06-17T05:25:27.210",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-02-08T20:15:24.323",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=d3b6dfd70db844c4499bec6ad6601623a565e674",
+   "https://security.gentoo.org/glsa/202402-08",
+   "https://www.openssl.org/news/secadv/20230207.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=d3b6dfd70db844c4499bec6ad6601623a565e674",
+   "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2023-0003",
+   "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-0464": {
+  "cwes": [
+   "CWE-295"
+  ],
+  "description": "A security vulnerability has been identified in all supported versions\n\nof OpenSSL related to the verification of X.509 certificate chains\nthat include policy constraints.  Attackers may be able to exploit this\nvulnerability by creating a malicious certificate chain that triggers\nexponential use of computational resources, leading to a denial-of-service\n(DoS) attack on affected systems.\n\nPolicy processing is disabled by default but can be enabled by passing\nthe `-policy' argument to the command line utilities or by calling the\n`X509_VERIFY_PARAM_set1_policies()' function.",
+  "id": "CVE-2023-0464",
+  "lastModified": "2026-06-17T05:25:36.637",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 7.5,
+   "severity": "high",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-03-22T17:15:13.130",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2017771e2db3e2b96f89bbe8766c3209f6a99545",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=2dcd4f1e3115f38cefa43e3efbe9b801c27e642e",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=879f7080d7e141f415c79eaa3a8ac4a3dad0348b",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=959c59c7a0164117e7f8366466a32bb1f8d77ff1",
+   "https://lists.debian.org/debian-lts-announce/2023/06/msg00011.html",
+   "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-0465": {
+  "cwes": [
+   "CWE-295"
+  ],
+  "description": "Applications that use a non-default option when verifying certificates may be\nvulnerable to an attack from a malicious CA to circumvent certain checks.\n\nInvalid certificate policies in leaf certificates are silently ignored by\nOpenSSL and other certificate policy checks are skipped for that certificate.\nA malicious CA could use this to deliberately assert invalid certificate policies\nin order to circumvent policy checking on the certificate altogether.\n\nPolicy processing is disabled by default but can be enabled by passing\nthe `-policy' argument to the command line utilities or by calling the\n`X509_VERIFY_PARAM_set1_policies()' function.",
+  "id": "CVE-2023-0465",
+  "lastModified": "2026-06-17T05:25:36.823",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+  },
+  "published": "2023-03-28T15:15:06.820",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=10325176f3d3e98c6e2b3bf5ab1e3b334de6947a",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=1dd43e0709fece299b15208f36cc7c76209ba0bb",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=b013765abfa80036dc779dd0e50602c57bb3bf95",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=facfb1ab745646e97a1920977ae4a9965ea61d5c",
+   "https://lists.debian.org/debian-lts-announce/2023/06/msg00011.html",
+   "https://security.gentoo.org/glsa/202402-08"
+  ],
+  "source": "openssl-security@openssl.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-0466": {
+  "cwes": [
+   "CWE-295"
+  ],
+  "description": "The function X509_VERIFY_PARAM_add0_policy() is documented to\nimplicitly enable the certificate policy check when doing certificate\nverification. However the implementation of the function does not\nenable the check which allows certificates with invalid or incorrect\npolicies to pass the certificate verification.\n\nAs suddenly enabling the policy check could break existing deployments it was\ndecided to keep the existing behavior of the X509_VERIFY_PARAM_add0_policy()\nfunction.\n\nInstead the applications that require OpenSSL to perform certificate\npolicy check need to use X509_VERIFY_PARAM_set1_policies() or explicitly\nenable the policy check by calling X509_VERIFY_PARAM_set_flags() with\nthe X509_V_FLAG_POLICY_CHECK flag argument.\n\nCertificate policy checks are disabled by default in OpenSSL and are not\ncommonly used by applications.",
+  "id": "CVE-2023-0466",
+  "lastModified": "2026-06-17T05:25:37.007",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.3,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:N"
+  },
+  "published": "2023-03-28T15:15:06.880",
+  "references": [
+   "http://www.openwall.com/lists/oss-security/2023/09/28/4",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=0d16b7e99aafc0b4a6d729eec65a411a7e025f0a",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=51e8a84ce742db0f6c70510d0159dad8f7825908",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=73398dea26de9899fb4baa94098ad0a61f435c72",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=fc814a30fc4f0bc54fcea7d9a7462f5457aab061",
+   "https://lists.debian.org/debian-lts-announce/2023/06/msg00011.html"
   ],
   "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
@@ -5357,6 +6988,32 @@
    "https://security.gentoo.org/glsa/202401-09"
   ],
   "source": "emo@eclipse.org",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-1255": {
+  "cwes": [
+   "CWE-125"
+  ],
+  "description": "Issue summary: The AES-XTS cipher decryption implementation for 64 bit ARM\nplatform contains a bug that could cause it to read past the input buffer,\nleading to a crash.\n\nImpact summary: Applications that use the AES-XTS algorithm on the 64 bit ARM\nplatform can crash in rare circumstances. The AES-XTS algorithm is usually\nused for disk encryption.\n\nThe AES-XTS cipher decryption implementation for 64 bit ARM platform will read\npast the end of the ciphertext buffer if the ciphertext size is 4 mod 5 in 16\nbyte blocks, e.g. 144 bytes or 1024 bytes. If the memory after the ciphertext\nbuffer is unmapped, this will trigger a crash which results in a denial of\nservice.\n\nIf an attacker can control the size and location of the ciphertext buffer\nbeing decrypted by an application using AES-XTS on 64 bit ARM, the\napplication is affected. This is fairly unlikely making this issue\na Low severity one.",
+  "id": "CVE-2023-1255",
+  "lastModified": "2026-06-17T05:27:28.607",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 5.9,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-04-20T17:15:06.883",
+  "references": [
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=02ac9c9420275868472f33b01def01218742b8bb",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=bc2f61ad70971869b242fc1cb445b98bad50074a",
+   "https://security.netapp.com/advisory/ntap-20230908-0006/",
+   "https://www.openssl.org/news/secadv/20230419.txt",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=02ac9c9420275868472f33b01def01218742b8bb",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=bc2f61ad70971869b242fc1cb445b98bad50074a"
+  ],
+  "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
  "CVE-2023-20860": {
@@ -5495,6 +7152,32 @@
    "https://www.debian.org/security/2023/dsa-5478"
   ],
   "source": "secalert_us@oracle.com",
+  "vulnStatus": "Modified"
+ },
+ "CVE-2023-2650": {
+  "cwes": [
+   "CWE-770"
+  ],
+  "description": "Issue summary: Processing some specially crafted ASN.1 object identifiers or\ndata containing them may be very slow.\n\nImpact summary: Applications that use OBJ_obj2txt() directly, or use any of\nthe OpenSSL subsystems OCSP, PKCS7/SMIME, CMS, CMP/CRMF or TS with no message\nsize limit may experience notable to very long delays when processing those\nmessages, which may lead to a Denial of Service.\n\nAn OBJECT IDENTIFIER is composed of a series of numbers - sub-identifiers -\nmost of which have no size limit.  OBJ_obj2txt() may be used to translate\nan ASN.1 OBJECT IDENTIFIER given in DER encoding form (using the OpenSSL\ntype ASN1_OBJECT) to its canonical numeric text form, which are the\nsub-identifiers of the OBJECT IDENTIFIER in decimal form, separated by\nperiods.\n\nWhen one of the sub-identifiers in the OBJECT IDENTIFIER is very large\n(these are sizes that are seen as absurdly large, taking up tens or hundreds\nof KiBs), the translation to a decimal number in text may take a very long\ntime.  The time complexity is O(n^2) with 'n' being the size of the\nsub-identifiers in bytes (*).\n\nWith OpenSSL 3.0, support to fetch cryptographic algorithms using names /\nidentifiers in string form was introduced.  This includes using OBJECT\nIDENTIFIERs in canonical numeric text form as identifiers for fetching\nalgorithms.\n\nSuch OBJECT IDENTIFIERs may be received through the ASN.1 structure\nAlgorithmIdentifier, which is commonly used in multiple protocols to specify\nwhat cryptographic algorithm should be used to sign or verify, encrypt or\ndecrypt, or digest passed data.\n\nApplications that call OBJ_obj2txt() directly with untrusted data are\naffected, with any version of OpenSSL.  If the use is for the mere purpose\nof display, the severity is considered low.\n\nIn OpenSSL 3.0 and newer, this affects the subsystems OCSP, PKCS7/SMIME,\nCMS, CMP/CRMF or TS.  It also impacts anything that processes X.509\ncertificates, including simple things like verifying its signature.\n\nThe impact on TLS is relatively low, because all versions of OpenSSL have a\n100KiB limit on the peer's certificate chain.  Additionally, this only\nimpacts clients, or servers that have explicitly enabled client\nauthentication.\n\nIn OpenSSL 1.1.1 and 1.0.2, this only affects displaying diverse objects,\nsuch as X.509 certificates.  This is assumed to not happen in such a way\nthat it would cause a Denial of Service, so these versions are considered\nnot affected by this issue in such a way that it would be cause for concern,\nand the severity is therefore considered low.",
+  "id": "CVE-2023-2650",
+  "lastModified": "2026-06-17T05:53:06.257",
+  "metric": {
+   "method": "CVSSv31",
+   "score": 6.5,
+   "severity": "medium",
+   "source": "nvd@nist.gov",
+   "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+  },
+  "published": "2023-05-30T14:15:09.683",
+  "references": [
+   "http://www.openwall.com/lists/oss-security/2023/05/30/1",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=423a2bc737a908ad0c77bda470b2b59dc879936b",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=853c5e56ee0b8650c73140816bb8b91d6163422c",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=9e209944b35cf82368071f160a744b6178f9b098",
+   "https://git.openssl.org/gitweb/?p=openssl.git;a=commitdiff;h=db779b0e10b047f2585615e0b8f2acdf21f8544a",
+   "https://lists.debian.org/debian-lts-announce/2023/06/msg00011.html"
+  ],
+  "source": "openssl-security@openssl.org",
   "vulnStatus": "Modified"
  },
  "CVE-2023-26551": {

@@ -229,7 +229,8 @@ def harvest(population=None):
                                                "(OSS catalog attribution)"})
                     continue
                 rec = {"asset_id": asset_id, "bom_ref": ref, "cve_id": cve,
-                       "name": comp.get("name"), "publisher": comp.get("publisher")}
+                       "name": comp.get("name"), "publisher": comp.get("publisher"),
+                       "cpe": comp.get("cpe")}
                 entries = anchored_cpes(comp.get("publisher"), nvd)
                 if not entries:
                     rec["reason"] = "embedded-third-party: no NVD CPE under this vendor"
@@ -275,7 +276,11 @@ def to_gt(rec, idx):
         # not part of the submitted schema — kept so the eval can feed the SUT the
         # same messy string a real SBOM carries, and so layers stay auditable
         "_sut_input": {"name": rec["name"], "version": rec["version"],
-                       "asset_id": rec["asset_id"], "publisher": rec["publisher"]},
+                       "asset_id": rec["asset_id"], "publisher": rec["publisher"],
+                       # CSAF's own identifier where it published one (~2% of
+                       # components); `purl` is left out because every purl in this
+                       # corpus is a slug of the name the matcher must resolve
+                       "cpe": rec.get("cpe")},
         "_cisa_range": rec.get("cisa_range"),
         "_range_source": rec.get("range_source"),
         "_layer": "A",
@@ -341,6 +346,7 @@ def _negative(rec, vendor, product, version, axis, flags, source, reference, not
         "evidence": ev,
         "review_status": "verified",
         "_sut_input": {"name": rec["name"], "version": version,
+                       "cpe": rec.get("cpe"),
                        "asset_id": rec["asset_id"], "publisher": rec["publisher"]},
         "_cisa_range": rec.get("cisa_range"),
         "_negative_family": axis,

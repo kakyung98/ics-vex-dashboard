@@ -469,6 +469,8 @@ function yearBars(y,noteTotal,noteLabel){
 async function yearChart(){
   try{const s=await(await fetch('by_year.json')).json();
     document.getElementById('year').innerHTML=yearBars(s.by_year,s.total_cves,'CVEs total');
+    const yt=document.getElementById('year-total');
+    if(yt)yt.textContent='all '+Number(s.total_cves).toLocaleString()+' · by CVE-ID year';
   }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
 async function advisories(){

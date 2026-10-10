@@ -120,6 +120,12 @@ def load_gt(path):
         case = cases.setdefault(ck, {
             "component_id": r["component_id"], "name": si["name"],
             "version": c["version"], "publisher": si.get("publisher") or "",
+            # CSAF's product_identification_helper, present on ~2% of components.
+            # `purl` is deliberately NOT passed: every purl in this corpus is
+            # pkg:generic/<slugified name>, synthesised by the SBOM builder from the
+            # very name the matcher is being asked to resolve. Feeding it back would
+            # dress name matching up as identifier matching.
+            "cpe": si.get("cpe"),
             "correct_products": set(), "asserted_cves": set(),
         })
         if r["applicable"]:
@@ -128,6 +134,11 @@ def load_gt(path):
         elif fam == "version":
             # identity is right here, only the version is past the fix
             case["correct_products"].add(c["product"])
+        # CVE-level label, independent of which product key the matcher routed
+        # through. The spec defines TP as "the identified CVE maps onto the
+        # component", not "the matcher produced the CPE product key NVD happens to
+        # use", and an identifier path can reach the right CVE without a product key.
+        case.setdefault("cve_label", {})[r["cve_id"]] = bool(r["applicable"])
     return gt, [c for c in cases.values() if c["correct_products"]], conflicts, unreachable
 
 
@@ -149,13 +160,35 @@ def main():
     gt, cases, conflicts, unreachable = load_gt(a.data)
     tp = fp = unlabelled = abstained = unadjudicable = 0
     fp_axis = collections.Counter()
+    by_path = collections.Counter()
     fp_rows = []
 
     for case in cases:
         comp = {"name": case["name"], "version": case["version"] or ""}
+        if case.get("cpe"):
+            comp["cpe"] = case["cpe"]
         product, _how = identify_product(comp)
         if not product:
             abstained += 1              # identified nothing: no prediction to score
+            continue
+        # An exact identifier resolves straight to a CVE list without ever naming a
+        # CPE product — CISA publishes Siemens MLFB order codes for 14% of components
+        # while NVD carries no CPE for many of those devices at all. Requiring a
+        # product-key match there discards 7,254 (component, CVE) pairs the ground
+        # truth does label, so these are scored on the CVE, which is what the spec
+        # actually defines TP on.
+        if _how == "model-number":
+            labels = case.get("cve_label") or {}
+            for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=a.strict):
+                lab = labels.get(pred["cve"])
+                if lab is None:
+                    unlabelled += 1
+                elif lab:
+                    tp += 1
+                    by_path["model-number"] += 1
+                else:
+                    fp += 1
+                    fp_axis["identifier"] += 1
             continue
         product_ok = any(same_product(product, p) for p in case["correct_products"])
         # not the GT product, but the component's own name carries it: the two
@@ -217,6 +250,7 @@ def main():
         "labelled_share_pct": round(100.0 * scored / (scored + unlabelled + unadjudicable), 2)
                               if (scored + unlabelled + unadjudicable) else 0.0,
         "fp_by_axis": dict(fp_axis),
+        "tp_by_path": dict(by_path),
         "precision": round(prec, 4),
         "acceptance_criterion": "precision >= %.2f" % TARGET,
         "pass": prec >= TARGET,
@@ -233,6 +267,8 @@ def main():
     print("  TP=%d  FP=%d  scored=%d" % (tp, fp, scored))
     if fp_axis:
         print("  FP by axis     : %s" % dict(fp_axis))
+    if by_path:
+        print("  TP by path     : %s" % dict(by_path))
     print("  unlabelled     : %d predictions  (labelled share %.2f%%)"
           % (unlabelled, res["labelled_share_pct"]))
     print("  unadjudicable  : %d predictions  (authority disagreement on filing)"

@@ -952,7 +952,7 @@ def build_app():
 
     @app.get("/api/by_year")
     def by_year():
-        """Unique CVE count by CVE-ID year (all 11,336)."""
+        """Unique CVE count by CVE-ID year (total travels in the response)."""
         if not STORE.by_year:
             raise HTTPException(404, "run src/vex_batch.py first")
         return {"total_cves": sum(STORE.by_year.values()), "by_year": STORE.by_year}
@@ -1468,6 +1468,8 @@ function yearBars(y,noteTotal,noteLabel){
 async function yearChart(){
   try{const s=await(await fetch('/api/by_year')).json();
     document.getElementById('year').innerHTML=yearBars(s.by_year,s.total_cves,'CVEs total');
+    const yt=document.getElementById('year-total');
+    if(yt)yt.textContent='all '+Number(s.total_cves).toLocaleString()+' · by CVE-ID year';
   }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
 async function advisories(){
@@ -1965,7 +1967,7 @@ CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Dataset axes <span
 <div id="adv-year" style="margin-top:14px"></div>
 <div id="adv-ven" style="margin-top:14px"></div></div>
 
-<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint">all 11,336 · by CVE-ID year</span></h3>
+<div class="card"><h3 style="margin:0 0 4px">CVEs by year <span class="hint" id="year-total">by CVE-ID year</span></h3>
 <div id="year" style="margin-top:12px">loading…</div></div>"""
 
 COLLECTABLE_HTML = """<div class="card"><h3 style="margin:0 0 4px">Source Code Available CVEs</h3>
