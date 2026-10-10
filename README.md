@@ -383,7 +383,7 @@ otherwise an identity.
 
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
-| **#3** | SBOM → CVE identification precision | **0.9846** (TP 1,026 / FP 16) | ≥ 0.80 | 1,042 of 12,090 predictions (**8.6%** carry a label) |
+| **#3** | SBOM → CVE identification precision | **0.9870** (TP 1,143 / FP 15) | ≥ 0.80 | 1,158 of 12,241 predictions (**9.5%** carry a label) |
 | **#4** | VEX affected-judgment precision | **0.9200** (TP 46 / FP 4) | ≥ 0.85 | 50 of 58 GT cases, population 104 |
 
 The evaluation datasets are bundled on their own in [`benchmark/`](benchmark/) — answer
@@ -401,7 +401,7 @@ constraint rather than an inconsistency.
 CISA advisories 3,845 / CVEs 11,550              one corpus
   │
   ├── item #3   SBOM -> CVE identification       whole corpus
-  │                                              precision 0.9846 (TP 1,026 / FP 16)
+  │                                              precision 0.9870 (TP 1,143 / FP 15)
   │
   └── filter: source collectable  ->  104 CVEs
         │
@@ -468,7 +468,7 @@ product from the same shared-code CVE. What the figure does **not** cover:
   Charging those as FPs would penalise the matcher for a gap in the ground truth.
 - **41.9% of the corpus is excluded up front** (`data/cpe_match_eval_layerB.jsonl`): pairs where the
   ICS name appears nowhere in NVD, so no name-based matcher can reach the answer.
-- **1,803 of 3,263 components (55%) are abstentions** — the matcher declined to identify. Legitimate
+- **1,766 of 3,249 components (54%) are abstentions** — the matcher declined to identify. Legitimate
   under a precision-only metric, and disclosed because it is a free lift to the score.
 - 32 CISA/NVD version-range disagreements are held out as `conflict` rather than labelled verified.
 - The 377 co-listed-vendor negatives are **unreachable for this SUT** and reported as such, not
