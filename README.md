@@ -393,8 +393,8 @@ otherwise an identity.
 
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
-| **#3** | SBOM → CVE identification precision | **0.9140** (TP 10,294 / FP 969) | ≥ 0.80 | 11,263 scored, uncapped ground truth |
-| **#4** | VEX affected-judgment precision | **0.9200** (TP 46 / FP 4) | ≥ 0.85 | 50 of 58 GT cases, population 104 |
+| **#3** | SBOM → CVE identification precision | **0.9499** (TP 10,294 / FP 543) | ≥ 0.80 | 10,837 scored, uncapped ground truth |
+| **#4** | VEX affected-judgment precision | **0.9310** (TP 54 / FP 4) | ≥ 0.85 | 58 of 68 GT cases, population 172 |
 
 The evaluation datasets are bundled on their own in [`benchmark/`](benchmark/) — answer
 keys, the SUT's predictions and the results, enough to re-score without running the
@@ -410,7 +410,7 @@ exclusions can be read together instead of grepped out of three files.
 **The per-vendor cap is off.** It had held each vendor to 40 positives so Siemens (58% of
 the corpus) could not dominate, but that made the figure describe a sample rather than the
 corpus. Removing it took the ground truth from 7,640 to 41,868 records and the score from
-0.9870 to 0.9140 — the cap had been holding back exactly the Siemens device names the
+0.9870 to 0.9499 — the cap had been holding back exactly the Siemens device names the
 matcher is weakest on, so the lower number is the more honest one.
 
 ### One corpus, two populations — on purpose
@@ -423,11 +423,11 @@ constraint rather than an inconsistency.
 CISA advisories 3,845 / CVEs 11,550              one corpus
   │
   ├── item #3   SBOM -> CVE identification       whole corpus
-  │                                              precision 0.9140 (TP 10,294 / FP 969)
+  │                                              precision 0.9499 (TP 10,294 / FP 543)
   │
-  └── filter: source collectable  ->  104 CVEs
+  └── filter: source collectable  ->  172 CVEs
         │
-        └── item #4   impact judgment            precision 0.9200 (TP 46 / FP 4)
+        └── item #4   impact judgment            precision 0.9310 (TP 54 / FP 4)
 ```
 
 **#3 is independent of the VEX stage and must stay so.** Identification needs no source
@@ -461,21 +461,23 @@ for a gap in the answer key). So the claim is **"precision over the evidence-lab
 of a 104 population"**, never "precision over 104".
 
 ```
-104  population (data/vex_population_104.json)
- ├─ 53  patch signature inconclusive
- ├─  5  patch signature vs NVD disagreement -> held out as conflict
- └─  1  execution run did not discriminate
+172  population (every collected snapshot)
+ ├─ 113  patch signature inconclusive
+ ├─   5  patch signature vs NVD disagreement -> held out as conflict
+ └─   1  execution run did not discriminate
  ↓
- 54  CVEs labelled  ->  58 (CVE, build) cases
- └─  8  patched builds — source vex_judge_v2 never ran against
+ 63  CVEs labelled  ->  68 (CVE, build) cases
+ ├─  9  patched builds — source vex_judge_v2 never ran against
+ └─  1  CVE with no cached verdict
  ↓
- 50  scored  ->  precision 0.9200
+ 58  scored  ->  precision 0.9310
 ```
 
-Measured over all 107 collected snapshots instead, it is 0.9216 (TP 47 / FP 4,
-`results/vex_precision_pregate.json`): the three CVEs added since the document was written
-contribute one labelled case, and the four false positives are identical, so the population
-choice does not carry the result.
+Measured over the 104 the test document names instead, it is 0.9200 (TP 46 / FP 4,
+`results/vex_precision_104.json`). Widening the population from 104 to 172 added 8 true
+positives and no false positives, and the same four CVEs fail in both runs — the figure is
+insensitive to the population, and those four are a reproducible defect rather than an
+artefact of which snapshots happened to be collected.
 
 **#3 ground truth** (`tools/build_cpe_match_gt.py` → `data/cpe_match_eval.jsonl`, 41,868
 records over 6,461 CVEs and 532 vendors, uncapped) comes from CISA CSAF `affects` assertions cross-checked against NVD
@@ -508,7 +510,7 @@ yields two cases. A label is therefore about a **build, not a CVE**, and the 8 p
 are held out: `vex_judge_v2`'s caches are keyed by CVE, not by snapshot path, so its cached verdicts
 cannot stand in for a run against `data/fixed_releases/`.
 
-> **The gated system's #4 figure is circular, and 0.9200 is the pre-gate number.** The patch gate
+> **The gated system's #4 figure is circular, and 0.9310 is the pre-gate number.** The patch gate
 > decides from the fix signature plus the NVD range — the same two authorities the GT's
 > `patch_verified` labels come from. With the gate live, FP falls to 0 and precision reads 1.0000 by
 > construction, not by merit; `tools/eval_vex_precision.py` detects this and prints a `!! CIRCULAR`
