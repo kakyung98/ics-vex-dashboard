@@ -66,7 +66,7 @@ FILES = {
         "INPUT: 54 CVEs with the source/patch evidence available per CVE "
         "(tools/build_benchmark_inputs.py)"),
     "item4/ground_truth.jsonl": (
-        "data/vex_gt_104doc.jsonl",
+        "data/vex_gt_172.jsonl",
         "GT 58 (CVE, build) cases over 54 CVEs, from execution pairs and fix-commit "
         "patch signatures only"),
     "item4/predictions.json": (
@@ -74,10 +74,10 @@ FILES = {
         "The SUT output being scored: vex_judge_v2 --no-patch-gate. Pre-gate, because "
         "the patch gate reads the same authorities the GT does and the gated run is circular"),
     "item4/manifest.json": (
-        "data/vex_gt_104doc_manifest.json",
+        "data/vex_gt_172_manifest.json",
         "How the GT was built: evidence mix, corroboration, the 50 CVEs evidence could not label"),
     "item4/result.json": (
-        "results/vex_precision_104.json",
+        "results/vex_precision_172.json",
         "Scored over the 104: precision 0.9200 (TP 46 / FP 4)"),
 }
 
