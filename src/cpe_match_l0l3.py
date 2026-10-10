@@ -44,6 +44,49 @@ BY_PRODUCT, CVE_VENDORS = _load_index()
 
 
 # --- version decision on a single cpeMatch entry -----------------------------
+# CISA writes the affected range into the display name, in VERS form or bare:
+#   "Siemens RUGGEDCOM i800 vers:intdot/<4.3.4"   "Advantech WebAccess <=7.1"
+_VERS_RE = re.compile(r"vers:[^/\s]*/(\S+)")
+_BOUND_RE = re.compile(r"([<>]=?)\s*_?[Vv]?([0-9][\w.\-]*)")
+
+
+def declared_range(name):
+    """{startIncl/startExcl/endIncl/endExcl} parsed out of the component name.
+
+    The order-code path resolves identity without ever consulting a CPE range, so
+    without this it hands back every CVE the advisory lists for the device even when
+    the version in hand is past the fix — and the spec counts a version mismatch as a
+    false positive just as it counts a wrong product. CISA states the bound in the
+    name, so the evidence is already there.
+    """
+    m = _VERS_RE.search(name or "")
+    expr = m.group(1) if m else (name or "")
+    if expr == "*":
+        return {}
+    out = {}
+    for op, ver in _BOUND_RE.findall(expr):
+        out[{"<": "endExcl", "<=": "endIncl",
+             ">": "startExcl", ">=": "startIncl"}[op]] = ver
+    return out
+
+
+def _in_declared_range(version, rng):
+    """True / False / None(undecidable). None is never read as False."""
+    if not version or not rng:
+        return None
+    for bound, violates in ((rng.get("startIncl"), lambda c: c < 0),
+                            (rng.get("startExcl"), lambda c: c <= 0),
+                            (rng.get("endIncl"), lambda c: c > 0),
+                            (rng.get("endExcl"), lambda c: c >= 0)):
+        if bound:
+            c = cmp_ver(version, bound)
+            if c is None:
+                return None
+            if violates(c):
+                return False
+    return True
+
+
 def _entry_decides(entry, version):
     """True / False / None for one NVD cpeMatch entry.
 
@@ -251,6 +294,10 @@ def cves_for(component, sbom_vendor="", strict=False):
     model, entry = ics_identify(component)
     if model and entry:
         version = str(component.get("version") or "").strip()
+        # the device is identified exactly; the version still has to be inside the
+        # range CISA declared, or the CVE does not apply to the build in hand
+        if _in_declared_range(version, declared_range(component.get("name"))) is False:
+            return []
         out, seen = [], set()
         for cve in entry.get("cves") or []:
             if cve in seen:

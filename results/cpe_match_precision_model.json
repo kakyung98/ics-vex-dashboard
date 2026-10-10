@@ -1,0 +1,396 @@
+{
+  "test": "SBOM CVE-identification precision (시험항목 #3)",
+  "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
+  "sut_mode": "recall-safe (default)",
+  "ground_truth": "data\\cpe_match_eval.jsonl",
+  "gt_labels": 35195,
+  "gt_conflicts_held_out": 430,
+  "gt_unreachable_for_this_sut": {
+    "vendor": 4249
+  },
+  "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN product; the SUT reports (product, vendor-of-that-product) so it can never emit them. The product axis is scored by closed-world rule instead.",
+  "sut_runs": 14173,
+  "sut_abstained": 6633,
+  "TP": 10294,
+  "FP": 969,
+  "scored": 11263,
+  "unlabelled_predictions": 142247,
+  "unadjudicable_predictions": 27031,
+  "unadjudicable_reason": "SUT resolved the product the component name itself carries, but the GT's vendor-anchored CPE names a different (usually embedded) product for that CVE; the authorities disagree on filing, not on identity",
+  "labelled_share_pct": 6.24,
+  "fp_by_axis": {
+    "product": 298,
+    "identifier": 666,
+    "version": 5
+  },
+  "tp_by_path": {
+    "model-number": 6954
+  },
+  "precision": 0.914,
+  "acceptance_criterion": "precision >= 0.80",
+  "pass": true,
+  "fp_examples": [
+    {
+      "component": "Mitsubishi Electric Mitsubishi Electric CC-Link System Master/Local In",
+      "sut_product": "linkmaster",
+      "correct_products": [
+        "cpu_module_logging_configuration_tool"
+      ],
+      "cve": "CVE-2020-13535",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation CompactLogix 5380 controllers <= 32.013",
+      "sut_product": "compactlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation SoftLogix 5800 controllers vers:all/*",
+      "sut_product": "softlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric Corporation MELSEC-F FX3G-xMy/ES-A x=14,24,40,60, ",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx3g-14_mr\\/ds_firmware"
+      ],
+      "cve": "CVE-2014-6271",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric Corporation MELSEC-F FX3G-xMy/ES-A x=14,24,40,60, ",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx3g-14_mr\\/ds_firmware"
+      ],
+      "cve": "CVE-2014-7169",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric FX5UJ-xMy/ES-A* x=24,40,60, y=T,R <= 1.043",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx5u-80mt\\/ess_firmware"
+      ],
+      "cve": "CVE-2014-6271",
+      "axis": "product"
+    },
+    {
+      "component": "Mitsubishi Electric FX5UJ-xMy/ES-A* x=24,40,60, y=T,R <= 1.043",
+      "sut_product": "esx",
+      "correct_products": [
+        "fx5u-80mt\\/ess_firmware"
+      ],
+      "cve": "CVE-2014-7169",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5580 controllers <= 32.013",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "OSIsoft LLC Applications using PI Asset Framework (AF) Client <= PI AF",
+      "sut_product": "pi_asset_framework_client",
+      "correct_products": [
+        "pi_api",
+        "pi_data_archive",
+        "pi_vision"
+      ],
+      "cve": "CVE-2024-3467",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens SIPROTEC 5 Compact 7SX800 (CP050) vers:intdot/<9.50",
+      "sut_product": "siprotec_compact",
+      "correct_products": [
+        "siprotec_5_6md85_firmware"
+      ],
+      "cve": "CVE-2019-19279",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation ControlLogix 5580 controllers 29.011",
+      "sut_product": "controllogix_controllers",
+      "correct_products": [
+        "compactlogix_5380_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "compactlogix_1768-l43_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    }
+  ]
+}
