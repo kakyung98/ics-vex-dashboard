@@ -11,6 +11,7 @@ data/nvd_cache.json 에 캐시한다.
 - 캐시가 이미 있으면 미수집 CVE 만 이어서 조회한다(재실행 가능).
 """
 
+import argparse
 import json
 import os
 import sys
@@ -30,11 +31,23 @@ DELAY = 6.2          # 초. 무인증 rolling limit(5req/30s) 대비 여유
 MAX_RETRY = 4
 
 
-def all_cve_ids():
+def all_cve_ids(include_snapshots=False):
+    """CVEs to cache NVD data for.
+
+    The hand catalog was the only source, which silently capped this at the 256 CVEs
+    it lists — so a CVE collected by tools/collect_snapshots_nvd (version taken from
+    an NVD range rather than the catalog) had a source tree on disk and no NVD
+    description, and cti_extract skipped it for want of input. Snapshots on disk are
+    the other authority on "which CVEs this pipeline is working on".
+    """
     ids = set()
     for spec in OSS.values():
         for _ver, cves in spec["versions"]:
             ids.update(cves)
+    if include_snapshots:
+        snap = os.path.join(DATA_DIR, "source_snapshots")
+        if os.path.isdir(snap):
+            ids.update(d for d in os.listdir(snap) if d.startswith("CVE-"))
     return sorted(ids)
 
 
@@ -124,7 +137,11 @@ def fetch(cve_id):
 
 
 def main():
-    ids = all_cve_ids()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--snapshots", action="store_true",
+                    help="also fetch every CVE that has a source snapshot on disk")
+    a = ap.parse_args()
+    ids = all_cve_ids(a.snapshots)
     cache = load_cache()
     todo = [c for c in ids if c not in cache or cache[c].get("error")]
     print("total=%d cached=%d todo=%d" % (len(ids), len(ids) - len(todo), len(todo)), flush=True)

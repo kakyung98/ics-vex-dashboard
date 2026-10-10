@@ -1,0 +1,108 @@
+{
+ "asset_id": "icsa-23-101-01",
+ "counts": {
+  "input": 2,
+  "ground_truth": 2,
+  "applicable_true": 1,
+  "applicable_false": 1,
+  "excluded": 0
+ },
+ "input": [
+  {
+   "test_case_id": "SBOM-IN-9365",
+   "asset_id": "icsa-23-101-01",
+   "component": {
+    "component_id": "mod:icsa-23-101-01:firmware",
+    "vendor": "FANUC",
+    "product": "FANUC  ROBOGUIDE-HandlingPRO <= 9",
+    "version": null,
+    "identifiers": {
+     "cpe": null,
+     "purl": null
+    }
+   }
+  },
+  {
+   "test_case_id": "SBOM-IN-13762",
+   "asset_id": "icsa-23-101-01",
+   "component": {
+    "component_id": "mod:icsa-23-101-01:firmware",
+    "vendor": "FANUC",
+    "product": "FANUC  ROBOGUIDE-HandlingPRO <= 9",
+    "version": "10",
+    "identifiers": {
+     "cpe": null,
+     "purl": null
+    }
+   }
+  }
+ ],
+ "ground_truth": [
+  {
+   "test_case_id": "SBOM-TC-20786",
+   "component_id": "mod:icsa-23-101-01:firmware",
+   "component": {
+    "vendor": "fanuc",
+    "product": "roboguide_handlingpro_firmware",
+    "version": null
+   },
+   "cve_id": "CVE-2023-1864",
+   "applicable": true,
+   "evidence": {
+    "vendor_match": true,
+    "product_match": true,
+    "version_match": null,
+    "evidence_source": "CISA",
+    "evidence_reference": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-101-01",
+    "nvd_reference": "https://nvd.nist.gov/vuln/detail/CVE-2023-1864"
+   },
+   "review_status": "verified",
+   "_sut_input": {
+    "name": "FANUC  ROBOGUIDE-HandlingPRO <= 9",
+    "version": null,
+    "asset_id": "icsa-23-101-01",
+    "publisher": "FANUC",
+    "cpe": null
+   },
+   "_cisa_range": {
+    "endIncl": "9"
+   },
+   "_range_source": "csaf_bare_bound",
+   "_layer": "A"
+  },
+  {
+   "component_id": "mod:icsa-23-101-01:firmware",
+   "component": {
+    "vendor": "fanuc",
+    "product": "roboguide_handlingpro_firmware",
+    "version": "10"
+   },
+   "cve_id": "CVE-2023-1864",
+   "applicable": false,
+   "evidence": {
+    "vendor_match": true,
+    "product_match": true,
+    "version_match": false,
+    "evidence_source": "CISA+NVD",
+    "evidence_reference": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-101-01",
+    "nvd_reference": "https://nvd.nist.gov/vuln/detail/CVE-2023-1864"
+   },
+   "review_status": "verified",
+   "_sut_input": {
+    "name": "FANUC  ROBOGUIDE-HandlingPRO <= 9",
+    "version": "10",
+    "cpe": null,
+    "asset_id": "icsa-23-101-01",
+    "publisher": "FANUC"
+   },
+   "_cisa_range": {
+    "endIncl": "9"
+   },
+   "_negative_family": "version",
+   "_note": "one release above CISA inclusive upper bound 9",
+   "_layer": "A",
+   "test_case_id": "SBOM-TC-N6361"
+  }
+ ],
+ "excluded": []
+}

@@ -1,0 +1,19 @@
+{
+  "source": "data/cpe_dictionary.jsonl (NVD CPE dictionary, ICS vendors)",
+  "seed": 20261010,
+  "counts": {
+    "total": 33978,
+    "positive": 16989,
+    "negative": 16989,
+    "by_kind": {
+      "title-noised": 11326,
+      "vendor-swap": 9018,
+      "product-swap": 7971,
+      "title": 5663
+    }
+  },
+  "held_out_titles": 7,
+  "held_out_rule": "a title whose normalised form appears as a component name in data/cpe_match_eval.jsonl is dropped by NAME, not by pair — a string that shows up in the test must not reach training under any label",
+  "negative_rule": "swap a field of an existing entry and confirm the result is absent; never label an unmatched real-world string as negative, which would train on NVD's ICS coverage gaps",
+  "augmentation": "order codes, version-range tails and corporate suffixes, so the training distribution resembles CISA advisory strings rather than NVD's clean titles"
+}
