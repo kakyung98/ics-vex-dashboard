@@ -57,11 +57,21 @@ than the product; an SBOM that lists only products cannot match them. The layeri
 identifiers into `ics-product` / `product-variant` / `embedded-component`, so Stage 2
 identifies each layer on its own (e.g. a CoDeSys device whose embedded CODESYS runtime
 resolves to `codesys:control_runtime_system` and its 10 CVEs, separately from the
-product). Component identity itself lives in `src/cpe_match_l0l3.py` (identifier-first:
-purl/cpe, then exact name, then ICS display-name normalization).
+product). Component identity itself lives in `src/cpe_match_l0l3.py` (identifier-first: **model
+number**, then purl/cpe, then exact name, then ICS display-name normalization).
 
 ### Stage 2 — CVE Identification  (`cpe_match_l0l3.py`, `build_cpe_index.py`)
 
+- **Model number first** — CISA publishes a Siemens MLFB order code
+  (`6GK5204-0BA00-2MB2`) on 14% of components, seven times as often as a CPE, and
+  `data/model_cve_index.json` maps it straight to the CVEs the advisory declares that
+  `product_id` affected by. It is the one identifier here that cannot be half-right:
+  the code is a key in the index or it is not, so there is no threshold to tune and no
+  way to fuzzy-match into a false positive. Measured over the components the name
+  cascade gives up on, 36% declare a code and 99.3% of those resolve — 3,604 of 9,974
+  abstentions recovered. In practice this is a Siemens path (7,821 of 7,993 coded
+  components), a vendor optimisation rather than a general method, and
+  `tp_by_path` reports it separately.
 - **NVD CPE index** — the full product index (13,764 products vs a 42-entry OSS KB), so
   vendor ICS products resolve at all: "Sielco Sistemi Winlog Lite <2.07.09" →
   `winlog_lite`. Candidate CVEs come from that product's NVD entries.
@@ -383,13 +393,25 @@ otherwise an identity.
 
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
-| **#3** | SBOM → CVE identification precision | **0.9870** (TP 1,143 / FP 15) | ≥ 0.80 | 1,158 of 12,241 predictions (**9.5%** carry a label) |
+| **#3** | SBOM → CVE identification precision | **0.9140** (TP 10,294 / FP 969) | ≥ 0.80 | 11,263 scored, uncapped ground truth |
 | **#4** | VEX affected-judgment precision | **0.9200** (TP 46 / FP 4) | ≥ 0.85 | 50 of 58 GT cases, population 104 |
 
 The evaluation datasets are bundled on their own in [`benchmark/`](benchmark/) — answer
 keys, the SUT's predictions and the results, enough to re-score without running the
 pipeline. `tools/build_benchmark_bundle.py` assembles it and `--check` verifies it against
 the live sources, so a rebuilt ground truth cannot leave a stale copy behind unnoticed.
+
+`benchmark/item3/by_asset/` projects the same records into one file per advisory (3,073
+of them, with an `_index.json` ordered by size). The jsonl files stay as they are — they
+are what the scorer reads, and splitting a scorer's input into thousands of files would
+only slow it down; the per-asset view exists so a single advisory's input, answer key and
+exclusions can be read together instead of grepped out of three files.
+
+**The per-vendor cap is off.** It had held each vendor to 40 positives so Siemens (58% of
+the corpus) could not dominate, but that made the figure describe a sample rather than the
+corpus. Removing it took the ground truth from 7,640 to 41,868 records and the score from
+0.9870 to 0.9140 — the cap had been holding back exactly the Siemens device names the
+matcher is weakest on, so the lower number is the more honest one.
 
 ### One corpus, two populations — on purpose
 
@@ -401,7 +423,7 @@ constraint rather than an inconsistency.
 CISA advisories 3,845 / CVEs 11,550              one corpus
   │
   ├── item #3   SBOM -> CVE identification       whole corpus
-  │                                              precision 0.9870 (TP 1,143 / FP 15)
+  │                                              precision 0.9140 (TP 10,294 / FP 969)
   │
   └── filter: source collectable  ->  104 CVEs
         │
@@ -455,8 +477,8 @@ Measured over all 107 collected snapshots instead, it is 0.9216 (TP 47 / FP 4,
 contribute one labelled case, and the four false positives are identical, so the population
 choice does not carry the result.
 
-**#3 ground truth** (`tools/build_cpe_match_gt.py` → `data/cpe_match_eval.jsonl`, 6,518 records,
-2,652 CVEs, 471 vendors) comes from CISA CSAF `affects` assertions cross-checked against NVD
+**#3 ground truth** (`tools/build_cpe_match_gt.py` → `data/cpe_match_eval.jsonl`, 41,868
+records over 6,461 CVEs and 532 vendors, uncapped) comes from CISA CSAF `affects` assertions cross-checked against NVD
 applicability — never from `data/cpe_index.json`, which is what the matcher itself reads. Negatives
 are authority-derived: a version at or past CISA's own fixed boundary, and a co-listed vendor's
 product from the same shared-code CVE. What the figure does **not** cover:
@@ -468,7 +490,7 @@ product from the same shared-code CVE. What the figure does **not** cover:
   Charging those as FPs would penalise the matcher for a gap in the ground truth.
 - **41.9% of the corpus is excluded up front** (`data/cpe_match_eval_layerB.jsonl`): pairs where the
   ICS name appears nowhere in NVD, so no name-based matcher can reach the answer.
-- **1,766 of 3,249 components (54%) are abstentions** — the matcher declined to identify. Legitimate
+- **6,633 of 14,173 components (47%) are abstentions** — the matcher declined to identify. Legitimate
   under a precision-only metric, and disclosed because it is a free lift to the score.
 - 32 CISA/NVD version-range disagreements are held out as `conflict` rather than labelled verified.
 - The 377 co-listed-vendor negatives are **unreachable for this SUT** and reported as such, not
@@ -523,16 +545,17 @@ mix, and every exclusion with its reason.
 
 ```
 ICS-VEX/
-├── src/                          core modules (14)
+├── src/                          core modules (15)
 │   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
 │   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
 │   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
 │   ├── build_reverse_sbom.py     advisory → CycloneDX 1.7 SBOM (KISA field spec)
 │   ├── sbom_match.py             SBOM → CVE matching
 │   ├── patch_gate.py             Q0 — already patched? fix signature + NVD range (both required)
+│   ├── cpe_match_ai.py           semantic retrieval behind the string cascade (scaffolded)
 │   ├── vex_batch.py / vex_pipeline.py   corpus-level VEX batch
 │   └── vex_source_unavailable.py decision tree for source-uncollectable CVEs
-├── tools/                        60 pipeline scripts, incl. Stage 3 (VEX-v2):
+├── tools/                        67 pipeline scripts, incl. Stage 3 (VEX-v2):
 │   ├── cti_extract.py            CTI → structured info (Ollama)
 │   ├── source_locate.py          Q1 presence — decides the verdict
 │   ├── joern_reachability.py     Q2 reachability (optional evidence tier)
@@ -540,6 +563,10 @@ ICS-VEX/
 │   ├── vex_judge_v2.py           hierarchy verdict + evidence_tier (Q0 patch gate first)
 │   ├── fixed_check.py            patch-signature single-CVE CLI
 │   ├── build_cpe_match_gt.py · eval_cpe_match_precision.py   test item #3 GT + scorer
+│   ├── fetch_cpe_dictionary.py   NVD CPE dictionary, --vendors scopes it to the 932 the corpus uses
+│   ├── build_cpe_match_dataset.py  title<->cpe training pairs, negatives by field swap
+│   ├── collect_snapshots_nvd.py  snapshots for CVEs the hand catalog never covered
+│   ├── split_benchmark_by_asset.py  benchmark/item3/by_asset/, one file per advisory
 │   ├── build_vex_gt.py · eval_vex_precision.py               test item #4 GT + scorer
 │   ├── summarize_vex_v2.py       results/vex_v2_summary.json
 │   ├── build_func_index.py · extract_vuln_funcs.py · oss_repos.py   source index / collection map

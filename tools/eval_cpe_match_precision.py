@@ -138,7 +138,15 @@ def load_gt(path):
         # through. The spec defines TP as "the identified CVE maps onto the
         # component", not "the matcher produced the CPE product key NVD happens to
         # use", and an identifier path can reach the right CVE without a product key.
-        case.setdefault("cve_label", {})[r["cve_id"]] = bool(r["applicable"])
+        #
+        # OR, not overwrite. 7,993 (component, CVE) pairs carry both labels, because
+        # the label hangs off the product key: CVE-2018-25032 on a SIMATIC S7-1500 is
+        # applicable under siemens:scalance_sc622-2c_firmware and not applicable under
+        # netapp:h300s_firmware, the co-listed vendor. Taking the last record seen let
+        # a co-listing negative erase a real positive and charged the identifier path
+        # for CVEs the ground truth actually asserts.
+        lab = case.setdefault("cve_label", {})
+        lab[r["cve_id"]] = bool(lab.get(r["cve_id"])) or bool(r["applicable"])
     return gt, [c for c in cases.values() if c["correct_products"]], conflicts, unreachable
 
 
