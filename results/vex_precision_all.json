@@ -1,0 +1,67 @@
+{
+  "test": "VEX affected-judgment precision (시험항목 #4)",
+  "sut": "tools/vex_judge_v2 (cached: vulnerable=data\\vex_v2_pregate.json)",
+  "ground_truth": "data\\vex_gt_all.jsonl",
+  "gt_evidence_types": [
+    "execution_verified",
+    "patch_verified"
+  ],
+  "build_scored": "vulnerable",
+  "scope": "all evidence types",
+  "patch_gate_live": false,
+  "shared_oracle_cases": 69,
+  "gt_cases_total": 80,
+  "gt_cases_other_build": 9,
+  "gt_cases_not_in_sut": 0,
+  "gt_cases_no_sut_for_build": null,
+  "per_build": {
+    "vulnerable": {
+      "TP": 67,
+      "FP": 4
+    }
+  },
+  "positive_class": "affected",
+  "TP": 67,
+  "FP": 4,
+  "TN": 0,
+  "FN": 0,
+  "classified_affected": 71,
+  "precision": 0.9437,
+  "recall": 1.0,
+  "acceptance_criterion": "precision >= 0.85",
+  "pass": true,
+  "fp_cases": [
+    {
+      "cve": "CVE-2017-14491",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 19/21, vuln-lines 0/2 in rfc1035.c",
+      "sut_basis": "present, reachable (joern) and adversary-controllable (z3)"
+    },
+    {
+      "cve": "CVE-2019-11477",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 8/10, vuln-lines 0/5 in tcp_input.c",
+      "sut_basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)"
+    },
+    {
+      "cve": "CVE-2023-27533",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 7/7, vuln-lines 0/0 in telnet.c",
+      "sut_basis": "present, reachable (joern) and adversary-controllable (z3)"
+    },
+    {
+      "cve": "CVE-2023-27536",
+      "build": "vulnerable",
+      "evidence_type": "patch_verified",
+      "gt_detail": "fix-lines 3/3, vuln-lines 0/0 in url.c",
+      "sut_basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)"
+    }
+  ],
+  "fn_cases": [],
+  "circularity_warning": null,
+  "patched_build_note": "patched-build cases are judged from data/fixed_releases/<CVE> by vex_judge_v2 --build patched. They require the patch gate: Q1 reads 'present' on 10 of the 12 collected patched trees, because a fix edits the vulnerable function rather than deleting it. So there is no pre-gate patched figure to quote, and 7 of the 9 patched GT cases are patch_verified; --independent is what removes the shared oracle.",
+  "unscored_note": "GT cases with no verdict for their build: none"
+}

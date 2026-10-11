@@ -66,9 +66,10 @@ FILES = {
         "INPUT: 54 CVEs with the source/patch evidence available per CVE "
         "(tools/build_benchmark_inputs.py)"),
     "item4/ground_truth.jsonl": (
-        "data/vex_gt_172.jsonl",
-        "GT 58 (CVE, build) cases over 54 CVEs, from execution pairs and fix-commit "
-        "patch signatures only"),
+        "data/vex_gt_all.jsonl",
+        "Answer key over the FULL collected-source population: every CVE with a "
+        "source snapshot, labelled from execution pairs and fix-commit patch "
+        "signatures only"),
     "item4/predictions.json": (
         "data/vex_v2_pregate.json",
         "The SUT output being scored: vex_judge_v2 --no-patch-gate. Pre-gate, because "
@@ -93,10 +94,10 @@ FILES = {
         "Scored over execution-verified evidence only: the one scope where the GT and "
         "the SUT share no oracle. Small by construction"),
     "item4/manifest.json": (
-        "data/vex_gt_172_manifest.json",
+        "data/vex_gt_all_manifest.json",
         "How the GT was built: evidence mix, corroboration, the 50 CVEs evidence could not label"),
     "item4/result.json": (
-        "results/vex_precision_172.json",
+        "results/vex_precision_all.json",
         "HEADLINE scored run for item #4: vulnerable build, patch gate off - the "
         "largest scope whose answer key shares no oracle with the SUT"),
 }
@@ -176,6 +177,17 @@ number cannot carry the claim:
 | both builds, gate live | {i4ap} | {i4atp}/{i4afp}/{i4atn}/{i4afn} | the only scope that exercises not_affected; **circular** on the patch_verified cases |
 | execution-verified only | {i4ip} | {i4itp}/{i4ifp}/{i4itn}/{i4ifn} | no shared oracle at all, but small by construction |
 
+The third scope is **below the acceptance criterion**, and it is published anyway
+because it is a disclosure scope rather than the certification metric. Its single
+false positive is instructive: CVE-2024-4340's patched build (sqlparse 0.5.0).
+Execution proves that release does not fault, but the fix added a guard *inside*
+`flatten` rather than removing it, so Q1 still reads `present` - and NVD carries no
+fix commit for this CVE, so the patch gate has no signature to clear it with. The
+system therefore says `affected` about a build that demonstrably is not. That is
+the honest shape of the limit: **without a fix diff, a patched build is
+indistinguishable from a vulnerable one by presence alone.** The figure was not
+tuned to remove it.
+
 **Why the patched build needs the gate.** Q1 asks whether the vulnerable function is
 *defined*, and a fix edits that function rather than deleting it — Q1 reads `present`
 on 10 of the 12 collected patched trees. So there is no pre-gate patched figure to
@@ -241,7 +253,7 @@ def readme():
     figure here is wrong, the result file it came from is wrong too.
     """
     i3 = _r("results/cpe_match_precision.json")
-    i4 = _r("results/vex_precision_172.json")
+    i4 = _r("results/vex_precision_all.json")
     i4a = _r("results/vex_precision_allbuilds.json")
     i4i = _r("results/vex_precision_independent.json")
     return README_TEMPLATE.format(

@@ -9,7 +9,7 @@ down, because written-down figures are what went stale last time.
 | item | metric | result | acceptance | scored on |
 |---|---|---|---|---|
 | #3 | SBOM -> CVE identification precision | **94.99%** (TP 10,294 / FP 543) | >= 0.80 | 10,837 labelled predictions |
-| #4 | VEX affected-judgment precision | **93.10%** (TP 54 / FP 4) | >= 0.85 | 58 (CVE, build) cases |
+| #4 | VEX affected-judgment precision | **94.37%** (TP 67 / FP 4) | >= 0.85 | 71 (CVE, build) cases |
 
 #3 identifies CVEs from the SBOM, #4 judges whether the identified CVEs actually
 affect the build: two consecutive stages. They are NOT scoped to one population —
@@ -44,7 +44,7 @@ and is free under a precision-only metric, so it is disclosed here.
 |---|---|
 | `population.json` | the source-available CVEs |
 | `input.jsonl` | **what the SUT is fed**: CVE + source/patch evidence |
-| `ground_truth.jsonl` | answer key, affected / not_affected (68 cases) |
+| `ground_truth.jsonl` | answer key, affected / not_affected (80 cases) |
 | `predictions.json` | SUT output, pre-gate, vulnerable build — what `result.json` scores |
 | `predictions_gated.json` | SUT output with the Q0 patch gate live |
 | `predictions_patched.json` | SUT output for the vendor's remediated releases |
@@ -58,9 +58,20 @@ number cannot carry the claim:
 
 | scope | precision | TP/FP/TN/FN | what it is worth |
 |---|---|---|---|
-| vulnerable, gate off | **93.10%** | 54/4/0/0 | the headline — largest scope with no shared oracle |
-| both builds, gate live | 100.00% | 56/0/10/0 | the only scope that exercises not_affected; **circular** on the patch_verified cases |
-| execution-verified only | 100.00% | 1/0/1/0 | no shared oracle at all, but small by construction |
+| vulnerable, gate off | **94.37%** | 67/4/0/0 | the headline — largest scope with no shared oracle |
+| both builds, gate live | 98.57% | 69/1/10/0 | the only scope that exercises not_affected; **circular** on the patch_verified cases |
+| execution-verified only | 66.67% | 2/1/1/0 | no shared oracle at all, but small by construction |
+
+The third scope is **below the acceptance criterion**, and it is published anyway
+because it is a disclosure scope rather than the certification metric. Its single
+false positive is instructive: CVE-2024-4340's patched build (sqlparse 0.5.0).
+Execution proves that release does not fault, but the fix added a guard *inside*
+`flatten` rather than removing it, so Q1 still reads `present` - and NVD carries no
+fix commit for this CVE, so the patch gate has no signature to clear it with. The
+system therefore says `affected` about a build that demonstrably is not. That is
+the honest shape of the limit: **without a fix diff, a patched build is
+indistinguishable from a vulnerable one by presence alone.** The figure was not
+tuned to remove it.
 
 **Why the patched build needs the gate.** Q1 asks whether the vulnerable function is
 *defined*, and a fix edits that function rather than deleting it — Q1 reads `present`
