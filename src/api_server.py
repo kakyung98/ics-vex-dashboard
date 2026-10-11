@@ -31,6 +31,8 @@ import build_ground_truth as G  # exposure_for(), CWE_NAME
 import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
+import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
+from cert_page import CERT_PAGE      # the /cert.html markup + client script
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
 except Exception:
@@ -782,7 +784,7 @@ CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/develop/"
 
 
 def build_app():
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI, HTTPException, File, Form, UploadFile
     from fastapi.responses import HTMLResponse
     from pydantic import BaseModel
 
@@ -1014,6 +1016,62 @@ def build_app():
         """Walk the source-uncollectable decision tree with the given answers."""
         return VT.classify(req.av, req.answers or {})
 
+    # ---- certification test items #3 / #4 -------------------------------
+    # The page can run the measurement itself, so a reviewer does not have to take
+    # the recorded figure on trust. Scoring happens in src/cert_eval, which calls
+    # the same score() the CLI tools use; nothing is recomputed here.
+    @app.get("/api/cert/items")
+    def cert_items():
+        return CERT.items()
+
+    class CertRunReq(BaseModel):
+        item: str
+        variant: str | None = None
+        gt_path: str | None = None
+
+    @app.post("/api/cert/run")
+    def cert_run(req: CertRunReq):
+        # An uploaded dataset is only ever read from the upload directory. A
+        # caller-supplied path is otherwise an arbitrary-file read, and the
+        # bundled ground truth has its own route (gt_path omitted).
+        uploaded = False
+        if req.gt_path:
+            p = os.path.abspath(req.gt_path)
+            if not p.startswith(os.path.abspath(CERT.UPLOADS) + os.sep):
+                raise HTTPException(400, "gt_path must be a file uploaded via "
+                                         "/api/cert/upload")
+            uploaded = True
+        try:
+            return CERT.start(req.item, req.variant, req.gt_path, uploaded=uploaded)
+        except (ValueError, FileNotFoundError) as e:
+            raise HTTPException(400, str(e))
+
+    @app.get("/api/cert/job/{job_id}")
+    def cert_job(job_id: str):
+        j = CERT.job(job_id)
+        if j is None:
+            raise HTTPException(404, "no such job")
+        return j
+
+    @app.get("/api/cert/jobs")
+    def cert_jobs():
+        return CERT.jobs()
+
+    @app.post("/api/cert/upload")
+    async def cert_upload(item: str = Form(...), file: UploadFile = File(...)):
+        data = await file.read()
+        try:
+            path = CERT.save_upload(item, file.filename, data)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        # Validated before it can be scored: a file in the wrong schema would
+        # otherwise produce 0 TP / 0 FP and read as a legitimate 0.0000.
+        valid = CERT.validate_gt(item, path)
+        if not valid["ok"]:
+            os.remove(path)
+            return {"ok": False, "valid": valid}
+        return {"ok": True, "path": path, "bytes": len(data), "valid": valid}
+
     @app.post("/api/refresh")
     def refresh():
         STORE.refresh()
@@ -1061,6 +1119,10 @@ def build_app():
     @app.get("/ics-sbom.html", response_class=HTMLResponse)
     def ics_sbom_page():
         return make_page("ics-sbom")
+
+    @app.get("/cert.html", response_class=HTMLResponse)
+    def cert_page():
+        return make_page("cert")
 
     return app
 
@@ -2358,6 +2420,7 @@ PAGES = {
     "published-vex": ("Published VEX (CISA)",
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
+    "cert": ("인증시험 성능지표 평가", CERT_PAGE),
 }
 # Two sections: the ANALYZER (interactive tools that take an SBOM and produce a VEX
 # judgement, in pipeline order) and the DATASET (the reference corpus those tools are
@@ -2367,6 +2430,9 @@ _NAV_GROUPS = [
         ("analyzer", "index.html", "ICS-VEXForge"),
         ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
+    ]),
+    ("Certification", [
+        ("cert", "cert.html", "성능지표 #3 / #4 평가"),
     ]),
     ("Dataset", [
         ("dataset", "dataset.html", "CVE Dataset"),

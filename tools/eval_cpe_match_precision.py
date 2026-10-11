@@ -41,6 +41,14 @@ sys.path.insert(0, os.path.join(BASE, "src"))
 import cpe_match_l0l3 as M
 from cpe_match_l0l3 import identify_product
 
+def _use_ai():
+    """Swap in the retrieval-backed matcher. Same contract, so only the binding
+    changes: the AI path runs only where the string cascade abstains."""
+    global M, identify_product
+    import cpe_match_ai as AI
+    M = AI
+    identify_product = AI.identify_product
+
 DATA = os.path.join(BASE, "data", "cpe_match_eval.jsonl")
 OUT = os.path.join(BASE, "results", "cpe_match_precision.json")
 TARGET = 0.80
@@ -150,28 +158,29 @@ def load_gt(path):
     return gt, [c for c in cases.values() if c["correct_products"]], conflicts, unreachable
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=DATA)
-    ap.add_argument("--out", help="write elsewhere than results/cpe_match_precision.json. "
-                                  "Pass it when scoring a non-default --data: the fixed "
-                                  "output path silently overwrote the whole-corpus result "
-                                  "with a 104-scoped one once already")
-    ap.add_argument("--strict", action="store_true",
-                    help="SUT precision mode: drop co-listed-vendor CVEs")
-    a = ap.parse_args()
+def score(data=DATA, matcher="string", strict=False, progress=None):
+    """Measure test item #3 and return the result record.
 
-    if not os.path.isfile(a.data):
-        print("GT 없음: %s\n  python tools/build_cpe_match_gt.py 로 먼저 생성" % a.data)
-        return
+    Split out of main() so the web app scores through exactly this function rather
+    than reimplementing the rules. A second implementation is a second set of
+    numbers, and the whole point of the certification page is that the figure it
+    shows is the figure that was measured.
 
-    gt, cases, conflicts, unreachable = load_gt(a.data)
+    progress: optional callable(done, total, note) for a long run - the full corpus
+    is ~14k components and takes minutes, so the caller needs to be able to report
+    where it is without this function knowing anything about HTTP.
+    """
+    if matcher == "ai":
+        _use_ai()
+    gt, cases, conflicts, unreachable = load_gt(data)
     tp = fp = unlabelled = abstained = unadjudicable = 0
     fp_axis = collections.Counter()
     by_path = collections.Counter()
     fp_rows = []
 
-    for case in cases:
+    for i, case in enumerate(cases):
+        if progress and i % 200 == 0:
+            progress(i, len(cases), "scoring components")
         comp = {"name": case["name"], "version": case["version"] or ""}
         if case.get("cpe"):
             comp["cpe"] = case["cpe"]
@@ -179,15 +188,9 @@ def main():
         if not product:
             abstained += 1              # identified nothing: no prediction to score
             continue
-        # An exact identifier resolves straight to a CVE list without ever naming a
-        # CPE product — CISA publishes Siemens MLFB order codes for 14% of components
-        # while NVD carries no CPE for many of those devices at all. Requiring a
-        # product-key match there discards 7,254 (component, CVE) pairs the ground
-        # truth does label, so these are scored on the CVE, which is what the spec
-        # actually defines TP on.
         if _how == "model-number":
             labels = case.get("cve_label") or {}
-            for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=a.strict):
+            for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=strict):
                 lab = labels.get(pred["cve"])
                 if lab is None:
                     unlabelled += 1
@@ -199,17 +202,12 @@ def main():
                     fp_axis["identifier"] += 1
             continue
         product_ok = any(same_product(product, p) for p in case["correct_products"])
-        # not the GT product, but the component's own name carries it: the two
-        # authorities disagree about which product the CVE is filed against, so the
-        # GT cannot adjudicate and the prediction is held out rather than charged
         indeterminate = not product_ok and name_supports(product, case["name"])
-        for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=a.strict):
+        for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=strict):
             if indeterminate:
                 unadjudicable += 1
                 continue
             if not product_ok:
-                # wrong-product mapping: the authoritative identity is known and the
-                # component's own name does not support the SUT's product either
                 fp += 1
                 fp_axis["product"] += 1
                 if len(fp_rows) < 40:
@@ -220,8 +218,6 @@ def main():
                 continue
             label = gt.get((case["component_id"], product, case["version"], pred["cve"]))
             if label is None:
-                # GT lists only the CVEs CISA asserted for this component; a CVE
-                # outside that set is unjudged, not wrong
                 unlabelled += 1
             elif label["applicable"]:
                 tp += 1
@@ -233,14 +229,17 @@ def main():
                                     "sut_product": product,
                                     "version": case["version"], "cve": pred["cve"],
                                     "axis": label.get("_negative_family")})
+    if progress:
+        progress(len(cases), len(cases), "done")
 
     scored = tp + fp
     prec = tp / scored if scored else 0.0
-    res = {
+    return {
         "test": "SBOM CVE-identification precision (시험항목 #3)",
-        "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
-        "sut_mode": "strict (co-listed dropped)" if a.strict else "recall-safe (default)",
-        "ground_truth": os.path.relpath(a.data, BASE),
+        "sut": ("src/cpe_match_ai (retrieval behind the cascade)" if matcher == "ai"
+                else "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)"),
+        "sut_mode": "strict (co-listed dropped)" if strict else "recall-safe (default)",
+        "ground_truth": os.path.relpath(data, BASE),
         "gt_labels": len(gt), "gt_conflicts_held_out": conflicts,
         "gt_unreachable_for_this_sut": dict(unreachable),
         "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN "
@@ -265,11 +264,39 @@ def main():
         "fp_examples": fp_rows,
     }
 
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", default=DATA)
+    ap.add_argument("--out", help="write elsewhere than results/cpe_match_precision.json. "
+                                  "Pass it when scoring a non-default --data: the fixed "
+                                  "output path silently overwrote the whole-corpus result "
+                                  "with a 104-scoped one once already")
+    ap.add_argument("--matcher", choices=["string", "ai"], default="string",
+                    help="'ai' adds semantic retrieval behind the string cascade")
+    ap.add_argument("--strict", action="store_true",
+                    help="SUT precision mode: drop co-listed-vendor CVEs")
+    a = ap.parse_args()
+
+    if not os.path.isfile(a.data):
+        print("GT 없음: %s\n  python tools/build_cpe_match_gt.py 로 먼저 생성" % a.data)
+        return
+
+    res = score(a.data, matcher=a.matcher, strict=a.strict)
+    tp, fp, scored = res["TP"], res["FP"], res["scored"]
+    prec, conflicts = res["precision"], res["gt_conflicts_held_out"]
+    gt_labels, abstained = res["gt_labels"], res["sut_abstained"]
+    unlabelled = res["unlabelled_predictions"]
+    unadjudicable = res["unadjudicable_predictions"]
+    unreachable, fp_axis = res["gt_unreachable_for_this_sut"], res["fp_by_axis"]
+    by_path = res["tp_by_path"]
+
     print("=== 시험항목 #3 · SBOM 기반 공개 취약점 식별 정밀도 ===")
     print("  SUT            : %s" % res["sut"])
     print("  mode           : %s" % res["sut_mode"])
-    print("  GT labels      : %d  (conflict held out: %d)" % (len(gt), conflicts))
-    print("  SUT runs       : %d components  (abstained: %d)" % (len(cases), abstained))
+    print("  GT labels      : %d  (conflict held out: %d)" % (gt_labels, conflicts))
+    print("  SUT runs       : %d components  (abstained: %d)"
+          % (res["sut_runs"], abstained))
     if unreachable:
         print("  GT unreachable : %s  (see unreachable_reason)" % dict(unreachable))
     print("  TP=%d  FP=%d  scored=%d" % (tp, fp, scored))

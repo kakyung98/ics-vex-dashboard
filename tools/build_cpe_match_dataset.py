@@ -141,11 +141,15 @@ def main():
 
     positives = len(rows)
     want_neg = int(positives * a.neg_per_pos)
+    # sorted() once, not once per draw: `known` holds ~250k (vendor, product) pairs
+    # and re-sorting it inside the sampling loop turned negative generation into an
+    # O(n log n) step repeated millions of times, which never finished
+    known_list = sorted(known)
     seen = set()
     guard = 0
     while len(rows) - positives < want_neg and guard < want_neg * 40:
         guard += 1
-        vendor, product = rnd.choice(sorted(known))
+        vendor, product = rnd.choice(known_list)
         title = titles.get((vendor, product))
         if not title or nz(title) in held:
             continue

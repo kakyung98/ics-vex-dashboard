@@ -108,7 +108,7 @@ def download_release(repo, version, dst):
 
 def _bodies(root):
     """{function name: normalised body} over a source tree."""
-    funcs, _n = index_snapshot(root)
+    funcs, _n, _lang = index_snapshot(root)
     out = {}
     for name, locs in funcs.items():
         f, s, e = locs[0]

@@ -47,12 +47,25 @@ from cpe_match_l0l3 import BY_PRODUCT, _norm  # noqa: F401  (re-exported for the
 
 DICT = os.path.join(BASE, "data", "cpe_dictionary.jsonl")
 CACHE = os.path.join(BASE, "data", "cpe_product_embeddings.npz")
-ENCODER = os.environ.get("ICSVEX_ENCODER", "ehsanaghaei/SecureBERT")
+# the contrastively trained encoder (tools/train_cpe_encoder.py). SecureBERT off the
+# shelf collapses: mean pairwise cosine 0.9238 over random products, so every ranking
+# was noise. After training it is 0.0212.
+_TRAINED = os.path.join(BASE, "models", "ics-cpe-encoder")
+ENCODER = os.environ.get("ICSVEX_ENCODER",
+                         _TRAINED if os.path.isdir(_TRAINED) else "ehsanaghaei/SecureBERT")
 
 # A cosine score is a ranking, not a verdict. Both gates must pass, the same shape of
-# rule the string path uses (RO_MIN / RO_MARGIN) — tuned on the ground truth, not guessed.
-MIN_SIM = float(os.environ.get("ICSVEX_MIN_SIM", "0.86"))
-MIN_MARGIN = float(os.environ.get("ICSVEX_MIN_MARGIN", "0.02"))
+# rule the string path uses (RO_MIN / RO_MARGIN).
+#
+# Swept against the ground truth over the components the string cascade abstains on
+# (tools/sweep_cpe_ai_threshold.py, results/cpe_ai_threshold_sweep.json). 0.95/0.05
+# is the knee: precision 0.9463 on the AI path alone, which leaves the combined
+# figure at 0.9498 against 0.9499 without it, while recovering 194 true positives.
+# Loosening the margin to 0.02 buys 8 more at 0.9395; dropping it to 0.00 costs
+# 2.6 points for 14. The margin earns its place only on the trained encoder — before
+# contrastive training the top-5 spanned 0.002 and no margin could separate anything.
+MIN_SIM = float(os.environ.get("ICSVEX_MIN_SIM", "0.95"))
+MIN_MARGIN = float(os.environ.get("ICSVEX_MIN_MARGIN", "0.05"))
 TOP_K = 5
 
 _STATE = {"keys": None, "emb": None, "enc": None, "tok": None, "titles": None}

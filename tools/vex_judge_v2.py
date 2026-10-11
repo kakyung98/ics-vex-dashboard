@@ -44,6 +44,15 @@ F = {k: os.path.join(BASE, "data", v) for k, v in {
     "reach": "reachability.json", "ctrl": "controllability.json"}.items()}
 OUT = os.path.join(BASE, "data", "vex_v2.json")
 
+# A verdict is about a (CVE, build) pair. The vulnerable tree and the vendor's
+# remediated release are different inputs with different right answers, and every
+# cache below is keyed by CVE alone, so the build selects the cache rather than a
+# key inside it. `--build fixed` reads the fixed-build Q1 cache and points the
+# patch gate at data/fixed_releases/<CVE>.
+BUILDS = {"vulnerable": ("source_snapshots", "source_locations.json", "vex_v2.json"),
+          "patched": ("fixed_releases", "source_locations_patched.json",
+                      "vex_v2_patched.json")}
+
 AFFECTED, NOT_AFF, UNDER = "affected", "not_affected", "under_investigation"
 FIXED = "fixed"          # CSAF product_status.fixed — remediated, not "never affected"
 
@@ -133,25 +142,46 @@ def main():
     ap.add_argument("--out", help="write elsewhere than data/vex_v2.json (use with "
                                   "--no-patch-gate to keep the pre-gate baseline that "
                                   "the only non-circular #4 figure is measured on)")
+    ap.add_argument("--build", choices=sorted(BUILDS), default="vulnerable",
+                    help="'patched' judges the vendor's remediated release "
+                         "(data/fixed_releases/<CVE>) instead of the vulnerable "
+                         "snapshot. Needs tools/source_locate.py --build patched first. "
+                         "The axis is named as the GT names it; 'fixed' is a VEX status, "
+                         "not a build. NOTE a patched build can only be judged with the gate "
+                         "LIVE: Q1 asks whether the vulnerable FUNCTION is defined, and "
+                         "a fix usually edits that function rather than deleting it, so "
+                         "presence alone reads 'affected' on a remediated tree")
     a = ap.parse_args()
+
+    snap_dir, loc_name, out_name = BUILDS[a.build]
+    paths = dict(F)
+    paths["loc"] = os.path.join(BASE, "data", loc_name)
+    gate_root = (None if a.build == "vulnerable"
+                 else os.path.join(BASE, "data", snap_dir))
 
     if a.run and a.cve:
         _run_chain([a.cve])
     data = {k: (json.load(open(p, encoding="utf-8")) if os.path.exists(p) else {})
-            for k, p in F.items()}
+            for k, p in paths.items()}
+    if a.build != "vulnerable" and not data["loc"]:
+        ap.error("no %s; run: python tools/source_locate.py --build %s --all"
+                 % (loc_name, a.build))
     cves = [a.cve] if a.cve else sorted(data["loc"]) if a.all else None
     if not cves:
         ap.error("pass --cve CVE-XXXX or --all")
 
     ranges = json.load(open(os.path.join(BASE, "data", "cve_version_ranges.json"),
                             encoding="utf-8")) if not a.no_patch_gate else {}
-    out_path = a.out or OUT
+    out_path = a.out or os.path.join(BASE, "data", out_name)
     out = json.load(open(out_path, encoding="utf-8")) if os.path.exists(out_path) else {}
     tally = {}
     for cve in cves:
-        gate = None if a.no_patch_gate else PG.decide(cve, ranges=ranges, locs=data["loc"])
+        gate = (None if a.no_patch_gate else
+                PG.decide(cve, root=(os.path.join(gate_root, cve) if gate_root else None),
+                          ranges=ranges, locs=data["loc"]))
         r = judge(cve, data["loc"].get(cve), data["reach"].get(cve), data["ctrl"].get(cve),
                   gate)
+        r["build"] = a.build
         out[cve] = r
         tally[r["final_vex"]] = tally.get(r["final_vex"], 0) + 1
         print("  %-18s %-20s %s" % (cve, r["final_vex"], r["justification"] or r["basis"]))
