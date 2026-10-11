@@ -124,6 +124,46 @@ def _match_brace(src, i):
 
 _PERL_SUB = re.compile(rb"^sub[ \t]+([A-Za-z_]\w*)[^\n{]*\{", re.M)
 
+# A generated data array is not source, and tree-sitter pays dearly for it.
+# u-boot 2012.10 ships FPGA bitstreams and splash images as C arrays, and the C
+# grammar degrades badly on one enormous initializer: logo_640_480_24bpp.c
+# (404 KB) takes **74 seconds** to parse and yields zero functions, while the K&R
+# regex scan over the same file takes 0.00s. Eleven such files cost ~280s in that
+# one snapshot, which is most of the time the whole index build spends.
+#
+# The guard is deliberately narrow, because skipping a file REMOVES names from
+# the Q1 lookup and a missing name leans toward `affected` (a Q1 miss falls to
+# `component_only`, never to not_affected). So it fires only when the file is
+# large AND both ends of it are almost entirely numeric literals, punctuation and
+# whitespace - the shape of a `{0x12, 0x34, ...}` blob and nothing else. A file
+# with a table at the top and a function at the bottom fails the tail sample and
+# is parsed normally.
+#
+# Checked, not assumed: every file the guard skips across the snapshots from
+# CVE-2005-2096 to CVE-2022-1292 (23 files) was then parsed the slow way to see
+# what tree-sitter WOULD have found. All 23 hold zero functions. That sweep was
+# cut off at that CVE by its own time budget, so the claim is "verified over
+# that range", not over the whole corpus.
+_BLOB_MIN = 64_000          # below this, parsing is cheap enough not to risk it
+_BLOB_SAMPLE = 8_000
+_BLOB_RATIO = 0.97
+_BLOB_CHARS = set(b"0123456789abcdefABCDEFxX,{} \t\r\n")
+
+
+def _is_generated_data(src):
+    """Is this an enormous literal array rather than code?"""
+    if len(src) < _BLOB_MIN:
+        return False
+    for chunk in (src[:_BLOB_SAMPLE], src[-_BLOB_SAMPLE:]):
+        if not chunk:
+            return False
+        hits = sum(1 for b in chunk if b in _BLOB_CHARS)
+        if hits / len(chunk) < _BLOB_RATIO:
+            return False
+    return True
+
+
+
 
 def _match_brace_perl(src, i):
     """_match_brace for Perl: `#` comments and backslash escapes only. C's
@@ -258,6 +298,10 @@ def _funcs_by_line(path):
         return spans
     if src[:2] == b"#!" and b"perl" in src[:200].lower():
         return _brace_spans(src, _PERL_SUB, match=_match_brace_perl)
+    if _is_generated_data(src):
+        # Still run the cheap K&R scan: it costs ~0s and would catch a definition
+        # if this guard ever misfires on something that does hold one.
+        return [(s_, e_, nm) for s_, e_, nm in _brace_spans(src, _KR_DEF, _KW)]
     tree = _parser(path).parse(src)
     spans = []  # (start_line, end_line, name)
     stack = [tree.root_node]

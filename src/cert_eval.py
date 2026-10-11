@@ -59,20 +59,28 @@ ITEMS = {
         "metric": "precision = TP / (TP + FP),  positive class = affected",
         "acceptance": 0.85,
         "sut": "tools/vex_judge_v2 (Q0 patch gate + Q1 presence, Q2/Q3 as tier)",
-        "dataset": {"gt": "data/vex_gt_172.jsonl",
+        "dataset": {"gt": "data/vex_gt_all.jsonl",
                     "sut": "data/vex_v2_pregate.json",
                     "sut_patched": "data/vex_v2_patched.json",
                     "sut_gated": "data/vex_v2.json"},
-        "runtime_hint": "즉시 (판정 캐시를 채점)",
+        "runtime_hint": "즉시 (판정 캐시를 채점) · 모집단 = 소스 수집된 267 CVE 전수",
         # Three scopes, because one number cannot carry the whole claim. The
         # headline is the pre-gate vulnerable-build figure: it is the largest
         # scope whose ground truth does not share an oracle with the SUT.
         "variants": [
             {"key": "pregate", "label": "취약 빌드 · 패치게이트 OFF (주 지표, 비순환)"},
             {"key": "allbuilds", "label": "전체 빌드 · 게이트 ON (순환 경고 포함)"},
-            {"key": "independent", "label": "실행검증 증거만 (오라클 비공유)"},
+            {"key": "independent",
+             "label": "실행검증 증거만 (오라클 비공유, n=3 — 합격기준 미달, 공시용)"},
         ],
-        "reference": {"pregate": 0.9310, "allbuilds": 1.0, "independent": 1.0},
+        # Measured over the full collected-source population (267 CVEs, 80 GT
+        # cases). `independent` is BELOW the acceptance criterion and is kept
+        # here anyway: it is a disclosure scope, not the certification metric,
+        # and hiding a scope because it reads badly is how a benchmark stops
+        # meaning anything. Its single FP is CVE-2024-4340's patched build -
+        # see the variant label.
+        "reference": {"pregate": 0.9437, "allbuilds": 0.9857,
+                      "independent": 0.6667},
     },
 }
 
