@@ -27,6 +27,13 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(BASE, "data", "source_snapshots")
 TARGETS = os.path.join(BASE, "data", "vuln_targets.json")
 OUT = os.path.join(BASE, "data", "patch_refs.json")
+# The same API call already carries the FULL reference list, and throwing away
+# everything that is not commit-shaped was wasteful: tools/git_grep_fix_commits
+# searches a project's own history using keys taken from the OTHER references -
+# bug ids, Fossil check-ins, tickets - and those are precisely the ones a CVE has
+# when it has no commit link. Re-querying NVD for them costs 6.5s per CVE, so the
+# full list is persisted here as it arrives.
+FULL = os.path.join(BASE, "data", "nvd_refs_full.json")
 API = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=%s"
 UA = {"User-Agent": "ics-vex-research/1.0"}
 DELAY = 6.5          # NVD allows 5 requests / 30s without an API key
@@ -78,11 +85,12 @@ def main():
     only_missing = "--all" not in sys.argv
     known = json.load(open(TARGETS, encoding="utf-8")) if os.path.exists(TARGETS) else {}
     out = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
+    full = json.load(open(FULL, encoding="utf-8")) if os.path.exists(FULL) else {}
 
     cves = sorted(d for d in os.listdir(SNAP) if os.path.isdir(os.path.join(SNAP, d)))
     if only_missing:
         cves = [c for c in cves if not (known.get(c) or {}).get("targets")]
-    todo = [c for c in cves if c not in out]
+    todo = [c for c in cves if c not in out or c not in full]
     print("== %d CVEs to query (%d already cached) ==" % (len(todo), len(cves) - len(todo)))
 
     for cve in todo:
@@ -97,7 +105,10 @@ def main():
             if kind:
                 hits.append({"url": url, "tags": r.get("tags") or [], "kind": kind})
         out[cve] = hits
+        full[cve] = [{"url": r.get("url"), "tags": r.get("tags") or []}
+                     for r in refs if r.get("url")]
         json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        json.dump(full, open(FULL, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
         print("%-18s refs=%-3d commit-links=%d %s" %
               (cve, len(refs), len(hits),
                sorted({h["kind"] for h in hits}) if hits else ""), flush=True)
@@ -105,6 +116,7 @@ def main():
     got = sum(1 for c in cves if out.get(c))
     print("\n== %d / %d CVEs have at least one commit-shaped reference ==" % (got, len(cves)))
     print("->", OUT)
+    print("->", FULL, "(%d CVEs with their full reference list)" % len(full))
 
 
 if __name__ == "__main__":

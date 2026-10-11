@@ -170,9 +170,36 @@ def search(repo, pattern):
     return [tuple(l.split("\t", 1)) for l in out.splitlines() if "\t" in l]
 
 
+def todo_list():
+    """Every collected CVE that still has no fix diff, with its component.
+
+    This used to read results/_remaining36.json, a frozen list from the pilot.
+    The corpus has since grown to 267 snapshots and 138 of them have no patch at
+    all, so the work list has to be DERIVED from the current state or the tool
+    silently keeps re-running the same 36. A CVE with a diff already on disk is
+    skipped: the search is for the ones nothing has reached.
+    """
+    idx_path = os.path.join(BASE, "data", "snapshot_index.json")
+    idx = json.load(open(idx_path, encoding="utf-8")) if os.path.isfile(idx_path) else {}
+    snap_root = os.path.join(BASE, "data", "source_snapshots")
+    out = []
+    for cve in sorted(os.listdir(snap_root)):
+        if not os.path.isdir(os.path.join(snap_root, cve)):
+            continue
+        d = os.path.join(PATCHD, cve)
+        if os.path.isdir(d) and os.listdir(d):
+            continue
+        comp = (idx.get(cve) or {}).get("component") or ""
+        out.append({"cve": cve, "component": comp.replace("_", "-")})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default="", help="comma-separated components to run")
+    ap.add_argument("--todo", help="JSON list of {cve, component}; default is "
+                                   "every collected CVE with no fix diff yet")
+    ap.add_argument("--limit", type=int, help="stop after this many CVEs")
     a = ap.parse_args()
     only = {x.strip() for x in a.only.split(",") if x.strip()}
 
@@ -185,7 +212,15 @@ def main():
         for c, lst in json.load(open(deb, encoding="utf-8")).items():
             refs.setdefault(c, [])
             refs[c] = refs[c] + lst
-    todo = json.load(open(os.path.join(BASE, "results", "_remaining36.json"), encoding="utf-8"))
+    todo = (json.load(open(a.todo, encoding="utf-8")) if a.todo else todo_list())
+    # --only narrows BEFORE --limit, or asking for 40 of one component silently
+    # means "the first 40 of everything, then keep whichever happen to match".
+    if only:
+        todo = [i for i in todo if i["component"] in only]
+    if a.limit:
+        todo = todo[:a.limit]
+    print("== %d CVE(s) with no fix diff yet%s ==" %
+          (len(todo), " [%s]" % ",".join(sorted(only)) if only else ""), flush=True)
     res = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
 
     for item in todo:
@@ -232,6 +267,10 @@ def main():
               "; ".join("%s:%s" % (f["key"], f["subject"][:48]) for f in found[:3])),
               flush=True)
     json.dump(res, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    got = sum(1 for c in (i["cve"] for i in todo)
+              if os.path.isdir(os.path.join(PATCHD, c))
+              and os.listdir(os.path.join(PATCHD, c)))
+    print("== %d / %d now have at least one diff ==" % (got, len(todo)))
     print("->", OUT)
 
 

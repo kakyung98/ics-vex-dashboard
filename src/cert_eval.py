@@ -71,7 +71,7 @@ ITEMS = {
             {"key": "pregate", "label": "취약 빌드 · 패치게이트 OFF (주 지표, 비순환)"},
             {"key": "allbuilds", "label": "전체 빌드 · 게이트 ON (순환 경고 포함)"},
             {"key": "independent",
-             "label": "실행검증 증거만 (오라클 비공유, n=3 — 합격기준 미달, 공시용)"},
+             "label": "실행검증 증거만 (오라클 비공유, n=4 — 합격기준 미달, 공시용)"},
         ],
         # Measured over the full collected-source population (267 CVEs, 80 GT
         # cases). `independent` is BELOW the acceptance criterion and is kept
@@ -79,7 +79,7 @@ ITEMS = {
         # and hiding a scope because it reads badly is how a benchmark stops
         # meaning anything. Its single FP is CVE-2024-4340's patched build -
         # see the variant label.
-        "reference": {"pregate": 0.9437, "allbuilds": 0.9857,
+        "reference": {"pregate": 0.9655, "allbuilds": 0.9913,
                       "independent": 0.6667},
     },
 }
