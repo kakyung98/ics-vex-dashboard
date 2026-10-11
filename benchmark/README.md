@@ -9,7 +9,7 @@ down, because written-down figures are what went stale last time.
 | item | metric | result | acceptance | scored on |
 |---|---|---|---|---|
 | #3 | SBOM -> CVE identification precision | **94.99%** (TP 10,294 / FP 543) | >= 0.80 | 10,837 labelled predictions |
-| #4 | VEX affected-judgment precision | **94.37%** (TP 67 / FP 4) | >= 0.85 | 71 (CVE, build) cases |
+| #4 | VEX affected-judgment precision | **96.55%** (TP 112 / FP 4) | >= 0.85 | 116 (CVE, build) cases |
 
 #3 identifies CVEs from the SBOM, #4 judges whether the identified CVEs actually
 affect the build: two consecutive stages. They are NOT scoped to one population —
@@ -44,7 +44,7 @@ and is free under a precision-only metric, so it is disclosed here.
 |---|---|
 | `population.json` | the source-available CVEs |
 | `input.jsonl` | **what the SUT is fed**: CVE + source/patch evidence |
-| `ground_truth.jsonl` | answer key, affected / not_affected (80 cases) |
+| `ground_truth.jsonl` | answer key, affected / not_affected (125 cases) |
 | `predictions.json` | SUT output, pre-gate, vulnerable build — what `result.json` scores |
 | `predictions_gated.json` | SUT output with the Q0 patch gate live |
 | `predictions_patched.json` | SUT output for the vendor's remediated releases |
@@ -58,8 +58,8 @@ number cannot carry the claim:
 
 | scope | precision | TP/FP/TN/FN | what it is worth |
 |---|---|---|---|
-| vulnerable, gate off | **94.37%** | 67/4/0/0 | the headline — largest scope with no shared oracle |
-| both builds, gate live | 98.57% | 69/1/10/0 | the only scope that exercises not_affected; **circular** on the patch_verified cases |
+| vulnerable, gate off | **96.55%** | 112/4/0/0 | the headline — largest scope with no shared oracle |
+| both builds, gate live | 99.13% | 114/1/10/0 | the only scope that exercises not_affected; **circular** on the patch_verified cases |
 | execution-verified only | 66.67% | 2/1/1/0 | no shared oracle at all, but small by construction |
 
 The third scope is **below the acceptance criterion**, and it is published anyway

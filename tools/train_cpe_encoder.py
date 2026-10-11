@@ -73,6 +73,23 @@ def main():
         print("학습 쌍 없음: %s" % os.path.relpath(PAIRS, BASE))
         print("  python tools/build_cpe_match_dataset.py  로 먼저 생성")
         return
+    # --seed used to reach only this Random(), while the two places that
+    # actually decide the weights - DataLoader(shuffle=True) and the dropout in
+    # the encoder - draw from torch's global RNG. So a rerun produced a
+    # DIFFERENT encoder, and the AI matcher's measured precision could not be
+    # reproduced from the committed training pairs. Seeding torch (and numpy,
+    # which sentence-transformers touches) closes that: the model is the thing
+    # the figure depends on, so it has to be derivable from what is in the repo.
+    import torch
+    torch.manual_seed(a.seed)
+    torch.cuda.manual_seed_all(a.seed)
+    try:
+        import numpy as np
+        np.random.seed(a.seed)
+    except Exception:
+        pass
+    random.seed(a.seed)
+
     rnd = random.Random(a.seed)
     rnd.shuffle(pos)
     if a.max_pairs:
@@ -101,6 +118,9 @@ def main():
     print("examples %d  (hard-negative %d)  batch %d  epochs %d"
           % (len(examples), sum(1 for e in examples if len(e.texts) == 3),
              a.batch, a.epochs))
+    # No seed= here: this sentence-transformers' fit() does not take one, and
+    # passing it raises. The global torch/numpy/random seeds set above are what
+    # the DataLoader shuffle and the dropout actually draw from.
     model.fit(train_objectives=[(loader, loss)], epochs=a.epochs,
               warmup_steps=int(0.1 * len(loader)), show_progress_bar=True)
     os.makedirs(OUT, exist_ok=True)

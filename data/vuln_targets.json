@@ -1,20 +1,18 @@
 {
   "CVE-2014-0160": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "openssl-OpenSSL_1_0_1/ssl/d1_both.c",
-      "openssl-OpenSSL_1_0_1/ssl/t1_lib.c"
+    "targets": [
+      "dtls1_process_heartbeat",
+      "tls1_process_heartbeat"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2014-0195": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "openssl-OpenSSL_0_9_8/ssl/d1_both.c"
+    "targets": [
+      "dtls1_get_message_fragment"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2014-0198": {
     "targets": [
@@ -25,76 +23,122 @@
   },
   "CVE-2014-0221": {
     "targets": [
-      "dtls1_get_message_fragment"
+      "dtls1_get_message_fragment",
+      "dtls1_send_finished"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2014-0224": {
+    "targets": [
+      "ssl3_connect",
+      "ssl3_accept",
+      "ssl3_get_server_hello",
+      "dtls1_get_message_fragment",
+      "ssl3_get_message",
+      "dtls1_send_finished",
+      "ssl3_output_cert_chain",
+      "ssl3_check_client_hello",
+      "ssl3_get_server_certificate",
+      "dtls1_process_out_of_seq_message",
+      "ssl3_check_finished",
+      "ssl3_read_internal",
+      "dtls1_add_cert_to_buf",
+      "dtls1_read_failed",
+      "ssl3_get_finished",
+      "ssl3_get_new_session_ticket",
+      "ssl3_read_bytes",
+      "ssl3_check_cert_and_algorithm",
+      "ssl3_shutdown"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2014-3470": {
     "targets": [
-      "ssl3_send_client_key_exchange"
+      "ssl3_send_client_key_exchange",
+      "if",
+      "ssl3_send_client_verify"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0207": {
     "targets": [
-      "dtls1_listen"
+      "dtls1_listen",
+      "dtls1_handle_timeout",
+      "dtls1_check_timeout_num"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0209": {
     "targets": [
-      "d2i_ECPrivateKey"
+      "d2i_X509_AUX",
+      "d2i_ECParameters",
+      "i2d_ECPrivateKey",
+      "d2i_ECPrivateKey",
+      "ec_asn1_pkparameters2group",
+      "d2i_ECPKParameters"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0285": {
     "targets": [
       "ssl3_client_hello"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0287": {
     "targets": [
       "ASN1_item_ex_d2i"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0288": {
     "targets": [
       "X509_to_X509_REQ"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0289": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "openssl-OpenSSL_1_0_0/crypto/pkcs7/pk7_doit.c",
-      "openssl-OpenSSL_1_0_0/crypto/pkcs7/pk7_lib.c"
+    "targets": [
+      "PKCS7_dataFinal",
+      "PKCS7_dataDecode",
+      "PKCS7_dataInit",
+      "PKCS7_ctrl",
+      "PKCS7_get_signer_info",
+      "PKCS7_dataVerify",
+      "PKCS7_SIGNER_INFO_sign",
+      "PKCS7_set_digest",
+      "pkcs7_encode_rinfo",
+      "PKCS7_find_digest",
+      "do_pkcs7_signed_attrib"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0290": {
     "targets": [
       "ssl3_write_bytes"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0291": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "openssl-OpenSSL_1_0_2/ssl/t1_lib.c"
+    "targets": [
+      "tls1_set_shared_sigalgs",
+      "tls1_set_server_sigalgs",
+      "ssl_scan_serverhello_tlsext",
+      "if",
+      "tls_decrypt_ticket"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-0292": {
     "targets": [
@@ -104,19 +148,20 @@
     "evidence": "NVD text (shape) + defined in snapshot"
   },
   "CVE-2015-0293": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "openssl-OpenSSL_1_0_0/ssl/s2_lib.c"
+    "targets": [
+      "get_client_master_key",
+      "ssl2_generate_key_material",
+      "get_client_hello"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-1787": {
     "targets": [
       "ssl3_get_client_key_exchange"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2015-7547": {
     "targets": [
@@ -134,20 +179,34 @@
   },
   "CVE-2015-8035": {
     "targets": [
+      "xz_make",
       "xz_decomp"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2016-2177": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "openssl-OpenSSL_1_0_1/ssl/s3_srvr.c",
-      "openssl-OpenSSL_1_0_1/ssl/ssl_sess.c",
-      "openssl-OpenSSL_1_0_1/ssl/t1_lib.c"
+    "targets": [
+      "ssl3_get_client_hello",
+      "tls1_process_ticket",
+      "ssl_parse_clienthello_tlsext",
+      "ssl_get_prev_session",
+      "if",
+      "ssl_parse_serverhello_tlsext",
+      "ssl_check_clienthello_tlsext",
+      "ssl_check_serverhello_tlsext",
+      "tls1_process_heartbeat",
+      "tls1_heartbeat"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2016-3709": {
+    "targets": [
+      "htmlAttrDumpOutput"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2016-9318": {
     "targets": [
@@ -254,40 +313,50 @@
     "source": "description",
     "evidence": "NVD text (shape) + defined in snapshot"
   },
+  "CVE-2017-7375": {
+    "targets": [
+      "xmlParsePEReference"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2017-8872": {
     "targets": [
-      "htmlParseTryOrFinish"
+      "xmlParseChunk",
+      "xmlHaltParser"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2017-9047": {
     "targets": [
       "xmlSnprintfElementContent"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2017-9048": {
     "targets": [
       "xmlSnprintfElementContent"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2017-9049": {
     "targets": [
-      "xmlDictComputeFastKey"
+      "xmlParseNameComplex",
+      "xmlGROW"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2017-9050": {
     "targets": [
-      "xmlDictAddString"
+      "xmlParseNameComplex",
+      "xmlGROW"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2018-14526": {
     "targets": [
@@ -314,12 +383,57 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2018-16890": {
+    "targets": [
+      "Curl_ntlm_create_type3_message",
+      "Curl_http_ntlm_cleanup",
+      "ascii_to_unicode_le",
+      "Curl_ntlm_core_mk_nt_hash",
+      "Curl_ntlm_decode_type2_message",
+      "readint_le"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2018-18065": {
     "targets": [
       "_set_key"
     ],
     "source": "description",
     "evidence": "NVD text (shape) + defined in snapshot"
+  },
+  "CVE-2018-18440": {
+    "targets": [
+      "lmb_init",
+      "env_sf_load",
+      "lmb_free",
+      "store_block",
+      "fs_read",
+      "env_sf_save",
+      "arch_lmb_reserve",
+      "boot_start_lmb",
+      "do_load",
+      "boot_fdt_add_mem_rsv_regions",
+      "__lmb_alloc_base",
+      "lmb_add_region",
+      "fs_opendir",
+      "invalid_ecc_page_accessors",
+      "lmb_addrs_overlap",
+      "lmb_align_up",
+      "tftp_handler",
+      "tftp_start",
+      "tftp_start_server",
+      "fs_size",
+      "nand_scan_tail",
+      "lmb_is_reserved",
+      "image_get_fdt",
+      "setup_flash_device",
+      "lmb_align_down",
+      "mcast_cleanup",
+      "tftp_timeout_handler"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2018-20843": {
     "targets": [
@@ -356,10 +470,11 @@
   },
   "CVE-2018-9251": {
     "targets": [
-      "xz_decomp"
+      "xz_decomp",
+      "xz_head"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2019-11477": {
     "targets": [
@@ -383,6 +498,13 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2019-13104": {
+    "targets": [
+      "ext4fs_read_file"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2019-13106": {
     "targets": [
       "ext4fs_read_file"
@@ -390,12 +512,36 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2019-1547": {
+    "targets": [
+      "EC_GROUP_set_generator",
+      "ec_asn1_parameters2group",
+      "d2i_ECPKParameters",
+      "d2i_ECPrivateKey",
+      "EC_GROUP_dup",
+      "EC_METHOD_get_field_type",
+      "EC_curve_nist2nid",
+      "ec_asn1_pkparameters2group",
+      "EC_get_builtin_curves",
+      "EC_GROUP_new_by_curve_name",
+      "ec_precompute_mont_data"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2019-1549": {
     "targets": [
-      "OPENSSL_init_crypto"
+      "RAND_DRBG_generate",
+      "openssl_init_fork_handlers",
+      "OPENSSL_fork_child",
+      "rand_fork",
+      "rand_drbg_new",
+      "CRYPTO_THREAD_lock_new",
+      "rand_drbg_cleanup_additional_data",
+      "RAND_DRBG_get_ex_data"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2019-1563": {
     "targets": [
@@ -419,10 +565,42 @@
   },
   "CVE-2019-16168": {
     "targets": [
-      "whereLoopAddBtreeIndex"
+      "whereLoopAddBtreeIndex",
+      "whereLoopAddBtree",
+      "decodeIntArray",
+      "sqlite3Select",
+      "whereRangeScanEst",
+      "analysisLoader",
+      "whereKeyStats",
+      "whereLoopInsert",
+      "whereInScanEst",
+      "loadStatTbl",
+      "sqlite3StartTable",
+      "sqlite3AllocateIndexObject",
+      "sqlite3CreateIndex",
+      "sqlite3Pragma",
+      "sqlite3ResultSetOfSelect",
+      "withExpand",
+      "selectExpander",
+      "sqlite3LogEstAdd",
+      "whereClauseInsert",
+      "whereLoopAddVirtual",
+      "logEstFromDouble",
+      "main",
+      "whereLoopResize",
+      "codeOneLoopStart",
+      "codeAllEqualityTerms",
+      "indexMightHelpWithOrderBy",
+      "wherePathSatisfiesOrderBy",
+      "sqlite3DefaultRowEst",
+      "whereLoopAdjustCost",
+      "whereLoopOutputAdjust",
+      "whereUsablePartialIndex",
+      "whereLoopAddOr",
+      "wherePathSolver"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2019-17498": {
     "targets": [
@@ -518,18 +696,29 @@
   },
   "CVE-2019-20388": {
     "targets": [
-      "xmlSchemaPreRun",
-      "xmlSchemaValidateStream"
+      "xmlSchemaPreRun"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2019-3822": {
+    "targets": [
+      "Curl_ntlm_create_type3_message",
+      "Curl_http_ntlm_cleanup",
+      "ascii_to_unicode_le",
+      "Curl_ntlm_core_mk_nt_hash",
+      "Curl_ntlm_decode_type2_message",
+      "readint_le"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2019-3823": {
     "targets": [
       "smtp_endofresp"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2019-3855": {
     "targets": [
@@ -593,6 +782,44 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2019-3857": {
+    "targets": [
+      "userauth_password",
+      "hostkey_method_ssh_dss_init",
+      "kex_method_diffie_hellman_group_exchange_sha1_key_exchange",
+      "userauth_keyboard_interactive",
+      "_libssh2_channel_read",
+      "_libssh2_userauth_publickey",
+      "hostkey_method_ssh_rsa_init",
+      "userauth_list",
+      "_libssh2_channel_flush",
+      "_libssh2_packet_add",
+      "_libssh2_channel_packet_data_len",
+      "diffie_hellman_sha1",
+      "libssh2_channel_eof",
+      "_libssh2_channel_open",
+      "channel_forward_listen",
+      "_libssh2_transport_read",
+      "libssh2_channel_window_read_ex",
+      "channel_request_pty",
+      "channel_x11_req",
+      "_libssh2_channel_process_startup",
+      "hostkey_method_ssh_dss_sig_verify",
+      "channel_setenv",
+      "session_startup",
+      "userauth_hostbased_fromfile",
+      "libssh2_channel_setenv_ex",
+      "libssh2_channel_request_pty_ex",
+      "libssh2_channel_x11_req_ex",
+      "libssh2_channel_process_startup",
+      "_libssh2_channel_write",
+      "channel_wait_eof",
+      "hostkey_method_ssh_rsa_signv",
+      "hostkey_method_ssh_rsa_sig_verify"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2019-3858": {
     "targets": [
       "_libssh2_packet_add",
@@ -620,6 +847,27 @@
       "sftp_unlink",
       "sftp_rename",
       "sftp_attr2bin"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2019-5436": {
+    "targets": [
+      "tftp_rx",
+      "tftp_tx",
+      "tftp_connect_for_tx",
+      "tftp_connect_for_rx",
+      "tftp_send_first",
+      "tftp_connect",
+      "tftp_do",
+      "tftp_set_timeouts",
+      "tftp_state_machine",
+      "Curl_setopt",
+      "getrpacketevent",
+      "tftp_option_get",
+      "tftp_parse_option_ack",
+      "tftp_disconnect",
+      "getrpacketblock"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"
@@ -662,15 +910,20 @@
     "targets": [
       "fts5HashEntrySort"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2019-9937": {
     "targets": [
-      "fts5ChunkIterate"
+      "fts5HashAddPoslistSize",
+      "fts5SegIterHashInit",
+      "sqlite3Fts5HashQuery",
+      "sqlite3Fts5HashWrite",
+      "sqlite3Fts5HashScanEntry",
+      "fts5HashResize"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2020-10648": {
     "targets": [
@@ -708,10 +961,20 @@
   },
   "CVE-2020-13871": {
     "targets": [
-      "resetAccumulator"
+      "sqlite3Select",
+      "flattenSubquery",
+      "sqlite3WindowRewrite",
+      "sqlite3FinishCoding",
+      "sqlite3ExprAffinity",
+      "addAggInfoFunc",
+      "sqlite3ColumnsFromExprList",
+      "sqlite3InitOne",
+      "sqlite3FunctionUsesThisSrc",
+      "sqlite3SchemaToIndex",
+      "columnTypeImpl"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2020-15778": {
     "targets": [
@@ -722,10 +985,10 @@
   },
   "CVE-2020-1967": {
     "targets": [
-      "SSL_check_chain"
+      "tls1_check_sig_alg"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2020-1971": {
     "targets": [
@@ -769,17 +1032,34 @@
   },
   "CVE-2020-29562": {
     "targets": [
-      "iconv"
+      "ucs4_internal_loop",
+      "ucs4_internal_loop_unaligned",
+      "ucs4le_internal_loop",
+      "ucs4le_internal_loop_unaligned"
     ],
-    "source": "description",
-    "evidence": "NVD text (named) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2020-35525": {
+    "targets": [
+      "multiSelect"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2020-35527": {
+    "targets": [
+      "selectExpander"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2020-7595": {
     "targets": [
       "xmlStringLenDecodeEntities"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2020-8177": {
     "targets": [
@@ -789,12 +1069,48 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2020-8231": {
+    "targets": [
+      "Curl_getconnectinfo",
+      "conn_is_conn",
+      "curl_easy_duphandle",
+      "curl_multi_add_handle",
+      "Curl_open",
+      "multi_getsock",
+      "curl_multi_wait",
+      "Curl_connecthost",
+      "curl_multi_remove_handle"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2020-8285": {
+    "targets": [
+      "wc_statemach",
+      "ftp_quit",
+      "ftp_parse_url_path",
+      "ftp_disconnect",
+      "init_wc_data"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2020-8286": {
+    "targets": [
+      "verifystatus",
+      "ossl_connect_step1"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2020-9327": {
     "targets": [
-      "isAuxiliaryVtabOperator"
+      "isAuxiliaryVtabOperator",
+      "impliesNotNullRow",
+      "sqlite3ExprIsInteger"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-20227": {
     "targets": [
@@ -811,12 +1127,58 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2021-22890": {
+    "targets": [
+      "Curl_ssl_addsessionid",
+      "ossl_get_ssl_sockindex_index",
+      "ossl_new_session_cb",
+      "schannel_connect_step3",
+      "gtls_connect_step3",
+      "mbed_connect_step3",
+      "mesalink_connect_step3",
+      "Curl_ssl_getsessionid",
+      "gtls_connect_step1",
+      "mbed_connect_step1",
+      "ossl_connect_step1",
+      "schannel_connect_step1",
+      "mesalink_connect_step2",
+      "Curl_ossl_init",
+      "get_cert_chain",
+      "schannel_send",
+      "Curl_ssl_kill_session",
+      "Curl_none_shutdown",
+      "Curl_ssl_close_all",
+      "mesalink_connect_step1"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2021-22924": {
+    "targets": [
+      "Curl_disconnect",
+      "ConnectionExists",
+      "CreateConnection",
+      "Curl_do",
+      "ConnectionStore",
+      "Curl_do_more"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2021-22945": {
+    "targets": [
+      "mqtt_send"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2021-23839": {
     "targets": [
-      "RSA_padding_check_SSLv23"
+      "RSA_padding_check_SSLv23",
+      "RSA_padding_add_SSLv23"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-23840": {
     "targets": [
@@ -831,30 +1193,37 @@
     "targets": [
       "X509_issuer_and_serial_hash"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-27645": {
     "targets": [
-      "daemon"
+      "addgetnetgrentX"
     ],
-    "source": "description",
-    "evidence": "NVD text (call) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-28831": {
     "targets": [
-      "huft_build"
+      "huft_free",
+      "fill_bitbuffer"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-31239": {
-    "targets": [],
-    "source": "description-file",
-    "files": [
-      "sqlite-version-3.35.4/ext/misc/appendvfs.c"
+    "targets": [
+      "apndOpen",
+      "apndTruncate",
+      "apndWriteMark",
+      "apndWrite",
+      "apndFetch",
+      "apndIsAppendvfsDatabase",
+      "apndIsOrdinaryDatabaseFile",
+      "apndClose"
     ],
-    "evidence": "NVD text names a file, not a function"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-31571": {
     "targets": [
@@ -882,6 +1251,48 @@
   "CVE-2021-33909": {
     "targets": [
       "seq_buf_alloc"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2021-3449": {
+    "targets": [
+      "SSL_new",
+      "ssl_generate_master_secret",
+      "tls_construct_certificate_request",
+      "tls_parse_stoc_alpn",
+      "tls_parse_stoc_sct",
+      "tls_parse_ctos_renegotiate",
+      "tls_process_finished",
+      "tls_construct_ctos_early_data",
+      "tls_parse_stoc_npn",
+      "tls_process_cert_status_body",
+      "tls_construct_client_key_exchange",
+      "tls_client_key_exchange_post_work",
+      "tls_parse_stoc_ec_pt_formats",
+      "tls_process_certificate_request",
+      "tls_handle_alpn",
+      "tls_construct_new_session_ticket",
+      "init_sig_algs_cert",
+      "def_generate_session_id",
+      "SSL_CTX_new",
+      "init_sig_algs",
+      "SSL_CTX_set_alpn_protos",
+      "SSL_set_alpn_protos",
+      "tls_process_cke_psk_preamble",
+      "tls_process_client_key_exchange",
+      "final_alpn",
+      "tls_parse_stoc_server_name",
+      "ssl_next_proto_validate",
+      "tls_process_key_exchange",
+      "tls_handle_status_request",
+      "tls_process_cke_gost",
+      "construct_stateless_ticket",
+      "ssl_session_hash",
+      "init_srp",
+      "ssl3_check_client_certificate",
+      "tls_process_cke_rsa",
+      "tls_post_process_client_key_exchange"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"
@@ -953,6 +1364,13 @@
     ],
     "source": "description",
     "evidence": "NVD text (shape) + defined in snapshot"
+  },
+  "CVE-2021-3998": {
+    "targets": [
+      "realpath_stk"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2021-3999": {
     "targets": [
@@ -1110,10 +1528,17 @@
   },
   "CVE-2022-1343": {
     "targets": [
-      "OCSP_basic_verify"
+      "ocsp_verify_signer"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2022-1434": {
+    "targets": [
+      "rc4_hmac_md5_set_ctx_params"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2022-1473": {
     "targets": [
@@ -1146,6 +1571,14 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2022-2274": {
+    "targets": [
+      "ossl_rsaz_mod_exp_avx512_x2",
+      "RSAZ_exp52x20_x2_256"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2022-22822": {
     "targets": [
       "addBinding"
@@ -1164,6 +1597,19 @@
   "CVE-2022-23303": {
     "targets": [
       "sae_derive_pwe_ecc"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2022-2347": {
+    "targets": [
+      "state_dfu_idle",
+      "state_dfu_upload_idle",
+      "state_dfu_dnload_idle",
+      "dfu_handle",
+      "state_dfu_dnload_sync",
+      "state_dfu_error",
+      "dfu_prepare_function"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"
@@ -1245,10 +1691,25 @@
   },
   "CVE-2022-30065": {
     "targets": [
-      "copyvar"
+      "evaluate"
     ],
-    "source": "description",
-    "evidence": "NVD text (named) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2022-30552": {
+    "targets": [
+      "net_process_received_packet",
+      "__net_defragment"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2022-30790": {
+    "targets": [
+      "__net_defragment"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2022-32221": {
     "targets": [
@@ -1267,6 +1728,15 @@
       "do_i2c_loop",
       "get_alen",
       "i2c_init_board"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2022-3602": {
+    "targets": [
+      "ossl_a2ulabel",
+      "ossl_punycode_decode",
+      "ossl_a2ucompare"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"
@@ -1491,10 +1961,42 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2023-27535": {
+    "targets": [
+      "getparameter",
+      "Curl_setopt",
+      "Curl_ftp_connect",
+      "free_config_fields",
+      "operate",
+      "ConnectionExists"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2023-27536": {
     "targets": [
       "ConnectionExists",
       "allocate_conn"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2023-27537": {
+    "targets": [
+      "Curl_vsetopt",
+      "curl_share_setopt",
+      "curl_share_cleanup",
+      "Curl_pretransfer",
+      "Curl_close",
+      "Curl_hsts_loadcb"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2023-27538": {
+    "targets": [
+      "Curl_setopt",
+      "ConnectionExists"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"
@@ -1583,17 +2085,22 @@
   },
   "CVE-2023-38546": {
     "targets": [
-      "curl_easy_duphandle"
+      "curl_easy_duphandle",
+      "Curl_cookie_cleanup",
+      "Curl_cookie_add",
+      "Curl_cookie_init"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-39615": {
     "targets": [
-      "xmlSAX2StartElement"
+      "xmlSAXVersion",
+      "xmlDetectSAX2",
+      "xmlCtxtUseOptionsInternal"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-44487": {
     "targets": [
@@ -1607,10 +2114,11 @@
   },
   "CVE-2023-4527": {
     "targets": [
-      "getaddrinfo"
+      "gaih_inet",
+      "_nss_dns_gethostbyname4_r"
     ],
-    "source": "description",
-    "evidence": "NVD text (named) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-45322": {
     "targets": [
@@ -1635,10 +2143,10 @@
   },
   "CVE-2023-4806": {
     "targets": [
-      "getaddrinfo"
+      "get_scope"
     ],
-    "source": "description",
-    "evidence": "NVD text (named) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-48795": {
     "targets": [
@@ -1660,6 +2168,13 @@
       "parse_tunables",
       "do_test",
       "test_child"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2023-5156": {
+    "targets": [
+      "get_scope"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"
@@ -1705,25 +2220,24 @@
   },
   "CVE-2023-6246": {
     "targets": [
-      "__vsyslog_internal",
-      "openlog"
+      "__vsyslog_internal"
     ],
-    "source": "description",
-    "evidence": "NVD text (named,shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-6779": {
     "targets": [
       "__vsyslog_internal"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-6780": {
     "targets": [
       "__vsyslog_internal"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2023-7104": {
     "targets": [
@@ -1755,10 +2269,20 @@
   },
   "CVE-2024-0232": {
     "targets": [
-      "jsonParseAddNodeArray"
+      "sqlite3RCStrResize",
+      "sqlite3RCStrUnref",
+      "jsonParseCached",
+      "jsonReplaceFunc",
+      "jsonSetFunc",
+      "sqlite3ValueIsOfClass",
+      "jsonParseValue",
+      "jsonReplaceNode",
+      "jsonParse",
+      "sqlite3RCStrNew",
+      "sqlite3ValueText"
     ],
-    "source": "description",
-    "evidence": "NVD text (shape) + defined in snapshot"
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2024-0727": {
     "targets": [
@@ -1822,6 +2346,18 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2024-28882": {
+    "targets": [
+      "receive_exit_message",
+      "send_auth_failed",
+      "schedule_exit",
+      "send_restart",
+      "process_received_occ_msg",
+      "check_server_poll_timeout"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2024-2961": {
     "targets": [
       "iconv"
@@ -1829,12 +2365,55 @@
     "source": "description",
     "evidence": "NVD text (call) + defined in snapshot"
   },
+  "CVE-2024-33599": {
+    "targets": [
+      "addinnetgrX"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2024-33600": {
+    "targets": [
+      "addgetnetgrentX",
+      "addinnetgrX"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2024-33601": {
+    "targets": [
+      "readdinnetgr"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2024-33602": {
+    "targets": [
+      "readdinnetgr"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2024-4340": {
     "targets": [
       "parse"
     ],
     "source": "description",
     "evidence": "NVD text (call) + defined in snapshot"
+  },
+  "CVE-2024-5594": {
+    "targets": [
+      "check_incoming_control_channel",
+      "string_mod",
+      "check_tls",
+      "options_postprocess_mutate",
+      "packet_opcode_name",
+      "read_inline_file",
+      "check_session_id_hmac",
+      "check_tls_errors_nco"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
   },
   "CVE-2024-6119": {
     "targets": [
@@ -1889,10 +2468,31 @@
     "source": "patch",
     "evidence": "fix-commit hunk"
   },
+  "CVE-2025-29087": {
+    "targets": [
+      "concatFuncCore"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
   "CVE-2025-29088": {
     "targets": [
       "setupLookaside",
       "sqlite3_config"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2025-3277": {
+    "targets": [
+      "concatFuncCore"
+    ],
+    "source": "patch",
+    "evidence": "fix-commit hunk"
+  },
+  "CVE-2026-42945": {
+    "targets": [
+      "ngx_http_script_regex_end_code"
     ],
     "source": "patch",
     "evidence": "fix-commit hunk"

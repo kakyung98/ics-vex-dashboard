@@ -343,8 +343,32 @@ def patch_cases(limit_cves=None):
                                                 % snap_versions.get(root),
                                       "detail": v.get("detail")})
                     continue
-                corroboration = {True: None, False: "patch+nvd",
-                                 None: "patch-only"}[still]
+                if still is None:
+                    # NVD has no product-matched range for this version, so the
+                    # patch signature is the ONLY authority saying the build is
+                    # fixed. This used to be accepted as `patch-only`, and it is
+                    # the same situation src/patch_gate refuses by design ("a
+                    # single authority may not clear a CVE"). Keeping the label
+                    # therefore scored the SUT as wrong for being STRICTER than
+                    # the answer key: all 12 patch-only labels in the corpus
+                    # became false positives, 12 of the headline's 16.
+                    #
+                    # The rule above already says why that is the wrong trade -
+                    # "a wrong not_affected charges the SUT with an FP it did
+                    # not commit, which is the costlier error for a precision
+                    # metric" - it just was not applied when NVD was silent
+                    # rather than contradictory. It is now. The case is held out
+                    # as inconclusive, not relabelled affected: one authority
+                    # saying "fixed" is not evidence that it is vulnerable.
+                    inconclusive.append({
+                        "cve": cve, "build": build,
+                        "reason": "patch signature says fixed but NVD has no "
+                                  "product-matched range for %s; a single "
+                                  "authority may not clear a CVE"
+                                  % snap_versions.get(root),
+                        "detail": v.get("detail")})
+                    continue
+                corroboration = {True: None, False: "patch+nvd"}[still]
             if v["verdict"] == "fixed" and not _has_positive_fix_evidence(v["detail"]):
                 # `fixed` with zero fix-lines found rests only on the vulnerable lines
                 # being absent, which is indistinguishable from never having located
