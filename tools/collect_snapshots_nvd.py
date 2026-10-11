@@ -32,6 +32,7 @@ import argparse
 import io
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -55,10 +56,23 @@ def variants(version):
 
 
 def tag_exists(repo, tag):
-    url = "https://api.github.com/repos/%s/git/ref/tags/%s" % (repo, tag)
+    """Does this tag have a downloadable archive?
+
+    Asked of the archive host, not of api.github.com. The API answers the same
+    question but is capped at 60 requests/hour unauthenticated, and checking two
+    templates for each of 206 targets is 412 calls — so the first 60 resolved and
+    every one after that came back 403, which the caller recorded as "no tag
+    resolved". 93 collections were written off as missing upstream tags that are
+    in fact all present; the direct test of sqlite 3.30.1, libxml2 2.9.4 and
+    libcurl 7.36.0 resolved every one.
+
+    codeload has no such cap. A HEAD costs nothing and answers exactly what the
+    fetch needs to know.
+    """
+    url = "https://codeload.github.com/%s/zip/refs/tags/%s" % (repo, tag)
     try:
-        req = urllib.request.Request(url, headers=UA)
-        with urllib.request.urlopen(req, timeout=25) as r:
+        req = urllib.request.Request(url, headers=UA, method="HEAD")
+        with urllib.request.urlopen(req, timeout=30) as r:
             return r.status == 200
     except urllib.error.HTTPError:
         return False
@@ -66,18 +80,67 @@ def tag_exists(repo, tag):
         return False
 
 
-def resolve_tag(spec, version):
-    """First template whose tag actually exists upstream.
+def list_tags(repo, pages=3):
+    """Up to 300 tag names from the repo, newest first."""
+    out = []
+    for page in range(1, pages + 1):
+        url = ("https://api.github.com/repos/%s/tags?per_page=100&page=%d"
+               % (repo, page))
+        try:
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                rows = json.load(r)
+        except Exception:
+            break
+        if not rows:
+            break
+        out.extend(t.get("name") for t in rows if t.get("name"))
+        if len(rows) < 100:
+            break
+    return [t for t in out if t]
 
-    Verified rather than assumed: a guessed tag yields a 404 zip that would land as
-    an empty snapshot directory and read downstream as "source collected".
+
+def _vnum(tag):
+    """Numeric parts of a tag, for comparing it to a version."""
+    nums = re.findall(r"\d+", tag or "")
+    return tuple(int(n) for n in nums[:4]) if nums else None
+
+
+def resolve_tag(spec, version):
+    """A tag that really exists upstream, preferring the exact version.
+
+    Templates alone fail on 141 of 206 targets, and not because the template is
+    wrong: an NVD range bound is a logical boundary, not a release. NVD writes
+    `versionStartIncluding: 3.30.1` for sqlite, which never shipped a 3.30.1, so
+    `version-3.30.1` is a 404 no matter how the template is spelled.
+
+    So the templates are tried first — an exact hit is the version NVD actually
+    names — and only when none resolves does it fall back to the repo's real tag
+    list and take the closest release at or above the bound. That fallback is a
+    DIFFERENT claim: no longer "the version NVD names" but "a release inside the
+    affected range", and it is recorded as such in version_basis so a downstream
+    VEX verdict cannot present one as the other.
     """
     f = variants(version)
     for tmpl in spec.get("tags") or []:
         tag = tmpl.format(**f)
         if tag_exists(spec["gh"], tag):
-            return tag
-    return None
+            return tag, "nvd-range-lower-bound"
+
+    want = _vnum(version)
+    if not want:
+        return None, None
+    best = None
+    for tag in list_tags(spec["gh"]):
+        got = _vnum(tag)
+        if not got:
+            continue
+        # same major.minor, at or above the bound — the nearest real release the
+        # range covers
+        if got[:2] == want[:2] and got >= want[:len(got)]:
+            if best is None or got < best[0]:
+                best = (got, tag)
+    return (best[1], "nearest-release-in-range") if best else (None, None)
 
 
 def fetch_zip(repo, tag, dest):
@@ -137,13 +200,13 @@ def main():
             continue
         try:
             if spec.get("gh"):
-                tag = resolve_tag(spec, ver)
+                tag, basis = resolve_tag(spec, ver)
                 if tag:
                     os.makedirs(dest, exist_ok=True)
                     n = fetch_zip(spec["gh"], tag, dest)
                     index[cve] = {"component": oss, "version": ver, "tag": tag,
                                   "source": "github:%s" % spec["gh"], "bytes": n,
-                                  "version_basis": t.get("version_basis")}
+                                  "version_basis": basis or t.get("version_basis")}
                     ok += 1
                     print("  [%d/%d] %s %s@%s tag=%s %.1fMB"
                           % (i, len(targets), cve, oss, ver, tag, n / 1e6), flush=True)

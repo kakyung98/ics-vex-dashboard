@@ -1,6 +1,6 @@
 {
   "bundle": "ICS-VEX certification benchmark (test items #3, #4)",
-  "generated": "2026-10-10",
+  "generated": "2026-10-11",
   "generated_by": "tools/build_benchmark_bundle.py",
   "note": "generated snapshot — edit the source files, then rebuild",
   "files": {
@@ -30,9 +30,9 @@
     },
     "item3/result.json": {
       "source": "results/cpe_match_precision.json",
-      "description": "Scored: precision 0.9749 (TP 973 / FP 25) over 998 of 11,277 predictions",
-      "bytes": 12362,
-      "sha256": "84e21a61d15cf9cb458ad52a69716c827c443e80641ebc72780871f2921b90f1"
+      "description": "Scored run for item #3 (tools/eval_cpe_match_precision.py)",
+      "bytes": 12440,
+      "sha256": "d3faceb264a03c0db5748cfdf67235810edc17795f20a712930715b0ffe7600e"
     },
     "item4/ground_truth.jsonl": {
       "source": "data/vex_gt_172.jsonl",
@@ -64,11 +64,35 @@
       "bytes": 61497,
       "sha256": "1677a78ab359e75987f809be2eb8a4fa2af1aca1a68fe8ecaf95dfb5f1b50e17"
     },
+    "item4/predictions_gated.json": {
+      "source": "data/vex_v2.json",
+      "description": "vex_judge_v2 with the Q0 patch gate live, over the vulnerable build. Needed to score the full population alongside the patched verdicts; circular on the patch_verified cases, which the result records",
+      "bytes": 71647,
+      "sha256": "50f4da743245bbe2dce1a2f96c414048cc4b2b2c4dc7c050ba8fb1d90609dffd"
+    },
+    "item4/predictions_patched.json": {
+      "source": "data/vex_v2_patched.json",
+      "description": "vex_judge_v2 --build patched: the verdicts for the vendor's remediated releases (data/fixed_releases/). A patched build cannot be judged pre-gate - Q1 reads 'present' on 10 of 12, because a fix edits the vulnerable function rather than deleting it - so these come from the gate-live run",
+      "bytes": 6762,
+      "sha256": "eaee23bf7475e7839bbd7e19863ecfac65d5decff43222232139770db65b075d"
+    },
     "item4/result.json": {
       "source": "results/vex_precision_172.json",
-      "description": "Scored over the 104: precision 0.9200 (TP 46 / FP 4)",
-      "bytes": 2056,
-      "sha256": "9a657a5bbc31ae762ab5bf06376dd1b5b09b16d2012952ae7268cf0198c893be"
+      "description": "HEADLINE scored run for item #4: vulnerable build, patch gate off - the largest scope whose answer key shares no oracle with the SUT",
+      "bytes": 2494,
+      "sha256": "8e5c6b24d0b564019548ae3757ff013ee95f605c17fdd44fb2b24944b0634fb3"
+    },
+    "item4/result_allbuilds.json": {
+      "source": "results/vex_precision_allbuilds.json",
+      "description": "Scored over BOTH builds with the gate live - the only scope that exercises not_affected - with its circularity disclosure",
+      "bytes": 1726,
+      "sha256": "b62381a49dc0bdc9f3eac8031a3969046a8ad6419ce82565a650a44e39a63ec4"
+    },
+    "item4/result_independent.json": {
+      "source": "results/vex_precision_independent.json",
+      "description": "Scored over execution-verified evidence only: the one scope where the GT and the SUT share no oracle. Small by construction",
+      "bytes": 1439,
+      "sha256": "8838e7519ed2c59095ccb2aee76d442810a96807ec21f43ef51732ce85338b3c"
     }
   }
 }

@@ -162,15 +162,86 @@ def _brace_spans(src, pattern, skip=(), match=_match_brace):
     return out
 
 
+def _py_spans(src):
+    """(start_line, end_line, name) for every def in one Python file, 0-based.
+
+    stdlib `ast`, not tree-sitter: it is the same grammar CPython itself runs, it
+    needs no extra wheel, and it already gives exact end lines (`end_lineno`, 3.8+).
+    A file that does not parse is skipped rather than guessed at, matching how the
+    C path treats an unparseable translation unit.
+
+    Reached only for a pure-Python component (see EXT_PY). The corpus's one such
+    case is sqlparse, whose CVE-2024-4340 is one of only four execution-verified
+    GT labels - the vulnerable `flatten` is a METHOD on TokenList, and `sql.py`
+    defines `flatten` on more than one class, so how a method is keyed decides
+    whether source_locate's lookup can reach it at all.
+    """
+    import ast
+    try:
+        tree = ast.parse(src)
+    except (SyntaxError, ValueError):
+        return []
+
+    spans = []
+    # class -> the names defined directly inside it, so a method can be keyed by
+    # whatever the lookup in source_locate._func_index will actually ask for.
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        start = node.lineno - 1
+        end = (getattr(node, "end_lineno", None) or node.lineno) - 1
+        owner = _PY_OWNER.get(id(node))
+        # Registered under BOTH the bare name and `Class.name`. A method is the
+        # normal case in Python and the two naming conventions cannot be
+        # reconciled by guessing: CTI and patch hunks name `flatten`, while
+        # sql.py defines `flatten` on both Token and TokenList, so neither key
+        # alone can be looked up reliably.
+        #
+        # Registering both is safe HERE specifically because Q1 reads
+        # `found = bool(locs)` - a collision on the bare key changes which span
+        # is reported as file/lines, never the verdict. Dropping a key would
+        # change the verdict: a Q1 miss falls to `component_only`, which
+        # vex_judge_v2 resolves to `affected`, not to not_affected. So a missing
+        # key leans toward a false positive while a duplicate key leans nowhere.
+        spans.append((start, end, node.name))
+        if owner:
+            spans.append((start, end, "%s.%s" % (owner, node.name)))
+    return spans
+
+
+def _py_owners(tree):
+    """id(funcdef node) -> enclosing class name, for the one level that matters."""
+    import ast
+    owners = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            for child in node.body:
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    owners[id(child)] = node.name
+    return owners
+
+
+_PY_OWNER = {}
+
+
 def _funcs_by_line(path):
     """(start_line, end_line, name) for every function in one file, 0-based.
 
     C/C++ by tree-sitter plus the K&R regex scan (zlib 1.2.12's inflate.c is K&R
     and the parse lost `inflate` itself, so CVE-2022-37434's fix had nowhere to
     land); Java methods by tree-sitter-java; Perl `sub`s for OpenSSL's c_rehash,
-    the script both CVE-2022-1292 and CVE-2022-2068 are in."""
+    the script both CVE-2022-1292 and CVE-2022-2068 are in; Python `def`s by the
+    stdlib ast, for a pure-Python component (sqlparse / CVE-2024-4340)."""
     src = open(path, "rb").read()
     ext = os.path.splitext(path)[1].lower()
+    if ext == ".py":
+        import ast
+        global _PY_OWNER
+        try:
+            _PY_OWNER = _py_owners(ast.parse(src))
+        except (SyntaxError, ValueError):
+            return []
+        return _py_spans(src)
     if ext == ".java":
         if JAVA_LANG is None:
             return []
@@ -284,6 +355,13 @@ def enclosing_funcs(cve, ev):
 TIERA = os.environ.get("TIERA_JSON",
                        r"C:\Users\user\Desktop\cve-genie\webapp\data\icsvex_tierA.json")
 EXT_SRC = {".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".java"}
+# Python is NOT in EXT_SRC on purpose. Nearly every C snapshot in the corpus ships
+# build and doc scripts (libxml2 2.9.1 alone carries ~40 .py files), and indexing
+# their functions can only ADD names to the Q1 lookup - a name that matches by
+# accident reads as "vulnerable code present", which is the FP direction. So .py is
+# a separate set that build_func_index turns on only for a component with no
+# compiled sources of its own (tools/build_func_index.index_snapshot).
+EXT_PY = {".py"}
 # files a context vote may come from (implementation, not header)
 EXT_IMPL = (".c", ".cc", ".cpp", ".cxx", ".java", ".in")
 SKIP_SEG = {"test", "tests", "example", "examples", "fuzz", "fuzzing", "doc",
