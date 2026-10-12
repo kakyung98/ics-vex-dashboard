@@ -249,6 +249,42 @@ only justifications that survive are <span class="mono">component_not_present</s
 already asserted.</p>
 </div>
 
+<div class="card">
+  <h3 style="margin:0 0 6px">Q2 도달가능성 · Q3 제어가능성을 적용하는 취약점 유형</h3>
+  <p class="hint" style="margin:0 0 12px">
+  Q2(Joern 도달가능성)와 Q3(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
+  <code>affected</code> 뒤의 증거 등급만 올립니다. 그래서 전수 실행이 아니라
+  <b>취약점 유형별로 선별</b>합니다. 스냅샷마다 CPG를 새로 빌드해야 하므로 비용이 크고,
+  유형에 따라서는 경로를 찾아도 주장이 달라지지 않기 때문입니다.
+  규칙은 <code>tools/select_q23_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
+  제외 사유는 CVE별로 <code>data/q23_targets.json</code> 에 기록됩니다.</p>
+
+  <div class="cert-kv" style="margin-bottom:12px">
+    <span>분석 대상 <b>38</b></span>
+    <span>유형상 제외 <b>11</b></span>
+    <span>추적할 함수 없음 <b>45</b></span>
+    <span>기분석 <b>186</b></span>
+  </div>
+
+  <h4 style="margin:14px 0 6px">① 분석하는 유형 &mdash; 공격자 입력이 싱크에 닿는가가 열린 질문</h4>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>설명</th><th style="width:90px">처리</th></tr>
+  <tr><td class="mono"><b>CWE-20</b></td><td>improper input validation</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-22</b></td><td>path traversal</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-74</b></td><td>injection</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-78</b></td><td>OS command injection</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-79</b></td><td>cross-site scripting</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-88</b></td><td>argument injection</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-89</b></td><td>SQL injection</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-94</b></td><td>code injection</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-116</b></td><td>improper encoding</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-119</b></td><td>buffer bounds</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-120</b></td><td>classic overflow</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-121</b></td><td>stack overflow</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-122</b></td><td>heap overflow</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-124</b></td><td>buffer underwrite</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-125</b></td><td>out-of-bounds read</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-126</b></td><td>buffer over-read</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-127</b></td><td>buffer under-read</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-134</b></td><td>format string</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-190</b></td><td>integer overflow</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-191</b></td><td>integer underflow</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-193</b></td><td>off-by-one</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-369</b></td><td>divide by zero</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-400</b></td><td>resource exhaustion</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-401</b></td><td>memory leak</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-404</b></td><td>improper resource shutdown</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-415</b></td><td>double free</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-416</b></td><td>use after free</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-476</b></td><td>NULL dereference</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-606</b></td><td>unchecked loop condition</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-611</b></td><td>XXE</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-674</b></td><td>uncontrolled recursion</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-681</b></td><td>numeric conversion</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-770</b></td><td>allocation without limits</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-787</b></td><td>out-of-bounds write</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-788</b></td><td>out-of-bounds access</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-824</b></td><td>uninitialized pointer</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-835</b></td><td>infinite loop</td><td><span class="pill pill-ok">분석함</span></td></tr><tr><td class="mono"><b>CWE-918</b></td><td>SSRF</td><td><span class="pill pill-ok">분석함</span></td></tr>
+  </table>
+
+  <h4 style="margin:18px 0 6px">② 제외하는 유형 &mdash; 놓인 자리와 무관하게 결함인 것</h4>
+  <p class="hint" style="margin:0 0 8px">깨진 암호, 잘못된 인증서 검증, 약한 난수는
+  <b>어디에 있든 틀렸습니다</b>. 경로를 찾아도 주장이 강해지지도 약해지지도 않으므로,
+  스냅샷당 CPG 빌드 비용을 치를 이유가 없습니다.</p>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>설명</th><th style="width:90px">처리</th></tr>
+  <tr><td class="mono"><b>CWE-295</b></td><td>certificate validation</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-297</b></td><td>host mismatch</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-310</b></td><td>cryptographic issue</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-311</b></td><td>missing encryption</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-326</b></td><td>weak key strength</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-327</b></td><td>broken algorithm</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-328</b></td><td>weak hash</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-330</b></td><td>insufficient randomness</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-331</b></td><td>insufficient entropy</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-338</b></td><td>weak PRNG</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-347</b></td><td>signature verification</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-521</b></td><td>weak password</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-522</b></td><td>unprotected credentials</td><td><span class="pill pill-aff">제외</span></td></tr><tr><td class="mono"><b>CWE-798</b></td><td>hardcoded credentials</td><td><span class="pill pill-aff">제외</span></td></tr>
+  </table>
+
+  <p class="hint" style="margin-top:12px">
+  <b>분류에 없는 CWE이거나 CWE가 없으면 분석하는 쪽으로 기울입니다.</b>
+  Q2/Q3는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
+  근거가 약한 레코드입니다 &mdash; 비대칭이 분명할 때는 싼 쪽으로 틀리는 것이 맞습니다.</p>
+</div>
+
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
 </main>

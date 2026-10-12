@@ -316,15 +316,26 @@ def patch_cases(limit_cves=None):
             # the first hunk to return a definite verdict decides, in rank order, so
             # the vulnerability's own file is consulted before a version-bump header
             decided = None
+            best = None          # the closest any hunk came, for the failure record
             for ev in ranked:
                 v = patch_signature_check(cve, ev, root)
                 if v["verdict"] in ("vulnerable", "fixed"):
                     decided = (ev, v)
                     break
+                # keep whichever hunk matched the most fix lines: "inconclusive in
+                # N hunks" alone cannot distinguish "the file is not in this tree"
+                # from "the fix matched 3 of 5 lines and missed the threshold", and
+                # those are a data problem and a rule problem respectively.
+                d = v.get("detail") or ""
+                m = re.search(r"fix-lines (\d+)/", d)
+                score = int(m.group(1)) if m else -1
+                if best is None or score > best[0]:
+                    best = (score, d)
             if decided is None:
                 inconclusive.append({"cve": cve, "build": build,
                                      "reason": "patch signature inconclusive in %d hunk(s)"
-                                               % len(evs)})
+                                               % len(evs),
+                                     "closest": best[1] if best else None})
                 continue
             ev, v = decided
             corroboration = None
@@ -463,6 +474,13 @@ def main():
                      "patch_inconclusive": len(patch_skipped),
                      "patch_nvd_conflict": len(patch_conflicts)},
         "conflict_cases": patch_conflicts,
+        # Why each unlabelled case was dropped, aggregated. The bare count
+        # ("patch_inconclusive: 151") says more than half the corpus is unusable
+        # without saying WHETHER that is a weak decision procedure or genuinely
+        # undecidable evidence - and those two call for opposite responses.
+        "inconclusive_reasons": dict(collections.Counter(
+            re.sub(r"\d+", "N", (r.get("reason") or "?"))[:90]
+            for r in patch_skipped).most_common()),
         "corroboration": dict(collections.Counter(
             r.get("_corroboration") for r in rows if r.get("_corroboration"))),
         "labelling_unit": "one (CVE, build) pair — the same CVE is affected in its "

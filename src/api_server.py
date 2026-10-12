@@ -366,12 +366,17 @@ class Store:
             # demote anything tagged code-available that we did NOT obtain to "open
             # source, code not collected".
             #
-            # That intersection is SMALLER than the snapshot corpus and they are not
-            # interchangeable. This page counts CVEs reached by the ICS-CERT advisories
-            # (11,550 of them); the snapshots also cover CVEs outside that set, because
-            # a component's own CVE history is collected whether or not an ICS advisory
-            # ever cited it. So "code obtained" here reads 107 while test item #4 is
-            # measured over 267 - two different populations, not a stale number.
+            # NOTE the source of truth: self.vex_v2 is loaded from
+            # results/vex_v2_summary.json, NOT from data/vex_v2.json. They are
+            # different files with different update paths, and re-running the judge
+            # does not refresh the summary - so this panel sat at 107 for days after
+            # the judged population had grown to 267, with nothing to show that it
+            # was stale. tools/summarize_vex_v2.py regenerates it; run it after any
+            # vex_judge_v2 run or this count silently lies.
+            #
+            # The bucket is `summary ∩ this corpus`, which is 266: the snapshots also
+            # cover one CVE no ICS advisory cites (sqlparse CVE-2024-4340), so this
+            # page and test item #4 count populations that overlap but do not match.
             if cve in self.vex_v2:
                 sc = "code-available"
             elif sc == "code-available":
@@ -2092,6 +2097,79 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 # --- VEX Flag Decision Logic page -------------------------------------------------
 # Rendered from src/vex_decision.py so the documented rule and the executed rule
 # cannot drift apart.
+
+def _q23_scope_section():
+    """Which weakness classes get reachability (Q2) and controllability (Q3).
+
+    The rule lives in tools/select_q23_targets and was invisible outside the
+    repository: a reader could see that some CVEs carry a Joern/Z3 verdict and
+    others do not, with nothing saying why. Published here, read straight out of
+    that module, so the page cannot drift from the rule it describes.
+    """
+    import importlib, json as _json, os as _os, sys as _sys
+    _sys.path.insert(0, _os.path.join(BASE, "tools"))
+    try:
+        Q = importlib.import_module("select_q23_targets")
+    except Exception as e:                      # never break the page over this
+        return '<div class="card"><p class="hint">Q2/Q3 scope unavailable: %s</p></div>' % e
+
+    def _rows(table, cls):
+        return "".join(
+            '<tr><td class="mono"><b>%s</b></td><td>%s</td>'
+            '<td><span class="pill %s">%s</span></td></tr>'
+            % (c, d, cls, "분석함" if cls == "pill-ok" else "제외")
+            for c, d in sorted(table.items(),
+                               key=lambda kv: int(kv[0].split("-")[1])))
+
+    counts = {}
+    _p = _os.path.join(BASE, "data", "q23_targets.json")
+    if _os.path.isfile(_p):
+        counts = (_json.load(open(_p, encoding="utf-8")) or {}).get("counts") or {}
+
+    return """
+<div class="card">
+  <h3 style="margin:0 0 6px">Q2 도달가능성 · Q3 제어가능성을 적용하는 취약점 유형</h3>
+  <p class="hint" style="margin:0 0 12px">
+  Q2(Joern 도달가능성)와 Q3(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
+  <code>affected</code> 뒤의 증거 등급만 올립니다. 그래서 전수 실행이 아니라
+  <b>취약점 유형별로 선별</b>합니다. 스냅샷마다 CPG를 새로 빌드해야 하므로 비용이 크고,
+  유형에 따라서는 경로를 찾아도 주장이 달라지지 않기 때문입니다.
+  규칙은 <code>tools/select_q23_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
+  제외 사유는 CVE별로 <code>data/q23_targets.json</code> 에 기록됩니다.</p>
+
+  <div class="cert-kv" style="margin-bottom:12px">
+    <span>분석 대상 <b>__RUN__</b></span>
+    <span>유형상 제외 <b>__SKIP__</b></span>
+    <span>추적할 함수 없음 <b>__NOFN__</b></span>
+    <span>기분석 <b>__DONE__</b></span>
+  </div>
+
+  <h4 style="margin:14px 0 6px">① 분석하는 유형 &mdash; 공격자 입력이 싱크에 닿는가가 열린 질문</h4>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>설명</th><th style="width:90px">처리</th></tr>
+  __IN_ROWS__
+  </table>
+
+  <h4 style="margin:18px 0 6px">② 제외하는 유형 &mdash; 놓인 자리와 무관하게 결함인 것</h4>
+  <p class="hint" style="margin:0 0 8px">깨진 암호, 잘못된 인증서 검증, 약한 난수는
+  <b>어디에 있든 틀렸습니다</b>. 경로를 찾아도 주장이 강해지지도 약해지지도 않으므로,
+  스냅샷당 CPG 빌드 비용을 치를 이유가 없습니다.</p>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>설명</th><th style="width:90px">처리</th></tr>
+  __EX_ROWS__
+  </table>
+
+  <p class="hint" style="margin-top:12px">
+  <b>분류에 없는 CWE이거나 CWE가 없으면 분석하는 쪽으로 기울입니다.</b>
+  Q2/Q3는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
+  근거가 약한 레코드입니다 &mdash; 비대칭이 분명할 때는 싼 쪽으로 틀리는 것이 맞습니다.</p>
+</div>
+""".replace("__IN_ROWS__", _rows(Q.INPUT_DRIVEN, "pill-ok")) \
+   .replace("__EX_ROWS__", _rows(Q.BY_CONSTRUCTION, "pill-aff")) \
+   .replace("__RUN__", str(counts.get("run", "&mdash;"))) \
+   .replace("__SKIP__", str(counts.get("skip", "&mdash;"))) \
+   .replace("__NOFN__", str(counts.get("no_located_function", "&mdash;"))) \
+   .replace("__DONE__", str(counts.get("already_analysed", "&mdash;")))
+
+
 def _decision_page():
     q_rows = "".join(
         '<tr><td class="mono"><b>%s</b></td><td>%s</td><td class="mono" style="font-size:13px">%s</td>'
@@ -2244,7 +2322,7 @@ already asserted.</p>
    .replace("__CLR__", str(c["clearances_from_source_analysis"]))
 
 
-_DECISION_PAGE = _decision_page()
+_DECISION_PAGE = _decision_page() + _q23_scope_section()
 
 
 
