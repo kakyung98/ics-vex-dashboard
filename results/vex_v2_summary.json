@@ -2,36 +2,310 @@
   "generated": "2026-09-27",
   "test": "VEX-v2 judgment over source-collectable CVEs",
   "method": "CTI(LLM agent) -> source locate (presence, decides) -> optional Joern reachability + Z3 controllability (evidence tier only)",
-  "population": 107,
+  "population": 267,
   "final_vex": {
-    "affected": 103,
+    "affected": 263,
     "fixed": 4
   },
   "evidence_tier": {
-    "verified": 62,
-    "present": 25,
-    "component": 13,
+    "verified": 124,
+    "present": 89,
+    "component": 45,
     "patch-verified": 4,
-    "reachable": 3
+    "reachable": 5
   },
   "justifications": {},
   "gates": {
     "q1_present": {
-      "present": 94,
-      "component_only": 13
+      "present": 222,
+      "component_only": 45
     },
     "q2_reachable_joern": {
-      "unknown": 38,
-      "reachable": 67,
-      "not-reachable": 2
+      "unknown": 50,
+      "reachable": 131,
+      "not-reachable": 4
     },
     "q3_controllable_z3": {
-      "controllable": 103,
-      "not-controllable": 4
+      "controllable": 176,
+      "not-controllable": 8,
+      "unknown": 1
     }
   },
   "note": "VEX justifications are a hierarchy: presence (Q1) decides (present -> affected, absent -> not_affected). Reachability (Joern) and controllability (Z3) are OPTIONAL - they only raise the evidence_tier, they never refute (a library snapshot has no consumer, so not-reachable false-negatives on the API itself).",
   "cves": [
+    {
+      "cve": "CVE-2005-2096",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2013-0169",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2014-0076",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2014-0160",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "not-reachable",
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2014-0195",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2014-0198",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2014-0221",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2014-0224",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2014-3470",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2014-3566",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2015-0207",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-0209",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-0285",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2015-0287",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-0288",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-0289",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2015-0290",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-0291",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2015-0292",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-0293",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2015-1787",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
     {
       "cve": "CVE-2015-7547",
       "final_vex": "affected",
@@ -43,6 +317,45 @@
         "q1": "present",
         "reachability": "unknown",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2015-8035",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2016-2177",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2016-3709",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -85,6 +398,19 @@
       }
     },
     {
+      "cve": "CVE-2016-9842",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2017-13077",
       "final_vex": "affected",
       "justification": null,
@@ -111,6 +437,110 @@
       }
     },
     {
+      "cve": "CVE-2017-13079",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13080",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13081",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13082",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13084",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13086",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13087",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-13088",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "wi-fi protected access (wpa and wpa2)",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2017-14491",
       "final_vex": "fixed",
       "justification": null,
@@ -130,6 +560,97 @@
       "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "evidence_tier": "verified",
       "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2017-3737",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2017-7375",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2017-8872",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2017-9047",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2017-9048",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2017-9049",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2017-9050",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
@@ -176,6 +697,19 @@
       }
     },
     {
+      "cve": "CVE-2018-16890",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2018-18065",
       "final_vex": "affected",
       "justification": null,
@@ -186,6 +720,19 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2018-18440",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -228,6 +775,19 @@
       }
     },
     {
+      "cve": "CVE-2018-9251",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2019-11477",
       "final_vex": "fixed",
       "justification": null,
@@ -254,6 +814,19 @@
       }
     },
     {
+      "cve": "CVE-2019-13104",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2019-13106",
       "final_vex": "affected",
       "justification": null,
@@ -264,6 +837,45 @@
         "q1": "present",
         "reachability": "unknown",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-1547",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2019-1549",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2019-1563",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -280,6 +892,19 @@
       }
     },
     {
+      "cve": "CVE-2019-16168",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2019-17498",
       "final_vex": "affected",
       "justification": null,
@@ -289,6 +914,188 @@
       "evidence": {
         "q1": "component_only",
         "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19242",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19244",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19317",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "not-reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19603",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19880",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19923",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19924",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19925",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19926",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-19959",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-20218",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-20388",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-3822",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2019-3823",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -319,6 +1126,19 @@
       }
     },
     {
+      "cve": "CVE-2019-3857",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2019-3858",
       "final_vex": "affected",
       "justification": null,
@@ -329,6 +1149,32 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "not-controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-5018",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2019-5436",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -377,6 +1223,32 @@
       "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "evidence_tier": "verified",
       "component": "sqlite3",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-9936",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2019-9937",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
@@ -449,6 +1321,19 @@
       }
     },
     {
+      "cve": "CVE-2020-13871",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2020-15778",
       "final_vex": "affected",
       "justification": null,
@@ -459,6 +1344,32 @@
         "q1": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2020-1967",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2020-1968",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -481,6 +1392,19 @@
       "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "evidence_tier": "verified",
       "component": "libssh2",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2020-24977",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
@@ -514,6 +1438,58 @@
       }
     },
     {
+      "cve": "CVE-2020-29562",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "not-controllable"
+      }
+    },
+    {
+      "cve": "CVE-2020-35525",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2020-35527",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2020-7595",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2020-8177",
       "final_vex": "affected",
       "justification": null,
@@ -523,6 +1499,58 @@
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2020-8231",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2020-8285",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2020-8286",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2020-9327",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -540,6 +1568,71 @@
       }
     },
     {
+      "cve": "CVE-2021-22876",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2021-22890",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2021-22924",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2021-22945",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2021-23839",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2021-23840",
       "final_vex": "affected",
       "justification": null,
@@ -550,6 +1643,58 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-23841",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-27645",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-28831",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "busybox",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2021-31239",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -602,6 +1747,19 @@
         "q1": "present",
         "reachability": "unknown",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-3449",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -670,6 +1828,19 @@
       }
     },
     {
+      "cve": "CVE-2021-36690",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "not-controllable"
+      }
+    },
+    {
       "cve": "CVE-2021-3711",
       "final_vex": "affected",
       "justification": null,
@@ -696,6 +1867,19 @@
       }
     },
     {
+      "cve": "CVE-2021-3998",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2021-3999",
       "final_vex": "affected",
       "justification": null,
@@ -709,6 +1893,19 @@
       }
     },
     {
+      "cve": "CVE-2021-4160",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2021-41617",
       "final_vex": "affected",
       "justification": null,
@@ -719,6 +1916,19 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-42373",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "busybox",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -761,6 +1971,19 @@
       }
     },
     {
+      "cve": "CVE-2021-42377",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "busybox",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2021-42378",
       "final_vex": "affected",
       "justification": null,
@@ -800,12 +2023,90 @@
       }
     },
     {
+      "cve": "CVE-2021-42381",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-42382",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-42383",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-42384",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-42385",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2021-42386",
       "final_vex": "affected",
       "justification": null,
       "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
       "evidence_tier": "present",
       "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2021-43396",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
@@ -878,6 +2179,45 @@
       }
     },
     {
+      "cve": "CVE-2022-1343",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2022-1434",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2022-1473",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2022-2068",
       "final_vex": "affected",
       "justification": null,
@@ -888,6 +2228,19 @@
         "q1": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-2097",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -904,6 +2257,19 @@
       }
     },
     {
+      "cve": "CVE-2022-2274",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2022-22822",
       "final_vex": "affected",
       "justification": null,
@@ -914,6 +2280,19 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-22950",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -940,6 +2319,19 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-2347",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -1034,6 +2426,45 @@
       }
     },
     {
+      "cve": "CVE-2022-30065",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "busybox",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-30552",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2022-30790",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2022-32221",
       "final_vex": "affected",
       "justification": null,
@@ -1047,6 +2478,45 @@
       }
     },
     {
+      "cve": "CVE-2022-34835",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-35737",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2022-3602",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2022-37434",
       "final_vex": "affected",
       "justification": null,
@@ -1056,6 +2526,19 @@
       "evidence": {
         "q1": "present",
         "reachability": "not-reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-3786",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -1099,6 +2582,19 @@
       }
     },
     {
+      "cve": "CVE-2022-4203",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2022-4304",
       "final_vex": "affected",
       "justification": null,
@@ -1108,6 +2604,19 @@
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2022-4450",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -1138,6 +2647,32 @@
       }
     },
     {
+      "cve": "CVE-2023-0216",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-0217",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2023-0286",
       "final_vex": "affected",
       "justification": null,
@@ -1147,6 +2682,97 @@
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-0401",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "not-controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-0464",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-0465",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-0466",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-1255",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "openssl",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-25139",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-2650",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "openssl",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -1164,6 +2790,19 @@
       }
     },
     {
+      "cve": "CVE-2023-27535",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2023-27536",
       "final_vex": "fixed",
       "justification": null,
@@ -1174,6 +2813,32 @@
         "q1": "present",
         "reachability": "unknown",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-27537",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-27538",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     },
     {
@@ -1196,6 +2861,19 @@
       "basis": "present, reachable (joern) and adversary-controllable (z3)",
       "evidence_tier": "verified",
       "component": "libxml2",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-2975",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
@@ -1229,6 +2907,32 @@
       }
     },
     {
+      "cve": "CVE-2023-3446",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "not-controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-3817",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2023-38408",
       "final_vex": "affected",
       "justification": null,
@@ -1255,6 +2959,32 @@
       }
     },
     {
+      "cve": "CVE-2023-38546",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-39615",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2023-44487",
       "final_vex": "affected",
       "justification": null,
@@ -1264,6 +2994,19 @@
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-4527",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
         "controllability": "controllable"
       }
     },
@@ -1307,6 +3050,32 @@
       }
     },
     {
+      "cve": "CVE-2023-4806",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "unknown"
+      }
+    },
+    {
+      "cve": "CVE-2023-4807",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2023-48795",
       "final_vex": "affected",
       "justification": null,
@@ -1333,6 +3102,19 @@
       }
     },
     {
+      "cve": "CVE-2023-5156",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2023-52425",
       "final_vex": "affected",
       "justification": null,
@@ -1342,6 +3124,84 @@
       "evidence": {
         "q1": "present",
         "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-5363",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-5678",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-6129",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2023-6246",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-6779",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2023-6780",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
         "controllability": "controllable"
       }
     },
@@ -1372,6 +3232,32 @@
       }
     },
     {
+      "cve": "CVE-2024-0232",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2024-0727",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
       "cve": "CVE-2024-1086",
       "final_vex": "affected",
       "justification": null,
@@ -1398,6 +3284,45 @@
       }
     },
     {
+      "cve": "CVE-2024-24989",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-24990",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable component present; specific function not localised in source",
+      "evidence_tier": "component",
+      "component": "",
+      "evidence": {
+        "q1": "component_only",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-28882",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
       "cve": "CVE-2024-2961",
       "final_vex": "affected",
       "justification": null,
@@ -1407,6 +3332,97 @@
       "evidence": {
         "q1": "present",
         "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2024-33599",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-33600",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-33601",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-33602",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-4340",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2024-5594",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2024-6119",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -1421,6 +3437,71 @@
         "q1": "present",
         "reachability": "reachable",
         "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2025-15467",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2025-29087",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2025-29088",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
+      }
+    },
+    {
+      "cve": "CVE-2025-3277",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
+      }
+    },
+    {
+      "cve": "CVE-2026-42945",
+      "final_vex": "affected",
+      "justification": null,
+      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+      "evidence_tier": "present",
+      "component": "",
+      "evidence": {
+        "q1": "present",
+        "reachability": null,
+        "controllability": null
       }
     }
   ]
