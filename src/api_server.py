@@ -361,10 +361,17 @@ class Store:
             # under_investigation 이 왜 그렇게 많은지를 설명하는 축
             sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
             sc = sw.get("source_class") or "vendor-proprietary"
-            # "code obtained" must mean code we ACTUALLY collected+analysed = the VEX-v2 set
-            # (104, exactly the source snapshots). Make the bucket exactly that: promote the
-            # analysed CVEs, and demote any tagged code-available we did NOT actually obtain to
-            # "open source, code not collected". This keeps every "obtained/collected" panel at 104.
+            # "code obtained" must mean code we ACTUALLY collected+analysed, so the
+            # bucket is exactly `vex_v2 ∩ this corpus`: promote the analysed CVEs, and
+            # demote anything tagged code-available that we did NOT obtain to "open
+            # source, code not collected".
+            #
+            # That intersection is SMALLER than the snapshot corpus and they are not
+            # interchangeable. This page counts CVEs reached by the ICS-CERT advisories
+            # (11,550 of them); the snapshots also cover CVEs outside that set, because
+            # a component's own CVE history is collected whether or not an ICS advisory
+            # ever cited it. So "code obtained" here reads 107 while test item #4 is
+            # measured over 267 - two different populations, not a stale number.
             if cve in self.vex_v2:
                 sc = "code-available"
             elif sc == "code-available":
