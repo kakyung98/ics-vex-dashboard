@@ -224,6 +224,9 @@ html = html.replace("async function run(){",
                     "  if(!Object.keys(VRANGES).length){try{VRANGES=await(await fetch('cve_version_ranges.json')).json();}catch(e){}}\n",
                     1)
 
+# Pages this static build does not publish, by key. See the note below cert.html.
+_SITE_EXCLUDE = {"cert"}
+
 # emit one static file per page (same shared shell/script, different nav+content)
 _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
 html = html.replace("__VEX_TREE__", _tree_json)
@@ -237,36 +240,18 @@ for key, fname in [("analyzer", "index.html"),
                    ("dataset", "corpus.html"), ("dataset", "collectable.html"),
                    ("published-vex", "published-vex.html"),
                    ("ics-sbom", "ics-sbom.html")]:
-    page = html.replace("__NAV__", A.nav_html(key)).replace("__CONTENT__", A.PAGES[key][1])
+    page = (html.replace("__NAV__", A.nav_html(key, exclude=_SITE_EXCLUDE))
+                .replace("__CONTENT__", A.PAGES[key][1]))
     open(os.path.join(SITE, fname), "w", encoding="utf-8").write(page)
 
-# The certification page is the one page that cannot be copied as-is: it RUNS
-# the measurement over /api/cert/*, and Pages serves files only. Baking the live
-# version would ship a Run button that silently does nothing, so a static
-# variant is rendered instead - the same figures, read out of results/*.json at
-# build time, with the interactive run named as local-server-only.
-from cert_page import cert_static_page          # noqa: E402
-
-_CERT_RESULTS = {
-    "item3": "results/cpe_match_precision.json",
-    "item3_ai": "results/cpe_match_precision_ai.json",
-    "item4": "results/vex_precision_all.json",
-    "item4_allbuilds": "results/vex_precision_allbuilds.json",
-    "item4_independent": "results/vex_precision_independent.json",
-}
-_loaded, _missing = {}, []
-for _k, _rel in _CERT_RESULTS.items():
-    _p = os.path.join(BASE, _rel)
-    if os.path.isfile(_p):
-        _loaded[_k] = json.load(open(_p, encoding="utf-8"))
-    else:
-        _missing.append(_rel)
-if _missing:
-    # A missing result must not silently become a blank row on a published page.
-    print("  WARNING cert: no result file for %s" % ", ".join(_missing))
-open(os.path.join(SITE, "cert.html"), "w", encoding="utf-8").write(
-    html.replace("__NAV__", A.nav_html("cert"))
-        .replace("__CONTENT__", cert_static_page(_loaded)))
+# The certification page is NOT published. It runs the measurement over
+# /api/cert/*, which only the local FastAPI server answers, so a copy on Pages
+# would be a Run button that silently does nothing. It stays on the local
+# server, and the published nav does not advertise it.
+_stale = os.path.join(SITE, "cert.html")
+if os.path.isfile(_stale):
+    os.remove(_stale)
+    print("  removed stale site/cert.html")
 
 sz = lambda n: os.path.getsize(os.path.join(SITE, n)) / 1024
 print("wrote site/ pages + json:")
