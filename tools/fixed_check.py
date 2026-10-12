@@ -47,11 +47,19 @@ def _lines(code):
 
 
 def _signatures(vuln, patched):
-    """(fix-added lines, vuln-only lines) — the lines that actually changed."""
+    """(fix-added lines, vuln-only lines, unchanged context lines).
+
+    The context is the third thing a hunk carries and the check used to throw it
+    away. It is the anchor: lines the fix did NOT touch, so they are in both the
+    vulnerable and the patched text. Whether they are in a snapshot tells you
+    whether you are looking at a comparable version of the file at all, which is
+    a different question from whether the fix is there.
+    """
     v, p = set(_lines(vuln)), set(_lines(patched))
     added = [l for l in _lines(patched) if l not in v]     # introduced by the fix
     removed = [l for l in _lines(vuln) if l not in p]      # present only while vulnerable
-    return added, removed
+    context = [l for l in _lines(vuln) if l in p]          # untouched by the fix
+    return added, removed, context
 
 
 def _find_file(snap_root, rel):
@@ -79,11 +87,14 @@ def check(cve, ev, snap_root):
     except Exception as e:
         return {"cve": cve, "verdict": "inconclusive", "detail": "read error: %s" % e}
     srclines = set(l.strip() for l in src.splitlines())
-    added, removed = _signatures(ev["vuln_code"], ev["patched_code"])
+    added, removed, context = _signatures(ev["vuln_code"], ev["patched_code"])
     fix_hits = sum(1 for l in added if l in srclines)
     vuln_hits = sum(1 for l in removed if l in srclines)
+    ctx_hits = sum(1 for l in context if l in srclines)
     det = "fix-lines %d/%d, vuln-lines %d/%d in %s" % (
         fix_hits, len(added), vuln_hits, len(removed), os.path.basename(path))
+    if context:
+        det += " (context %d/%d)" % (ctx_hits, len(context))
     # decide: ALL of the fix's distinctive added lines present (and the vulnerable ones gone)
     # => patched. Requiring every distinctive line (not just one) avoids a stray guard/return
     # elsewhere in a big file spuriously "clearing" a vulnerable build.
@@ -92,6 +103,25 @@ def check(cve, ev, snap_root):
             return {"cve": cve, "verdict": "fixed", "detail": det}    # >=2 distinctive anchors
         if vuln_hits > 0 and fix_hits < len(added):
             return {"cve": cve, "verdict": "vulnerable", "detail": det}
+        # An ADDITION-ONLY fix - a guard inserted, a function added - removes no
+        # distinctive line, so `removed` is empty and `vuln_hits > 0` can never
+        # fire. The branch above is unreachable for it and the case fell to
+        # inconclusive no matter what the snapshot held: 41 of this corpus's 83
+        # signature failures read "fix-lines 0/N, vuln-lines 0/0".
+        #
+        # The context decides it. If the lines the fix did NOT touch are here,
+        # this is a comparable version of the file, and the fix being wholly
+        # absent from it means this build is unpatched. If the context is not
+        # here either, the file is a different enough version that nothing
+        # follows, which is the honest inconclusive.
+        #
+        # Deliberately one-directional: this only ever asserts `vulnerable`.
+        # Absence of a fix is evidence of exposure; it is never evidence of
+        # safety, and a wrong `fixed` is the expensive error.
+        if not removed and len(context) >= 3 and fix_hits == 0 \
+                and ctx_hits >= 0.6 * len(context):
+            return {"cve": cve, "verdict": "vulnerable",
+                    "detail": det + " [addition-only fix absent, context anchored]"}
     else:  # no distinctive fix line (a pure-removal or refactor fix) — a weak signal, so only
            # CONFIRM fixed on a clean removal; never assert "vulnerable" from it (the vulnerable
            # lines textually persisting through a refactor does not prove the build is unpatched).

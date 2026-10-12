@@ -79,7 +79,7 @@ ITEMS = {
         # and hiding a scope because it reads badly is how a benchmark stops
         # meaning anything. Its single FP is CVE-2024-4340's patched build -
         # see the variant label.
-        "reference": {"pregate": 0.9655, "allbuilds": 0.9913,
+        "reference": {"pregate": 0.9718, "allbuilds": 0.993,
                       "independent": 0.6667},
     },
 }
