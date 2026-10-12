@@ -2445,10 +2445,22 @@ _NAV_GROUPS = [
 _NAV = [item for _, items in _NAV_GROUPS for item in items]
 
 
-def nav_html(active):
+def nav_html(active, exclude=()):
+    """The sidebar. `exclude` drops pages by key, and drops a group that empties.
+
+    The static GitHub Pages build excludes the certification page: it runs the
+    measurement over /api/cert/*, which only the local server answers, so the
+    published site must not advertise it.
+    """
+    exclude = set(exclude)
     parts = ['<nav class="nav">']
-    for gi, (group, items) in enumerate(_NAV_GROUPS):
+    gi = 0
+    for group, items in _NAV_GROUPS:
+        items = [i for i in items if i[0] not in exclude]
+        if not items:
+            continue
         parts.append(f'<div class="navlabel{" navlabel-sep" if gi else ""}">{group}</div>')
+        gi += 1
         for key, href, label in items:
             cls = "navtab" + (" navtab-main" if key == "analyzer" else "") + (" on" if key == active else "")
             parts.append(f'<a class="{cls}" href="{href}">{label}</a>')
