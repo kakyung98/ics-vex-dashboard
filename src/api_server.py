@@ -606,6 +606,14 @@ def vex_for_sbom(sbom, exposure=None):
         for c in raw:
             _name = (c.get("name") or "").strip()
             _ver = (c.get("version") or "").strip()
+            # `unidentified` is filled by the KB pass above, which runs first.
+            # A component this pass resolves is no longer unidentified, and
+            # leaving it on the list would report an abstention that did not
+            # happen - the list is about to be shown to the user, so it has to
+            # mean what it says.
+            _p, _how = L0.identify_product(c)
+            if _p:
+                unidentified = [u for u in unidentified if u["component"] != _name]
             for m in L0.cves_for(c, sbom_vendor=_av):
                 cid = m["cve"]
                 if cid in by_cve:
@@ -707,7 +715,12 @@ def vex_for_sbom(sbom, exposure=None):
     return {"components": len(raw), "cves_matched": len(cves),
             # Components the identifiers could not resolve are reported, not
             # silently dropped and not guessed at - see sbom_match.identify().
+            # The counts matter as much as the list: "38 components, 1 CVE"
+            # alone reads as a broken identifier, when what happened is that
+            # every component was run and every one abstained.
             "unidentified": unidentified,
+            "identified": len(raw) - len(unidentified),
+            "abstained": len(unidentified),
             "summary": {"by_vex": dict(by)}, "cves": cves}
 
 
@@ -1294,10 +1307,11 @@ async function run(){
     body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});
   if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
   const d=await r.json();
-  if(!d.cves_matched){o.innerHTML='<span class="hint">'+d.components+' components, no known CVEs matched.</span>';return}
+  if(!d.cves_matched){o.innerHTML='<div class="hint">'+d.components+' components, no known CVEs matched.</div>'+_abstainBlock(d);return}
   _lastVex=d;
   const bv=d.summary.by_vex||{};
-  let h='<div class="hint">'+d.components+' components · <b>'+d.cves_matched+' CVEs</b> · '
+  let h='<div class="hint">'+d.components+' components · identified <b>'+(d.identified!=null?d.identified:'—')+'</b>'
+    +' · abstained <b>'+(d.abstained!=null?d.abstained:'—')+'</b> · <b>'+d.cves_matched+' CVEs</b> · '
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
@@ -1628,6 +1642,25 @@ function _autoStatus(cve){
   let raw=f.final_vex, just=f.justification||'';
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
 function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',source_collectable:false};}return {status:(ov.status||auto.status),source_collectable:true};}
+function _abstainBlock(d){
+  // An abstention is a decision, not a gap. The matcher declines rather than
+  // guess when no CPE product is a clear winner - picking one at 0.381 against
+  // a 0.381 runner-up is how a Schneider I/O module's CVE lands on a VIVOTEK
+  // camera. Showing the count and the reason is what separates "declined" from
+  // "not implemented", which is otherwise indistinguishable on this screen.
+  const u = d.unidentified || [];
+  if(!u.length) return '';
+  const rows = u.map(x =>
+      '<tr><td>'+_esc(x.component)+'</td><td class="mono">'+_esc(x.version)+'</td>'
+      +'<td class="hint">'+_esc(x.reason||'')+'</td></tr>').join('');
+  return '<details style="margin-top:12px"><summary class="hint">'
+    +'식별하지 못한 컴포넌트 '+u.length+'건 — 사유 보기</summary>'
+    +'<p class="hint" style="margin:8px 0">매처는 후보가 분명하지 않으면 <b>추측하지 않고 기권</b>합니다. '
+    +'ICS 장비 다수는 NVD CPE 사전에 항목 자체가 없어 이름 기반 매칭으로는 도달할 수 없습니다.</p>'
+    +'<table><thead><tr><th>Component</th><th>Version</th><th>기권 사유</th></tr></thead><tbody>'
+    +rows+'</tbody></table></details>';
+}
+function _esc(v){return String(v==null?'':v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est='';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
 // VEX-v2 evidence label — shows the PER-CVE reason (evidence tier), not a blanket claim.
 // affected is the VEX default for present code; the tier says how strong the evidence is.
