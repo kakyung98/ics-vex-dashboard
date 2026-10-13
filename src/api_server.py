@@ -2364,6 +2364,95 @@ _DECISION_PAGE = _decision_page() + _q23_scope_section()
 # Why the CPEs in an ICS SBOM cannot identify its CVEs on their own. Rendered
 # from results/sbom_cpe_limits.json (tools/measure_sbom_cpe_limits.py), so every
 # number here is recomputed from data rather than restated by hand.
+
+def _vendor_precision_section():
+    """Item #3's precision broken out per vendor.
+
+    The single figure describes a corpus that is nowhere near uniform - Siemens
+    alone is 47.6% of the components - so one number cannot answer "how does it
+    do on OUR equipment". The alternative that was considered and rejected was
+    SCOPING the test to the ten largest vendors: the matcher abstains on 43.9%
+    inside those ten and 55.5% outside, so that scope would have raised the
+    figure by removing the harder half. This repository already made that
+    mistake once with a per-vendor cap, and lifting it moved the score from
+    0.9870 to 0.9499. Publishing the split keeps the hard part in the number and
+    still answers the question.
+    """
+    import json as _json, os as _os
+    p = _os.path.join(RESULTS, "cpe_match_precision.json")
+    if not _os.path.isfile(p):
+        return ""
+    try:
+        r = _json.load(open(p, encoding="utf-8"))
+    except Exception:
+        return ""
+    rows = [x for x in (r.get("by_vendor") or []) if x.get("components")]
+    if not rows:
+        return ""
+    top = rows[:12]
+    rest = rows[len(top):]
+    tot_c = sum(x["components"] for x in rows)
+
+    def _tr(x, bold=False):
+        pr = ("%.4f" % x["precision"]) if x["precision"] is not None else "&mdash;"
+        nm = ("<b>%s</b>" % x["vendor"]) if bold else x["vendor"]
+        return ('<tr><td>%s</td><td style="text-align:right" class="mono">%s</td>'
+                '<td style="text-align:right" class="mono">%s</td>'
+                '<td style="text-align:right" class="mono">%s%%</td>'
+                '<td style="text-align:right" class="mono">%s</td>'
+                '<td style="text-align:right" class="mono">%s</td>'
+                '<td style="text-align:right" class="mono"><b>%s</b></td></tr>'
+                % (nm, "{:,}".format(x["components"]),
+                   "{:,}".format(x["scored"]),
+                   x["abstention_pct"] if x["abstention_pct"] is not None else "&mdash;",
+                   "{:,}".format(x["TP"]), "{:,}".format(x["FP"]), pr))
+
+    agg = {"vendor": "그 외 %d개 벤더" % len(rest),
+           "components": sum(x["components"] for x in rest),
+           "scored": sum(x["scored"] for x in rest),
+           "TP": sum(x["TP"] for x in rest), "FP": sum(x["FP"] for x in rest),
+           "abstention_pct": (round(100.0 * sum(x["abstained"] for x in rest)
+                                    / max(sum(x["components"] for x in rest), 1), 1)
+                              if rest else None)}
+    agg["precision"] = (agg["TP"] / (agg["TP"] + agg["FP"])
+                        if (agg["TP"] + agg["FP"]) else None)
+
+    return """
+<div class="card" style="margin-top:18px">
+  <h3 style="margin:0 0 6px">벤더별 식별 정밀도 — 시험항목 #3</h3>
+  <p class="hint" style="margin:0 0 12px">
+  전체 정밀도 <b>%(prec).4f</b> (TP %(tp)s / FP %(fp)s) 는 코퍼스 전체에 대한 값입니다.
+  다만 코퍼스는 균질하지 않아 Siemens 한 곳이 컴포넌트의 <b>%(sie).1f%%</b> 를 차지합니다.
+  그래서 하나의 수치로는 &ldquo;우리 설비에서는 어떤가&rdquo; 에 답할 수 없어 벤더별로 분해해 공시합니다.</p>
+
+  <div class="cert-warn" style="margin:0 0 12px">
+  <b>상위 벤더로 범위를 좁히지 않았습니다.</b> 매처의 기권율은 상위 10개 벤더 안쪽이 43.9%%,
+  바깥이 55.5%% 입니다 &mdash; 범위를 좁히면 <b>어려운 쪽을 덜어내어</b> 수치가 올라갑니다.
+  이 저장소는 벤더별 상한(각 40건)으로 같은 실수를 한 적이 있고, 그 상한을 걷어내자
+  0.9870 → 0.9499 로 떨어졌습니다. 낮은 쪽이 코퍼스를 기술하는 정직한 수입니다.</p>
+  </div>
+
+  <table class="tbl">
+    <tr><th>벤더</th><th style="text-align:right">컴포넌트</th>
+        <th style="text-align:right">채점</th><th style="text-align:right">기권율</th>
+        <th style="text-align:right">TP</th><th style="text-align:right">FP</th>
+        <th style="text-align:right">정밀도</th></tr>
+    %(rows)s
+    %(rest)s
+  </table>
+  <p class="hint" style="margin-top:10px">
+  코퍼스 점유율 순이며 정밀도 순이 아닙니다 &mdash; 정밀도로 정렬하면 표의 윗부분을
+  결과로 읽게 됩니다. <b>채점</b> 은 정답 라벨이 붙어 실제로 점수가 매겨진 예측 수이고,
+  <b>기권율</b> 은 매처가 후보를 확정하지 못해 식별을 거부한 비율입니다 &mdash;
+  정밀도 단독 지표에서 기권은 점수를 깎지 않으므로 함께 읽어야 합니다.</p>
+</div>
+""" % {"prec": r["precision"], "tp": "{:,}".format(r["TP"]),
+       "fp": "{:,}".format(r["FP"]),
+       "sie": 100.0 * rows[0]["components"] / max(tot_c, 1),
+       "rows": "".join(_tr(x, bold=True) for x in top),
+       "rest": _tr(agg) if rest else ""}
+
+
 def _sbom_cve_page():
     try:
         d = json.load(open(os.path.join(RESULTS, "sbom_cpe_limits.json"), encoding="utf-8"))
@@ -2523,7 +2612,7 @@ by a better similarity threshold.</p>
    .replace("__ROWS__", body).replace("__YEARS__", yrs).replace("__VERS__", vrows)
 
 
-_SBOM_CVE_PAGE = _sbom_cve_page()
+_SBOM_CVE_PAGE = _sbom_cve_page() + _vendor_precision_section()
 
 
 PAGES = {
