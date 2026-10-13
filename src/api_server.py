@@ -33,7 +33,7 @@ import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
 import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
 from cert_page import CERT_PAGE      # the /cert.html markup + client script
-from asset_vex_page import ASSET_VEX_PAGE, ASSET_AV_MODAL_JS  # /asset-vex.html + shared modal JS
+from asset_vex_page import ASSET_VEX_PAGE, ASSET_AV_MODAL_JS, ASSET_AV_CLIENT_JS  # /asset-vex.html + shared JS
 import asset_av_judge as AV                # source-less exploitability logic
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
@@ -267,11 +267,18 @@ class Store:
                          for c in self.kb_comps]
         # CVE -> CVSS base score. NVD (tools/fetch_nvd_cvss_bulk.py) is authoritative,
         # then findings.csv / NVD cache / CISA advisory metrics fill any gaps.
+        # CVE -> Attack Vector letter (N/A/L/P), used by the asset-attribute estimate.
         self.cvss = {}
+        self.av = {}
         _ncp = os.path.join(DATA, "nvd_cvss.json")
         if os.path.exists(_ncp):
             for _c, _v in _load(_ncp, {}).items():
-                if _c != "__cursor__" and isinstance(_v, dict) and _v.get("score") is not None:
+                if _c == "__cursor__" or not isinstance(_v, dict):
+                    continue
+                _a = __import__("asset_av_judge").parse_av(_v.get("vector"))
+                if _a:
+                    self.av[_c] = _a
+                if _v.get("score") is not None:
                     try:
                         self.cvss[_c] = float(_v["score"])
                     except (TypeError, ValueError):
@@ -337,6 +344,7 @@ class Store:
                 "cve": cve, "vex": (_v2["vex"] if _v2 else w["final_vex"]),
                 "severity": sev if sev in srank else "unrated",
                 "cvss": self.cvss.get(cve),
+                "av": self.av.get(cve),
                 "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
                 "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
                 "source_available": any(r.get("tier") == "A" for r in rows) and cve not in UNCOLLECTABLE_CVES,
@@ -2794,7 +2802,8 @@ def make_page(active):
             .replace("__VEX_TREE__", json.dumps(VT.TREE, ensure_ascii=False))
             .replace("__NAV__", nav_html(active))
             .replace("__CONTENT__", content)
-            .replace("__ASSET_AV_JS__", ASSET_AV_MODAL_JS))
+            .replace("__ASSET_AV_JS__",
+                     "window.__ICSVEX_RUNTIME=true;\n" + ASSET_AV_CLIENT_JS + ASSET_AV_MODAL_JS))
 
 
 app = build_app()

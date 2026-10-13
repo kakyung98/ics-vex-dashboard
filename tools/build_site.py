@@ -192,6 +192,7 @@ function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGAT
 """
 
 html = A.FRONTEND_TEMPLATE   # shared shell (head + script) with __NAV__/__CONTENT__
+html = html.replace("__ASSET_AV_JS__", A.ASSET_AV_CLIENT_JS + A.ASSET_AV_MODAL_JS)
 
 # stat endpoints -> static json
 for old, new in [
@@ -229,7 +230,10 @@ html = html.replace("async function run(){",
 # Pages this static build does not publish, by key. Both are runtime-only: they
 # POST to the local FastAPI server, so a static copy would be dead controls. See
 # the note below where the stale files are removed.
-_SITE_EXCLUDE = {"cert", "asset-vex"}
+# cert stays unpublished (its measurement needs the server). asset-vex is now
+# published: its judge is deterministic and runs client-side, reading the CVE's
+# Attack Vector from cve_index.json, so it works with no backend.
+_SITE_EXCLUDE = {"cert"}
 
 # emit one static file per page (same shared shell/script, different nav+content)
 _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
@@ -243,7 +247,8 @@ for key, fname in [("analyzer", "index.html"),
                    # the merged page keeps answering both old URLs
                    ("dataset", "corpus.html"), ("dataset", "collectable.html"),
                    ("published-vex", "published-vex.html"),
-                   ("ics-sbom", "ics-sbom.html")]:
+                   ("ics-sbom", "ics-sbom.html"),
+                   ("asset-vex", "asset-vex.html")]:
     page = (html.replace("__NAV__", A.nav_html(key, exclude=_SITE_EXCLUDE))
                 .replace("__CONTENT__", A.PAGES[key][1]))
     open(os.path.join(SITE, fname), "w", encoding="utf-8").write(page)
@@ -252,7 +257,7 @@ for key, fname in [("analyzer", "index.html"),
 # /api/cert/*, which only the local FastAPI server answers, so a copy on Pages
 # would be a Run button that silently does nothing. It stays on the local
 # server, and the published nav does not advertise it.
-for _name in ("cert.html", "asset-vex.html"):
+for _name in ("cert.html",):
     _stale = os.path.join(SITE, _name)
     if os.path.isfile(_stale):
         os.remove(_stale)
