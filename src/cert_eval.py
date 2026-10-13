@@ -62,7 +62,7 @@ ITEMS = {
         "name_en": "VEX affected-judgment precision",
         "metric": "precision = TP / (TP + FP),  positive class = affected",
         "acceptance": 0.85,
-        "sut": "tools/vex_judge_v2 (Q0 patch gate + Q1 presence, Q2/Q3 as tier)",
+        "sut": "tools/vex_judge_v2 (Q1 patch gate + Q2 presence, Q3/Q4 as tier)",
         "dataset": {"gt": "data/vex_gt_all.jsonl",
                     "sut": "data/vex_v2_pregate.json",
                     "sut_patched": "data/vex_v2_patched.json",
@@ -75,14 +75,14 @@ ITEMS = {
         # An `independent` scope used to sit here, scoring only the GT's four
         # execution_verified labels. It was RETIRED: those labels came from an
         # execution-verification loop (results/exec_verification*.json, August
-        # 2025) that the project replaced with the Q0-Q3 solver pipeline, so the
+        # 2025) that the project replaced with the Q1-Q4 solver pipeline, so the
         # scope published a 0.6667 produced by a methodology the SUT no longer
         # uses, over 2 CVEs x 2 builds, with no path to growing it - the
         # collected corpus is overwhelmingly ICS firmware that cannot be built
         # and triggered. The four labels REMAIN in data/vex_gt_all.jsonl, because
         # execution is sound evidence and deleting correct labels would be worse;
         # what is gone is the claim that scoring them is an independent
-        # evaluation. Independence is now carried by the Q2/Q3 axis below, whose
+        # evaluation. Independence is now carried by the Q3/Q4 axis below, whose
         # authorities (shipped public headers, NVD CVSS) are outside this
         # repository's own tooling.
         "variants": [
@@ -91,32 +91,32 @@ ITEMS = {
         ],
         "reference": {"pregate": 0.9718, "allbuilds": 0.993},
     },
-    "q23": {
-        "id": "q23",
-        "name": "Q2 도달가능성 / Q3 제어가능성 — 외부 권위와의 일치도",
-        "name_en": "Q2 reachability / Q3 controllability agreement",
-        "metric": "Q2 precision & recall · Q3 recall (정밀도는 음성 클래스 없음)",
+    "q34": {
+        "id": "q34",
+        "name": "Q3 도달가능성 / Q4 제어가능성 — 외부 권위와의 일치도",
+        "name_en": "Q3 reachability / Q4 controllability agreement",
+        "metric": "Q3 precision & recall · Q4 recall (정밀도는 음성 클래스 없음)",
         # No acceptance criterion exists for this: it is not one of the two
         # certification items. It is here because without it Joern and Z3
         # contribute 0 to every published figure - item #4 scores the `affected`
-        # verdict, which vex_judge_v2 decides at Q1, while Q2/Q3 only set the
+        # verdict, which vex_judge_v2 decides at Q2, while Q3/Q4 only set the
         # evidence tier and no answer key carried a tier.
         "acceptance": None,
         "sut": "tools/joern_reachability (Joern CPG) + tools/z3_controllability (Z3)",
-        "dataset": {"gt": "data/vex_q23_gt.jsonl",
+        "dataset": {"gt": "data/vex_q34_gt.jsonl",
                     "reach": "data/reachability.json",
                     "ctrl": "data/controllability.json"},
         # 285 labels over a 267-CVE population: a CVE carries up to two labels,
         # one per question, and 249 of the 534 possible pairs are held out.
         "record_unit": "건 ((CVE, 질문) 쌍 · 모집단 267 CVE)",
         "runtime_hint": "즉시 (판정 캐시를 채점) · 권위 = 출하 공개 헤더 · NVD CVSS AV/UI",
-        "variants": [{"key": "both", "label": "Q2 + Q3 (보조 공시, 합격기준 없음)"}],
-        # Recalls, not precisions: Q3's answer key has no negative class, so a
-        # precision there is 1.0000 by construction. Q2's two misses are Joern
+        "variants": [{"key": "both", "label": "Q3 + Q4 (보조 공시, 합격기준 없음)"}],
+        # Recalls, not precisions: Q4's answer key has no negative class, so a
+        # precision there is 1.0000 by construction. Q3's two misses are Joern
         # refuting `GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's `inflate`
         # (CVE-2022-37434) - both declared in a shipped public header, which is
         # exactly the false negative the module docstring predicted.
-        "reference": {"both": {"Q2_recall": 0.9655, "Q3_recall": 1.0}},
+        "reference": {"both": {"Q3_recall": 0.9655, "Q4_recall": 1.0}},
     },
 }
 
@@ -177,13 +177,13 @@ def _score_item4(gt, variant, progress):
     raise ValueError("unknown variant for item #4: %r" % variant)
 
 
-def _score_q23(gt, variant, progress):
-    import eval_q23_agreement as EQ
-    d = ITEMS["q23"]["dataset"]
+def _score_q34(gt, variant, progress):
+    import eval_q34_agreement as EQ
+    d = ITEMS["q34"]["dataset"]
     return EQ.score(gt, _abs(d["reach"]), _abs(d["ctrl"]))
 
 
-_SCORERS = {"3": _score_item3, "4": _score_item4, "q23": _score_q23}
+_SCORERS = {"3": _score_item3, "4": _score_item4, "q34": _score_q34}
 
 
 def _reproduces(res, ref, dataset):
@@ -191,7 +191,7 @@ def _reproduces(res, ref, dataset):
     nothing to compare against.
 
     An uploaded dataset has no recorded figure, so the comparison is reported as
-    not applicable rather than as a mismatch. The Q2/Q3 axis has no single
+    not applicable rather than as a mismatch. The Q3/Q4 axis has no single
     precision - its reference is a dict of per-question recalls - so the check is
     'every recorded figure still holds', which is what keeps a solver change from
     moving these numbers unnoticed.
@@ -199,7 +199,7 @@ def _reproduces(res, ref, dataset):
     if dataset == "uploaded" or ref is None:
         return None
     if isinstance(ref, dict):
-        for q in ("Q2", "Q3"):
+        for q in ("Q3", "Q4"):
             want = ref.get("%s_recall" % q)
             got = ((res.get("per_question") or {}).get(q) or {}).get("recall")
             if want is not None and (got is None or abs(got - want) > 1e-9):
@@ -315,7 +315,7 @@ def validate_gt(item_id, path):
     required = {
         "3": {"component_id", "cve_id", "applicable"},
         "4": {"cve_id", "expected_status", "_build", "evidence_type"},
-        "q23": {"cve_id", "question", "expected_verdict", "evidence_type"},
+        "q34": {"cve_id", "question", "expected_verdict", "evidence_type"},
     }[str(item_id)]
     n = 0
     missing = None

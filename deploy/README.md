@@ -45,7 +45,7 @@ install it as a `systemd` service, plus the firewall hint. Defaults: dir
 
 ## Joern — the reachability engine (step 4 of VEX-v2)
 
-The VEX judgment pipeline uses Joern for reachability (Q2). It is a JVM tool and is
+The VEX judgment pipeline uses Joern for reachability (Q3). It is a JVM tool and is
 not bundled; until it is on PATH, `tools/joern_reachability.py` returns `unknown`
 and the orchestrator leaves those CVEs `under_investigation` (it never clears on
 unknown). Install it once on the server:

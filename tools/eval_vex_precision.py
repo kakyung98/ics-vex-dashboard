@@ -20,8 +20,8 @@ patched case against the vulnerable tree's verdict would be measuring nothing, s
 build with no verdict file supplied is held out and counted, never folded in.
 
 What `--build all` costs in independence: a patched build can only be judged with the
-patch gate LIVE (Q1 asks whether the vulnerable function is DEFINED, and a fix edits
-that function rather than deleting it - Q1 reads `present` on 10 of the 12 collected
+patch gate LIVE (Q2 asks whether the vulnerable function is DEFINED, and a fix edits
+that function rather than deleting it - Q2 reads `present` on 10 of the 12 collected
 patched trees). So the patched half is unavailable pre-gate, and 7 of its 9 cases are
 `patch_verified`, i.e. share the gate's oracle. `--independent` is therefore the only
 non-circular way to quote the full population; the pre-gate vulnerable-build figure
@@ -160,7 +160,7 @@ def score(gt_path=GT, sut_path=SUT, sut_patched=None, build="vulnerable",
             if (gate_live and not independent and shared_oracle_cases) else None,
         "patched_build_note": (
             "patched-build cases are judged from data/fixed_releases/<CVE> by "
-            "vex_judge_v2 --build patched. They require the patch gate: Q1 reads "
+            "vex_judge_v2 --build patched. They require the patch gate: Q2 reads "
             "'present' on 10 of the 12 collected patched trees, because a fix edits "
             "the vulnerable function rather than deleting it. So there is no pre-gate "
             "patched figure to quote, and 7 of the 9 patched GT cases are "

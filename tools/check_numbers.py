@@ -50,22 +50,22 @@ def compute():
     n["targets_by_source"] = dict(collections.Counter(
         v["source"] for v in tgt.values() if v.get("targets")))
 
-    q2 = _j("results", "callgraph_reach.json", default=[])
-    c2 = collections.Counter(r.get("verdict", r.get("status")) for r in q2)
-    n["q2_rows"], n["q2"] = len(q2), dict(c2)
-    n["q2_reachable"], n["q2_unreachable"] = c2.get("reachable", 0), c2.get("unreachable", 0)
+    q3 = _j("results", "callgraph_reach.json", default=[])
+    c2 = collections.Counter(r.get("verdict", r.get("status")) for r in q3)
+    n["q3_rows"], n["q3"] = len(q3), dict(c2)
+    n["q3_reachable"], n["q3_unreachable"] = c2.get("reachable", 0), c2.get("unreachable", 0)
 
-    q3 = _j("results", "taint_reach.json", default=[])
-    c3 = collections.Counter(r.get("verdict", r.get("status")) for r in q3)
-    n["q3_rows"], n["q3"] = len(q3), dict(c3)
-    n["q3_controllable"] = c3.get("controllable", 0)
-    n["q3_not_controllable"] = c3.get("not-controllable", 0)
+    q4 = _j("results", "taint_reach.json", default=[])
+    c3 = collections.Counter(r.get("verdict", r.get("status")) for r in q4)
+    n["q4_rows"], n["q4"] = len(q4), dict(c3)
+    n["q4_controllable"] = c3.get("controllable", 0)
+    n["q4_not_controllable"] = c3.get("not-controllable", 0)
 
-    # A clearance is a `not_affected` outcome, not a raw verdict: Q3's gates
+    # A clearance is a `not_affected` outcome, not a raw verdict: Q4's gates
     # (target source, graph completeness, entry-model roots) can hold a
     # not-controllable verdict at under_investigation - Spring4Shell is one.
-    n["q3_cleared"] = sum(1 for r in q3 if r.get("vex") == "not_affected")
-    n["clearances_from_source_analysis"] = n["q2_unreachable"] + n["q3_cleared"]
+    n["q4_cleared"] = sum(1 for r in q4 if r.get("vex") == "not_affected")
+    n["clearances_from_source_analysis"] = n["q3_unreachable"] + n["q4_cleared"]
 
     rank = _j("results", "codebert_rank.json", default={})
     if rank:
@@ -90,24 +90,24 @@ def compute():
     return n
 
 
-# The same Q2/Q3 phrase appears in both documents and in the QUESTIONS prose the
+# The same Q3/Q4 phrase appears in both documents and in the QUESTIONS prose the
 # console renders; covering all three here means --write leaves nothing to fix
 # by hand (the prose used to print "must be edited by hand" and drifted).
 DOC_FILES = ("README.md", "RESULTS.md", os.path.join("src", "vex_decision.py"))
 _DOC_ROWS = {
-    "Q2": (re.compile(r"reachable \d+, target-not-found \d+, no-source \d+"),
+    "Q3": (re.compile(r"reachable \d+, target-not-found \d+, no-source \d+"),
            lambda n: "reachable %d, target-not-found %d, no-source %d" % (
-               n["q2"].get("reachable", 0), n["q2"].get("target-not-found", 0),
-               n["q2"].get("no-source", 0))),
-    "Q3": (re.compile(r"controllable \d+, target-not-found \d+, no-source \d+"),
-           lambda n: "controllable %d, target-not-found %d, no-source %d" % (
-               n["q3"].get("controllable", 0), n["q3"].get("target-not-found", 0),
+               n["q3"].get("reachable", 0), n["q3"].get("target-not-found", 0),
                n["q3"].get("no-source", 0))),
+    "Q4": (re.compile(r"controllable \d+, target-not-found \d+, no-source \d+"),
+           lambda n: "controllable %d, target-not-found %d, no-source %d" % (
+               n["q4"].get("controllable", 0), n["q4"].get("target-not-found", 0),
+               n["q4"].get("no-source", 0))),
 }
 
 
 def check_docs(n, write):
-    """Stale Q2/Q3 phrases in the docs -> [(file, question, found, wanted)]."""
+    """Stale Q3/Q4 phrases in the docs -> [(file, question, found, wanted)]."""
     stale = []
     for f in DOC_FILES:
         p = os.path.join(BASE, f)
@@ -127,8 +127,8 @@ def check_docs(n, write):
     return stale
 
 
-CORPUS_KEYS = ["snapshots", "targets_located", "q2_reachable", "q2_unreachable",
-               "q3_controllable", "q3_not_controllable",
+CORPUS_KEYS = ["snapshots", "targets_located", "q3_reachable", "q3_unreachable",
+               "q4_controllable", "q4_not_controllable",
                "clearances_from_source_analysis"]
 
 
@@ -159,12 +159,12 @@ def main():
     # CORPUS fix), so verify them too.
     print("\n== QUESTIONS[].result prose ==")
     prose = {
-        "Q2": "reachable %d, target-not-found %d, no-source %d" % (
-            n["q2"].get("reachable", 0), n["q2"].get("target-not-found", 0),
-            n["q2"].get("no-source", 0)),
-        "Q3": "controllable %d, target-not-found %d, no-source %d" % (
-            n["q3"].get("controllable", 0), n["q3"].get("target-not-found", 0),
+        "Q3": "reachable %d, target-not-found %d, no-source %d" % (
+            n["q3"].get("reachable", 0), n["q3"].get("target-not-found", 0),
             n["q3"].get("no-source", 0)),
+        "Q4": "controllable %d, target-not-found %d, no-source %d" % (
+            n["q4"].get("controllable", 0), n["q4"].get("target-not-found", 0),
+            n["q4"].get("no-source", 0)),
     }
     for q in VD.QUESTIONS:
         want = prose.get(q["id"])
@@ -175,7 +175,7 @@ def main():
             stale.append((q["id"] + "_prose", q["result"][:40], want))
         print("  %-5s %-6s expects %r" % ("OK " if ok else "STALE", q["id"], want))
 
-    print("\n== README.md / RESULTS.md / src/vex_decision.py Q2-Q3 phrases ==")
+    print("\n== README.md / RESULTS.md / src/vex_decision.py Q3-Q4 phrases ==")
     doc_stale = check_docs(n, a.write)
     if not doc_stale:
         print("  OK    every copy matches the data")

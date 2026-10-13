@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Q1 presence, from the CVE description + the collected snapshot.
+"""Q2 presence, from the CVE description + the collected snapshot.
 
 The idea (no patch/commit needed): the NVD text usually names the vulnerable
 function or file. If that named function is NOT defined anywhere in the collected
 source, the vulnerable code is not present in this build ->
   not_affected / vulnerable_code_not_present.
 If it IS present, the CVE stays a candidate and its function is handed to the
-call-graph (Q2) and, later, the model for a semantic check of the variant.
+call-graph (Q3) and, later, the model for a semantic check of the variant.
 
-This is the structural half of Q1 — deterministic, no model. It turns the useless
+This is the structural half of Q2 — deterministic, no model. It turns the useless
 'target-not-found' verdicts (which only meant "we had no real target") into
 either a real presence signal or a defensible not_affected.
 
@@ -135,7 +135,7 @@ def main():
         present = sorted(f for f in hf if f in defs)
         file_present = sorted(f for f in hfile if f in files)
         if hf and present:
-            verdict = "present"          # named function is in this build -> Q2 candidate
+            verdict = "present"          # named function is in this build -> Q3 candidate
         elif hf and not present:
             verdict = "not_present"      # named vulnerable function absent -> not_affected
         elif hfile and not file_present:
@@ -148,12 +148,12 @@ def main():
         out[cve] = {"verdict": verdict, "hint_funcs": sorted(hf), "hint_files": sorted(hfile),
                     "funcs_present": present, "files_present": file_present}
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-    print("== Q1 structural presence over %d snapshots ==" % len(out))
+    print("== Q2 structural presence over %d snapshots ==" % len(out))
     for k, n in stats.most_common():
         print("  %-14s %d" % (k, n))
     npresent = stats["present"]
     nna = stats["not_present"]
-    print("\n-> vulnerable function CONFIRMED PRESENT (Q2 candidates): %d" % npresent)
+    print("\n-> vulnerable function CONFIRMED PRESENT (Q3 candidates): %d" % npresent)
     print("-> named vulnerable code ABSENT (=> not_affected / vulnerable_code_not_present): %d" % nna)
     print("-> need model scan (file-present / no-hint): %d" % (stats["file-present"] + stats["no-hint"]))
     print("->", OUT)

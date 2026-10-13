@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Score Q2 (Joern) and Q3 (Z3) against the authority labels in data/vex_q23_gt.jsonl.
+"""Score Q3 (Joern) and Q4 (Z3) against the authority labels in data/vex_q34_gt.jsonl.
 
 This exists because the two solvers contributed nothing measurable to any published
-figure. vex_judge_v2 decides `affected` at Q1; Q2/Q3 only set the evidence tier, and
-no answer key carried a tier - so item #4's 0.9718 is a measurement of Q0+Q1 alone,
+figure. vex_judge_v2 decides `affected` at Q2; Q3/Q4 only set the evidence tier, and
+no answer key carried a tier - so item #4's 0.9718 is a measurement of Q1+Q2 alone,
 however much Joern and Z3 ran. This is a SUPPLEMENTARY disclosure, not a
 certification item: no acceptance criterion is claimed for it.
 
 The two questions get different metrics, because their answer keys are shaped
 differently and pretending otherwise would manufacture a number:
 
-  Q2  precision AND recall. The key has both classes - a shipped public header
+  Q3  precision AND recall. The key has both classes - a shipped public header
       declares the function (reachable), or the function only exists under test/ or
       fuzz/ (not-reachable, it is not in the installed artifact).
 
-  Q3  recall ONLY, and precision is reported as null with the reason. CVSS can
+  Q4  recall ONLY, and precision is reported as null with the reason. CVSS can
       assert that the attacker supplies the triggering input, but nothing public
       asserts the opposite: `UI:R` means a second party must act, not that the
       value is not attacker-chosen. With no negative class a precision would come
@@ -33,15 +33,15 @@ import os
 import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-GT = os.path.join(BASE, "data", "vex_q23_gt.jsonl")
+GT = os.path.join(BASE, "data", "vex_q34_gt.jsonl")
 REACH = os.path.join(BASE, "data", "reachability.json")
 CTRL = os.path.join(BASE, "data", "controllability.json")
-OUT = os.path.join(BASE, "results", "q23_agreement.json")
+OUT = os.path.join(BASE, "results", "q34_agreement.json")
 
 # A verdict that asserts the positive answer. Everything else is either the
 # negative assertion or an abstention - see _bucket.
-POSITIVE = {"Q2": "reachable", "Q3": "controllable"}
-NEGATIVE = {"Q2": "not-reachable", "Q3": "not-controllable"}
+POSITIVE = {"Q3": "reachable", "Q4": "controllable"}
+NEGATIVE = {"Q3": "not-reachable", "Q4": "not-controllable"}
 
 
 def _bucket(question, verdict):
@@ -66,12 +66,12 @@ def load_gt(path):
 def score(gt_path=GT, reach_path=REACH, ctrl_path=CTRL):
     gt = load_gt(gt_path)
     sut = {
-        "Q2": json.load(open(reach_path, encoding="utf-8")),
-        "Q3": json.load(open(ctrl_path, encoding="utf-8")),
+        "Q3": json.load(open(reach_path, encoding="utf-8")),
+        "Q4": json.load(open(ctrl_path, encoding="utf-8")),
     }
 
     per = {}
-    for q in ("Q2", "Q3"):
+    for q in ("Q3", "Q4"):
         c = collections.Counter()
         misses, wrong, absent = [], [], []
         for r in [x for x in gt if x.get("question") == q]:
@@ -128,18 +128,18 @@ def score(gt_path=GT, reach_path=REACH, ctrl_path=CTRL):
         }
 
     return {
-        "test": "Q2 reachability / Q3 controllability agreement with external authorities",
+        "test": "Q3 reachability / Q4 controllability agreement with external authorities",
         "status": "supplementary disclosure - no certification acceptance criterion",
         "ground_truth": os.path.relpath(gt_path, BASE),
-        "sut": {"Q2": "tools/joern_reachability (Joern CPG call graph)",
-                "Q3": "tools/z3_controllability (Z3 over an LLM constraint model)"},
-        "authorities": {"Q2": "the component's shipped public headers; and the build "
+        "sut": {"Q3": "tools/joern_reachability (Joern CPG call graph)",
+                "Q4": "tools/z3_controllability (Z3 over an LLM constraint model)"},
+        "authorities": {"Q3": "the component's shipped public headers; and the build "
                               "layout for the negative class",
-                        "Q3": "NVD CVSS v3 AV/UI"},
+                        "Q4": "NVD CVSS v3 AV/UI"},
         "per_question": per,
         "why_this_exists": (
-            "item #4 scores the `affected` verdict, which vex_judge_v2 decides at Q1. "
-            "Q2/Q3 only grade the evidence tier and no answer key carried a tier, so "
+            "item #4 scores the `affected` verdict, which vex_judge_v2 decides at Q2. "
+            "Q3/Q4 only grade the evidence tier and no answer key carried a tier, so "
             "Joern and Z3 contributed 0 to every published figure. This is the axis "
             "on which they are measurable."),
     }
@@ -160,7 +160,7 @@ def main():
     os.makedirs(os.path.dirname(a.out), exist_ok=True)
     json.dump(r, open(a.out, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
-    for q in ("Q2", "Q3"):
+    for q in ("Q3", "Q4"):
         d = r["per_question"][q]
         print("%s  labels %-4d answered %-4d abstained %-4d (%.1f%%)"
               % (q, d["labels"], d["answered"], d["abstained"],

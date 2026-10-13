@@ -5,9 +5,9 @@
 Each example asks the model to judge a component-CVE against the four
 CISA justification questions and emit a status + justification:
 
-  Q1 vulnerable code present?      -> component_not_present / vulnerable_code_not_present
-  Q2 in an executed path?          -> vulnerable_code_not_in_execute_path
-  Q3 adversary-controllable?       -> vulnerable_code_cannot_be_controlled_by_adversary
+  Q2 vulnerable code present?      -> component_not_present / vulnerable_code_not_present
+  Q3 in an executed path?          -> vulnerable_code_not_in_execute_path
+  Q4 adversary-controllable?       -> vulnerable_code_cannot_be_controlled_by_adversary
   Q4 inline mitigation present?    -> inline_mitigations_already_exist
   (all pass) -> affected
 
@@ -30,9 +30,9 @@ EVAL = os.path.join(BASE, "data", "vex_justify_eval.jsonl")
 INSTR = (
     "You are a VEX analyst. Decide whether the product is affected by the "
     "vulnerability, following the CISA justification questions in order:\n"
-    "Q1 Is the vulnerable code present in the build?\n"
-    "Q2 Is the vulnerable code on a path the product actually executes?\n"
-    "Q3 Can an adversary control input that reaches the vulnerable code?\n"
+    "Q2 Is the vulnerable code present in the build?\n"
+    "Q3 Is the vulnerable code on a path the product actually executes?\n"
+    "Q4 Can an adversary control input that reaches the vulnerable code?\n"
     "Q4 Is there an inline mitigation already in the product?\n"
     "Answer with a JSON object: {\"status\": affected|not_affected, "
     "\"justification\": <one of component_not_present, vulnerable_code_not_present, "

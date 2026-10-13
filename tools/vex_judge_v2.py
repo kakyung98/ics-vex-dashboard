@@ -16,11 +16,11 @@ reachability/controllability are OPTIONAL - they grade confidence, they never de
   Level 2  reachable? joern (OPTIONAL) positive "reachable" only STRENGTHENS the tier
   Level 3  control.?  z3    (OPTIONAL) positive "controllable" only STRENGTHENS the tier
 
-Only source-absence (Level 1) soundly clears a CVE. Q2/Q3 never refute: a collected library
+Only source-absence (Level 1) soundly clears a CVE. Q3/Q4 never refute: a collected library
 snapshot has no consumer, so its true entry points (the exported API) are outside the graph, and
 Joern "not reachable from an in-snapshot root" false-negatives on the attack-surface API itself
 (zlib `inflate`, openssl `GENERAL_NAME_cmp`); Z3 "not-controllable" rests on unreliable LLM
-labelling. So most CVEs are decided at Level 1 alone; Q2/Q3 are run only to raise the evidence
+labelling. So most CVEs are decided at Level 1 alone; Q3/Q4 are run only to raise the evidence
 tier where they are meaningful. Each verdict carries `evidence_tier`:
   verified (reachable+controllable) > reachable > component > present   [not-present for not_affected]
 
@@ -47,7 +47,7 @@ OUT = os.path.join(BASE, "data", "vex_v2.json")
 # A verdict is about a (CVE, build) pair. The vulnerable tree and the vendor's
 # remediated release are different inputs with different right answers, and every
 # cache below is keyed by CVE alone, so the build selects the cache rather than a
-# key inside it. `--build fixed` reads the fixed-build Q1 cache and points the
+# key inside it. `--build fixed` reads the fixed-build Q2 cache and points the
 # patch gate at data/fixed_releases/<CVE>.
 BUILDS = {"vulnerable": ("source_snapshots", "source_locations.json", "vex_v2.json"),
           "patched": ("fixed_releases", "source_locations_patched.json",
@@ -57,7 +57,7 @@ AFFECTED, NOT_AFF, UNDER = "affected", "not_affected", "under_investigation"
 FIXED = "fixed"          # CSAF product_status.fixed — remediated, not "never affected"
 
 
-# Reachability (Q2) and controllability (Q3) are OPTIONAL enrichment: they only grade how much
+# Reachability (Q3) and controllability (Q4) are OPTIONAL enrichment: they only grade how much
 # source evidence backs an `affected` verdict, they never decide it. Strongest first.
 def _tier(ev):
     if ev["reachability"] == "reachable" and ev["controllability"] == "controllable":
@@ -66,15 +66,15 @@ def _tier(ev):
     if ev["reachability"] == "reachable":
         return ("reachable",
                 "present and reachable (joern); adversary control not confirmed")
-    if ev["q1"] == "component_only":
+    if ev["q2"] == "component_only":
         return ("component",
                 "vulnerable component present; specific function not localised in source")
     return ("present",
-            "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)")
+            "vulnerable code present; not refuted (Q3/Q4 optional and not decisive here)")
 
 
 def judge(cve, loc, reach, ctrl, gate=None):
-    ev = {"q1": (loc or {}).get("q1"),
+    ev = {"q2": (loc or {}).get("q2"),
           "reachability": (reach or {}).get("verdict"),
           "controllability": (ctrl or {}).get("verdict")}
     # Level 0 - already patched? Presence (Level 1) answers "is the vulnerable function
@@ -105,11 +105,11 @@ def judge(cve, loc, reach, ctrl, gate=None):
     #   Level 3 - control.  : OPTIONAL. Z3 "not-controllable" rests on the LLM's attacker/environment
     #                         labelling (unreliable), so it too only strengthens.
     #
-    # So the verdict is decided at Level 1 (presence); Q2/Q3 are not required and only set the tier.
-    if loc is None or ev["q1"] == "absent":
+    # So the verdict is decided at Level 1 (presence); Q3/Q4 are not required and only set the tier.
+    if loc is None or ev["q2"] == "absent":
         return _v(cve, NOT_AFF, "vulnerable_code_not_present",
                   "the vulnerable function is not defined in the collected source", "not-present", ev)
-    tier, basis = _tier(ev)                      # present -> affected; Q2/Q3 grade the confidence
+    tier, basis = _tier(ev)                      # present -> affected; Q3/Q4 grade the confidence
     return _v(cve, AFFECTED, None, basis, tier, ev)
 
 
@@ -148,7 +148,7 @@ def main():
                          "snapshot. Needs tools/source_locate.py --build patched first. "
                          "The axis is named as the GT names it; 'fixed' is a VEX status, "
                          "not a build. NOTE a patched build can only be judged with the gate "
-                         "LIVE: Q1 asks whether the vulnerable FUNCTION is defined, and "
+                         "LIVE: Q2 asks whether the vulnerable FUNCTION is defined, and "
                          "a fix usually edits that function rather than deleting it, so "
                          "presence alone reads 'affected' on a remediated tree")
     a = ap.parse_args()

@@ -1,4 +1,4 @@
-# Joern pilot — what a CPG buys Q2/Q3, and what it does not
+# Joern pilot — what a CPG buys Q3/Q4, and what it does not
 
 > Run 2026-09-10 against `data/source_snapshots/CVE-2016-9840/zlib-1.2.8`.
 > Joern 4.0.625, Temurin JDK 17 (portable, no admin install).
@@ -60,7 +60,7 @@ recovers it. Macros and conditional compilation stay invisible either way. This
 matters because resolution is what gates a clearance: the pilot gives **no
 grounds to relax the conservative guards**.
 
-## Q3 as a data-flow question — and its failure mode
+## Q4 as a data-flow question — and its failure mode
 
 Reachability asks "can control get here". CISA's
 `vulnerable_code_cannot_be_controlled_by_adversary` asks whether the adversary
@@ -104,7 +104,7 @@ $env:PATH="$env:JAVA_HOME\bin;$env:PATH"
 cd C:\Users\user\Desktop\jvm\joern-cli
 .\c2cpg.bat --output ..\zlib.cpg.bin `
   C:\Users\user\Desktop\ICS-VEX\data\source_snapshots\CVE-2016-9840\zlib-1.2.8
-.\joern.bat --script ..\q3flow.sc
+.\joern.bat --script ..\q4flow.sc
 ```
 
 Two platform notes, both cost a run each: the bundled `joern.sh` fails on Windows
@@ -118,7 +118,7 @@ Adopt Joern for what it actually improves:
 
 1. **Replace the K&R/macro regex workaround** with CDT parsing — a correctness
    win in the exact place a false clearance almost occurred.
-2. **Add Q3 taint flows as positive evidence**, never as grounds for clearing.
+2. **Add Q4 taint flows as positive evidence**, never as grounds for clearing.
 
 Do not adopt it as a reason to loosen `call_resolution` or any other guard. The
 binding limitation is that this corpus has no build, and a better front end does

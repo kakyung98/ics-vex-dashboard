@@ -3,7 +3,7 @@
 """Add DiverseVul C/C++ functions to the VEX-justification training set.
 
 DiverseVul labels individual functions vulnerable(1)/safe(0) with CWE + project.
-For direction B (Q1: is the vulnerable code present?) this maps directly:
+For direction B (Q2: is the vulnerable code present?) this maps directly:
   target==1 -> affected (vulnerable construct present)
   target==0 -> not_affected / vulnerable_code_not_present (benign code)
 
@@ -22,9 +22,9 @@ INSTR = (
     "You are a VEX analyst. Given a function from an ICS/OT software component, "
     "decide whether the product is affected by a potential weakness, following "
     "the CISA justification questions in order:\n"
-    "Q1 Is the vulnerable code present?\n"
-    "Q2 Is it on a path the product executes?\n"
-    "Q3 Can an adversary control input that reaches it?\n"
+    "Q2 Is the vulnerable code present?\n"
+    "Q3 Is it on a path the product executes?\n"
+    "Q4 Can an adversary control input that reaches it?\n"
     "Q4 Is there an inline mitigation already present?\n"
     "Answer with JSON: {\"status\": affected|not_affected, \"justification\": "
     "<component_not_present|vulnerable_code_not_present|vulnerable_code_not_in_execute_path|"

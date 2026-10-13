@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Identify the vulnerable function for each CVE, for callgraph Q2 targeting.
+"""Identify the vulnerable function for each CVE, for callgraph Q3 targeting.
 
 The problem callgraph_reach.py hit: it needs the name of the vulnerable function,
 but data/code_evidence.json stores only a hunk excerpt (no signature). Here we
@@ -25,7 +25,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(BASE, "data", "source_snapshots")
 # Only the files a fix touches, at the fix's parent commit - for a component with
 # no whole-source snapshot (the Linux kernel). Enough to attribute hunks to
-# functions; never read by Q2/Q3, which need the whole program.
+# functions; never read by Q3/Q4, which need the whole program.
 PARTIAL = os.path.join(BASE, "data", "partial_snapshots")
 
 
@@ -132,7 +132,7 @@ _PERL_SUB = re.compile(rb"^sub[ \t]+([A-Za-z_]\w*)[^\n{]*\{", re.M)
 # one snapshot, which is most of the time the whole index build spends.
 #
 # The guard is deliberately narrow, because skipping a file REMOVES names from
-# the Q1 lookup and a missing name leans toward `affected` (a Q1 miss falls to
+# the Q2 lookup and a missing name leans toward `affected` (a Q2 miss falls to
 # `component_only`, never to not_affected). So it fires only when the file is
 # large AND both ends of it are almost entirely numeric literals, punctuation and
 # whitespace - the shape of a `{0x12, 0x34, ...}` blob and nothing else. A file
@@ -237,10 +237,10 @@ def _py_spans(src):
         # sql.py defines `flatten` on both Token and TokenList, so neither key
         # alone can be looked up reliably.
         #
-        # Registering both is safe HERE specifically because Q1 reads
+        # Registering both is safe HERE specifically because Q2 reads
         # `found = bool(locs)` - a collision on the bare key changes which span
         # is reported as file/lines, never the verdict. Dropping a key would
-        # change the verdict: a Q1 miss falls to `component_only`, which
+        # change the verdict: a Q2 miss falls to `component_only`, which
         # vex_judge_v2 resolves to `affected`, not to not_affected. So a missing
         # key leans toward a false positive while a duplicate key leans nowhere.
         spans.append((start, end, node.name))
@@ -401,7 +401,7 @@ TIERA = os.environ.get("TIERA_JSON",
 EXT_SRC = {".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".hh", ".java"}
 # Python is NOT in EXT_SRC on purpose. Nearly every C snapshot in the corpus ships
 # build and doc scripts (libxml2 2.9.1 alone carries ~40 .py files), and indexing
-# their functions can only ADD names to the Q1 lookup - a name that matches by
+# their functions can only ADD names to the Q2 lookup - a name that matches by
 # accident reads as "vulnerable code present", which is the FP direction. So .py is
 # a separate set that build_func_index turns on only for a component with no
 # compiled sources of its own (tools/build_func_index.index_snapshot).
@@ -781,7 +781,7 @@ def enclosing_funcs_from_patch(cve, sources):
     # anchor vote decide: in expat CVE-2022-25235 the fix edits macros expanded
     # into six functions, each named once by git's hunk context, and `nameLength`
     # won alone on a single extra vote. A bigger target set is the safe error -
-    # Q2/Q3 need every target unreachable before they may clear - while a wrong
+    # Q3/Q4 need every target unreachable before they may clear - while a wrong
     # single target is the unsafe one. top//2 is never above the old rule's floor
     # (max(2, top//2)), so no target set can shrink relative to it; (top+1)//2
     # was tried first and did shrink four CVEs whenever the top count was odd.
@@ -790,7 +790,7 @@ def enclosing_funcs_from_patch(cve, sources):
     # counts made membership depend on how many copies of a diff happened to be
     # cached: CVE-2022-29824's fix touches xmlBufferAdd, which was kept or dropped
     # between two runs over the same commit. A larger set is also the safe error
-    # (Q2/Q3 may only clear when every target is unreachable).
+    # (Q3/Q4 may only clear when every target is unreachable).
     # No cap. A 16-entry cap cut libssh2's CVE-2019-3855 fix - 25 functions -
     # down to 16 and dropped real ones (coverage 0.60 against git's own hunk
     # context), which is the arbitrary membership this union exists to remove.

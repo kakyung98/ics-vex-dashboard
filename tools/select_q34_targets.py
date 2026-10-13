@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Which CVEs are worth running Q2 (reachability) and Q3 (controllability) on?
+"""Which CVEs are worth running Q3 (reachability) and Q4 (controllability) on?
 
-Q2 and Q3 are OPTIONAL in this pipeline: they never decide a verdict, they only
+Q3 and Q4 are OPTIONAL in this pipeline: they never decide a verdict, they only
 grade the evidence tier behind an `affected` (see tools/vex_judge_v2). So running
 them is a cost/benefit question, not a correctness one — and they are expensive,
 because Joern builds a fresh CPG per snapshot.
 
 Two filters, and the second is the point of this file:
 
-  1. Q1 must say `present`. With no located function there is nothing to trace
+  1. Q2 must say `present`. With no located function there is nothing to trace
      from, and `component_only` already carries its own (weaker) tier.
 
   2. The weakness class must be one where "can an attacker reach this, and does
@@ -29,7 +29,7 @@ Two filters, and the second is the point of this file:
 The split is recorded per CVE with its reason, so the exclusions are auditable
 rather than silent.
 
-Out: data/q23_targets.json  {"run": [...], "skip": [{cve, reason}], ...}
+Out: data/q34_targets.json  {"run": [...], "skip": [{cve, reason}], ...}
 """
 import argparse
 import collections
@@ -41,7 +41,7 @@ LOC = os.path.join(BASE, "data", "source_locations.json")
 NVD = os.path.join(BASE, "data", "nvd_cache.json")
 REACH = os.path.join(BASE, "data", "reachability.json")
 CTRL = os.path.join(BASE, "data", "controllability.json")
-OUT = os.path.join(BASE, "data", "q23_targets.json")
+OUT = os.path.join(BASE, "data", "q34_targets.json")
 
 # Weakness classes whose verdict turns on attacker data arriving at a sink.
 # Reachability and controllability are the open question for exactly these.
@@ -100,7 +100,7 @@ def classify(cwes):
         return False, "wrong by construction, a path adds nothing: %s" % ", ".join(
             "%s (%s)" % (c, BY_CONSTRUCTION[c]) for c in blocked)
     if not cwes:
-        # No class to reason about. Run it: Q2/Q3 can only ADD evidence behind an
+        # No class to reason about. Run it: Q3/Q4 can only ADD evidence behind an
         # `affected`, never remove it, so the failure mode of running is wasted
         # CPU while the failure mode of skipping is a weaker record.
         return True, "no CWE recorded; run rather than assume"
@@ -133,7 +133,7 @@ def select(pending_only=True):
 
     run, skip, no_func = [], [], []
     for cve in sorted(loc):
-        if loc[cve].get("q1") != "present":
+        if loc[cve].get("q2") != "present":
             no_func.append(cve)
             continue
         if pending_only and cve in done:
@@ -146,7 +146,7 @@ def select(pending_only=True):
         "counts": {"run": len(run), "skip": len(skip),
                    "no_located_function": len(no_func),
                    "already_analysed": len(done & set(loc)) if pending_only else 0},
-        "rule": "Q2/Q3 grade the evidence tier behind `affected`; they never "
+        "rule": "Q3/Q4 grade the evidence tier behind `affected`; they never "
                 "decide a verdict. Run them where attacker reachability and value "
                 "control are the open question (memory safety, input handling, "
                 "input-sized resource use), skip them where the weakness is wrong "
@@ -157,8 +157,8 @@ def select(pending_only=True):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--all", action="store_true",
-                    help="ignore the existing Q2/Q3 caches and classify every "
-                         "Q1=present CVE")
+                    help="ignore the existing Q3/Q4 caches and classify every "
+                         "Q2=present CVE")
     ap.add_argument("--list", action="store_true", help="print the run list only")
     a = ap.parse_args()
 
@@ -170,7 +170,7 @@ def main():
 
     json.dump(res, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     c = res["counts"]
-    print("=== Q2/Q3 target selection ===")
+    print("=== Q3/Q4 target selection ===")
     print("  run                    : %d" % c["run"])
     print("  skip (by construction) : %d" % c["skip"])
     print("  no located function    : %d" % c["no_located_function"])

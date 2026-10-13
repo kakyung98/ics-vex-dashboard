@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Ground truth for Q2 (reachability) and Q3 (controllability), from authorities
+"""Ground truth for Q3 (reachability) and Q4 (controllability), from authorities
 the solvers do not read.
 
-Item #4 scores the `affected` verdict, which vex_judge_v2 decides at Q1. Q2 and Q3
+Item #4 scores the `affected` verdict, which vex_judge_v2 decides at Q2. Q3 and Q4
 only set the evidence tier, and the tier is scored against nothing - so Joern and
 Z3 contribute exactly 0 to every published figure. This builds the answer key that
 lets them be scored, and the whole point is that its labels come from somewhere
 else:
 
-  Q2 reachability   the component's own PUBLIC API SURFACE. A vulnerable function
+  Q3 reachability   the component's own PUBLIC API SURFACE. A vulnerable function
                     declared in a shipped header is externally callable, so for a
                     library consumer it IS an entry point - reachable by
                     construction, with no call-graph walk involved. The converse
@@ -17,7 +17,7 @@ else:
                     test/, fuzz/ or examples/ is not in the shipped artifact, so a
                     consumer cannot reach it at all.
 
-  Q3 controllability NVD's CVSS v3 vector. `UI:N` asserts that no second party has
+  Q4 controllability NVD's CVSS v3 vector. `UI:N` asserts that no second party has
                     to act, and AV:N/A/L that the input arrives over a channel the
                     attacker speaks; together they are an authority's statement
                     that the attacker supplies the triggering input.
@@ -29,7 +29,7 @@ not attacker-chosen - a malicious file is fully attacker-written, the user merel
 opens it. So those cases are HELD OUT with a reason instead of being labelled, the
 same discipline tools/build_vex_gt.py applies to single-authority not_affected.
 
-Out: data/vex_q23_gt.jsonl  +  data/vex_q23_gt_manifest.json
+Out: data/vex_q34_gt.jsonl  +  data/vex_q34_gt_manifest.json
 """
 import collections
 import json
@@ -41,8 +41,8 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SNAP = os.path.join(BASE, "data", "source_snapshots")
 LOC = os.path.join(BASE, "data", "source_locations.json")
 CVSS = os.path.join(BASE, "data", "nvd_cvss.json")
-OUT = os.path.join(BASE, "data", "vex_q23_gt.jsonl")
-MANIFEST = os.path.join(BASE, "data", "vex_q23_gt_manifest.json")
+OUT = os.path.join(BASE, "data", "vex_q34_gt.jsonl")
+MANIFEST = os.path.join(BASE, "data", "vex_q34_gt_manifest.json")
 
 HDR_EXT = (".h", ".hpp", ".hh", ".hxx")
 BS = chr(92)
@@ -154,7 +154,7 @@ def reachability_label(cve, loc):
     fns = [f for f in (loc or {}).get("functions", [])
            if f.get("found") and f.get("file")]
     if not fns:
-        return None, None, None, "q1_located_nothing: Q1 located no function, so "                                  "there is nothing to reach"
+        return None, None, None, "q2_located_nothing: Q2 located no function, so "                                  "there is nothing to reach"
     if not root or not os.path.isdir(root):
         return None, None, None, "snapshot_missing: not in data/source_snapshots"
 
@@ -238,23 +238,23 @@ def build():
     for i, cve in enumerate(sorted(loc), 1):
         rv, ret, rref, rdet = reachability_label(cve, loc.get(cve))
         if rv:
-            rows.append({"test_case_id": "%s/q2" % cve, "cve_id": cve,
-                         "question": "Q2", "expected_verdict": rv,
+            rows.append({"test_case_id": "%s/q3" % cve, "cve_id": cve,
+                         "question": "Q3", "expected_verdict": rv,
                          "evidence_type": ret, "evidence_reference": rref,
                          "review_status": "authority", "_detail": rdet})
-            stat["Q2 %s (%s)" % (rv, ret)] += 1
+            stat["Q3 %s (%s)" % (rv, ret)] += 1
         else:
-            held["Q2 %s" % rdet.split(":", 1)[0]] += 1
+            held["Q3 %s" % rdet.split(":", 1)[0]] += 1
 
         cv, cet, cref, cdet = controllability_label(cve, cvss)
         if cv:
-            rows.append({"test_case_id": "%s/q3" % cve, "cve_id": cve,
-                         "question": "Q3", "expected_verdict": cv,
+            rows.append({"test_case_id": "%s/q4" % cve, "cve_id": cve,
+                         "question": "Q4", "expected_verdict": cv,
                          "evidence_type": cet, "evidence_reference": cref,
                          "review_status": "authority", "_detail": cdet})
-            stat["Q3 %s (%s)" % (cv, cet)] += 1
+            stat["Q4 %s (%s)" % (cv, cet)] += 1
         else:
-            held["Q3 %s" % cdet.split(":", 1)[0]] += 1
+            held["Q4 %s" % cdet.split(":", 1)[0]] += 1
         if i % 25 == 0:
             print("  [%3d/%3d] labels so far: %d" % (i, len(loc), len(rows)), flush=True)
 
@@ -268,21 +268,21 @@ def build():
         "by_label": dict(stat),
         "held_out": dict(held),
         "authorities": {
-            "Q2 public_api": "a shipped public header of the component declares the "
+            "Q3 public_api": "a shipped public header of the component declares the "
                              "vulnerable function, so it is externally callable "
                              "without any call-graph reasoning",
-            "Q2 not_shipped": "the vulnerable function exists only under test/, "
+            "Q3 not_shipped": "the vulnerable function exists only under test/, "
                               "fuzz/, examples/ or docs/, which are not installed",
-            "Q3 cvss_vector": "NVD CVSS v3 AV/UI: UI:N with AV in {N,A,L}",
+            "Q4 cvss_vector": "NVD CVSS v3 AV/UI: UI:N with AV in {N,A,L}",
         },
         "one_sided_by_construction": (
             "Neither authority can produce the opposite label. A public header says "
             "nothing about whether an INTERNAL function is unreachable, because the "
             "public functions call it; and CVSS UI:R does not mean the triggering "
-            "value is not attacker-chosen. So Q2 has a negative class only from the "
-            "build layout (not_shipped) and Q3 has none at all: a Q3 refutation is "
+            "value is not attacker-chosen. So Q3 has a negative class only from the "
+            "build layout (not_shipped) and Q4 has none at all: a Q4 refutation is "
             "unmeasurable against any public authority, which is also why "
-            "vex_judge_v2 must never let Q3 refute."),
+            "vex_judge_v2 must never let Q4 refute."),
     }
     json.dump(manifest, open(MANIFEST, "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)

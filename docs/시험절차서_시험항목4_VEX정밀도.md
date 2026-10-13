@@ -34,12 +34,12 @@
 | 구성요소 | 내용 |
 |---|---|
 | 시스템명 | ICS-VEX (ICS-VEXForge) |
-| 판단 단계 | CISA 4대 저스티피케이션 질문 Q1–Q4 (Q1: 취약 코드 존재 → 본 시험의 `affected`/`not_affected` 근거) |
+| 판단 단계 | CISA 4대 저스티피케이션 질문 Q1–Q4 (Q2: 취약 코드 존재 → 본 시험의 `affected`/`not_affected` 근거) |
 | 평가 대상 모델 | 취약 코드 존재 판단 모델 (sLLM) — Qwen2.5-Coder-7B-Instruct + QLoRA 어댑터 |
 | 어댑터 산출물 | `models/vex-justifier-lora/` (adapter_config.json, adapter_model.safetensors) |
 | 형상 식별 | git commit `2f729d03` |
 
-`affected`/`not_affected` 자동 분류는 대상 컴포넌트의 함수 코드를 입력받아 취약 구성의 존재 여부(Q1)를 판정하여 산출한다.
+`affected`/`not_affected` 자동 분류는 대상 컴포넌트의 함수 코드를 입력받아 취약 구성의 존재 여부(Q2)를 판정하여 산출한다.
 
 ---
 

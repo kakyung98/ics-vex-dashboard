@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """VEX-v2 · step 3 — controllability, decided by Z3 (not by the LLM).
 
-Q3: can an adversary drive the vulnerable state? The LLM only *formalises* the CTI
+Q4: can an adversary drive the vulnerable state? The LLM only *formalises* the CTI
 controllability into a small constraint system - variables tagged by who controls
 them (attacker vs environment) and a trigger predicate. Z3 then DECIDES:
 

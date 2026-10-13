@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Collect C/C++ vuln/fix function pairs (BigVul) into VEX-justification format.
 
-Direction-B training material for Q1/Q2/Q3 reasoning: given the vulnerable code
+Direction-B training material for Q2/Q3/Q4 reasoning: given the vulnerable code
 (and its patch context) the model learns "is the vulnerable construct present and
 does it sit on a reachable/adversary-influenced path" rather than "write an
 exploit". Each BigVul row gives func_before (vulnerable) and func_after (fixed).
@@ -26,9 +26,9 @@ INSTR = (
     "You are a VEX analyst. Given a function from an ICS/OT software component, "
     "decide whether the product is affected by the referenced weakness, following "
     "the CISA justification questions in order:\n"
-    "Q1 Is the vulnerable code present?\n"
-    "Q2 Is it on a path the product executes?\n"
-    "Q3 Can an adversary control input that reaches it?\n"
+    "Q2 Is the vulnerable code present?\n"
+    "Q3 Is it on a path the product executes?\n"
+    "Q4 Can an adversary control input that reaches it?\n"
     "Q4 Is there an inline mitigation already present?\n"
     "Answer with JSON: {\"status\": affected|not_affected, \"justification\": "
     "<component_not_present|vulnerable_code_not_present|vulnerable_code_not_in_execute_path|"

@@ -69,7 +69,7 @@ function fmtBytes(n){
 
 function dsRows(info, unit){
   // Each item counts a DIFFERENT thing per row - (component, CVE) for #3,
-  // (CVE, build) for #4, (CVE, question) for the Q2/Q3 axis - so a bare
+  // (CVE, build) for #4, (CVE, question) for the Q3/Q4 axis - so a bare
   // "285 records" invites reading it as a CVE count. The unit is named.
   return Object.entries(info).map(([role,d])=>
     '<div class="cert-ds">'+role+': <b>'+d.path+'</b> '+
@@ -173,14 +173,14 @@ function certPoll(id, job){
   tick();
 }
 
-function certShowQ23(res, box, j){
-  const NAME = {Q2:'Q2 도달가능성 (Joern)', Q3:'Q3 제어가능성 (Z3)'};
+function certShowQ34(res, box, j){
+  const NAME = {Q3:'Q3 도달가능성 (Joern)', Q4:'Q4 제어가능성 (Z3)'};
   let h = '<div class="cert-warn" style="margin:0 0 12px">'+
     '<b>보조 공시입니다.</b> 시험항목 #4의 정밀도는 <code>affected</code> 판정에 대한 값이고, '+
-    '그 판정은 Q1(존재)에서 결정됩니다 &mdash; Q2/Q3는 증거 등급만 바꾸며 정답 라벨이 없었으므로 '+
+    '그 판정은 Q2(존재)에서 결정됩니다 &mdash; Q3/Q4는 증거 등급만 바꾸며 정답 라벨이 없었으므로 '+
     '공시된 어떤 수치에도 기여분이 <b>0</b> 이었습니다. 이 축은 그 두 엔진이 측정 대상이 되는 '+
     '지점이고, 권위는 저장소 바깥입니다(출하 공개 헤더 · NVD CVSS AV/UI).</div>';
-  ['Q2','Q3'].forEach(function(q){
+  ['Q3','Q4'].forEach(function(q){
     const d = res.per_question[q]; if(!d) return;
     h += '<div style="margin:0 0 14px"><b>'+NAME[q]+'</b>'+
       '<div class="cert-kv"><span>TP <b>'+d.TP+'</b></span><span>FP <b>'+d.FP+'</b></span>'+
@@ -204,8 +204,8 @@ function certShowQ23(res, box, j){
   // has no single precision to compare.
   const ref = j.reference_precision || {};
   if(j.reproduces === true){
-    h += '<div class="cert-ok">✔ 기록된 재현율 Q2 '+
-         (ref.Q2_recall*100).toFixed(2)+'% / Q3 '+(ref.Q3_recall*100).toFixed(2)+
+    h += '<div class="cert-ok">✔ 기록된 재현율 Q3 '+
+         (ref.Q3_recall*100).toFixed(2)+'% / Q4 '+(ref.Q4_recall*100).toFixed(2)+
          '% 와 일치합니다 (sha256 '+j.gt_sha256.slice(0,16)+'…).</div>';
   } else if(j.reproduces === false){
     h += '<div class="cert-warn">⚠ 기록된 재현율과 '+
@@ -218,10 +218,10 @@ function certShowQ23(res, box, j){
 
 function certShow(id, j){
   const res = j.result, box = document.getElementById('res'+id);
-  // The Q2/Q3 axis has no single precision and no PASS/FAIL - Q3's answer key has
+  // The Q3/Q4 axis has no single precision and no PASS/FAIL - Q4's answer key has
   // no negative class, so a precision there would be 1.0000 by construction. It
   // renders per question instead of pretending to one headline number.
-  if(res.per_question){ certShowQ23(res, box, j); return; }
+  if(res.per_question){ certShowQ34(res, box, j); return; }
   const pct = (res.precision*100).toFixed(2);
   const cls = res.pass ? 'cert-pass' : 'cert-fail';
   let h = '<div class="cert-prec '+cls+'">'+pct+'% '+
