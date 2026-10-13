@@ -1,0 +1,22 @@
+{
+  "population": 267,
+  "labels": 285,
+  "by_label": {
+    "Q3 controllable (cvss_vector)": 210,
+    "Q2 reachable (public_api)": 75
+  },
+  "held_out": {
+    "Q2 q1_located_nothing": 45,
+    "Q3 cvss_v2_no_ui": 19,
+    "Q2 not_on_public_surface": 143,
+    "Q3 cvss_needs_second_party": 37,
+    "Q2 reserved_identifier": 4,
+    "Q3 no_cvss": 1
+  },
+  "authorities": {
+    "Q2 public_api": "a shipped public header of the component declares the vulnerable function, so it is externally callable without any call-graph reasoning",
+    "Q2 not_shipped": "the vulnerable function exists only under test/, fuzz/, examples/ or docs/, which are not installed",
+    "Q3 cvss_vector": "NVD CVSS v3 AV/UI: UI:N with AV in {N,A,L}"
+  },
+  "one_sided_by_construction": "Neither authority can produce the opposite label. A public header says nothing about whether an INTERNAL function is unreachable, because the public functions call it; and CVSS UI:R does not mean the triggering value is not attacker-chosen. So Q2 has a negative class only from the build layout (not_shipped) and Q3 has none at all: a Q3 refutation is unmeasurable against any public authority, which is also why vex_judge_v2 must never let Q3 refute."
+}

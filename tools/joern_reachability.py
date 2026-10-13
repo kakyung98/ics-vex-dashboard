@@ -144,11 +144,16 @@ def _query(cpg_bin, targets, entries):
     entry (the CTI's entry_points, else the call-graph roots)? A target that is itself a
     root counts as reachable."""
     tl = "List(%s)" % ", ".join('"%s"' % t for t in targets)
-    if entries:
-        entry_expr = ("List(%s).toSet.intersect(c.method.name.toSet)"
-                      % ", ".join('"%s"' % e for e in entries))
-    else:
-        entry_expr = "c.method.filter(m => !m.isExternal && m.caller.isEmpty).name.toSet"
+    # The CTI's entry_points are LLM text and frequently name something that is not a
+    # function in this snapshot: measurement over the corpus found `awk`, `-J`,
+    # `X509_V_FLAG_CRL_CHECK` (a macro) and `RSA decryption functions` among them. The
+    # intersection with the CPG is then empty and the query used to answer "no entry
+    # model", losing 11 CVEs. Which names are real is a question only the CPG can
+    # answer, so the fallback to call-graph roots is decided inside Scala, after the
+    # intersection: a snapshot's roots ARE its externally-callable surface, because a
+    # library's consumers are not in the snapshot. A CVE whose CTI names do intersect
+    # is unaffected - that branch is taken first.
+    cti_list = ("List(%s).toSet" % ", ".join('"%s"' % e for e in entries)) if entries         else "Set.empty[String]"
     # BFS over a name->callees adjacency map (O(V+E)); the old
     # repeat(_.callee)(_.emit.maxDepth(30)) explored PATHS and exploded on dnsmasq's
     # densely-connected graph (300s query timeout). Names dedup, so no re-visiting.
@@ -165,7 +170,10 @@ else {
       if (cs.nonEmpty) edges(m.name) = edges.getOrElse(m.name, Set.empty) ++ cs
     } catch { case _: Throwable => () }
   }
-  val entryNames: Set[String] = %s
+  val ctiEntries: Set[String] = %s.intersect(c.method.name.toSet)
+  val roots: Set[String] = c.method.filter(m => !m.isExternal && m.caller.isEmpty).name.toSet
+  val entryNames: Set[String] = if (ctiEntries.nonEmpty) ctiEntries else roots
+  println("ENTRY:" + (if (ctiEntries.nonEmpty) "cti" else "roots") + ":" + entryNames.size)
   var reached = entryNames
   var frontier = entryNames
   var iter = 0
@@ -178,7 +186,7 @@ else {
   val hit = defined.exists(reached.contains)
   println("VERDICT:" + (if (hit) "reachable" else if (entryNames.isEmpty) "no-entry" else "not-reachable"))
 }
-''' % (cpg_bin.replace("\\", "/"), tl, entry_expr)
+''' % (cpg_bin.replace("\\", "/"), tl, cti_list)
 
 
 def reachable(cve, location, extraction):
@@ -220,12 +228,19 @@ def reachable(cve, location, extraction):
                 return "unknown", "joern query timed out (300s)"
             line = next((l for l in out.splitlines() if l.startswith("VERDICT:")), "")
             v = line.split(":", 1)[1].strip() if ":" in line else ""
+            eline = next((l for l in out.splitlines() if l.startswith("ENTRY:")), "")
+            basis = eline.split(":", 1)[1].strip() if ":" in eline else ""
             if v:
                 break                                          # transient repl error
+        src_of = {"cti": "the CTI's entry_points", "roots": "the snapshot's call-graph roots"}
+        bname, _, bn = basis.partition(":")
+        bdesc = (" [entries: %s, n=%s]" % (src_of.get(bname, bname), bn)) if basis else ""
         if v == "reachable":
-            return "reachable", "joern: a located function is reachable from an entry point"
+            return "reachable", ("joern: a located function is reachable from an entry point"
+                                 + bdesc)
         if v == "not-reachable":
-            return "not-reachable", "joern: no located function reachable from an entry point"
+            return "not-reachable", ("joern: no located function reachable from an entry point"
+                                     + bdesc)
         if v == "no-target":
             return "unknown", "joern: located functions not present in the CPG"
         if v == "no-entry":

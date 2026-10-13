@@ -45,6 +45,7 @@ ITEMS = {
         "acceptance": 0.80,
         "sut": "src/cpe_match_ai (L0 NVD CPE index + L3 vendor guard + trained-encoder retrieval)",
         "dataset": {"gt": "data/cpe_match_eval.jsonl"},
+        "record_unit": "건 ((컴포넌트, CVE) 쌍)",
         "runtime_hint": "약 8분 (14,173개 컴포넌트 × 전체 NVD CPE 인덱스)",
         # The retrieval-backed matcher is the default SUT: the string cascade
         # abstains on 6,633 of 14,173 components and every one of those answers
@@ -66,24 +67,56 @@ ITEMS = {
                     "sut": "data/vex_v2_pregate.json",
                     "sut_patched": "data/vex_v2_patched.json",
                     "sut_gated": "data/vex_v2.json"},
+        "record_unit": "건 ((CVE, 빌드) 쌍)",
         "runtime_hint": "즉시 (판정 캐시를 채점) · 모집단 = 소스 수집된 267 CVE 전수",
         # Three scopes, because one number cannot carry the whole claim. The
         # headline is the pre-gate vulnerable-build figure: it is the largest
         # scope whose ground truth does not share an oracle with the SUT.
+        # An `independent` scope used to sit here, scoring only the GT's four
+        # execution_verified labels. It was RETIRED: those labels came from an
+        # execution-verification loop (results/exec_verification*.json, August
+        # 2025) that the project replaced with the Q0-Q3 solver pipeline, so the
+        # scope published a 0.6667 produced by a methodology the SUT no longer
+        # uses, over 2 CVEs x 2 builds, with no path to growing it - the
+        # collected corpus is overwhelmingly ICS firmware that cannot be built
+        # and triggered. The four labels REMAIN in data/vex_gt_all.jsonl, because
+        # execution is sound evidence and deleting correct labels would be worse;
+        # what is gone is the claim that scoring them is an independent
+        # evaluation. Independence is now carried by the Q2/Q3 axis below, whose
+        # authorities (shipped public headers, NVD CVSS) are outside this
+        # repository's own tooling.
         "variants": [
             {"key": "pregate", "label": "취약 빌드 · 패치게이트 OFF (주 지표, 비순환)"},
             {"key": "allbuilds", "label": "전체 빌드 · 게이트 ON (순환 경고 포함)"},
-            {"key": "independent",
-             "label": "실행검증 증거만 (오라클 비공유, n=4 — 합격기준 미달, 공시용)"},
         ],
-        # Measured over the full collected-source population (267 CVEs, 80 GT
-        # cases). `independent` is BELOW the acceptance criterion and is kept
-        # here anyway: it is a disclosure scope, not the certification metric,
-        # and hiding a scope because it reads badly is how a benchmark stops
-        # meaning anything. Its single FP is CVE-2024-4340's patched build -
-        # see the variant label.
-        "reference": {"pregate": 0.9718, "allbuilds": 0.993,
-                      "independent": 0.6667},
+        "reference": {"pregate": 0.9718, "allbuilds": 0.993},
+    },
+    "q23": {
+        "id": "q23",
+        "name": "Q2 도달가능성 / Q3 제어가능성 — 외부 권위와의 일치도",
+        "name_en": "Q2 reachability / Q3 controllability agreement",
+        "metric": "Q2 precision & recall · Q3 recall (정밀도는 음성 클래스 없음)",
+        # No acceptance criterion exists for this: it is not one of the two
+        # certification items. It is here because without it Joern and Z3
+        # contribute 0 to every published figure - item #4 scores the `affected`
+        # verdict, which vex_judge_v2 decides at Q1, while Q2/Q3 only set the
+        # evidence tier and no answer key carried a tier.
+        "acceptance": None,
+        "sut": "tools/joern_reachability (Joern CPG) + tools/z3_controllability (Z3)",
+        "dataset": {"gt": "data/vex_q23_gt.jsonl",
+                    "reach": "data/reachability.json",
+                    "ctrl": "data/controllability.json"},
+        # 285 labels over a 267-CVE population: a CVE carries up to two labels,
+        # one per question, and 249 of the 534 possible pairs are held out.
+        "record_unit": "건 ((CVE, 질문) 쌍 · 모집단 267 CVE)",
+        "runtime_hint": "즉시 (판정 캐시를 채점) · 권위 = 출하 공개 헤더 · NVD CVSS AV/UI",
+        "variants": [{"key": "both", "label": "Q2 + Q3 (보조 공시, 합격기준 없음)"}],
+        # Recalls, not precisions: Q3's answer key has no negative class, so a
+        # precision there is 1.0000 by construction. Q2's two misses are Joern
+        # refuting `GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's `inflate`
+        # (CVE-2022-37434) - both declared in a shipped public header, which is
+        # exactly the false negative the module docstring predicted.
+        "reference": {"both": {"Q2_recall": 0.9655, "Q3_recall": 1.0}},
     },
 }
 
@@ -141,10 +174,38 @@ def _score_item4(gt, variant, progress):
         return E4.score(gt, _abs(d["sut"]), None, build="vulnerable")
     if variant == "allbuilds":
         return E4.score(gt, _abs(d["sut_gated"]), _abs(d["sut_patched"]), build="all")
-    if variant == "independent":
-        return E4.score(gt, _abs(d["sut_gated"]), _abs(d["sut_patched"]),
-                        build="all", independent=True)
     raise ValueError("unknown variant for item #4: %r" % variant)
+
+
+def _score_q23(gt, variant, progress):
+    import eval_q23_agreement as EQ
+    d = ITEMS["q23"]["dataset"]
+    return EQ.score(gt, _abs(d["reach"]), _abs(d["ctrl"]))
+
+
+_SCORERS = {"3": _score_item3, "4": _score_item4, "q23": _score_q23}
+
+
+def _reproduces(res, ref, dataset):
+    """Did this run land on the figure that was recorded? None when there is
+    nothing to compare against.
+
+    An uploaded dataset has no recorded figure, so the comparison is reported as
+    not applicable rather than as a mismatch. The Q2/Q3 axis has no single
+    precision - its reference is a dict of per-question recalls - so the check is
+    'every recorded figure still holds', which is what keeps a solver change from
+    moving these numbers unnoticed.
+    """
+    if dataset == "uploaded" or ref is None:
+        return None
+    if isinstance(ref, dict):
+        for q in ("Q2", "Q3"):
+            want = ref.get("%s_recall" % q)
+            got = ((res.get("per_question") or {}).get(q) or {}).get("recall")
+            if want is not None and (got is None or abs(got - want) > 1e-9):
+                return False
+        return True
+    return abs(res["precision"] - ref) < 1e-9
 
 
 def _run(job_id, item_id, gt, variant):
@@ -155,8 +216,7 @@ def _run(job_id, item_id, gt, variant):
             j["pct"] = round(100.0 * done / total, 1) if total else None
 
     try:
-        fn = _score_item3 if item_id == "3" else _score_item4
-        res = fn(gt, variant, progress)
+        res = _SCORERS[item_id](gt, variant, progress)
         ref = ITEMS[item_id]["reference"].get(variant)
         with _LOCK:
             j = _JOBS[job_id]
@@ -166,8 +226,7 @@ def _run(job_id, item_id, gt, variant):
                      # figure; an uploaded dataset has no figure to match, so the
                      # comparison is reported as not applicable rather than as a
                      # mismatch.
-                     reproduces=(None if j["dataset"] == "uploaded" or ref is None
-                                 else abs(res["precision"] - ref) < 1e-9))
+                     reproduces=_reproduces(res, ref, j["dataset"]))
     except Exception:
         with _LOCK:
             _JOBS[job_id].update(state="error", error=traceback.format_exc(),
@@ -253,8 +312,11 @@ def validate_gt(item_id, path):
     A dataset in the wrong schema would otherwise score 0 TP / 0 FP and read as a
     legitimate 0.0000 result, which is a worse failure than refusing the file.
     """
-    required = ({"component_id", "cve_id", "applicable"} if str(item_id) == "3"
-                else {"cve_id", "expected_status", "_build", "evidence_type"})
+    required = {
+        "3": {"component_id", "cve_id", "applicable"},
+        "4": {"cve_id", "expected_status", "_build", "evidence_type"},
+        "q23": {"cve_id", "question", "expected_verdict", "evidence_type"},
+    }[str(item_id)]
     n = 0
     missing = None
     for line in open(path, encoding="utf-8"):
