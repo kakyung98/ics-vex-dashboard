@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ICS SBOM 예시 데이터셋 생성기 (CycloneDX 1.7)
+ICS SBOM example dataset generator (CycloneDX 1.7)
 
-KISA "SBOM 데이터필드 정의-CycloneDX.xlsx" 필드 정의와
-"1_2_1_2_VxWorks_RTOS_SBOM 샘플.jsonc" 구조를 그대로 따르되,
-대상을 산업제어시스템(ICS/OT) 자산으로 치환하여 1,000개의 SBOM을 생성한다.
+Follows the field definitions of KISA's "SBOM data field definition - CycloneDX.xlsx"
+and the structure of its "1_2_1_2_VxWorks_RTOS_SBOM sample.jsonc" exactly, but swaps
+the subject to industrial control system (ICS/OT) assets, producing 1,000 SBOMs.
 
-생성물
-  sbom/ICS_XXXX_<vendor>_<product>_SBOM.json   : SBOM 본문 1,000개
-  sbom/index.csv                                : 자산 인덱스 (자산 메타 요약)
-  sbom/ground_truth_vulnerable_components.csv   : VEX 판정 정답셋 (취약 버전 매핑)
-  sbom/README.md                                : 데이터셋 설명
+Output
+  sbom/ICS_XXXX_<vendor>_<product>_SBOM.json   : the 1,000 SBOM documents
+  sbom/index.csv                                : asset index (a summary of asset metadata)
+  sbom/ground_truth_vulnerable_components.csv   : VEX ground truth (vulnerable-version map)
+  sbom/README.md                                : dataset description
 
-주의: 본 데이터셋은 합성(synthetic) 예시다. 벤더/제품 계열명과 OSS 버전은
-실존 명칭을 참고했으나, 해시·시리얼·연락처·URL은 모두 가공된 placeholder이며
-실제 제품의 실제 부품 구성을 나타내지 않는다. 각 문서의 dataset:synthetic
-property 로 이를 명시한다.
+Note: this dataset is a SYNTHETIC example. Vendor and product family names and OSS
+versions are modelled on real ones, but every hash, serial, contact and URL is a made-up
+placeholder, and none of it represents the real parts list of a real product. Each
+document states this in its dataset:synthetic property.
 """
 
 import csv
@@ -29,7 +29,7 @@ import sys
 import uuid
 
 # ---------------------------------------------------------------------------
-# 기본 설정
+# Basic settings
 # ---------------------------------------------------------------------------
 
 TOTAL = 1000
@@ -37,7 +37,7 @@ SEED = 20260415
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 OUT_DIR = os.path.abspath(os.path.join(BASE_DIR, "sbom"))
 
-NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # uuid5 네임스페이스 (결정적 생성)
+NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")  # uuid5 namespace (deterministic generation)
 
 CREATION_DATE = "2026-04-10"
 TIMESTAMP = "2026-04-10T00:00:00Z"
@@ -59,8 +59,8 @@ PATCH_CADENCE = ["vendor-scheduled-annual", "vendor-scheduled-semiannual",
                  "on-advisory-only", "maintenance-window-quarterly", "frozen-validated-state"]
 
 # ---------------------------------------------------------------------------
-# 벤더 카탈로그
-#   key: (표기명, 국가, 도시, CPE vendor 토큰)
+# Vendor catalogue
+#   key: (display name, country, city, CPE vendor token)
 # ---------------------------------------------------------------------------
 
 VENDORS = {
@@ -107,7 +107,7 @@ VENDORS = {
 }
 
 # ---------------------------------------------------------------------------
-# 제품 카탈로그
+# Product catalogue
 #   (vendor_key, family, device_class, cdx_type, os_key, purdue, protocols, models)
 # ---------------------------------------------------------------------------
 
@@ -373,13 +373,14 @@ PRODUCTS = [
      ["wirelesshart", "modbus-tcp", "opc-ua"], ["1420", "1410S", "1552WU"]),
 ]
 
-# 잘못 들어간 placeholder 제거
+# Remove placeholders that got in by mistake
 PRODUCTS = [p for p in PRODUCTS if p[1]]
 
 # ---------------------------------------------------------------------------
-# 소프트웨어 부품 카탈로그
+# Software parts catalogue
 #   name, publisher, purl_type, purl_name, [ (version, [CVE...]) ], tags, role, license
-#   버전 목록 중 일부는 실제 CVE 가 존재하는 취약 버전이다(정답셋으로 기록).
+#   Some versions in each list are genuinely vulnerable ones with real CVEs; those are
+#   recorded as the ground truth.
 # ---------------------------------------------------------------------------
 
 OSS = {
@@ -862,7 +863,7 @@ OSS = {
         ]),
 }
 
-# 벤더 고유(비-OSS) 모듈 템플릿: (역할 키, 이름 접미, 설명)
+# Vendor-specific (non-OSS) module templates: (role key, name suffix, description)
 VENDOR_MODULES = [
     ("control-engine", "Control Execution Engine",
      "Core execution engine that runs the control-logic scan cycle and updates the I/O image table."),
@@ -890,7 +891,7 @@ VENDOR_MODULES = [
      "Service that accumulates short-term trend data in a circular buffer and forwards it to the upstream historian server."),
 ]
 
-# 프로토콜 스택 모듈: 프로토콜 토큰 -> (표시명, 설명, 태그)
+# Protocol stack modules: protocol token -> (display name, description, tag)
 PROTOCOL_STACKS = {
     "modbus-tcp": ("Modbus/TCP Protocol Stack",
                    "Modbus TCP server/client functionality. Handles register and coil access requests.", ["modbus"]),
@@ -967,7 +968,7 @@ OS_BASE = {
                    ["1.2", "2.0", "2.6", "3.3"]),
 }
 
-# OS 별 기본 OSS 부품 풀
+# Default OSS part pool per OS
 OSS_BY_OS = {
     "linux": ["linux_kernel", "busybox", "glibc", "musl", "openssl", "zlib", "libcurl",
               "dropbear", "openssh", "lighttpd", "nginx", "goahead", "u_boot", "sqlite",
@@ -986,10 +987,11 @@ OSS_BY_OS = {
     "bare-metal": ["lwip", "mbedtls", "treck_tcpip", "wolfssl"],
 }
 
-# CODESYS Control Runtime 을 OEM 으로 탑재하는 벤더/장비 유형.
-# 하나의 상용 런타임이 다수 벤더 제품으로 파급되는 "공유 구현" 사례를 재현한다.
-# (실제로 CODESYS 는 400여 장비 제조사에 OEM 공급되며, 2023년 V3 취약점
-#  공개 시 전 산업이 동시에 영향받았다.)
+# Vendors and device classes that OEM the CODESYS Control Runtime.
+# This reproduces the "shared implementation" case, where one commercial runtime
+# propagates into many vendors' products. (CODESYS really is OEM'd to some 400 device
+#  manufacturers, and the 2023 V3 vulnerability disclosure hit the whole industry at
+#  once.)
 CODESYS_OEM_VENDORS = {"codesys", "wago", "phoenix", "schneider", "abb",
                        "bosch_rexroth", "advantech", "moxa", "red_lion"}
 CODESYS_OEM_CLASSES = {"plc", "plc-runtime", "rtu", "motion-controller",
@@ -1005,7 +1007,7 @@ DOC_ORG = {
 
 
 # ---------------------------------------------------------------------------
-# 유틸
+# Utilities
 # ---------------------------------------------------------------------------
 
 def slug(text):
@@ -1064,7 +1066,7 @@ def make_component(bom_ref, ctype, name, version, desc, publisher, purl,
 
 
 # ---------------------------------------------------------------------------
-# SBOM 1건 생성
+# Generate one SBOM
 # ---------------------------------------------------------------------------
 
 def build_sbom(idx, rnd):
@@ -1075,7 +1077,7 @@ def build_sbom(idx, rnd):
     model = models[(idx // len(PRODUCTS)) % len(models)]
     asset_id = "ICS-%04d" % (idx + 1)
 
-    # ---- 제품 버전 -------------------------------------------------------
+    # ---- product version -------------------------------------------------
     maj = rnd.randint(1, 9)
     minr = rnd.randint(0, 24)
     pat = rnd.randint(0, 40)
@@ -1087,7 +1089,7 @@ def build_sbom(idx, rnd):
 
     serial = "urn:uuid:%s" % det_uuid("sbom::" + asset_id + "::" + product_slug)
 
-    # ---- ICS 운영 컨텍스트 ----------------------------------------------
+    # ---- ICS operating context -------------------------------------------
     sector = rnd.choice(SECTORS)
     exposure = rnd.choice(NETWORK_EXPOSURE)
     cadence = rnd.choice(PATCH_CADENCE)
@@ -1099,11 +1101,11 @@ def build_sbom(idx, rnd):
     elif dev_class in ("plc", "dcs-controller", "robot-controller"):
         safety_sil = rnd.choice([None, None, "SIL2", "PLd (ISO 13849)"])
 
-    # ---- 부품 구성 -------------------------------------------------------
+    # ---- parts composition -----------------------------------------------
     components = []
     ground_truth = []
 
-    # 1) OS/플랫폼 기반 계층
+    # 1) the OS/platform base layer
     os_name, os_pub, os_cpe_v, os_cpe_p, os_desc, os_versions = OS_BASE[os_key]
     os_ver = os_versions[rnd.randrange(len(os_versions))]
     os_ref = "platform:%s:%s" % (vkey, os_key)
@@ -1118,13 +1120,13 @@ def build_sbom(idx, rnd):
     )
     components.append(os_comp)
 
-    # 2) OSS 부품 (OS 계열에 맞는 풀에서 선택)
+    # 2) OSS parts, picked from the pool matching the OS family
     pool = list(OSS_BY_OS[os_key])
     rnd.shuffle(pool)
     lo = min(5, len(pool))
     n_oss = rnd.randint(lo, min(11, len(pool)))
     chosen_oss = pool[:n_oss]
-    # 상용 제어 런타임을 OEM 으로 탑재하는 제품군에는 항상 포함시킨다.
+    # Always included for product families that OEM a commercial control runtime.
     if (vkey in CODESYS_OEM_VENDORS and dev_class in CODESYS_OEM_CLASSES
             and "codesys_rt" not in chosen_oss):
         chosen_oss.append("codesys_rt")
@@ -1145,7 +1147,7 @@ def build_sbom(idx, rnd):
         if cves:
             ground_truth.append((ref, spec["name"], ver, ";".join(cves)))
 
-    # 3) 벤더 고유 모듈
+    # 3) vendor-specific modules
     rnd.shuffle(VENDOR_MODULES)
     n_vendor = rnd.randint(3, 6)
     vendor_refs = []
@@ -1162,7 +1164,7 @@ def build_sbom(idx, rnd):
         ))
         vendor_refs.append(ref)
 
-    # 4) 프로토콜 스택 모듈
+    # 4) protocol stack modules
     proto_refs = []
     for p in protocols:
         if p not in PROTOCOL_STACKS:
@@ -1179,7 +1181,7 @@ def build_sbom(idx, rnd):
         ))
         proto_refs.append(ref)
 
-    # 5) 의존 관계
+    # 5) dependencies
     dependencies = [{
         "ref": top_ref,
         "dependsOn": [os_ref] + vendor_refs + proto_refs,
@@ -1196,7 +1198,7 @@ def build_sbom(idx, rnd):
     for r in oss_refs:
         dependencies.append({"ref": r, "dependsOn": []})
 
-    # ---- 상위 component 속성 --------------------------------------------
+    # ---- top-level component properties ----------------------------------
     top_props = [
         {"name": "ics:asset-id", "value": asset_id},
         {"name": "ics:device-class", "value": dev_class},
@@ -1258,7 +1260,7 @@ def build_sbom(idx, rnd):
         ],
     }
 
-    # ---- 문서 조립 -------------------------------------------------------
+    # ---- assemble the document -------------------------------------------
     bom = {
         "bomFormat": "CycloneDX",
         "specVersion": "1.7",
@@ -1319,7 +1321,7 @@ def build_sbom(idx, rnd):
 
 
 # ---------------------------------------------------------------------------
-# 실행
+# Entry point
 # ---------------------------------------------------------------------------
 
 def main():

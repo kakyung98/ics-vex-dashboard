@@ -1,163 +1,171 @@
-# VEX 연동 스키마 — 통합보안 관리 플랫폼
+# VEX integration schema — unified security management platform
 
-ICS-VEXForge → **통합보안 관리 플랫폼** 으로 전달되는 VEX 데이터의 인터페이스 정의.
-플랫폼 UI 개발팀이 이 문서를 계약(contract)으로 사용한다.
+The interface definition for the VEX data ICS-VEXForge hands to the **unified security
+management platform**. The platform's UI team uses this document as the contract.
 
-- **방향**: ICS-VEXForge 가 **출력(output)** 하는 문서 = 플랫폼이 **입력(input)** 으로 받는 문서 (동일 스키마).
-- **표준 정합**: 상태·저스티피케이션 어휘는 **OpenVEX / CISA CSAF-VEX** 와 호환. 여기에 UI 표출에 필요한
-  **설명가능성(evidence)·위험(risk)·출처(provenance)** 필드를 확장(superset)한다.
-- **형식**: UTF-8 JSON. 시각(time)은 ISO 8601 UTC (`YYYY-MM-DDThh:mm:ssZ`).
-- **판정 단위**: `product × vulnerability` (한 CVE가 제품마다 다른 상태를 가질 수 있음 → statement 하나 = 제품×취약점 1쌍).
-- 기계 검증용 JSON Schema: [`vex_platform_schema.json`](vex_platform_schema.json) · 실데이터 예시: [`vex_platform_example.json`](vex_platform_example.json)
+- **Direction**: the document ICS-VEXForge **outputs** is the document the platform takes
+  as **input** — the same schema.
+- **Standards alignment**: the status and justification vocabularies are compatible with
+  **OpenVEX / CISA CSAF-VEX**. On top of that it adds, as a superset, the
+  **explainability (evidence), risk and provenance** fields the UI needs in order to
+  display anything.
+- **Format**: UTF-8 JSON. Times are ISO 8601 UTC (`YYYY-MM-DDThh:mm:ssZ`).
+- **Unit of adjudication**: `product x vulnerability` — one CVE can hold a different
+  status per product, so one statement = one (product, vulnerability) pair.
+- Machine-checkable JSON Schema: [`vex_platform_schema.json`](vex_platform_schema.json) ·
+  a real-data example: [`vex_platform_example.json`](vex_platform_example.json).
 
 ---
 
-## 1. 출력 (ICS-VEXForge → 플랫폼) : `VexDocument`
+## 1. Output (ICS-VEXForge -> platform): `VexDocument`
 
-### 1.1 문서 봉투 (envelope)
+### 1.1 Document envelope
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `schema_version` | string | ✅ | 이 연동 스키마 버전 (예: `"1.0"`) |
-| `generator` | object | ✅ | 생성기 정보 → 아래 |
-| `generator.name` | string | ✅ | `"ICS-VEXForge"` |
-| `generator.version` | string | ✅ | 생성기 버전 (예: `"2026.09"`) |
-| `generator.org` | string | ➖ | 발행 조직 (예: `"Chonnam SSRC"`) |
-| `generated_at` | string (ISO8601) | ✅ | 문서 생성 시각 (UTC) |
-| `spec` | string | ✅ | 어휘 정합 표시. 고정값 `"openvex-compatible"` |
-| `asset` | object \| null | ➖ | 이 VEX가 대상으로 하는 자산/장비 (SBOM 1건 단위) → 아래 |
-| `asset.asset_id` | string | ✅* | 플랫폼 자산 식별자 (`asset` 있을 때 필수) |
-| `asset.product` | string \| null | ➖ | 자산(장비) 제품명 |
-| `asset.vendor` | string \| null | ➖ | 자산 벤더 |
-| `asset.sbom_ref` | string \| null | ➖ | 원본 SBOM 참조(ID/URL) |
-| `statement_count` | integer | ✅ | `statements` 길이 |
-| `statements` | array\<VexStatement\> | ✅ | VEX 판정 목록 (0개 이상) |
+| `schema_version` | string | ✅ | version of this integration schema (e.g. `"1.0"`) |
+| `generator` | object | ✅ | generator information, below |
+| `generator.name` | string | ✅ | generator name |
+| `generator.version` | string | ✅ | generator version (e.g. `"2026.09"`) |
+| `generator.org` | string | ➖ | publishing organisation (e.g. `"Chonnam SSRC"`) |
+| `generated_at` | string (ISO8601) | ✅ | document generation time (UTC) |
+| `spec` | string | ✅ | vocabulary alignment marker; fixed value `"openvex-compatible"` |
+| `asset` | object \| null | ➖ | the asset/device this VEX is about (one per SBOM), below |
+| `asset.asset_id` | string | ✅* | platform asset identifier (required when `asset` is present) |
+| `asset.product` | string \| null | ➖ | asset (device) product name |
+| `asset.vendor` | string \| null | ➖ | asset vendor |
+| `asset.sbom_ref` | string \| null | ➖ | reference to the source SBOM (ID/URL) |
+| `statement_count` | integer | ✅ | length of `statements` |
+| `statements` | array\<VexStatement\> | ✅ | the VEX verdicts (zero or more) |
 
-### 1.2 VEX 판정 (`VexStatement`) — 핵심 레코드
+### 1.2 A VEX verdict (`VexStatement`) — the core record
 
-#### (a) 식별
+#### (a) Identity
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `statement_id` | string | ✅ | 안정적 고유 ID. 규칙: `"<cve>@<product_id>"` |
-| `vulnerability` | object | ✅ | 취약점 → 아래 |
-| `vulnerability.cve` | string | ✅ | `CVE-YYYY-N…` (정규식 `^CVE-\d{4}-\d+$`) |
-| `vulnerability.cwe` | array\<string\> | ➖ | CWE 목록 (예: `["CWE-787"]`) |
-| `vulnerability.title` | string \| null | ➖ | 취약점 요약(짧은 설명) |
-| `vulnerability.aliases` | array\<string\> | ➖ | 별칭 (GHSA/ICSA 등) |
+| `statement_id` | string | ✅ | stable unique id; rule: `"<cve>@<product_id>"` |
+| `vulnerability` | object | ✅ | the vulnerability, below |
+| `vulnerability.cve` | string | ✅ | `CVE-YYYY-N…` (regex `^CVE-\d{4}-\d+$`) |
+| `vulnerability.cwe` | array\<string\> | ➖ | CWE list (e.g. `["CWE-787"]`) |
+| `vulnerability.title` | string \| null | ➖ | short summary of the vulnerability |
+| `vulnerability.aliases` | array\<string\> | ➖ | aliases (GHSA, ICSA, …) |
 
-#### (b) 대상 제품
+#### (b) The product in question
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `product` | object | ✅ | 영향 제품/컴포넌트 → 아래 |
-| `product.product_id` | string | ✅ | CSAF 스타일 제품 ID (statement_id에 사용) |
-| `product.name` | string | ✅ | 컴포넌트/제품명 (예: `"zlib"`) |
-| `product.version` | string | ✅ | 버전 문자열, 미상이면 `"NOASSERTION"` |
-| `product.vendor` | string \| null | ➖ | 벤더 |
-| `product.purl` | string \| null | ➖ | Package URL (예: `pkg:generic/zlib@1.2.12`) |
-| `product.cpe` | string \| null | ➖ | CPE 2.3 문자열 |
-| `product.ics_device` | string \| null | ➖ | 이 컴포넌트를 내장한 ICS 장비/모델 |
+| `product` | object | ✅ | the affected product/component, below |
+| `product.product_id` | string | ✅ | CSAF-style product id (used in statement_id) |
+| `product.name` | string | ✅ | component/product name (e.g. `"zlib"`) |
+| `product.version` | string | ✅ | version string, or `"NOASSERTION"` when unknown |
+| `product.vendor` | string \| null | ➖ | vendor |
+| `product.purl` | string \| null | ➖ | Package URL (e.g. `pkg:generic/zlib@1.2.12`) |
+| `product.cpe` | string \| null | ➖ | CPE 2.3 string |
+| `product.ics_device` | string \| null | ➖ | the ICS device/model this component is embedded in |
 
-#### (c) VEX 판정 (표준 어휘)
+#### (c) The VEX verdict (standard vocabulary)
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
 | `status` | enum(string) | ✅ | `affected` \| `not_affected` \| `fixed` \| `under_investigation` |
-| `justification` | enum(string) \| null | 조건부 | `status=not_affected` 일 때 **필수**, 그 외 `null` |
-| `action_statement` | string \| null | 조건부 | `status=affected` 일 때 권고(조치) 문구 |
-| `impact_statement` | string \| null | ➖ | 영향 설명(선택) |
+| `justification` | enum(string) \| null | conditional | **required** when `status=not_affected`, otherwise `null` |
+| `action_statement` | string \| null | conditional | recommended action when `status=affected` |
+| `impact_statement` | string \| null | ➖ | impact description (optional) |
 
 - `justification` enum: `component_not_present` \| `vulnerable_code_not_present` \|
   `vulnerable_code_not_in_execute_path` \| `vulnerable_code_cannot_be_controlled_by_adversary` \|
-  `inline_mitigations_already_exist` (CISA 5종).
+  `inline_mitigations_already_exist` (CISA's five).
 
-#### (d) 설명가능성 (ICS-VEXForge 확장) — UI의 "왜?" 표출용
+#### (d) Explainability (an ICS-VEXForge extension) — the UI's "why?"
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `evidence` | object | ✅ | 판정 근거 → 아래 |
-| `evidence.tier` | enum(string) | ✅ | 증거 강도 (아래 enum) |
-| `evidence.basis` | string | ✅ | 사람이 읽는 근거 한 줄 |
-| `evidence.decided_by` | enum(string) | ✅ | 판정을 확정한 단계: `presence` \| `source-absence` \| `sbom` |
-| `evidence.method` | string | ➖ | 분석 방법 (예: `"VEX-v2 (CTI + Joern + Z3)"`) |
-| `evidence.gates` | object | ✅ | 게이트별 결과 → 아래 (계층: **존재가 판정, Q3/Q4는 선택적 증거**) |
+| `evidence` | object | ✅ | the grounds for the verdict, below |
+| `evidence.tier` | enum(string) | ✅ | strength of the evidence (enum below) |
+| `evidence.basis` | string | ✅ | one human-readable line of grounds |
+| `evidence.decided_by` | enum(string) | ✅ | the step that settled it: `presence` \| `source-absence` \| `sbom` |
+| `evidence.method` | string | ➖ | analysis method (e.g. `"VEX-v2 (CTI + Joern + Z3)"`) |
+| `evidence.gates` | object | ✅ | result per gate, below (the hierarchy: **presence decides; Q3/Q4 are optional evidence**) |
 | `evidence.gates.presence` | enum \| null | ✅ | Q2: `present` \| `component_only` \| `absent` \| `null` |
-| `evidence.gates.reachability` | enum \| null | ➖ | Q3(Joern): `reachable` \| `not-reachable` \| `unknown` \| `null` |
-| `evidence.gates.controllability` | enum \| null | ➖ | Q4(Z3): `controllable` \| `not-controllable` \| `unknown` \| `null` |
+| `evidence.gates.reachability` | enum \| null | ➖ | Q3 (Joern): `reachable` \| `not-reachable` \| `unknown` \| `null` |
+| `evidence.gates.controllability` | enum \| null | ➖ | Q4 (Z3): `controllable` \| `not-controllable` \| `environment-dependent` \| `unknown` \| `null` |
 
-- `evidence.tier` enum: `verified`(존재+도달+제어) \| `reachable`(존재+도달) \| `present`(존재만) \|
-  `component`(컴포넌트만, 함수 미국지화) \| `sbom-evidenced`(SBOM에 부재) \| `not-present`(소스에 함수 부재) \|
-  `under-investigation`.
-- **주의(UI 표출 원칙)**: `reachability`/`controllability` 는 **선택적 증거**다. Q3가 `reachable` 이 아닐 때
-  `controllability` 값은 판정에 쓰이지 않으므로 UI에서 "not applicable" 로 표시할 것 (게이트 순서 존중).
+- `evidence.tier` enum: `verified` (present + reachable + controllable) \|
+  `reachable` (present + reachable) \| `present` (present only) \|
+  `component` (component only, function not localised) \| `sbom-evidenced` (absent from the
+  SBOM) \| `not-present` (function absent from the source) \| `under-investigation`.
+- **Display rule for the UI**: `reachability` and `controllability` are **optional
+  evidence**. When Q3 is not `reachable`, the `controllability` value plays no part in the
+  verdict, so the UI should show it as "not applicable" — respect the gate order.
 
-#### (e) 위험/우선순위 컨텍스트
+#### (e) Risk and prioritisation context
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `risk` | object | ✅ | → 아래 |
+| `risk` | object | ✅ | below |
 | `risk.severity` | enum(string) | ✅ | `critical` \| `high` \| `medium` \| `low` \| `unrated` |
-| `risk.cvss` | object | ✅ | → 아래 |
+| `risk.cvss` | object | ✅ | below |
 | `risk.cvss.score` | number \| null | ➖ | 0.0–10.0 |
-| `risk.cvss.vector` | string \| null | ➖ | CVSS 벡터 문자열 |
-| `risk.cvss.version` | string \| null | ➖ | `"3.1"` 등 |
-| `risk.kev` | boolean | ✅ | CISA KEV 등재 여부 |
-| `risk.epss` | number \| null | ➖ | EPSS 확률 0.0–1.0 |
+| `risk.cvss.vector` | string \| null | ➖ | the CVSS vector string |
+| `risk.cvss.version` | string \| null | ➖ | `"3.1"` and so on |
+| `risk.kev` | boolean | ✅ | whether it is listed in CISA KEV |
+| `risk.epss` | number \| null | ➖ | EPSS probability, 0.0–1.0 |
 | `risk.attack_vector` | enum \| null | ➖ | `N` \| `A` \| `L` \| `P` \| `null` (CVSS AV) |
-| `risk.ssvc` | object \| null | ➖ | → 아래 |
+| `risk.ssvc` | object \| null | ➖ | below |
 | `risk.ssvc.priority` | enum \| null | ➖ | `act` \| `attend` \| `track*` \| `track` \| `null` |
-| `risk.ssvc.vector` | string \| null | ➖ | `SSVCv2/…` 벡터 |
+| `risk.ssvc.vector` | string \| null | ➖ | `SSVCv2/…` vector |
 
-#### (f) 출처 (provenance)
+#### (f) Provenance
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `provenance` | object | ✅ | → 아래 |
-| `provenance.advisory` | string \| null | ➖ | 원 ICS 권고 ID (예: `"ICSA-22-…"`) |
-| `provenance.source_repo` | string \| null | ➖ | 분석한 OSS 저장소 URL |
-| `provenance.analyzed_version` | string \| null | ➖ | 실제 분석한 소스 버전(스냅샷) |
-| `provenance.references` | array\<string\> | ➖ | 참고 URL(NVD 등) |
-| `last_updated` | string (ISO8601) | ✅ | 이 statement 최종 갱신 시각 |
+| `provenance` | object | ✅ | below |
+| `provenance.advisory` | string \| null | ➖ | the originating ICS advisory id (e.g. `"ICSA-22-…"`) |
+| `provenance.source_repo` | string \| null | ➖ | URL of the OSS repository that was analysed |
+| `provenance.analyzed_version` | string \| null | ➖ | the source version actually analysed (the snapshot) |
+| `provenance.references` | array\<string\> | ➖ | reference URLs (NVD and others) |
+| `last_updated` | string (ISO8601) | ✅ | when this statement was last updated |
 
 ---
 
-## 2. 입력 (플랫폼 → ICS-VEXForge) : `VexRequest`
+## 2. Input (platform -> ICS-VEXForge): `VexRequest`
 
-플랫폼이 VEX를 **요청**할 때 보내는 형식. 두 모드.
+What the platform sends when **requesting** a VEX. Two modes.
 
-| 필드 | 타입 | 필수 | 설명 |
+| field | type | required | description |
 |---|---|---|---|
-| `request_id` | string | ✅ | 요청 추적 ID |
-| `mode` | enum(string) | ✅ | `sbom` (SBOM 분석) \| `query` (기존 결과 조회) |
-| `sbom` | object \| null | 조건부 | `mode=sbom` 일 때 CycloneDX 1.7 SBOM 문서 |
-| `sbom_ref` | string \| null | ➖ | SBOM을 인라인 대신 참조로 전달할 때 |
-| `exposure` | enum \| null | ➖ | SSVC용 배포 노출도: `open` \| `controlled` \| `small` \| `null` |
-| `filter` | object \| null | 조건부 | `mode=query` 일 때 필터 → 아래 |
-| `filter.cve` | array\<string\> \| null | ➖ | CVE 화이트리스트 |
-| `filter.asset_id` | string \| null | ➖ | 특정 자산 |
-| `filter.status` | array\<enum\> \| null | ➖ | 상태 필터 (`affected` 등) |
-| `filter.min_severity` | enum \| null | ➖ | `critical`/`high`/… 이상만 |
+| `request_id` | string | ✅ | request tracking id |
+| `mode` | enum(string) | ✅ | `sbom` (analyse an SBOM) \| `query` (look up existing results) |
+| `sbom` | object \| null | conditional | a CycloneDX 1.7 SBOM document when `mode=sbom` |
+| `sbom_ref` | string \| null | ➖ | for passing the SBOM by reference instead of inline |
+| `exposure` | enum \| null | ➖ | deployment exposure for SSVC: `open` \| `controlled` \| `small` \| `null` |
+| `filter` | object \| null | conditional | the filter when `mode=query`, below |
+| `filter.cve` | array\<string\> \| null | ➖ | CVE allowlist |
+| `filter.asset_id` | string \| null | ➖ | a specific asset |
+| `filter.status` | array\<enum\> \| null | ➖ | status filter (`affected` and so on) |
+| `filter.min_severity` | enum \| null | ➖ | `critical` / `high` / … and above only |
 
-응답은 항상 위의 **`VexDocument`** (섹션 1).
+The response is always the **`VexDocument`** of section 1.
 
 ---
 
-## 3. 상태 × 필수 필드 요약 (UI 분기용)
+## 3. Status x required fields (for UI branching)
 
-| status | justification | action_statement | 대표 evidence.tier |
+| status | justification | action_statement | typical evidence.tier |
 |---|---|---|---|
-| `affected` | `null` | 권고 문구(선택) | verified / reachable / present / component |
-| `not_affected` | **필수** (5종 중 1) | `null` | sbom-evidenced / not-present |
-| `fixed` | `null` | 패치 정보(선택) | (patch-signature 근거) |
+| `affected` | `null` | recommended action (optional) | verified / reachable / present / component |
+| `not_affected` | **required** (one of the five) | `null` | sbom-evidenced / not-present |
+| `fixed` | `null` | patch information (optional) | (grounded in a patch signature) |
 | `under_investigation` | `null` | `null` | under-investigation |
 
 ---
 
-## 4. 예시
+## 4. Example
 
-전체 문서 예시(실데이터 매핑): [`vex_platform_example.json`](vex_platform_example.json).
-아래는 statement 1건(affected).
+A full document example mapped from real data:
+[`vex_platform_example.json`](vex_platform_example.json). Below is a single `affected`
+statement.
 
 ```json
 {
@@ -188,11 +196,16 @@ ICS-VEXForge → **통합보안 관리 플랫폼** 으로 전달되는 VEX 데�
 
 ---
 
-## 5. 설계 노트 (플랫폼팀과 합의할 점)
+## 5. Design notes (to agree with the platform team)
 
-1. **표준 vs 확장**: 핵심 어휘(`status`/`justification`)는 OpenVEX/CSAF 그대로라 표준 툴과 상호운용 가능.
-   `evidence`/`risk`/`provenance` 는 이 시스템의 확장이므로, 표준-only 소비자는 무시하면 됨.
-2. **필수/선택 표기**: ✅=필수, ➖=선택, "조건부"=특정 status/mode에서 필수.
-3. **null 규칙**: 값이 없으면 키를 생략하지 말고 `null` 로 보냄(UI 렌더 안정성). 배열은 없으면 `[]`.
-4. **버전 정책**: `schema_version` 이 major 바뀌면 비호환. 필드 추가는 minor(하위호환).
-5. 전송 방식(REST 응답 / 파일 업로드 / 메시지 큐)은 별도 협의 — 스키마는 페이로드 형태만 규정.
+1. **Standard vs extension**: the core vocabularies (`status`, `justification`) are
+   OpenVEX/CSAF as-is, so standard tooling interoperates. `evidence`, `risk` and
+   `provenance` are this system's extensions, and a standard-only consumer can ignore them.
+2. **Required/optional notation**: ✅ = required, ➖ = optional, "conditional" = required
+   for certain statuses or modes.
+3. **Null rule**: when a value is absent, send `null` rather than omitting the key, so UI
+   rendering stays stable. An absent array is `[]`.
+4. **Version policy**: a major change to `schema_version` is incompatible; adding fields is
+   a minor change and backwards compatible.
+5. The transport (REST response, file upload, message queue) is agreed separately — this
+   schema specifies the payload shape only.

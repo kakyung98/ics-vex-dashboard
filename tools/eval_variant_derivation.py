@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
-"""모델 변형 단위에서 not_affected 를 *독립 유도*하고 CISA 라벨과 대조한다.
+"""Derive not_affected INDEPENDENTLY at the model-variant level and compare against the
+CISA labels.
 
-무엇이 입력이고 무엇이 정답인지 엄격히 가른다:
+What is input and what is the answer are kept strictly apart:
 
-  입력(우리가 봐도 되는 것)
-    - product_tree            어드바이저리가 열거한 제품 모델 목록
-    - product_status.known_affected   어드바이저리가 "영향받는다"고 밝힌 모델
-    - 자산의 모델 정체성 (SBOM)
-    이 셋은 모든 자산소유자가 권고문에서 그대로 읽는 정보다.
+  INPUT (what we are allowed to look at)
+    - product_tree                     the model list the advisory enumerates
+    - product_status.known_affected    the models the advisory calls affected
+    - the asset's own model identity (the SBOM)
+    All three are what any asset owner reads straight off the advisory.
 
-  정답(절대 입력으로 쓰지 않는 것)
+  ANSWER (never used as input)
     - product_status.known_not_affected
-    - vulnerabilities[].flags[].label      <- CISA 의 justification
+    - vulnerabilities[].flags[].label      <- CISA's justification
 
-  유도 규칙 (자산소유자가 실제로 하는 추론)
-    내 모델이 이 CVE 의 known_affected 목록에 없다  ->  not_affected
-    근거는 그 모델에 취약 구성요소가 없다는 뜻이므로  ->  component_not_present
+  Derivation rule (the inference an asset owner actually makes)
+    my model is not in this CVE's known_affected list  ->  not_affected
+    the grounds being that the model lacks the vulnerable part
+                                                      ->  component_not_present
 
-known_not_affected 를 읽지 않으므로 순환이 아니다. 다만 "열거되지 않은 모델"과
-"명시적으로 영향 없다고 적힌 모델"을 구별할 수 없어, 그 한계도 함께 보고한다.
+It is not circular, because known_not_affected is never read. But it also cannot tell
+"a model that was not enumerated" from "a model explicitly declared unaffected", and
+that limit is reported alongside the score.
 """
 import argparse
 import collections
@@ -43,7 +46,8 @@ def variants_of(csaf):
     for fp in (csaf.get("product_tree") or {}).get("full_product_names") or []:
         if fp.get("product_id"):
             names.setdefault(fp["product_id"], fp.get("name", ""))
-    # relationships 로만 등장하는 합성 product_id 도 모델 모집단에 포함된다
+    # Synthetic product_ids that appear only in relationships also belong to the model
+    # population
     for rel in (csaf.get("product_tree") or {}).get("relationships") or []:
         fpn = rel.get("full_product_name") or {}
         if fpn.get("product_id"):
@@ -73,10 +77,10 @@ def main():
                 continue
             ps = v.get("product_status") or {}
             affected = set(ps.get("known_affected") or [])
-            truth_not = set(ps.get("known_not_affected") or [])     # 정답
-            truth_lab = rec["flags"][cve][0]                        # 정답
+            truth_not = set(ps.get("known_not_affected") or [])     # the answer
+            truth_lab = rec["flags"][cve][0]                        # the answer
 
-            # --- 유도: known_affected 에 없는 모델은 not_affected ---
+            # --- derivation: a model absent from known_affected is not_affected ---
             derived_not = {m for m in models if m not in affected}
             derived_lab = "component_not_present"
 
@@ -90,9 +94,10 @@ def main():
             per.append((aid, cve, len(models), len(affected), len(truth_not),
                         len(derived_not), t, f, n, truth_lab, ok))
 
-    print("모델 단위 not_affected 독립 유도 — CISA 라벨 대조\n")
+    print("Independent per-model not_affected derivation vs the CISA labels\n")
     print("%-18s %-16s %5s %5s %5s %5s %4s %4s %4s  %s"
-          % ("ICSA", "CVE", "모델", "aff", "정답", "유도", "TP", "FP", "FN", "label 일치"))
+          % ("ICSA", "CVE", "models", "aff", "truth", "derived", "TP", "FP", "FN",
+             "label match"))
     for r in per:
         print("%-18s %-16s %5d %5d %5d %5d %4d %4d %4d  %s"
               % (r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8],
@@ -101,15 +106,15 @@ def main():
     prec = tp / (tp + fp) if (tp + fp) else 0.0
     rec_ = tp / (tp + fn) if (tp + fn) else 0.0
     f1 = 2 * prec * rec_ / (prec + rec_) if (prec + rec_) else 0.0
-    print("\n모델 단위 (product_id) 집계")
+    print("\nPer model (product_id)")
     print("  TP %d / FP %d / FN %d" % (tp, fp, fn))
     print("  precision %.3f | recall %.3f | F1 %.3f" % (prec, rec_, f1))
-    print("\n(ICSA, CVE) 쌍 단위")
-    print("  justification 까지 맞춘 쌍: %d/%d" % (just_ok, len(per)))
-    print("\n한계: FP %d 중 %d 개는 CISA 가 아예 열거하지 않은 모델이다."
+    print("\nPer (ICSA, CVE) pair")
+    print("  pairs matching the justification too: %d/%d" % (just_ok, len(per)))
+    print("\nLimit: %d of the %d false positives are models CISA never enumerated."
           % (fp, unenumerated))
-    print("      known_not_affected 를 입력으로 쓰지 않았으므로 '영향 없음'과")
-    print("      '언급 안 됨'을 구별할 수 없다 — 이것이 공개 데이터의 상한이다.")
+    print("      known_not_affected was not used as input, so 'not affected' and")
+    print("      'not mentioned' cannot be told apart - the ceiling of public data.")
 
 
 if __name__ == "__main__":

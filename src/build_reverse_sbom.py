@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-역방향 SBOM 생성기: CISA ICS 어드바이저리 -> 장비 단위 가상 SBOM.
+Reverse SBOM generator: a CISA ICS advisory -> a per-device synthetic SBOM.
 
-[진짜]  vendor / product / CVE / CWE / CVSS(v3·v4 벡터) = CISA 어드바이저리 실값
-[합성]  장비 주변 컴포넌트 인벤토리(플랫폼·OSS·벤더모듈)
+[real]      vendor / product / CVE / CWE / CVSS (v3 and v4 vectors) - actual advisory values
+[synthetic] the component inventory around the device (platform, OSS, vendor modules)
 
-CVE 배치 규칙(A~E 소스등급 라우팅):
-  - 알려진 OSS CVE (카탈로그 대조) 또는 어드바이저리가 OSS 명시  -> OSS 컴포넌트  (동적 arm)
-  - 그 외                                                        -> 벤더 모듈(tier E) (맥락 arm)
+Where a CVE is placed (the A-E source-tier routing):
+  - a known OSS CVE (matched against the catalogue), or an advisory naming the OSS
+                                                 -> an OSS component   (dynamic arm)
+  - everything else                              -> a vendor module (tier E, context arm)
 
-출력:
-  reverse_sbom/<device>_SBOM-CVE.json   장비별 CycloneDX(SBOM + vulnerabilities[])
-  data/findings.csv                     (device, cve, component, tier, cwe, cvss, AV...) 평탄화 테이블
-  data/devices.csv                      장비 인덱스
+Output:
+  reverse_sbom/<device>_SBOM-CVE.json   per-device CycloneDX (SBOM + vulnerabilities[])
+  data/findings.csv                     flattened table (device, cve, component, tier,
+                                        cwe, cvss, AV, ...)
+  data/devices.csv                      the device index
 """
 
 import csv
@@ -25,11 +27,11 @@ import sys
 import uuid
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
-from generate_ics_sbom import OSS  # noqa: E402  (OSS 카탈로그: 실제 OSS CVE 대조용)
+from generate_ics_sbom import OSS  # noqa: E402  (the OSS catalogue, for matching real OSS CVEs)
 from generate_ics_sbom import org, DOC_ORG, det_sha256  # KISA field-def helpers
 
-# OSS 카탈로그에 들어 있으나 실제로는 폐쇄소스인 컴포넌트
-# (소스 확보 불가 -> tier E). tier A(OSS 귀속)로 잘못 분류되던 것 교정.
+# Components that sit in the OSS catalogue but are closed source in reality
+# (source unobtainable -> tier E). Corrects a misclassification as tier A (OSS-attributed).
 CLOSED_OSS = {"codesys_rt", "ipnet", "treck_tcpip", "sqlserver_express", "dotnet"}
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -39,16 +41,17 @@ OUT_SBOM = os.path.join(BASE, "reverse_sbom")
 OUT_DATA = os.path.join(BASE, "data")
 NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-# KISA "SBOM 데이터필드 정의"(CycloneDX 1.7) 기준 날짜 필드.
+# The date fields defined by KISA's "SBOM data field definition" (CycloneDX 1.7).
 #   properties.SBOM_CREATION_DATE / SBOM_MODIFY_DATE  ->  'YYYY-MM-DD HH:MM:SS'
 #   metadata.timestamp                                ->  ISO-8601(Z)
-# 규격 예시가 앞의 둘을 일시(00:00:00 포함)로 못박고 있어 날짜만 쓰던 것을 교정한다.
-# 세 필드가 어긋나지 않도록 한 곳에서 만든다.
+# The specification's examples pin the first two to a timestamp (including 00:00:00),
+# correcting an earlier version that wrote a bare date. All three are produced in one
+# place so they cannot drift apart.
 DOC_DATE_TIME = "2026-04-10 00:00:00"
 DOC_TIMESTAMP = "2026-04-10T00:00:00Z"
 
 # ---------------------------------------------------------------------------
-# 벤더 정규화
+# Vendor normalisation
 # ---------------------------------------------------------------------------
 VENDOR_ALIAS = {
     "ge": "GE", "general electric": "GE", "ge vernova": "GE", "ge digital": "GE",
@@ -74,7 +77,7 @@ def norm_vendor(raw):
     key = v.lower()
     if key in VENDOR_ALIAS:
         return VENDOR_ALIAS[key]
-    # 첫 1~2 토큰의 별칭 매칭
+    # Alias match on the first one or two tokens
     toks = key.split()
     for n in (2, 1):
         cand = " ".join(toks[:n])
@@ -86,7 +89,7 @@ def norm_vendor(raw):
 def device_identity(adv):
     title = (adv.get("title") or "").strip()
     vend = norm_vendor(adv.get("vendor") or (title.split()[0] if title else ""))
-    # 제품명 = 제목에서 벤더 접두 제거
+    # Product name = the title with the vendor prefix removed
     prod = title
     for pref in (adv.get("vendor") or "", vend):
         if pref and prod.lower().startswith(pref.lower()):
@@ -96,21 +99,22 @@ def device_identity(adv):
     return vend, prod
 
 
-# 장비 키 정규화 — 같은 제품이 표기만 달라 서로 다른 장비로 갈리는 것을 막는다.
-# 예: "SiPass integrated" vs "SiPass Integrated",
+# Device-key normalisation - stops one product splitting into two devices over spelling.
+# For example "SiPass integrated" vs "SiPass Integrated",
 #     "SIMATIC WinCC Vulnerabilities (UPDATE A)" vs "... (Update A)",
 #     "WebAccess/SCADA" vs "WebAccess SCADA".
-# 이 정규화가 없으면 두 항목이 별개 장비로 집계됐다가 slug() 단계에서
-# 같은 파일명으로 충돌해 한쪽 SBOM 이 덮어써진다(장비 50대·해당 CVE 유실).
+# Without it the two are counted as separate devices and then collide on the same
+# filename at the slug() step, so one SBOM overwrites the other - 50 devices and their
+# CVEs were lost that way.
 def device_key(vend, prod):
     k = re.sub(r"[^0-9a-z]+", " ", (prod or "").lower()).strip()
     return (norm_vendor(vend or "").lower(), k)
 
 
 # ---------------------------------------------------------------------------
-# OSS 귀속 (CVE -> OSS 컴포넌트)
+# OSS attribution (CVE -> OSS component)
 # ---------------------------------------------------------------------------
-# CISA/CSAF justification -> CycloneDX analysis.justification 어휘
+# CISA/CSAF justification -> the CycloneDX analysis.justification vocabulary
 _CDX_JUST = {
     "component_not_present": "code_not_present",
     "vulnerable_code_not_present": "code_not_present",
@@ -121,12 +125,12 @@ _CDX_JUST = {
 
 
 def load_upstream_vex():
-    """CISA 원본 CSAF 가 이미 판정한 건을 읽는다 (data/gt_icsa/manifest.json).
+    """Read what the original CISA CSAF already adjudicated (data/gt_icsa/manifest.json).
 
-    ICSA -> {cve: [label, ...]}. CISA/벤더가 `vulnerabilities[].flags[].label` 로
-    justification 을 명시한 어드바이저리만 들어 있다(공개 OT 코퍼스 전체에서 12건).
-    우리가 유도한 판정이 아니라 **상류(upstream) 주장**이므로 출처를 반드시 표시해
-    자체 판정과 섞이지 않게 한다.
+    ICSA -> {cve: [label, ...]}. Holds only the advisories where CISA or the vendor
+    stated a justification via `vulnerabilities[].flags[].label` - 12 across the whole
+    public OT corpus. These are **upstream assertions**, not verdicts we derived, so the
+    provenance is always recorded and they never mix with our own.
     """
     p = os.path.join(BASE, "data", "gt_icsa", "manifest.json")
     if not os.path.exists(p):
@@ -144,11 +148,11 @@ def build_oss_index():
         for _ver, cves in spec["versions"]:
             for c in cves:
                 by_cve[c] = key
-    # 텍스트 탐지용 이름 -> 카탈로그 키
+    # Detection name -> catalogue key
     name_map = {}
     for key, spec in OSS.items():
         name_map[spec["name"].lower()] = key
-    # 흔한 별칭 보강
+    # Reinforce the common aliases
     extra = {
         "openssl": "openssl", "busybox": "busybox", "zlib": "zlib", "curl": "libcurl",
         "libcurl": "libcurl", "lwip": "lwip", "linux kernel": "linux_kernel",
@@ -166,7 +170,7 @@ def build_oss_index():
         "ntp": "ntp", "libpcap": "libpcap", "gnutls": None, "boa": None,
     }
     name_map.update({k: v for k, v in extra.items() if v})
-    # 탐지 정규식 (긴 이름 우선)
+    # Detection regex, longest name first
     names = sorted(name_map, key=len, reverse=True)
     rx = re.compile(r"(?<![A-Za-z0-9])(" + "|".join(re.escape(n) for n in names) + r")(?![A-Za-z0-9])", re.I)
     return by_cve, name_map, rx
@@ -178,7 +182,7 @@ def slug(s):
 
 
 # ---------------------------------------------------------------------------
-# CVSS 벡터 파싱
+# CVSS vector parsing
 # ---------------------------------------------------------------------------
 def parse_vector(vec):
     d = {}
@@ -190,21 +194,23 @@ def parse_vector(vec):
 
 
 # ---------------------------------------------------------------------------
-# metadata.component 의 벤더 조직 블록 (manufacturer / supplier)
+# The vendor organisation block of metadata.component (manufacturer / supplier)
 # ---------------------------------------------------------------------------
-# KISA 규격은 metadata.component.manufacturer/supplier 를 name + address(country/
-# region/locality) + contact(name/email/phone) 로 정의한다. 그런데 우리는 CISA
-# 어드바이저리에서 벤더 '이름'만 얻고, 수천 개 제3자 벤더의 실제 주소·담당자는
-# 모른다. 문서 저자(DOC_ORG)는 우리 자신이라 완전한 블록을 갖지만, 제3자 벤더는
-# 다르다. 참고: 이미 import 된 org(name, country=None, region=None, contact_name)
-# 헬퍼는 country 가 주어지면 address+contact 까지 채운 블록을 돌려준다.
+# The KISA specification defines metadata.component.manufacturer/supplier as
+# name + address (country/region/locality) + contact (name/email/phone). But a CISA
+# advisory gives us only the vendor's NAME; the real address and contact of thousands of
+# third-party vendors are unknown to us. The document author (DOC_ORG) is ourselves and
+# so has a complete block; a third-party vendor does not. Note: the already-imported
+# org(name, country=None, region=None, contact_name) helper returns a block filled out
+# with address and contact once a country is given.
 def org_full(vendor):
-    """metadata.component 의 제3자 ICS 벤더 조직 블록을 만든다.
+    """Build the third-party ICS vendor organisation block for metadata.component.
 
-    정책 (a): 이름만 assert 한다. 어드바이저리에서 실측되는 값은 벤더명뿐이고
-    주소·담당자는 모르므로, 규격의 address/contact 구조를 NOASSERTION 으로
-    채워 넣기보다 비운다 — 이 저장소의 'Data honesty' 원칙(실측만 assert)에 맞춘다.
-    address/contact 는 CycloneDX 상 선택 필드라 이대로도 유효하다."""
+    Policy (a): assert the name only. The vendor name is the one value actually measured
+    from the advisory, and the address and contact are unknown, so the specification's
+    address/contact structures are left out rather than filled with NOASSERTION - which
+    is this repository's 'data honesty' rule: assert only what was measured. Both are
+    optional in CycloneDX, so the result is still valid."""
     return org(vendor)   # org(name) -> {"name": name}
 
 
@@ -233,22 +239,24 @@ def main():
     os.makedirs(OUT_SBOM, exist_ok=True)
     os.makedirs(OUT_DATA, exist_ok=True)
 
-    # --- 축: ICSA 어드바이저리 ---
-    # CISA 는 ICSA 1건당 CSAF 문서 1개를 발행한다. 우리 산출물도 같은 축을 쓰면
-    # 어드바이저리 단위로 CISA 원본 CSAF 와 1:1 대조가 가능해진다
-    # (cisagov/CSAF 의 csaf_files/OT/white/<year>/<icsa-id>.json).
-    # 부수 효과로 advisory_id 가 자연 유일키라 파일명 충돌도 원천 소멸한다.
+    # --- the axis: the ICSA advisory ---
+    # CISA publishes one CSAF document per ICSA. Using the same axis for our output makes
+    # a 1:1 comparison with the original CISA CSAF possible per advisory
+    # (csaf_files/OT/white/<year>/<icsa-id>.json in cisagov/CSAF).
+    # As a side effect advisory_id is a natural unique key, so filename collisions become
+    # impossible by construction.
     devices = {}   # advisory_id -> {advisory_id, vendor, product, advisories[], vulns{cve:meta}}
     for adv in advisories:
-        # CVE 가 없는 어드바이저리(Stuxnet 완화 권고, 벤더 계정 주의 등)도 SBOM 을 만든다.
-        # 축을 ICSA 전량으로 맞춰야 CISA CSAF 와 파일 단위로 빠짐없이 대응한다.
-        # 이런 SBOM 은 vulnerabilities[] 가 비고 statement 도 0건이 된다.
+        # Advisories with no CVE (Stuxnet mitigation guidance, vendor account warnings and
+        # the like) still get an SBOM. Only by holding the axis to EVERY ICSA does the
+        # output correspond file-for-file with the CISA CSAF. Such an SBOM has an empty
+        # vulnerabilities[] and produces zero statements.
         vend, prod = device_identity(adv)
         key = adv["advisory_id"]
         d = devices.setdefault(key, {"advisory_id": key, "vendor": vend, "product": prod,
                                      "advisories": [], "vulns": {}, "oss_hits": set()})
         d["advisories"].append(adv["advisory_id"])
-        # OSS 텍스트 탐지 (어드바이저리 단위)
+        # OSS text detection, per advisory
         text = (adv.get("title", "") + " " + adv.get("affected_text", "")).lower()
         adv_oss = set()
         for m in oss_rx.finditer(text):
@@ -256,12 +264,12 @@ def main():
             if k:
                 adv_oss.add(k)
         d["oss_hits"].update(adv_oss)
-        # 어드바이저리 수준 AV 분포 (per-CVE 벡터 없는 CVE 폴백용)
+        # Advisory-level AV distribution, as a fallback for CVEs with no per-CVE vector
         adv_avs = re.findall(r"AV:([NALP])", adv.get("affected_text", ""))
         adv_mode_av = ""
         if adv_avs:
             adv_mode_av = max(set(adv_avs), key=adv_avs.count)
-        # per-CVE 메타
+        # per-CVE metadata
         vmeta = {v["cve"]: v for v in adv.get("vulns", [])}
         for cve in adv["cves"]:
             meta = vmeta.get(cve, {"cve": cve})
@@ -270,7 +278,8 @@ def main():
                 m2["source_advisory"] = adv["advisory_id"]
                 m2["adv_oss"] = sorted(adv_oss)
                 m2["adv_mode_av"] = adv_mode_av
-                # 상류(CISA CSAF)가 이미 justification 을 명시한 CVE 는 그대로 싣는다.
+                # A CVE whose justification upstream (CISA CSAF) already stated is carried
+                # through as-is.
                 up = (upstream.get(adv["advisory_id"]) or {}).get(cve)
                 if up:
                     m2["upstream_vex"] = {"status": "not_affected",
@@ -284,17 +293,18 @@ def main():
     n_written = 0
     for _key, d in sorted(devices.items()):
         vend, prod = d["vendor"], d["product"]
-        # 파일명 = ICSA id. 자연 유일키이므로 충돌·덮어쓰기가 원리적으로 불가능하다.
+        # Filename = the ICSA id. It is a natural unique key, so a collision or an
+        # overwrite is impossible in principle.
         dev_slug = slug(d["advisory_id"])
         dev_ref = "device:%s" % dev_slug
 
-        # 컴포넌트 구성: OSS(귀속) + 벤더모듈(잔여)
+        # Component composition: attributed OSS plus a vendor-module remainder
         comps = {}          # bom-ref -> component dict
         cve_to_ref = {}
         for cve, meta in d["vulns"].items():
-            oss_key = oss_by_cve.get(cve)   # 카탈로그 확정 귀속
+            oss_key = oss_by_cve.get(cve)   # a confirmed catalogue attribution
             if not oss_key and len(d["oss_hits"]) == 1:
-                oss_key = next(iter(d["oss_hits"]))   # 어드바이저리가 단일 OSS 명시
+                oss_key = next(iter(d["oss_hits"]))   # the advisory names a single OSS
             if oss_key:
                 spec = OSS[oss_key]
                 ref = "pkg:oss:%s" % oss_key.replace("_", "-")
@@ -303,19 +313,20 @@ def main():
                 origin = "vendor-proprietary" if is_closed else "third-party-open-source"
                 if ref not in comps:
                     comps[ref] = {
-                        # --- KISA 규격 components[] 정의 순서 ---
+                        # --- the KISA specification's components[] field order ---
                         "type": "library", "bom-ref": ref, "name": spec["name"],
                         "version": "NOASSERTION",
                         "description": spec.get("desc", ""),
                         "scope": "required",
                         "publisher": spec["publisher"],
-                        "manufacturer": org(spec["publisher"]),   # 규격: name 만
+                        "manufacturer": org(spec["publisher"]),   # per spec: name only
                         "supplier": org(spec["publisher"]),
                         "tags": sorted(set(spec.get("tags", []))),
                         "licenses": [{"license": {"id": spec["license"]}}],
                         "copyright": "NOASSERTION",
                         "purl": spec["purl"],
-                        # --- CycloneDX 확장 (규격 상위집합: SBOM→CVE 매칭에 필요) ---
+                        # --- CycloneDX extensions (a superset of the spec, needed for
+                        #     SBOM -> CVE matching) ---
                         "cpe": "cpe:2.3:a:%s:%s:*:*:*:*:*:*:*:*" % (spec["cpe_vendor"], spec["cpe_product"]),
                         "properties": [
                             {"name": "component:origin", "value": origin},
@@ -327,20 +338,20 @@ def main():
                 ref = "mod:%s:firmware" % dev_slug
                 if ref not in comps:
                     comps[ref] = {
-                        # --- KISA 규격 components[] 정의 순서 ---
+                        # --- the KISA specification's components[] field order ---
                         "type": "firmware", "bom-ref": ref,
                         "name": "%s Vendor Firmware/Application" % prod[:48],
                         "version": "NOASSERTION",
                         "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
                         "scope": "required",
                         "publisher": vend,
-                        "manufacturer": org(vend),   # 규격: name 만
+                        "manufacturer": org(vend),   # per spec: name only
                         "supplier": org(vend),
                         "tags": ["firmware", "vendor-proprietary"],
                         "licenses": [{"license": {"id": "NOASSERTION"}}],
                         "copyright": "NOASSERTION",
                         "purl": "pkg:generic/%s" % slug(prod),
-                        # --- CycloneDX 확장 ---
+                        # --- CycloneDX extensions ---
                         "properties": [
                             {"name": "component:origin", "value": "vendor-proprietary"},
                             {"name": "component:source-availability", "value": "E"},
@@ -348,7 +359,7 @@ def main():
                     }
                 cve_to_ref[cve] = (ref, "E", "vendor")
 
-        # 취약점 객체
+        # The vulnerability objects
         vulns = []
         for cve, meta in sorted(d["vulns"].items()):
             ref, tier, arm = cve_to_ref[cve]
@@ -356,7 +367,7 @@ def main():
             pv = parse_vector(vec)
             av_src = "per-cve"
             if not pv.get("AV") and meta.get("adv_mode_av"):
-                pv["AV"] = meta["adv_mode_av"]        # 어드바이저리 모드 AV 폴백
+                pv["AV"] = meta["adv_mode_av"]        # advisory-mode AV fallback
                 av_src = "advisory-mode"
             sig = signals.get(cve, {})
             score = meta.get("cvss_v3_score")
@@ -418,19 +429,19 @@ def main():
                 "pr": pv.get("PR", ""), "ui": pv.get("UI", ""),
                 "kev": bool(sig.get("kev")), "epss": sig.get("epss") if sig.get("epss") is not None else "",
                 "source_advisory": meta.get("source_advisory", ""),
-                # 상류(CISA CSAF) 가 명시한 판정 — 우리가 유도한 것이 아니다
+                # A verdict stated upstream (CISA CSAF) - not one we derived
                 "upstream_status": (meta.get("upstream_vex") or {}).get("status", ""),
                 "upstream_justification": (meta.get("upstream_vex") or {}).get("justification", ""),
                 "upstream_source": (meta.get("upstream_vex") or {}).get("source", ""),
             })
 
-        # 최상위 device 컴포넌트 + 문서
+        # The top-level device component, plus the document
         base_platform = "linux" if ("linux_kernel" in d["oss_hits"] or "busybox" in d["oss_hits"]) else (
             "vxworks" if "ipnet" in d["oss_hits"] else "vendor-firmware")
         advs_sorted = sorted(set(d["advisories"]))
         primary_adv = advs_sorted[0] if advs_sorted else ""
         top = {
-            # --- KISA 규격 metadata.component 정의 순서 ---
+            # --- the KISA specification's metadata.component field order ---
             "type": "device", "bom-ref": dev_ref, "name": "%s %s" % (vend, prod),
             "version": "NOASSERTION",
             "description": ("ICS/OT asset '%s' by %s, reverse-built from CISA ICS-CERT advisory %s."
@@ -445,10 +456,12 @@ def main():
             "tags": sorted(set([base_platform, slug(vend), "ics", "reverse-sbom"])),
             "hashes": [{"alg": "SHA-256", "content": det_sha256(dev_ref)}],
             "licenses": [{"license": {"id": "NOASSERTION"}}],
-            # externalReferences.url 은 규격/CycloneDX 상 '문자열' 필드다. 이전 코드는
-            # (1) 같은 키를 두 번 정의해 첫 블록이 조용히 사라졌고 (2) url 을 배열로 넣어
-            # 규격을 벗어났다. 여러 어드바이저리는 항목을 여러 개 두어 각 url 을 문자열로.
-            # CISA CSAF 와 1:1 대조 키: cisagov/CSAF csaf_files/OT/white/<year>/<id>.json
+            # externalReferences.url is a STRING field in both the spec and CycloneDX. The
+            # previous code (1) defined the same key twice, so the first block vanished
+            # silently, and (2) put an array in url, which leaves the spec. Several
+            # advisories therefore get several entries, each with a string url.
+            # The 1:1 comparison key against CISA CSAF:
+            # cisagov/CSAF csaf_files/OT/white/<year>/<id>.json
             "externalReferences": [
                 {"type": "advisory",
                  "url": "https://www.cisa.gov/news-events/ics-advisories/%s" % a,
@@ -457,7 +470,7 @@ def main():
             ] or [{"type": "advisory",
                    "url": "https://www.cisa.gov/news-events/ics-advisories",
                    "comment": "No source advisory id"}],
-            # --- CycloneDX 확장 (규격 상위집합) ---
+            # --- CycloneDX extensions (a superset of the spec) ---
             "properties": [
                 {"name": "ics:vendor", "value": vend},
                 {"name": "ics:product", "value": prod},

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CISA ICS 어드바이저리 전량 수집기 (역방향 파이프라인의 시드).
+Collector for every CISA ICS advisory - the seed of the reverse pipeline.
 
-CISA 사이트맵에서 모든 ICS 어드바이저리(icsa-*) URL 을 열거하고,
-각 페이지를 파싱하여 "실제 장비 <-> 실제 CVE" 매핑을 구조화한다.
-이 매핑이 이후 가상 SBOM 생성의 근거(ground truth)가 된다.
+Enumerates every ICS advisory (icsa-*) URL from the CISA sitemap and parses each page
+into a structured "real device <-> real CVE" mapping. That mapping is the ground truth
+the synthetic SBOMs are then built from.
 
-수집 필드(어드바이저리당):
+Fields collected, per advisory:
   advisory_id, url, year, title, vendor(best-effort),
-  cves[], cwes[], cvss_scores[], affected_text(원문 일부, 재파싱용)
+  cves[], cwes[], cvss_scores[], affected_text (part of the original text, for re-parsing)
 
-출력: data/cisa_advisories.json   { advisory_id: {...} }
-재실행 가능(이미 수집한 항목은 건너뜀).
+Output: data/cisa_advisories.json   { advisory_id: {...} }
+Re-runnable - anything already collected is skipped.
 """
 
 import json
@@ -67,9 +67,9 @@ def clean_text(page):
 
 
 def parse_vulns(txt):
-    """CVE별 블록에서 CWE / CVSS v3·v4 (점수+벡터)를 추출한다.
+    """Extract CWE and CVSS v3/v4 (score and vector) from the per-CVE block.
 
-    CISA 표준 문구:
+    CISA's standard wording:
       '... CWE-NNN ... CVE-YYYY-NNNN has been assigned to this vulnerability.
        A CVSS v3 base score of X.Y ... vector string is ( CVSS:3.1/AV:.../... ).
        A CVSS v4 score ... base score of X.Y ... vector string is ( AV:.../... ).'
@@ -99,7 +99,7 @@ def parse(aid, url, page):
     title_m = re.search(r"<title>([^<]+)</title>", page)
     title = title_m.group(1).replace("| CISA", "").strip() if title_m else ""
 
-    # vendor: 명시 라벨 우선, 없으면 제목 첫 토큰
+    # vendor: the explicit label when present, otherwise the title's first token
     vend = ""
     vm = re.search(r"Vendor:\s*([A-Za-z0-9 &.,\-/]+?)(?:\s+(?:Equipment|Product|Report|CVSS|Affected))", txt)
     if vm:
@@ -114,7 +114,8 @@ def parse(aid, url, page):
     yy = int(aid.split("-")[1])
     year = 2000 + yy
 
-    # 재파싱용 원문 보존: 취약점 개요 + 영향 제품 구간
+    # Keep the original text for re-parsing: the vulnerability overview and the affected
+    # products section
     ov = txt.find("VULNERABILITY OVERVIEW")
     ap = txt.find("Affected Products")
     lo = min([i for i in (ov, ap) if i >= 0] or [0])

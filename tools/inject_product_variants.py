@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
-"""CISA CSAF 의 product_tree 를 역방향 SBOM 에 주입해 모델 변형 단위를 만든다.
+"""Inject CISA CSAF's product_tree into the reverse SBOM to create model variants.
 
-배경 — 역방향 SBOM 은 ICSA 1건을 장비 1대로 뭉갠다. 그런데 CISA/벤더는 같은 ICSA
-안에서 **모델별로** 판정을 가른다(ICSA-25-191-06: SIPROTEC 5 CP300 44개 affected /
-CP200 20개 not_affected). 모델 변형 단위가 없으면 그 분기를 표현조차 할 수 없다.
+Background - the reverse SBOM collapses one ICSA into one device. But CISA and the
+vendor split the verdict **per model** within the same ICSA (ICSA-25-191-06: SIPROTEC 5
+CP300, 44 affected / CP200, 20 not_affected). Without a model-variant unit that split
+cannot even be expressed.
 
-이 도구는 CISA 원본 CSAF 의 product_tree 를 읽어
-  - 모델마다 CycloneDX component(type=device) 를 추가하고
-  - dependencies 로 최상위 장비에 매단 뒤
-  - vulnerabilities[].affects 를 **영향받는 모델에만** 걸어준다.
+This tool reads the product_tree of the original CISA CSAF and
+  - adds a CycloneDX component (type=device) per model,
+  - hangs them off the top-level device through dependencies, and
+  - points vulnerabilities[].affects **only at the affected models**.
 
-주의 — 어느 모델이 affected 인지는 CISA product_status 에서 온다. 즉 주입된 SBOM 은
-"상류가 알려준 사실"을 담고 있으며, 이를 근거로 낸 판정은 자체 유도가 아니다.
-평가 시 반드시 provenance(`variant:source=cisa-csaf`)로 분리하라.
+Careful - which models are affected comes from CISA product_status. The injected SBOM
+therefore carries "a fact supplied by upstream", and a verdict resting on it is not our
+own derivation. When evaluating, always separate it by provenance
+(`variant:source=cisa-csaf`).
 
-사용:
-  python tools/inject_product_variants.py                      # data/gt_icsa 의 25건
-  python tools/inject_product_variants.py --csaf-repo /path    # cisagov/CSAF 전량
+Usage:
+  python tools/inject_product_variants.py                   # the 25 in data/gt_icsa
+  python tools/inject_product_variants.py --csaf-repo /path # all of cisagov/CSAF
 """
 import argparse
 import glob
@@ -34,7 +36,7 @@ def slug(s):
 
 
 def csaf_sources(repo):
-    """ICSA id -> CSAF 파일 경로."""
+    """ICSA id -> CSAF file path."""
     out = {}
     pats = [os.path.join(BASE, "data", "gt_icsa", "*", "cisa_csaf", "*.json")]
     if repo:
@@ -164,9 +166,9 @@ def inject(sbom_path, csaf_path):
 
     top = ((sbom.get("metadata") or {}).get("component") or {})
     top_ref = top.get("bom-ref") or "device:unknown"
-    vend = top.get("publisher") or "NOASSERTION"   # 변형은 장비 벤더를 상속
+    vend = top.get("publisher") or "NOASSERTION"   # a variant inherits the device vendor
 
-    # 모델별 component
+    # one component per model
     comps = sbom.setdefault("components", [])
     have = {c.get("bom-ref") for c in comps}
     vrefs = {}
@@ -186,19 +188,19 @@ def inject(sbom_path, csaf_path):
         if info["version_range"]:
             props.append({"name": "ics:version-range", "value": info["version_range"]})
         comp = {
-            # --- KISA 규격 components[] 정의 순서 ---
+            # --- the KISA specification's components[] field order ---
             "type": "device", "bom-ref": ref, "name": nm or pid,
             "version": "NOASSERTION",
             "description": "Product variant enumerated by the source CSAF product_tree.",
             "scope": "required",
             "publisher": vend,
-            "manufacturer": {"name": vend},   # 규격: name 만
+            "manufacturer": {"name": vend},   # per spec: name only
             "supplier": {"name": vend},
             "tags": sorted({"ics", "product-variant", slug(vend)}),
             "licenses": [{"license": {"id": "NOASSERTION"}}],
             "copyright": "NOASSERTION",
             "purl": "pkg:generic/%s@NOASSERTION" % slug(nm or pid),
-            # --- CycloneDX 확장 (모델번호/버전범위 등) ---
+            # --- CycloneDX extensions (model number, version range, ...) ---
             "properties": props,
         }
         if info["cpe"]:
@@ -226,7 +228,7 @@ def inject(sbom_path, csaf_path):
             if comp.get("hashes"):
                 prev["hashes"] = comp["hashes"]
 
-    # dependencies: 최상위 장비가 모델들을 포함
+    # dependencies: the top-level device contains the models
     deps = sbom.setdefault("dependencies", [])
     dep = next((d for d in deps if d.get("ref") == top_ref), None)
     if dep is None:
@@ -236,7 +238,7 @@ def inject(sbom_path, csaf_path):
         if r not in dep["dependsOn"]:
             dep["dependsOn"].append(r)
 
-    # CVE 를 영향받는 모델에만 건다
+    # Point each CVE only at the affected models
     status = {}
     for v in csaf.get("vulnerabilities") or []:
         cve = v.get("cve")
@@ -254,9 +256,9 @@ def inject(sbom_path, csaf_path):
         if not st or not st["affected"]:
             continue
         v["affects"] = [{"ref": vrefs[p]} for p in st["affected"]]
-        # 재실행 멱등성: 이전 variant:* 를 걷어내고 다시 넣는다(컴포넌트 레벨과 동일).
-        # 이 dedup 이 없어 재주입마다 variant:affected-count 등이 누적됐다
-        # (디스크 샘플에서 3중복으로 관측됨).
+        # Idempotent on re-runs: strip the previous variant:* and write them again (same
+        # as at component level). Without this dedup, variant:affected-count and friends
+        # accumulated on every re-injection - observed triplicated in an on-disk sample.
         props = [p for p in (v.get("properties") or [])
                  if not p.get("name", "").startswith("variant:")]
         props.append({"name": "variant:affected-count", "value": str(len(st["affected"]))})
@@ -275,7 +277,7 @@ def main():
     a = ap.parse_args()
 
     src = csaf_sources(a.csaf_repo)
-    print("CSAF 원본 확보: %d ICSA" % len(src))
+    print("CSAF originals obtained: %d ICSAs" % len(src))
     n_done = n_var = n_scoped = n_enriched = 0
     for aid, cpath in sorted(src.items()):
         sp = os.path.join(SBOM, "%s_SBOM-CVE.json" % aid)
@@ -293,12 +295,12 @@ def main():
             n_done += 1
             n_var += nv
             n_scoped += ns
-    print("주입한 SBOM        : %d" % n_done)
-    print("추가된 모델 변형   : %d" % n_var)
-    print("모델로 좁힌 취약점 : %d" % n_scoped)
-    print("단일제품 이름 보강 : %d" % n_enriched)
+    print("SBOMs injected          : %d" % n_done)
+    print("model variants added    : %d" % n_var)
+    print("findings scoped to model: %d" % n_scoped)
+    print("single-product names set: %d" % n_enriched)
     if a.dry_run:
-        print("(dry-run — 파일을 쓰지 않았다)")
+        print("(dry run - no files were written)")
 
 
 if __name__ == "__main__":

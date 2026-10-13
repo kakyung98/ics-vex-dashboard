@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-tier-A CVE 데이터셋 생성기.
+tier-A CVE dataset builder.
 
-역방향 findings 중 OSS 확정 귀속(tier A)으로 판정된 CVE만 추려,
-동적 검증 후보군을 단일 데이터셋으로 관리한다.
+Selects, from the reverse findings, only the CVEs judged to be confirmed OSS
+attributions (tier A), and keeps the dynamic-verification candidates as one dataset.
 
-CVE 단위로 중복을 제거하되(한 CVE가 여러 장비에 걸쳐 tier A/C/E 로 나타날 수
-있으므로 최상위 tier 를 채택), 최상위 tier 가 A 인 CVE 만 포함한다.
+Deduplicated per CVE - one CVE can appear as tier A, C or E across different devices, so
+the highest tier wins - and only CVEs whose highest tier is A are included.
 
-각 CVE 에 대해 다음을 병합한다:
-  - 컴포넌트(OSS) / 대상 언어
-  - CWE / CVSS / 심각도 / KEV / EPSS            (findings.csv)
-  - 영향 벤더·제품 목록, 출처 어드바이저리       (findings.csv)
-  - ICS 장비 유형 분류(제품명 키워드 기반)        (본 스크립트 규칙)
-  - 실행 검증 스펙 상태 / 저장소 / 빌드 방식      (verify_specs.json)
-  - NVD 설명·발행일                              (nvd_cache.json, 있으면)
+For each CVE it merges:
+  - component (OSS) and target language
+  - CWE / CVSS / severity / KEV / EPSS              (findings.csv)
+  - affected vendors and products, source advisory  (findings.csv)
+  - ICS device-class tags from product-name keywords (the rules in this script)
+  - execution-verification spec state, repository, build method (verify_specs.json)
+  - NVD description and publication date            (nvd_cache.json, when present)
 
-출력:
-  data/tier_a_cve_dataset.csv     평탄화 테이블 (관리·검수용)
-  data/tier_a_cve_dataset.jsonl   레코드별 JSON (파이프라인 입력용)
+Output:
+  data/tier_a_cve_dataset.csv     a flattened table, for review
+  data/tier_a_cve_dataset.jsonl   one JSON record per line, as pipeline input
 """
 import csv
 import json
@@ -36,13 +36,14 @@ OUT_JSONL = os.path.join(BASE, "data", "tier_a_cve_dataset.jsonl")
 
 TIER_RANK = {"A": 3, "C": 2, "E": 1}
 
-# 컴포넌트(OSS) -> 대상 언어
+# component (OSS) -> target language
 LANG = {
     "log4j": "Java", "tomcat": "Java", "jackson": "Java", "spring": "Java", "openjdk": "Java",
     "dotnet": "C#/.NET", "sqlserver_express": "SQL/DB", "sqlite": "C (SQL engine)",
 }
 
-# ICS 장비 유형 분류 규칙 (제품명 소문자 부분일치, 앞 규칙 우선순위 없음: 매칭되는 모든 유형 부여)
+# ICS device-class rules: lowercase substring match on the product name. Earlier rules
+# carry no priority - every matching class is assigned.
 DEVICE_RULES = [
     ("PLC/Controller", ["s7-", "simatic s7", "cpu", "plc", "controllogix", "compactlogix",
                         "melsec", "cecc", "control block", "controller", "tm mfp"]),
@@ -63,7 +64,8 @@ DEVICE_RULES = [
                                 "locating", "merging unit", "rfid", "rf160", "reader"]),
     ("OPC/Connectivity", ["opc", "kepserver"]),
 ]
-# 특정 장비가 아닌 "공유 OSS/스택" 광역 권고를 나타내는 신호
+# Signals that an advisory is a broad "shared OSS/stack" one rather than about a
+# particular device
 GENERIC = ["vxworks", "rtos", "tcp/ip", "ipnet", "codesys", "openssl", "glibc", "goahead",
            "net-snmp", "snmp", "industrial products", "third-party", "affected industrial",
            "dnsmasq", "web server"]
@@ -96,7 +98,7 @@ def main():
 
     rows = list(csv.DictReader(open(FIND, encoding="utf-8-sig")))
 
-    # CVE 최상위 tier 결정
+    # Decide the CVE's highest tier
     best = {}
     for r in rows:
         c = r["cve"]
@@ -104,7 +106,7 @@ def main():
             best[c] = r["tier"]
     a_cves = {c for c, t in best.items() if t == "A"}
 
-    # CVE 단위 집계 (tier A findings 만 근거로)
+    # Aggregate per CVE, grounded in the tier-A findings only
     comp = {}
     cwe = {}
     cvss = {}
@@ -136,7 +138,7 @@ def main():
         if r.get("source_advisory"):
             advs[c].add(r["source_advisory"])
 
-    # verify_specs 상태 병합
+    # Merge in the verify_specs state
     vspec = {}
     if os.path.exists(VSPEC):
         for s in json.load(open(VSPEC, encoding="utf-8")):
@@ -191,7 +193,7 @@ def main():
         for r in records:
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
-    # 요약
+    # Summary
     catc = collections.Counter(r["device_category"] for r in records)
     langc = collections.Counter(r["language"] for r in records)
     vst = collections.Counter(r["verify_status"] for r in records)
