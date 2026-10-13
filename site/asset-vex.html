@@ -131,11 +131,178 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to ICS-VEXForge" aria-label="ICS-VEXForge"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge</a><div class="navlabel navlabel-sep">Method</div><a class="navtab" href="sbom-to-cve.html">ICS-SBOM to CVE</a><a class="navtab" href="vex-decision.html">VEX Flag Decision Logic</a><a class="navtab on" href="asset-vex.html">Asset-based VEX (no source)</a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a></nav>
+  <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge</a><div class="navlabel navlabel-sep">Method</div><a class="navtab" href="sbom-to-cve.html">ICS-SBOM to CVE</a><a class="navtab on" href="vex-decision.html">VEX Decision Logic</a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a></nav>
 </aside>
 <main class="main">
+<h1 style="margin:0 0 8px">VEX Flag Decision Logic</h1>
+<p class="hint" style="margin:0 0 18px">The rule this system actually executes, and what it produced on the
+collected corpus. The governing principle is <b>conservative generation</b>: a statement is lowered to
+<span class="mono">not_affected</span> only by evidence strong enough to survive being wrong. Everything
+else is held at <span class="mono">under_investigation</span> &mdash; including, deliberately, every CVE
+whose source could not be obtained. Failing to prove absence is not evidence of presence.</p>
 
-<h1 style="margin:0 0 6px">Asset-attribute exploitability assessment</h1>
+<div class="card" style="border-left:3px solid #b8862b">
+<h2 style="margin:0 0 8px;font-size:17px">Why the bias is one-directional</h2>
+<p class="hint" style="margin:0">In static analysis <b>&ldquo;not found&rdquo; and &ldquo;not there&rdquo;
+look identical</b>. If the parser loses a function, its callees appear unreachable &mdash; and an unreachable
+vulnerable function reads as <span class="mono">not_affected</span>. So every uncertainty in this pipeline is
+resolved toward <span class="mono">affected</span> or <span class="mono">under_investigation</span>, never
+toward a clearance. The first Q4 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
+removed every one of them.</p>
+</div>
+
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The rule as a flow</h2>
+<p class="hint" style="margin:0 0 12px">The same gates as the table below, read top to bottom.</p>
+<div class="card">
+<div class="vm-flow">
+  <div class="vm-box vm-in">CycloneDX SBOM<span class="vm-sub">paste / upload / drag</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box">Component &harr; CVE identification<span class="vm-sub">CPE/purl &rarr; KB match (Ratcliff&ndash;Obershelp) + embedded VDR</span></div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
+  <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
+
+  <div class="vm-split">
+    <div class="vm-lane vm-yes">
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q2&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q3 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
+    </div>
+
+    <div class="vm-lane vm-no">
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
+      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
+    </div>
+  </div>
+
+  <div class="vm-arrow">&darr;</div>
+  <div class="vm-box vm-out">VEX status + justification<span class="vm-sub">export &rarr; OpenVEX v0.2.0 &middot; CSAF 2.0 (csaf_vex)</span></div>
+</div>
+</div>
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Gate order &mdash; strongest evidence first</h2>
+<table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
+<tr><td class="mono">1</td><td>The vendor or CISA already published a justification</td>
+    <td><span class="pill pill-ok">not_affected</span> adopted verbatim, provenance recorded</td></tr>
+<tr><td class="mono">2</td><td>The affected component is absent from this SBOM</td>
+    <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
+<tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
+    <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
+<tr><td class="mono">4</td><td>A code question (Q2&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
+    <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
+<tr><td class="mono">5</td><td>Q2&ndash;Q4 all evaluated and all still vulnerable</td>
+    <td><span class="pill pill-aff">affected</span></td></tr>
+<tr><td class="mono">&mdash;</td><td>anything else</td>
+    <td><span class="pill pill-und">under_investigation</span></td></tr>
+</tbody></table>
+<p class="hint" style="margin:12px 2px 0">Gate 3 is the conservative core. No CISA justification accepts
+network position or exposure as a basis, and a verdict resting on topology turns false the moment the
+topology changes &mdash; so operational context enters only as an SSVC priority, never as a status.</p>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">The code questions, as implemented</h2>
+<table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
+<tbody><tr><td class="mono"><b>Q2</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 104 source-collectable CVEs: present 92, component-only 12 (the function could not be located)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">reachable 168, not-reachable 4, unknown 51. Joern refutes almost nothing soundly here: of its 4 not-reachable verdicts, 2 contradict the public-header authority (GENERAL_NAME_cmp, zlib inflate), which is why Q3 only grades the tier and never refutes</td></tr><tr><td class="mono"><b>Q4</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 213, not-controllable 0, environment-dependent 9. The solver refutes NOTHING on this corpus, and that is the honest reading: every refutation it used to report disappeared once the LLM's own `environment_fixed` defaults were unpinned, so those cases are reported as environment-dependent rather than quoted as clearances</td></tr></tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Evidence strength bounds the verdict</h2>
+<p class="hint" style="margin:0 0 10px">A judgment is only as strong as the evidence that picked the function
+it judged. A model-ranked guess can keep a CVE in the affected pool; it can never clear one, because
+&ldquo;the function I guessed is unreachable&rdquo; says nothing about the CVE.</p>
+<table class="tbl"><thead><tr><th>Target identified by</th><th>How</th><th>CVEs</th><th>Clearance right</th></tr></thead>
+<tbody><tr><td><b>Fix-commit hunk</b></td><td class="hint">the vulnerable function is the one the upstream fix edits - the fix commit comes from NVD references, the project's own advisory data, or a commit whose message names the CVE</td><td style="text-align:right" class="mono">75</td><td><span class="pill pill-ok">may clear</span></td></tr><tr><td><b>Fix-commit hunk, partial snapshot</b></td><td class="hint">as above, but only the files the fix touches were collected (at the fix's parent commit) - the function is located from real code, yet no whole-program question can run on one file</td><td style="text-align:right" class="mono">2</td><td><span class="pill pill-aff">may NOT clear</span></td></tr><tr><td><b>NVD description</b></td><td class="hint">the advisory names the function, and that name is really defined in the collected snapshot</td><td style="text-align:right" class="mono">28</td><td><span class="pill pill-ok">may clear</span></td></tr><tr><td><b>CodeBERT ranking</b></td><td class="hint">a Devign-fine-tuned classifier ranks candidate functions &mdash; measured top-20 recall 0.148 against known targets - NOT ADOPTED</td><td style="text-align:right" class="mono">&mdash;</td><td><span class="pill pill-aff">may NOT clear</span></td></tr><tr><td><b>Not identified</b></td><td class="hint">no fix commit, no description mention</td><td style="text-align:right" class="mono">1</td><td><span class="pill pill-aff">may NOT clear</span></td></tr></tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">Why the call graph is walked conservatively</h2>
+<table class="tbl"><thead><tr><th>Incompleteness</th><th>What it does</th><th>Why it would be a false clearance</th></tr></thead>
+<tbody><tr><td><b>K&R definitions</b></td><td class="hint">tree-sitter emits ERROR nodes on old-style C and drops the definition (zlib 1.2.8's inflate.c: 89 errors, `inflate` lost). A regex scanner supplements the parse.</td><td class="hint" style="font-size:13px">a lost definition makes its callees look unreachable = a false clearance</td></tr><tr><td><b>Macro-wrapped headers</b></td><td class="hint">`ZEXTERN int ZEXPORT inflate OF((z_streamp, int));` parsed to 3 of zlib's public functions; a regex fallback recovers them.</td><td class="hint" style="font-size:13px">a missed public entry shrinks the attack surface = a false clearance</td></tr><tr><td><b>Indirect calls</b></td><td class="hint">a static graph sees only `f()`. Dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible, so every address-taken function is treated as a root.</td><td class="hint" style="font-size:13px">this single fix overturned all 6 clearances the first Q4 run produced</td></tr><tr><td><b>Entry-model completeness</b></td><td class="hint">Q4 seeds its walk from I/O readers, the public API and address-taken functions. When neither of the last two is found - Java, where requests arrive through reflection and framework dispatch - a missing tainted path is not evidence.</td><td class="hint" style="font-size:13px">Spring4Shell (CVE-2022-22965) was cleared as not-controllable by exactly this gap</td></tr><tr><td><b>Graph completeness</b></td><td class="hint">call resolution = defined callees / all callees, median 0.67. Below 0.50 the graph is too incomplete to argue from.</td><td class="hint" style="font-size:13px">an argument from absence needs the graph to be near-complete</td></tr></tbody></table>
+</div>
+
+<div class="card">
+<h2 style="margin:0 0 10px;font-size:17px">What the rule produced</h2>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-n">267</div><div class="kpi-l">source snapshots</div></div>
+  <div class="kpi"><div class="kpi-n">222</div><div class="kpi-l">vulnerable function located</div></div>
+  <div class="kpi"><div class="kpi-n">168</div><div class="kpi-l">Q3 reachable</div></div>
+  <div class="kpi"><div class="kpi-n">213</div><div class="kpi-l">Q4 adversary-controllable</div></div>
+  <div class="kpi"><div class="kpi-n">0</div><div class="kpi-l">clearances from source analysis</div></div>
+</div>
+<p class="hint" style="margin:14px 2px 0"><b>Zero clearances, and not for want of verdicts.</b>
+Q3 returned <span class="mono">not-reachable</span> on <b>4</b> CVEs and Q4 returned
+<span class="mono">not-controllable</span> on <b>0</b>; none of them cleared anything, because
+Q3/Q4 are optional in <code>vex_judge_v2</code> by design &mdash; a library snapshot has no consumer in
+it, so &ldquo;not reachable from an in-snapshot root&rdquo; false-negatives on the attack surface itself.
+Q4's refutations went to <b>9</b> <span class="mono">environment-dependent</span>: each one held
+only while the LLM's own <code>environment_fixed</code> defaults were pinned, and unpinning them made
+the trigger satisfiable again, so they are not refutations. Once indirect calls are
+handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
+failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
+<span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
+<span class="mono">inline_mitigations_already_exist</span> have been used <b>0 times</b>. On this corpus the
+only justifications that survive are <span class="mono">component_not_present</span> and what upstream
+already asserted.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 6px">Which weakness classes get Q3 reachability and Q4 controllability</h3>
+  <p class="hint" style="margin:0 0 12px">
+  Q3 (Joern reachability) and Q4 (Z3 controllability) <b>never overturn a verdict</b> &mdash;
+  they only raise the evidence tier behind an <code>affected</code>. Running them is
+  therefore a cost question rather than a correctness one, and they are <b>selected by
+  weakness class</b> instead of run over everything: Joern builds a fresh CPG per
+  snapshot, and for some classes finding a path would not change the claim anyway.
+  The rule lives in <code>tools/select_q34_targets.py</code> and this table is generated by
+  importing that module, so the page cannot drift from the code. Every exclusion is
+  recorded per CVE in <code>data/q34_targets.json</code>.</p>
+
+  <div class="cert-kv" style="margin-bottom:12px">
+    <span>analysed <b>38</b></span>
+    <span>excluded by class <b>11</b></span>
+    <span>no function to trace <b>45</b></span>
+    <span>already analysed <b>186</b></span>
+  </div>
+
+  <h4 style="margin:14px 0 6px">1. Analysed &mdash; whether attacker input reaches the sink is the open question</h4>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>description</th><th style="width:90px">handling</th></tr>
+  <tr><td class="mono"><b>CWE-20</b></td><td>improper input validation</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-22</b></td><td>path traversal</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-74</b></td><td>injection</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-78</b></td><td>OS command injection</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-79</b></td><td>cross-site scripting</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-88</b></td><td>argument injection</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-89</b></td><td>SQL injection</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-94</b></td><td>code injection</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-116</b></td><td>improper encoding</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-119</b></td><td>buffer bounds</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-120</b></td><td>classic overflow</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-121</b></td><td>stack overflow</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-122</b></td><td>heap overflow</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-124</b></td><td>buffer underwrite</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-125</b></td><td>out-of-bounds read</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-126</b></td><td>buffer over-read</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-127</b></td><td>buffer under-read</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-134</b></td><td>format string</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-190</b></td><td>integer overflow</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-191</b></td><td>integer underflow</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-193</b></td><td>off-by-one</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-369</b></td><td>divide by zero</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-400</b></td><td>resource exhaustion</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-401</b></td><td>memory leak</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-404</b></td><td>improper resource shutdown</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-415</b></td><td>double free</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-416</b></td><td>use after free</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-476</b></td><td>NULL dereference</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-606</b></td><td>unchecked loop condition</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-611</b></td><td>XXE</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-674</b></td><td>uncontrolled recursion</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-681</b></td><td>numeric conversion</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-770</b></td><td>allocation without limits</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-787</b></td><td>out-of-bounds write</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-788</b></td><td>out-of-bounds access</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-824</b></td><td>uninitialized pointer</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-835</b></td><td>infinite loop</td><td><span class="pill pill-ok">analysed</span></td></tr><tr><td class="mono"><b>CWE-918</b></td><td>SSRF</td><td><span class="pill pill-ok">analysed</span></td></tr>
+  </table>
+
+  <h4 style="margin:18px 0 6px">2. Excluded &mdash; wrong wherever they sit</h4>
+  <p class="hint" style="margin:0 0 8px">Broken crypto, missing certificate validation and
+  weak randomness are <b>defects regardless of where they sit</b>. A path to them neither
+  strengthens nor weakens the claim, so there is no reason to pay for a CPG build per
+  snapshot.</p>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>description</th><th style="width:90px">handling</th></tr>
+  <tr><td class="mono"><b>CWE-295</b></td><td>certificate validation</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-297</b></td><td>host mismatch</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-310</b></td><td>cryptographic issue</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-311</b></td><td>missing encryption</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-326</b></td><td>weak key strength</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-327</b></td><td>broken algorithm</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-328</b></td><td>weak hash</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-330</b></td><td>insufficient randomness</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-331</b></td><td>insufficient entropy</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-338</b></td><td>weak PRNG</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-347</b></td><td>signature verification</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-521</b></td><td>weak password</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-522</b></td><td>unprotected credentials</td><td><span class="pill pill-aff">excluded</span></td></tr><tr><td class="mono"><b>CWE-798</b></td><td>hardcoded credentials</td><td><span class="pill pill-aff">excluded</span></td></tr>
+  </table>
+
+  <p class="hint" style="margin-top:12px">
+  <b>An unclassified CWE, or none at all, leans towards analysing.</b>
+  Q3/Q4 only add evidence and never remove it, so running costs CPU while skipping costs
+  a weaker record &mdash; when the asymmetry is that clear, erring towards the cheap
+  failure is the right call.</p>
+</div>
+<hr style="margin:42px 0 26px;border:0;border-top:1px solid var(--line)"><p class="hint" style="margin:0 0 18px"><b>When the source cannot be collected</b>, the code questions above do not apply &mdash; there is no function to locate. The asset owner supplies the asset&rsquo;s real attributes instead, and the attack vectors they imply are matched against the CVE&rsquo;s CVSS Attack Vector. This is the other half of the decision.</p>
+<h2 style="margin:0 0 6px">Branch 2 &mdash; source unavailable: asset-attribute estimate</h2>
 <p class="hint" style="margin:0 0 18px">
 For a CVE whose source cannot be collected, the code-level tree (Q1-Q4) does not apply.
 Enter the asset's real attributes instead: the server derives which <b>attack vectors</b>

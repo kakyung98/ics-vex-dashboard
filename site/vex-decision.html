@@ -131,7 +131,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </style></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to ICS-VEXForge" aria-label="ICS-VEXForge"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge</a><div class="navlabel navlabel-sep">Method</div><a class="navtab" href="sbom-to-cve.html">ICS-SBOM to CVE</a><a class="navtab on" href="vex-decision.html">VEX Flag Decision Logic</a><a class="navtab" href="asset-vex.html">Asset-based VEX (no source)</a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a></nav>
+  <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main" href="index.html">ICS-VEXForge</a><div class="navlabel navlabel-sep">Method</div><a class="navtab" href="sbom-to-cve.html">ICS-SBOM to CVE</a><a class="navtab on" href="vex-decision.html">VEX Decision Logic</a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a></nav>
 </aside>
 <main class="main">
 <h1 style="margin:0 0 8px">VEX Flag Decision Logic</h1>
@@ -301,6 +301,128 @@ already asserted.</p>
   a weaker record &mdash; when the asymmetry is that clear, erring towards the cheap
   failure is the right call.</p>
 </div>
+<hr style="margin:42px 0 26px;border:0;border-top:1px solid var(--line)"><p class="hint" style="margin:0 0 18px"><b>When the source cannot be collected</b>, the code questions above do not apply &mdash; there is no function to locate. The asset owner supplies the asset&rsquo;s real attributes instead, and the attack vectors they imply are matched against the CVE&rsquo;s CVSS Attack Vector. This is the other half of the decision.</p>
+<h2 style="margin:0 0 6px">Branch 2 &mdash; source unavailable: asset-attribute estimate</h2>
+<p class="hint" style="margin:0 0 18px">
+For a CVE whose source cannot be collected, the code-level tree (Q1-Q4) does not apply.
+Enter the asset's real attributes instead: the server derives which <b>attack vectors</b>
+physically exist on the asset (five NVAS flowcharts) and matches them against the CVE's
+<b>CVSS Attack Vector</b> to decide <code>affected</code> / <code>not_affected</code> /
+<code>under_investigation</code>. Every input is a fact about one asset &mdash; this is not
+the retired synthetic-exposure estimate.</p>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="av-cve">
+    <label class="av-f" style="flex:1"><span>CVE ID</span>
+      <input id="avCve" placeholder="CVE-2022-37434" spellcheck="false"></label>
+    <button class="btn" onclick="avLoad()">Load CVE</button>
+  </div>
+  <div id="avMeta" class="hint" style="margin-top:10px"></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <h3 style="margin:0 0 4px">Asset attributes</h3>
+  <p class="hint" style="margin:0 0 14px">All fields are required for a verdict. Any left
+  blank &rarr; <code>under_investigation</code> (the vector set cannot be trusted).</p>
+  <div class="av-grp"><h4>Mobile / maintenance device (PMMD)</h4><div class="av-grid"><label class="av-f"><span>Maintenance-port physically sealed</span><select data-k="maint_port_sealed"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Maintenance device in use</span><select data-k="maint_device_used"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label></div></div><div class="av-grp"><h4>Communication</h4><div class="av-grid"><label class="av-f"><span>Asset is network-connected</span><select data-k="comm_connected"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Communication is one-way only</span><select data-k="unidirectional"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Has wireless capability</span><select data-k="wireless_capable"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Wireless is enabled</span><select data-k="wireless_enabled"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Communication is encrypted</span><select data-k="encrypted_comm"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label></div></div><div class="av-grp"><h4>Supply chain / system environment</h4><div class="av-grid"><label class="av-f"><span>System environment is configured (apps/firmware/OS)</span><select data-k="sys_env_configured"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Vendor remote access is possible</span><select data-k="vendor_remote_access"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Account management is supported</span><select data-k="account_mgmt"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label></div></div><div class="av-grp"><h4>Location & physical</h4><div class="av-grid"><label class="av-f"><span>Physical location</span><select data-k="physical_location"><option value="">&mdash;</option><option value="VA">VA &mdash; visitor-accessible area</option><option value="OCA">OCA &mdash; operation-controlled area</option><option value="PA">PA &mdash; protected area</option></select></label><label class="av-f"><span>Physically blocked / isolated</span><select data-k="physical_blocked"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label></div></div><div class="av-grp"><h4>Security policy</h4><div class="av-grid"><label class="av-f"><span>Host firewall applied</span><select data-k="host_firewall"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Work approval required</span><select data-k="work_approval"><option value="">&mdash;</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>Asset access right</span><select data-k="access_right"><option value="">&mdash;</option><option value="admin">admin (관리자)</option><option value="operator">operator (취급자)</option><option value="none">none (없음)</option></select></label></div></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <h3 style="margin:0 0 4px">CVE-derived facts <span class="hint">(optional, from the CVE description)</span></h3>
+  <p class="hint" style="margin:0 0 14px">Left <code>unknown</code> they resolve
+  conservatively &mdash; an unknown requirement never becomes <code>affected</code> on its own.</p>
+  <div class="av-grid"><label class="av-f"><span>AV:N/A &mdash; exploit requires a specific protocol/interface</span><select data-k="protocol_required"><option value="">unknown</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>&nbsp;&nbsp;&mdash; the asset carries a matching protocol/interface</span><select data-k="protocol_match"><option value="">unknown</option><option value="y">Yes</option><option value="n">No</option></select></label><label class="av-f"><span>AV:P &mdash; exploit must use a portable maintenance device (PMMD)</span><select data-k="pmmd_required"><option value="">unknown</option><option value="y">Yes</option><option value="n">No</option></select></label></div>
+</div>
+
+<div style="margin-bottom:18px">
+  <button class="btn btn-go" onclick="avAssess()">Assess</button>
+  <span id="avStatus" class="hint" style="margin-left:10px"></span>
+</div>
+
+<div id="avResult"></div>
+
+<style>
+.av-cve{display:flex;gap:10px;align-items:flex-end}
+.av-grp{margin-bottom:16px}.av-grp h4{margin:0 0 8px;font-size:14px;color:var(--ink2)}
+.av-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.av-f{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.av-f span{color:var(--ink2)}
+.av-f select,.av-f input{background:var(--card2);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;font-size:14px;font-family:var(--sans)}
+.btn-go{font-size:16px;padding:10px 24px}
+.av-verdict{font-size:26px;font-weight:800;padding:14px 18px;border-radius:12px;margin-bottom:12px}
+.av-aff{background:rgba(229,103,92,.15);color:var(--aff)}
+.av-safe{background:rgba(67,190,124,.15);color:var(--safe)}
+.av-und{background:rgba(224,178,76,.15);color:var(--und)}
+.av-chip{display:inline-block;background:var(--card2);border:1px solid var(--line);
+  border-radius:999px;padding:3px 12px;margin:2px 4px 2px 0;font-size:13px;font-family:var(--mono)}
+</style>
+
+<script>
+var AV_META = null;
+async function avLoad(){
+  var cve=(document.getElementById('avCve').value||'').trim().toUpperCase();
+  var box=document.getElementById('avMeta');
+  if(!/^CVE-\d{4}-\d+$/.test(cve)){ box.innerHTML='<span style="color:var(--aff)">Enter a valid CVE ID.</span>'; return; }
+  box.textContent='loading…';
+  // Runtime (window.__ICSVEX_RUNTIME): /api/cve_av gives AV + description.
+  // Static site: no server, so read the AV from the published cve_index.json.
+  if(window.__ICSVEX_RUNTIME){
+    try{
+      var r=await fetch('/api/cve_av/'+cve);
+      if(r.ok){ var j=await r.json(); if(j.found){ AV_META=j;
+        box.innerHTML='<b>CVSS AV: '+(j.av||'&mdash;')+'</b> &middot; <span class="mono">'+(j.vector||'no vector')+'</span>'
+          +(j.description?'<div style="margin-top:6px">'+esc(j.description)+'</div>':''); return; }
+        box.innerHTML='<span style="color:var(--aff)">CVE not found in the local NVD cache.</span>'; AV_META=null; return; }
+    }catch(e){}
+  }
+  try{
+    if(!window.__CVE_AV){ var ix=await (await fetch('cve_index.json')).json();
+      window.__CVE_AV={}; ix.forEach(function(x){ if(x.av)window.__CVE_AV[x.cve]=x.av; }); }
+    var av=window.__CVE_AV[cve];
+    if(!av){ box.innerHTML='<span style="color:var(--aff)">CVE not found, or it has no CVSS Attack Vector.</span>'; AV_META=null; return; }
+    AV_META={cve:cve, av:av, vector:null, description:null};
+    box.innerHTML='<b>CVSS AV: '+av+'</b> <span class="hint">(from the published CVE index)</span>';
+  }catch(e){ box.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; AV_META=null; }
+}
+function avCollect(sel){
+  var o={};
+  document.querySelectorAll(sel+' select').forEach(function(s){
+    var k=s.getAttribute('data-k'), v=s.value;
+    if(v==='y')o[k]=true; else if(v==='n')o[k]=false; else if(v!=='')o[k]=v; else o[k]=null;
+  });
+  return o;
+}
+function avAssess(){
+  var st=document.getElementById('avStatus');
+  if(!AV_META){ st.innerHTML='<span style="color:var(--aff)">Load a CVE first.</span>'; return; }
+  var attrs=avCollect('.av-grp'); var extraRaw=avCollect('.av-grid.ex');
+  var j=avAssessLocal(AV_META.av, attrs, extraRaw); j.cve=AV_META.cve;
+  st.textContent=''; avShow(j);
+}
+function avShow(j){
+  var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
+  var h='<div class="card"><div class="av-verdict '+cls+'">'+j.status.replace(/_/g,' ').toUpperCase()+'</div>';
+  h+='<p style="margin:0 0 12px">'+esc(j.reason||'')+'</p>';
+  if(j.vectors){
+    h+='<div style="margin-bottom:8px"><b>Attack vectors identified on the asset</b></div>';
+    h+= j.vectors.length ? j.vectors.map(function(v){return '<span class="av-chip">'+v+'</span>';}).join('')
+       : '<span class="hint">none</span>';
+  }
+  if(j.missing && j.missing.length){
+    h+='<div style="margin-top:10px"><b>Missing attributes ('+j.missing.length+')</b><div class="hint">'
+      +j.missing.join(', ')+'</div></div>';
+  }
+  h+='<div style="margin-top:14px" class="hint">CVE '+esc(j.cve||'')+' &middot; CVSS AV: '+(j.cvss_av||'&mdash;')+'</div>';
+  h+='</div>';
+  document.getElementById('avResult').innerHTML=h;
+}
+// tag the extra-fields grid so avCollect can target it
+document.addEventListener('DOMContentLoaded',function(){
+  var grids=document.querySelectorAll('.av-grid');
+  if(grids.length)grids[grids.length-1].classList.add('ex');
+});
+</script>
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>

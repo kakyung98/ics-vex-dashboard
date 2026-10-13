@@ -1215,7 +1215,8 @@ def build_app():
 
     @app.get("/asset-vex.html", response_class=HTMLResponse)
     def asset_vex_page():
-        return make_page("asset-vex")
+        # merged into the decision page; keep the old URL working
+        return make_page("vex-decision")
 
     return app
 
@@ -2480,7 +2481,25 @@ already asserted.</p>
    .replace("__Q4E__", str(c.get("q4_environment_dependent", 0)))
 
 
-_DECISION_PAGE = _decision_page() + _q34_scope_section()
+def _merged_decision_page():
+    """The complete VEX decision, both branches on one page: the source-available
+    code-analysis tree, then the source-unavailable asset-attribute estimate. They
+    are the two halves of 'is the source available?' so they belong together."""
+    from asset_vex_page import ASSET_VEX_PAGE as _AVP
+    # demote the asset page's own <h1> to a section heading and intro it as branch 2
+    asset = _AVP.replace(
+        '<h1 style="margin:0 0 6px">Asset-attribute exploitability assessment</h1>',
+        '<h2 style="margin:0 0 6px">Branch 2 &mdash; source unavailable: asset-attribute estimate</h2>')
+    divider = ('<hr style="margin:42px 0 26px;border:0;border-top:1px solid var(--line)">'
+               '<p class="hint" style="margin:0 0 18px"><b>When the source cannot be '
+               'collected</b>, the code questions above do not apply &mdash; there is no '
+               'function to locate. The asset owner supplies the asset&rsquo;s real '
+               'attributes instead, and the attack vectors they imply are matched against '
+               'the CVE&rsquo;s CVSS Attack Vector. This is the other half of the decision.</p>')
+    return _decision_page() + _q34_scope_section() + divider + asset
+
+
+_DECISION_PAGE = _merged_decision_page()
 
 
 
@@ -2770,8 +2789,7 @@ _NAV_GROUPS = [
     # asset-attribute estimate). Grouped apart from the analyzer tool.
     ("Method", [
         ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
-        ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
-        ("asset-vex", "asset-vex.html", "Asset-based VEX (no source)"),
+        ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
     ]),
     ("Certification", [
         ("cert", "cert.html", "Test items #3 / #4"),
