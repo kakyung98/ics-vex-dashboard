@@ -435,28 +435,37 @@ class Store:
             "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
             "by_source_class": dict(Counter(cve_src.values())),
         }
-        # tier-A = OSS-attributed, source-code collectable (the "110" after closed-source reclass)
+        # Source-collectable population = the CVEs we actually collected source for and
+        # ran through VEX-v2 (data/vex_v2.json). This used to be the tier-A OSS-attributed
+        # subset (107), which is narrower than what the VEX-v2 pipeline now covers (267),
+        # so the panel read a stale 107. The authoritative set is the VEX-v2 keys.
         a_worst = {}
         ven_cves, dtype_cves = defaultdict(set), defaultdict(set)
-        for cve, rows in self.by_cve.items():
+        for cve in self.vex_v2:
             if cve in UNCOLLECTABLE_CVES:
                 continue
-            a_rows = [r for r in rows if r.get("tier") == "A"]
-            if not a_rows:
-                continue
-            a_worst[cve] = max(a_rows, key=lambda r: rank.get(r["final_vex"], 0))
-            for r in a_rows:
-                ven_cves[_norm_vendor(r.get("vendor"))].add(cve)
-                dtype_cves[_device_type(r.get("device"))].add(cve)
+            rows = self.by_cve.get(cve)
+            if rows:
+                a_worst[cve] = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
+                for r in rows:
+                    ven_cves[_norm_vendor(r.get("vendor"))].add(cve)
+                    dtype_cves[_device_type(r.get("device"))].add(cve)
+            else:
+                # analysed CVE with no advisory row (OSS-only, e.g. sqlparse
+                # CVE-2024-4340) - keep it in the count from whatever the index knows,
+                # or from VEX-v2 alone, so the population stays the full source-collected set.
+                idx = self.cve_index.get(cve) or {}
+                a_worst[cve] = {"final_vex": idx.get("vex")
+                                or (self.vex_v2[cve].get("vex") or "UNDER_INVESTIGATION").upper(),
+                                "sev": idx.get("severity", ""), "kev": idx.get("kev"),
+                                "vendor": (idx.get("vendors") or [None])[0], "device": None}
+                ven_cves[_norm_vendor(a_worst[cve]["vendor"])].add(cve)
         sev_norm = lambda s: s if s in ("critical", "high", "medium", "low") else "unrated"
         # canonical CWE per CVE (non-empty), so counts match the CVE's real weakness
-        _a_cwe = {cve: self.cve_index[cve]["cwe"] for cve in a_worst}
+        _a_cwe = {cve: (self.cve_index.get(cve) or {}).get("cwe", "") for cve in a_worst}
         _cwe_ctr = Counter(c for c in _a_cwe.values() if c)
-        # "collected" = the CVEs we actually snapshotted AND ran through VEX-v2 — its keys are
-        # exactly the source snapshots (104), so vex_v2 membership is the ground truth. The
-        # looser has_code_pair/collected_src tags over-count (they claimed 106). by_vex shows the
-        # VEX-v2 verdict where we have one (else the corpus default), so the dataset panel matches
-        # the source-level result instead of a blanket under_investigation.
+        # The population IS the VEX-v2 set, so every CVE here is collected and analysed:
+        # collected == total and pending == 0. by_vex shows the VEX-v2 verdict.
         _analyzed = lambda cve: cve in self.vex_v2
         self.tier_a = {
             "total_cves": len(a_worst),
@@ -2756,6 +2765,10 @@ _NAV_GROUPS = [
     ("Analyzer", [
         ("analyzer", "index.html", "ICS-VEXForge"),
         ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
+    ]),
+    # The VEX decision method, in two halves: the source-available tree and the
+    # source-unavailable asset-attribute estimate. Grouped apart from the analyzer.
+    ("Method", [
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
         ("asset-vex", "asset-vex.html", "Asset-based VEX (no source)"),
     ]),
