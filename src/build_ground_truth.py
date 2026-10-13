@@ -1,61 +1,66 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Ground Truth 구축 (v3, 증거 계층 기반):
+Ground-truth construction (v3, evidence-tier based).
 
-핵심 원칙 — 판정은 확보한 증거의 강도를 넘어서지 않는다.
+The governing principle: a verdict never exceeds the strength of the evidence
+obtained for it.
 
-  증거 계층(evidence tier)은 findings.csv 의 `tier` 컬럼에서 온다.
-  이 컬럼은 build_reverse_sbom.py 가 SBOM 속성 `component:source-availability`
-  로 기록한 값이며, 소스코드 확보 가능성을 그대로 나타낸다.
+  The evidence tier comes from the `tier` column of findings.csv, which
+  build_reverse_sbom.py writes as the SBOM attribute
+  `component:source-availability`. It states exactly how obtainable the source is.
 
-    tier A  소스 확보됨(OSS, vuln/patched 코드 쌍 보유)
-              -> 실행 검증 결과가 있으면  AFFECTED / NOT_AFFECTED 확정
-              -> 없으면 UNDER_INVESTIGATION (실행 검증 대기)
-    tier C  OSS 컴포넌트이나 코드 미확보   -> UNDER_INVESTIGATION
-    tier E  벤더 폐쇄 펌웨어, 소스 확보 불가 -> UNDER_INVESTIGATION
+    tier A  source obtained (OSS, with a vulnerable/patched code pair)
+              -> with an execution-verification result: AFFECTED / NOT_AFFECTED
+              -> without one: UNDER_INVESTIGATION (awaiting verification)
+    tier C  an OSS component whose code was not collected -> UNDER_INVESTIGATION
+    tier E  closed vendor firmware, source unobtainable   -> UNDER_INVESTIGATION
 
-  즉 1차 상태(vex_status)는 소스코드를 확보하고 실행 검증에 성공한 건에서만
-  확정되고, 나머지는 전부 UNDER_INVESTIGATION 이다.
+  So the primary status (vex_status) is conclusive only where the source was
+  obtained AND execution verification succeeded; everything else is
+  UNDER_INVESTIGATION.
 
-모델 라우팅(route) — 소스 확보 여부가 파이프라인 경로를 정한다:
+Model routing (`route`) - source availability decides the pipeline path:
 
-    tier A       SecureBERT -> CodeBERT -> sLLM/실행 검증
-                 대조할 코드가 있으므로 코드 leg 로 넘겨 확정을 시도한다.
-    tier C / E   SecureBERT 에서 종결.
-                 대조할 코드가 없으므로 CodeBERT 로 넘기지 않는다.
-                 (코드 없이 돌린 CodeBERT 출력은 근거가 없어 오탐만 만든다)
+    tier A       SecureBERT -> CodeBERT -> sLLM / execution verification.
+                 There is code to compare against, so it is handed to the code leg
+                 and a conclusive verdict is attempted.
+    tier C / E   Ends at SecureBERT. With no code to compare against it is not
+                 handed to CodeBERT - CodeBERT output produced without the code has
+                 no grounds and yields only false positives.
 
-2차 VEX 추정(estimated_status):
-  1차가 UNDER_INVESTIGATION 인 건에 대해, 확보 가능한 유일한 신호인
-  CVSS Attack Vector 와 배치 노출도로 도달성을 계산해 상태를 '추정'한다.
-  이는 VEX 진술이 아니라 추정치이며 estimate_confidence 를 함께 싣는다.
-  모델 학습 타깃(`label`)은 확정값이 있으면 확정값, 없으면 이 추정치다.
+Secondary VEX estimate (estimated_status):
+  For records whose primary status is UNDER_INVESTIGATION, reachability is computed
+  from the only signals obtainable - the CVSS Attack Vector and deployment exposure -
+  and the status is ESTIMATED. This is not a VEX statement, and it ships with
+  estimate_confidence alongside. The training target (`label`) is the conclusive
+  value where one exists and this estimate otherwise.
 
-판정 사유(justification):
-  CSAF VEX / OpenVEX 의 not_affected justification 5종 통제 어휘를 사용한다.
+Justification:
+  Uses the five controlled not_affected justifications of CSAF VEX / OpenVEX:
     component_not_present
     vulnerable_code_not_present
     vulnerable_code_not_in_execute_path
     vulnerable_code_cannot_be_controlled_by_adversary
     inline_mitigations_already_exist
-  affected 에 대해서는 표준이 justification 어휘를 정의하지 않으므로
-  (표준 필드는 impact_statement / action_statement),
-  위 5종을 그대로 뒤집은 대응 어휘를 별도 확장으로 부여하고
-  표준 필드도 함께 채운다. justification_vocabulary 필드로 구분한다.
+  The standard defines no justification vocabulary for `affected` (its fields are
+  impact_statement / action_statement), so the five above are inverted into a
+  matching vocabulary carried as an extension, with the standard fields filled in
+  as well. The `justification_vocabulary` field tells the two apart.
 
-v2 대비 제거된 것 — 근거 없이 합성하던 요소:
-  - neg_evidence(): 해시로 patched/component-absent/version-out-of-range/
-    function-disabled 를 지어내던 로직. 실제 증거가 없으므로 삭제.
-  - 해시 기반 vague 꼬리: AV 가 실제로 미기재인 건(av=="")으로 대체.
-  - 주석자 노이즈: 실행 검증으로 확정된 건에는 적용하지 않고,
-    추정치에만 적용한다(분석가는 사실이 아니라 추정에서 갈린다).
+Removed since v2 - everything that was synthesised without grounds:
+  - neg_evidence(): invented patched / component-absent / version-out-of-range /
+    function-disabled from a hash. Deleted, since there was no actual evidence.
+  - the hash-based vague tail: replaced by records whose AV really is unstated
+    (av == "").
+  - annotator noise: no longer applied to execution-verified records, only to
+    estimates - analysts differ over estimates, not over facts.
 
-여전히 합성인 것(명시):
-  - exposure: 배치 노출도. 실제 플랜트 네트워크 정보는 공개 데이터에 없다.
-    structured.exposure_synthetic = true 로 표시한다.
+Still synthetic, stated as such:
+  - exposure: deployment exposure. Real plant-network information is not in public
+    data. Marked with structured.exposure_synthetic = true.
 
-출력: data/vex_dataset.jsonl
+Output: data/vex_dataset.jsonl
 """
 import csv
 import hashlib
@@ -70,36 +75,40 @@ EXEC_PY = os.path.join(BASE, "results", "exec_verification.json")
 EXEC_C = os.path.join(BASE, "results", "exec_verification_c.json")
 EXEC_BATCH = os.path.join(BASE, "results", "exec_verification_batch.json")
 OUT = os.path.join(BASE, "data", "vex_dataset.jsonl")
-# 코드 leg 전용 서브셋 (OSS 귀속 = tier A/C 중 tier A). 실제 코드 보유 여부는
-# 각 레코드의 code_evidence_available 로 구분한다.
+# The subset for the code leg (OSS-attributed = tier A of tier A/C). Whether the code
+# is actually held is carried per record in code_evidence_available.
 OUT_CODE = os.path.join(BASE, "data", "vex_dataset_code.jsonl")
-# 실행 검증으로 확정된 건만 (진짜 ground truth)
+# Only what execution verification settled - the real ground truth
 OUT_GT = os.path.join(BASE, "data", "vex_ground_truth.jsonl")
 
 AFFECTED = "LIKELY_AFFECTED"
 NOT_AFFECTED = "LIKELY_NOT_AFFECTED"
 UNDER_INV = "UNDER_INVESTIGATION"
 
-# findings.csv 의 tier. SBOM 속성명은 component:source-availability 이지만 실제 의미는
-# "OSS 카탈로그에 CVE 가 귀속되었는가"다(build_reverse_sbom.py:202). 코드 실보유와 다르다.
+# The tier from findings.csv. Its SBOM attribute is called component:source-availability,
+# but what it actually states is "was this CVE attributed to the OSS catalogue"
+# (build_reverse_sbom.py:202), which is not the same as holding the code.
 TIER_DESC = {"A": "oss-attributed", "C": "oss-inferred", "E": "vendor-proprietary"}
 
-# 모델 라우팅 — 소스 확보 여부가 파이프라인 경로를 결정한다.
-#   소스 있음(tier A)  : SecureBERT -> CodeBERT -> sLLM/실행 검증 (확정 가능)
-#   소스 없음(tier C/E): SecureBERT 에서 종결. 코드 leg 로 넘기지 않는다.
-#                        (대조할 코드가 없어 CodeBERT 는 근거 없는 출력을 낼 뿐)
+# Model routing - source availability decides the pipeline path.
+#   source present (tier A) : SecureBERT -> CodeBERT -> sLLM / execution verification
+#                             (a conclusive verdict is possible)
+#   source absent (tier C/E): ends at SecureBERT and is not handed to the code leg -
+#                             with no code to compare against, CodeBERT only emits
+#                             output that has no grounds.
 ROUTE_CODE = "securebert->codebert->sllm"
 ROUTE_CONTEXT_ONLY = "securebert-only"
-# 2026-08 정적 개편: 라이브 판정 파이프라인(src/vex_pipeline.py)은 PoC 생성·실행을
-# 전혀 하지 않고 정적분석(sLLM static analyst + grounding critic)으로만 VEX 를 확정한다.
-# 아래 sllm-static-analyst 라벨이 그 경로다. 과거 execution-verified 5건은
-# results/exec_verification*.json 실측을 근거로 역사적 확정 계층으로만 유지된다.
+# The 2026-08 move to static analysis: the live pipeline (src/vex_pipeline.py) neither
+# generates nor runs a PoC, and settles VEX purely by static analysis (an sLLM static
+# analyst plus a grounding critic). The sllm-static-analyst label below is that path.
+# The 5 historical execution-verified records are kept as a historical conclusive tier
+# only, on the strength of the measurements in results/exec_verification*.json.
 ROUTE_STAGES = {
     ROUTE_CODE: ["securebert", "codebert", "sllm-static-analyst"],
     ROUTE_CONTEXT_ONLY: ["securebert"],
 }
 
-# CSAF VEX / OpenVEX not_affected justification 통제 어휘 (5종)
+# The five controlled not_affected justifications of CSAF VEX / OpenVEX
 JUSTIFY_NOT_AFFECTED = {
     "component_not_present",
     "vulnerable_code_not_present",
@@ -107,7 +116,7 @@ JUSTIFY_NOT_AFFECTED = {
     "vulnerable_code_cannot_be_controlled_by_adversary",
     "inline_mitigations_already_exist",
 }
-# affected 대응 어휘 (표준 확장 — 위 5종의 역대응)
+# The matching vocabulary for `affected` (an extension - the five above, inverted)
 JUSTIFY_AFFECTED = {
     "component_present",
     "vulnerable_code_present",
@@ -118,7 +127,7 @@ JUSTIFY_AFFECTED = {
 
 EXPOSURES = ["isolated-cell", "control-network", "dmz-routable", "remote-accessible"]
 
-# 노출도 패러프레이즈 풀 (의미 동일, 표현 다양)
+# Exposure paraphrases - same meaning, varied wording
 EXP_POOL = {
     "isolated-cell": [
         "The asset sits in an air-gapped cell with no routable link to other networks.",
@@ -145,7 +154,7 @@ EXP_POOL = {
         "The device accepts connections from remote and enterprise-wide origins.",
     ],
 }
-# 공격 표면 산문 (AV 를 명시하지 않고 암시)
+# Attack-surface prose: it implies the AV rather than stating it
 AV_POOL = {
     "N": [
         "A remote actor can trigger the flaw by sending crafted traffic to a listening service.",
@@ -193,35 +202,36 @@ PRESENT_POOL = [
     "This build includes the vulnerable module in its active image.",
     "The impacted software is compiled into the deployed firmware.",
 ]
-# SBOM 이 컴포넌트 버전을 NOASSERTION 으로 기록한 사실 (실제 데이터 특성)
+# The fact that the SBOM records component versions as NOASSERTION (a real property
+# of this data)
 VERSION_UNKNOWN_POOL = [
     "The inventory records no version for this component, so the affected range cannot be checked.",
     "No version string is asserted for this module in the bill of materials.",
     "The build inventory leaves this component's release unspecified.",
     "Version information for the module is absent from the recorded inventory.",
 ]
-# 소스 확보 불가 (tier E — 벤더 폐쇄 펌웨어)
+# Source unobtainable (tier E - closed vendor firmware)
 SRC_UNAVAIL_POOL = [
     "The vendor ships this module as closed firmware, so its source cannot be obtained for inspection.",
     "No source is retrievable for this proprietary component; only the binary image is distributed.",
     "This part of the stack is vendor-proprietary and its code is unavailable for review.",
     "The supplier does not publish source for this module, blocking any code-level check.",
 ]
-# OSS 이나 코드 미확보 (tier C)
+# OSS, but the code was not collected (tier C)
 SRC_PENDING_POOL = [
     "The component is open source, but no vulnerable or fixed code has been retrieved for it yet.",
     "Upstream code exists for this module, though none has been collected for comparison here.",
     "This is an open component, yet the relevant patch material has not been gathered.",
     "Source is in principle obtainable for this module, but nothing has been pulled down so far.",
 ]
-# 코드 확보, 실행 검증 대기 (tier A, 미검증)
+# Code held, awaiting execution verification (tier A, unverified)
 SRC_AVAIL_POOL = [
     "Vulnerable and fixed source for this module has been obtained, but it has not been executed.",
     "Both the flawed and corrected code are on hand; no run-time trigger has been attempted.",
     "The relevant source pair is available, awaiting an execution test to settle the question.",
     "Code for both states of this module is collected, with dynamic confirmation still outstanding.",
 ]
-# 실행 검증 결과
+# Execution-verification results
 EXEC_AFF_POOL = [
     "Running the recorded trigger against this build reproduced the fault under a sanitizer.",
     "A controlled execution of the module drove it into the documented failure state.",
@@ -260,21 +270,21 @@ def pick(pool, *seed):
     return pool[h(*seed) % len(pool)]
 
 
-# ---------------------------------------------------------------- 증거 로딩
+# ------------------------------------------------------------- loading evidence
 
 def load_exec_verification():
-    """실행 검증 결과를 CVE -> 판정 맵으로 정규화.
+    """Normalise execution-verification results into a CVE -> verdict map.
 
-    두 harness 를 모두 읽는다:
-      results/exec_verification.json    (Python 라이브러리, pip 격리설치)
-      results/exec_verification_c.json  (C 라이브러리, WSL + AddressSanitizer)
+    Both harnesses are read:
+      results/exec_verification.json    (Python libraries, isolated pip install)
+      results/exec_verification_c.json  (C libraries, WSL + AddressSanitizer)
 
-    새 CVE 가 검증되면 이 파일에 추가되는 것만으로 해당 findings 가
-    자동으로 확정 계층으로 승격된다. 코드 수정 불필요.
+    When a new CVE is verified, adding it to that file is enough to promote the
+    corresponding findings to the conclusive tier. No code change is needed.
     """
     out = {}
-    # 배치 러너(src/exec_verify_batch.py) 결과. 확정 판정이 난 건만 취한다 —
-    # NEEDS_TRIGGER / BUILD_FAILED 등은 증거가 아니라 작업 상태이므로 제외.
+    # Results from the batch runner (src/exec_verify_batch.py). Only settled verdicts
+    # are taken - NEEDS_TRIGGER, BUILD_FAILED and the like are job states, not evidence.
     if os.path.exists(EXEC_BATCH):
         for e in json.load(open(EXEC_BATCH, encoding="utf-8")):
             if e.get("verdict") not in ("EXPLOITABLE", "NOT_TRIGGERED"):
@@ -320,7 +330,7 @@ def load_exec_verification():
 
 
 def load_code_available():
-    """vuln/patched 코드 쌍을 실제로 확보한 CVE 집합."""
+    """The set of CVEs for which a vulnerable/patched code pair is actually held."""
     if not os.path.exists(CODE_EV):
         return set()
     ce = json.load(open(CODE_EV, encoding="utf-8"))
@@ -328,11 +338,12 @@ def load_code_available():
             if isinstance(v, dict) and v.get("vuln_code") and v.get("patched_code")}
 
 
-# ---------------------------------------------------------- 배치 맥락(합성)
+# ------------------------------------------- deployment context (synthetic)
 
 def exposure_for(device):
-    """배치 노출도. 실제 플랜트 네트워크 정보가 공개 데이터에 없어 합성한다.
-    장비 종류별 사전분포에서 (device 해시로) 결정론적 표집."""
+    """Deployment exposure. Synthesised, because real plant-network information is not
+    in public data. Sampled deterministically (by a hash of the device) from a prior
+    distribution per device class."""
     d = device.lower()
     if any(k in d for k in ("plc", "rtu", "relay", "controller", "safety", "ied", "drive")):
         w = [0.42, 0.34, 0.16, 0.08]
@@ -351,13 +362,14 @@ def exposure_for(device):
     return EXPOSURES[-1]
 
 
-# ------------------------------------------------------ 1차 판정 (증거 기반)
+# ------------------------------------------- primary verdict (evidence-based)
 
 def exec_verdict(exec_rec):
-    """실행 검증 기록 -> (status, basis). 확정 불가면 (None, None).
+    """An execution-verification record -> (status, basis), or (None, None) when it
+    settles nothing.
 
-    adjudicate() 의 계층 1 과 같은 규칙을, 버전 정보가 없는 호출자
-    (vex_batch 등)도 쓸 수 있게 떼어낸 것이다.
+    The same rule as adjudicate()'s layer 1, split out so that callers without version
+    information (vex_batch and friends) can use it too.
     """
     if not (exec_rec and exec_rec.get("discriminates")):
         return (None, None)
@@ -367,19 +379,21 @@ def exec_verdict(exec_rec):
 
 
 def adjudicate(tier, has_code, exec_rec, version_asserted, upstream=None):
-    """확보한 증거만으로 내리는 1차 VEX 상태.
+    """The primary VEX status, decided from the obtained evidence alone.
 
-    주의 — findings.csv 의 `tier` 는 SBOM 속성명이 component:source-availability 이지만,
-    실제로는 "OSS 카탈로그에 CVE 가 귀속되었는가"만 나타낸다(build_reverse_sbom.py:202).
-    tier=="A" 132 CVE 중 실제로 vuln/patched 코드 쌍을 확보한 것은 15 CVE 뿐이다.
-    따라서 코드 leg 진입 여부는 tier 가 아니라 `has_code`(code_evidence.json 실보유)로 판정한다.
+    Careful - findings.csv's `tier` is named component:source-availability in the SBOM,
+    but all it actually states is "was this CVE attributed to the OSS catalogue"
+    (build_reverse_sbom.py:202). Of the 132 CVEs at tier=="A", only 15 actually hold a
+    vulnerable/patched code pair, so entry to the code leg is decided by `has_code`
+    (actually present in code_evidence.json), never by the tier letter.
 
-    반환: (status, justification, justification_vocabulary,
+    Returns: (status, justification, justification_vocabulary,
            impact_statement, action_statement, evidence_tier, detail)
     """
-    # --- 계층 0: 상류(CISA CSAF) 가 이미 판정 -------------------------------
-    # CISA/벤더가 flags[].label 로 justification 을 명시한 건. 우리가 유도한 것이
-    # 아니므로 evidence_tier 를 분리해 자체 판정 성능 평가에서 제외할 수 있게 한다.
+    # --- layer 0: upstream (CISA CSAF) already adjudicated it ----------------
+    # CISA or the vendor stated the justification via flags[].label. We did not derive
+    # it, so evidence_tier keeps it separate and it can be excluded when measuring our
+    # own adjudication performance.
     if upstream:
         return (NOT_AFFECTED, upstream, "csaf-openvex",
                 "CISA CSAF asserts this product is not affected (%s)." % upstream,
@@ -387,7 +401,7 @@ def adjudicate(tier, has_code, exec_rec, version_asserted, upstream=None):
                 "upstream-asserted",
                 {"upstream_source": "cisa-csaf", "derived_here": False})
 
-    # --- 계층 1: 실행 검증 완료 --------------------------------------------
+    # --- layer 1: execution verification completed --------------------------
     if exec_rec and exec_rec["discriminates"]:
         sig = exec_rec["signal"] or "documented failure state"
         if version_asserted and version_asserted == exec_rec.get("patched_version"):
@@ -397,8 +411,9 @@ def adjudicate(tier, has_code, exec_rec, version_asserted, upstream=None):
                     "execution-verified",
                     {"exec_method": exec_rec["method"], "exec_signal": sig,
                      "version_basis": "asserted", "version_unconfirmed": False})
-        # 버전이 취약본으로 확인되었거나(asserted), SBOM 이 버전을 밝히지 않은 경우.
-        # 후자는 ICS 안전 우선 원칙에 따라 취약본을 가정한다(fail-safe).
+        # Either the version was asserted to be the vulnerable one, or the SBOM does not
+        # state a version at all. The latter assumes the vulnerable build, on the ICS
+        # safety-first principle (fail-safe).
         unconfirmed = not version_asserted
         return (AFFECTED, "vulnerable_code_present", "extension",
                 "Execution of the recorded trigger reproduced the fault (%s)." % sig,
@@ -408,42 +423,44 @@ def adjudicate(tier, has_code, exec_rec, version_asserted, upstream=None):
                  "version_basis": "assumed-vulnerable" if unconfirmed else "asserted",
                  "version_unconfirmed": unconfirmed})
 
-    # --- 계층 2: 코드 실보유, 실행 미검증 -----------------------------------
+    # --- layer 2: code actually held, execution not verified -----------------
     if has_code:
         return (UNDER_INV, None, None, None, None, "source-available-unverified",
                 {"blocker": "source obtained but no execution result recorded for this CVE"})
 
-    # --- 계층 3: OSS 귀속이나 코드 미확보 -----------------------------------
+    # --- layer 3: OSS-attributed but the code was not collected --------------
     if tier in ("A", "C"):
         return (UNDER_INV, None, None, None, None, "source-pending",
                 {"blocker": "component is open source but no vulnerable/fixed code pair has been collected",
                  "oss_attributed": True})
 
-    # --- 계층 4: 벤더 폐쇄 펌웨어 -------------------------------------------
+    # --- layer 4: closed vendor firmware -------------------------------------
     return (UNDER_INV, None, None, None, None, "source-unavailable",
             {"blocker": "vendor-proprietary firmware; source cannot be obtained"})
 
 
-# ------------------------------------------- 2차 추정 (AV x 노출도, 확정 불가시)
+# ---------------- secondary estimate (AV x exposure, when nothing is conclusive)
 
-# 도달성 추정(CVSS AV x 배치 노출도)은 제거되었다.
+# The reachability estimate (CVSS AV x deployment exposure) was removed.
 #
-# 근거 — 이 파이프라인의 exposure 는 전량 합성값(rnd.choice)이었고, 도달성은
-# VEX status 의 근거가 될 수 없으므로 estimation 하위필드로만 흘려보내고 있었다.
-# 그러나 합성 입력에서 나온 추정치는 어떤 실제 자산에 대한 주장도 아니어서,
-# 화면에 숫자로 노출되는 순간 오해를 부른다. 그래서 축 자체를 걷어냈다.
+# Why - exposure in this pipeline was synthetic throughout (rnd.choice), and
+# reachability cannot be grounds for a VEX status, so it was only being passed through
+# as an estimation subfield. But an estimate derived from synthetic input is not a claim
+# about any real asset, and the moment it appears on screen as a number it misleads. So
+# the axis was removed outright.
 #
-# 운영 맥락은 SSVC 로만 들어간다 — 그쪽의 System Exposure 는 합성값이 아니라
-# 사용자가 배치 환경을 직접 고른 값이다.
+# Operational context enters through SSVC only - its System Exposure is not synthetic
+# but a value the user picks for their own deployment.
 
 
-# -------------------------------------------------------------- 텍스트 렌더링
+# ------------------------------------------------------------- text rendering
 
-# 학습 타깃(label)을 인과적으로 결정하는 문장 종류만 정답 근거로 표시한다.
-# kev / epss / severity 는 어느 경로에서도 상태를 바꾸지 않으므로 제외한다.
+# Only the sentence kinds that causally decide the training target (label) are marked as
+# grounds. kev / epss / severity change the status on no path, so they are excluded.
 DRIVER_EXEC = {"exec_affected", "exec_not_affected"}
-# 1차 상태(vex_status)를 결정하는 문장 — primary_rationale_ids 용.
-# 확정 건은 실행 검증 문장이, 미확정 건은 소스 확보 불가 문장이 근거다.
+# The sentences that decide the primary status (vex_status), for primary_rationale_ids.
+# A conclusive record is grounded in the execution-verification sentence; an inconclusive
+# one in the sentence about the source being unobtainable.
 DRIVER_PRIMARY = ({"src_unavailable", "src_pending", "src_available", "version_unknown"}
                   | DRIVER_EXEC)
 
@@ -459,7 +476,7 @@ def render(device, vendor, product, cve, cwe, av, sev, epss, kev,
     sevw = {"critical": "critical-severity", "high": "high-severity",
             "medium": "moderate-severity", "low": "low-severity"}.get(sev, "unrated")
     add("%s is a %s %s issue (%s)." % (cve, sevw, cwe_name, cwe or "CWE-unknown"), "cve_desc", "CVE-1")
-    # 공격 표면 (AV 를 명시하지 않고 암시). av=="" 이면 미기재 문장.
+    # Attack surface, implied rather than stated. av == "" gives the 'not stated' sentence.
     add(pick(AV_POOL.get(av, AV_POOL[""]), "av", device, cve),
         "av" if av else "av_unstated", "CVE-2")
     add(pick(KEV_POOL if kev else KEVNEG_POOL, "kev", device, cve),
@@ -471,10 +488,10 @@ def render(device, vendor, product, cve, cwe, av, sev, epss, kev,
     add("Asset: %s %s." % (vendor, product), "product", "ASSET-1")
     add(pick(EXP_POOL[exposure], "exp", device), "exposure", "ASSET-2")
     add(pick(PRESENT_POOL, "pres", device, cve), "present", "ASSET-3")
-    # SBOM 이 버전을 NOASSERTION 으로 기록한 실제 사실
+    # The actual fact that the SBOM records the version as NOASSERTION
     add(pick(VERSION_UNKNOWN_POOL, "ver", device, cve), "version_unknown", "ASSET-4")
 
-    # 소스 확보 상태
+    # Source-availability state
     if has_code:
         if exec_rec is None:
             add(pick(SRC_AVAIL_POOL, "src", device, cve), "src_available", "SRC-1")
@@ -483,7 +500,7 @@ def render(device, vendor, product, cve, cwe, av, sev, epss, kev,
     else:
         add(pick(SRC_UNAVAIL_POOL, "src", device, cve), "src_unavailable", "SRC-1")
 
-    # 실행 검증 결과 (확정된 건에만)
+    # Execution-verification result (only where it settled the verdict)
     if exec_status == AFFECTED:
         add(pick(EXEC_AFF_POOL, "exec", device, cve), "exec_affected", "EXEC-1")
     elif exec_status == NOT_AFFECTED:
@@ -496,8 +513,8 @@ def render(device, vendor, product, cve, cwe, av, sev, epss, kev,
 def main():
     exec_map = load_exec_verification()
     code_cves = load_code_available()
-    print("실행 검증 CVE : %d %s" % (len(exec_map), sorted(exec_map)))
-    print("코드 확보 CVE : %d" % len(code_cves))
+    print("execution-verified CVEs : %d %s" % (len(exec_map), sorted(exec_map)))
+    print("CVEs with code held     : %d" % len(code_cves))
 
     rows = list(csv.DictReader(open(FIND, encoding="utf-8-sig")))
     n = 0
@@ -519,11 +536,13 @@ def main():
             exposure = exposure_for(device)
             exec_rec = exec_map.get(cve)
 
-            # SBOM 이 모든 컴포넌트 버전을 NOASSERTION 으로 기록하므로 확정 버전은 없다.
-            # 실제 버전이 채워지면 여기서 읽어 adjudicate() 로 넘기면 된다.
+            # The SBOM records every component version as NOASSERTION, so there is no
+            # confirmed version. Once real versions are filled in, read them here and
+            # pass them to adjudicate().
             version_asserted = None
 
-            # 코드 leg 진입 조건은 tier 문자가 아니라 실제 코드 보유 여부다.
+            # Entry to the code leg is decided by actually holding the code, not by the
+            # tier letter.
             has_code = cve in code_cves
             oss_attributed = tier in ("A", "C")
 
@@ -531,10 +550,12 @@ def main():
              ev_tier, detail) = adjudicate(tier, has_code, exec_rec, version_asserted,
                                            upstream=(r.get("upstream_justification") or "").strip() or None)
 
-            # 대조할 코드가 실제로 있어야만 코드 leg(CodeBERT->sLLM)로 보낸다.
+            # Only a record with code to compare against is sent to the code leg
+            # (CodeBERT -> sLLM).
             route = ROUTE_CODE if has_code else ROUTE_CONTEXT_ONLY
 
-            # 학습 타깃은 증거 기반 상태 그 자체다. 추정으로 라벨을 만들지 않는다.
+            # The training target is the evidence-based status itself. No label is
+            # manufactured from an estimate.
             clean_label = label = status
             gold_kinds = DRIVER_EXEC
 
@@ -546,7 +567,7 @@ def main():
                 "sampleId": "S%06d" % n, "device": device, "cve": cve,
                 "arm": r["arm"], "tier": tier,
 
-                # --- 1차: 증거 기반 VEX 진술 (표준 호환) ---
+                # --- primary: the evidence-based VEX statement (standard-compatible) ---
                 "vex_status": status,
                 "justification": just,
                 "justification_vocabulary": vocab,   # csaf-openvex | extension | None
@@ -556,17 +577,17 @@ def main():
                                                      # | source-pending | source-unavailable
                 "evidence_detail": detail,
                 "source_availability": TIER_DESC.get(tier, "unknown"),
-                "code_evidence_available": has_code,   # vuln/patched 코드 쌍 실보유
-                "oss_attributed": oss_attributed,      # OSS 카탈로그 귀속 (tier A/C)
+                "code_evidence_available": has_code,   # a vuln/patched pair is held
+                "oss_attributed": oss_attributed,      # attributed to the OSS catalogue (tier A/C)
 
-                # --- 모델 라우팅 (소스 확보 여부가 경로를 결정) ---
+                # --- model routing (source availability decides the path) ---
                 "route": route,
                 "route_stages": ROUTE_STAGES[route],
                 "route_terminal_model": "codebert" if route == ROUTE_CODE else "securebert",
 
-                # --- 학습 타깃 ---
-                "label": label,                      # 확정값 우선, 없으면 2차 추정치
-                "clean_label": clean_label,          # 주석자 노이즈 적용 전
+                # --- training target ---
+                "label": label,                      # the conclusive value, else the estimate
+                "clean_label": clean_label,          # before annotator noise
                 "label_source": ("upstream-cisa-csaf" if ev_tier == "upstream-asserted"
                                  else "execution" if ev_tier == "execution-verified"
                                  else "evidence-tier"),
@@ -580,8 +601,8 @@ def main():
                     "kev": kev, "epss": epss, "severity": sev,
                     "version_asserted": version_asserted,
                     "source_availability": tier,
-                    "exposure_synthetic": True,       # 배치 노출도는 합성값
-                    "neg": "", "vague": (av == ""),   # v2 호환 필드
+                    "exposure_synthetic": True,       # deployment exposure is synthetic
+                    "neg": "", "vague": (av == ""),   # v2 compatibility fields
                 },
             }
             line = json.dumps(rec, ensure_ascii=False) + "\n"
@@ -599,24 +620,26 @@ def main():
             routes[route] = routes.get(route, 0) + 1
 
     print("\nsamples: %d" % n)
-    print("\n[증거 계층]")
+    print("\n[evidence tier]")
     for k in ("execution-verified", "source-available-unverified", "source-pending", "source-unavailable"):
         if k in tiers:
             print("  %-30s %6d (%5.2f%%)" % (k, tiers[k], 100 * tiers[k] / n))
-    print("\n[모델 라우팅 — 소스 확보 여부로 결정]")
+    print("\n[model routing - decided by source availability]")
     for k in (ROUTE_CODE, ROUTE_CONTEXT_ONLY):
         if k in routes:
             print("  %-30s %6d (%5.2f%%)" % (k, routes[k], 100 * routes[k] / n))
-    print("\n[1차 VEX 진술 — 증거 기반]")
+    print("\n[primary VEX statement - evidence-based]")
     for k in (AFFECTED, NOT_AFFECTED, UNDER_INV):
         print("  %-22s %6d (%5.2f%%)" % (k, prim.get(k, 0), 100 * prim.get(k, 0) / n))
-    print("\n[학습 타깃 label — 확정값 + 2차 추정]")
+    print("\n[training target label - conclusive value plus estimate]")
     for k in (AFFECTED, NOT_AFFECTED, UNDER_INV):
         print("  %-22s %6d (%5.2f%%)" % (k, labels.get(k, 0), 100 * labels.get(k, 0) / n))
-    print("\n[출력]")
+    print("\n[output]")
     print("  %-46s %6d" % (os.path.relpath(OUT, BASE), n))
-    print("  %-46s %6d  (OSS 귀속 tier A — 코드 leg 후보군)" % (os.path.relpath(OUT_CODE, BASE), n_code))
-    print("  %-46s %6d  (실행 검증 확정 — 진짜 ground truth)" % (os.path.relpath(OUT_GT, BASE), n_gt))
+    print("  %-46s %6d  (OSS-attributed tier A - code-leg candidates)"
+          % (os.path.relpath(OUT_CODE, BASE), n_code))
+    print("  %-46s %6d  (settled by execution verification - the real ground truth)"
+          % (os.path.relpath(OUT_GT, BASE), n_gt))
 
 
 if __name__ == "__main__":
