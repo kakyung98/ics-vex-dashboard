@@ -66,6 +66,65 @@ TARGET_SOURCES = {
 }
 
 # --- the code-level CISA justification questions -----------------------------
+import collections
+import json
+import os
+
+
+def _corpus():
+    """The code-level counts, READ FROM THE CACHES rather than written down.
+
+    These were hard-coded at 104 snapshots / Q2 100 / Q3 99 from the old
+    execution-verification campaign, and stayed on the published page after the
+    population grew to the full collected-source corpus - the site was quoting a
+    superseded run. Deriving them means the page cannot drift from the caches
+    again; a missing cache yields 0 and shows as such instead of as a stale number
+    that still looks plausible.
+    """
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def _load(rel, default):
+        p = os.path.join(base, rel)
+        try:
+            with open(p, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return default
+
+    snapdir = os.path.join(base, "data", "source_snapshots")
+    loc = _load("data/source_locations.json", {})
+    reach = _load("data/reachability.json", {})
+    ctrl = _load("data/controllability.json", {})
+    v2 = _load("data/vex_v2.json", {})
+
+    c2 = collections.Counter((x or {}).get("verdict") for x in reach.values())
+    c3 = collections.Counter((x or {}).get("verdict") for x in ctrl.values())
+    rows = v2 if isinstance(v2, list) else list(v2.values())
+    cleared = sum(1 for r in rows if isinstance(r, dict)
+                  and r.get("vex") == "not_affected"
+                  and (r.get("justification") or "").startswith(
+                      ("vulnerable_code_not_in_execute_path",
+                       "vulnerable_code_cannot_be_controlled")))
+    return {
+        "snapshots": len(os.listdir(snapdir)) if os.path.isdir(snapdir) else 0,
+        "targets_located": sum(1 for v in loc.values()
+                               if (v or {}).get("any_function_found")),
+        "q2_reachable": c2.get("reachable", 0),
+        "q2_unreachable": c2.get("not-reachable", 0),
+        "q2_unknown": c2.get("unknown", 0),
+        "q3_controllable": c3.get("controllable", 0),
+        "q3_not_controllable": c3.get("not-controllable", 0),
+        # A refutation that only holds once the LLM's own environment defaults are
+        # pinned is reported separately by tools/z3_controllability, because it is
+        # not a refutation - see that module.
+        "q3_environment_dependent": c3.get("environment-dependent", 0),
+        "clearances_from_source_analysis": cleared,
+    }
+
+
+CORPUS = _corpus()
+
+
 QUESTIONS = [
     {"id": "Q1", "ask": "Is the vulnerable code present?",
      "clears_with": ["component_not_present", "vulnerable_code_not_present"],
@@ -87,8 +146,14 @@ QUESTIONS = [
      "how": "Z3 decides whether attacker-controlled inputs satisfy the trigger, from "
             "an LLM formalisation of the CTI (tools/z3_controllability.py)",
      "state": "implemented",
-     "result": "controllable 56, not-controllable 3, unknown 45 (trigger not "
-               "formalisable to SMT); the model formalises, the solver decides"},
+     "result": "controllable %(q3_controllable)d, not-controllable "
+               "%(q3_not_controllable)d, environment-dependent "
+               "%(q3_environment_dependent)d. The solver refutes NOTHING on this "
+               "corpus, and that is the honest reading: every refutation it used to "
+               "report disappeared once the LLM's own `environment_fixed` defaults "
+               "were unpinned, so those cases are reported as "
+               "environment-dependent rather than quoted as clearances"
+               % CORPUS},
 ]
 
 # --- why the call graph is walked conservatively ------------------------------
@@ -215,13 +280,3 @@ def resolve(q1=None, q2=None, q3=None, target_source="none",
     return UNDER_INV, None, "insufficient evidence"
 
 
-# The execution-verification campaign attempted 106 CVEs; 2 of them
-# (CVE-2021-33909, CVE-2023-32233) died in the CVE-processor step before any
-# source was downloaded, so 104 snapshots exist and 104 is the population every
-# code-level number below is measured over.
-CORPUS = {
-    "snapshots": 104, "targets_located": 105,
-    "q2_reachable": 100, "q2_unreachable": 0,
-    "q3_controllable": 99, "q3_not_controllable": 1,
-    "clearances_from_source_analysis": 0,
-}

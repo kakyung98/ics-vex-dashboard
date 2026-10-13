@@ -1,0 +1,323 @@
+{
+  "test": "Q2 reachability / Q3 controllability agreement with external authorities",
+  "status": "supplementary disclosure - no certification acceptance criterion",
+  "ground_truth": "data\\vex_q23_gt.jsonl",
+  "sut": {
+    "Q2": "tools/joern_reachability (Joern CPG call graph)",
+    "Q3": "tools/z3_controllability (Z3 over an LLM constraint model)"
+  },
+  "authorities": {
+    "Q2": "the component's shipped public headers; and the build layout for the negative class",
+    "Q3": "NVD CVSS v3 AV/UI"
+  },
+  "per_question": {
+    "Q2": {
+      "labels": 75,
+      "answered": 58,
+      "abstained": 16,
+      "no_sut_verdict": 1,
+      "abstention_pct": 21.3,
+      "TP": 56,
+      "FP": 0,
+      "FN": 2,
+      "TN": 0,
+      "precision": null,
+      "precision_null_reason": "the answer key has no negative class for this question, so a precision would be 1.0000 by construction and would describe the key rather than the solver",
+      "recall": 0.9655,
+      "misses": [
+        {
+          "cve": "CVE-2018-18440",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "fs_size declared in include/fs.h"
+        },
+        {
+          "cve": "CVE-2019-11477",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "tcp_sync_mss declared in include/net/tcp.h"
+        },
+        {
+          "cve": "CVE-2019-13104",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "ext4fs_read_file declared in fs/ext4/ext4_common.h"
+        },
+        {
+          "cve": "CVE-2019-13106",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "memset declared in arch/arc/include/asm/string.h"
+        },
+        {
+          "cve": "CVE-2020-10648",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "fit_image_verify_required_sigs declared in include/image.h"
+        },
+        {
+          "cve": "CVE-2021-31572",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "xStreamBufferGenericCreate declared in FreeRTOS/Source/include/message_buffer.h"
+        },
+        {
+          "cve": "CVE-2021-33574",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "mq_notify declared in rt/mqueue.h"
+        },
+        {
+          "cve": "CVE-2021-35942",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "wordexp declared in posix/wordexp.h"
+        },
+        {
+          "cve": "CVE-2021-43396",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "iconv declared in iconv/gconv.h"
+        },
+        {
+          "cve": "CVE-2022-30552",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "net_process_received_packet declared in include/net.h"
+        },
+        {
+          "cve": "CVE-2022-34835",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "i2c_init_board declared in include/i2c.h"
+        },
+        {
+          "cve": "CVE-2023-4911",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "do_test declared in elf/tst-dlopen-tlsmodid.h"
+        },
+        {
+          "cve": "CVE-2024-1086",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "nf_hook_slow declared in include/linux/netfilter.h"
+        },
+        {
+          "cve": "CVE-2024-2961",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "iconv declared in iconv/gconv.h"
+        },
+        {
+          "cve": "CVE-2024-33601",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "readdinnetgr declared in nscd/nscd.h"
+        },
+        {
+          "cve": "CVE-2024-33602",
+          "expected": "reachable",
+          "sut": "unknown",
+          "sut_detail": "codebase too large for a CPG (skipped)",
+          "authority": "readdinnetgr declared in nscd/nscd.h"
+        }
+      ],
+      "disagreements": [
+        {
+          "cve": "CVE-2020-1971",
+          "expected": "reachable",
+          "sut": "not-reachable",
+          "sut_detail": "joern: no located function reachable from an entry point",
+          "authority": "GENERAL_NAME_cmp declared in include/openssl/x509v3.h",
+          "why_label": "the vulnerable function is declared in a shipped public header, so it is itself an entry point for a consumer of the component"
+        },
+        {
+          "cve": "CVE-2022-37434",
+          "expected": "reachable",
+          "sut": "not-reachable",
+          "sut_detail": "joern: no located function reachable from an entry point",
+          "authority": "inflate declared in inflate.h",
+          "why_label": "the vulnerable function is declared in a shipped public header, so it is itself an entry point for a consumer of the component"
+        }
+      ],
+      "no_verdict_cases": [
+        {
+          "cve": "CVE-2019-1549",
+          "expected": "reachable"
+        }
+      ]
+    },
+    "Q3": {
+      "labels": 210,
+      "answered": 166,
+      "abstained": 8,
+      "no_sut_verdict": 36,
+      "abstention_pct": 3.8,
+      "TP": 166,
+      "FP": 0,
+      "FN": 0,
+      "TN": 0,
+      "precision": null,
+      "precision_null_reason": "the answer key has no negative class for this question, so a precision would be 1.0000 by construction and would describe the key rather than the solver",
+      "recall": 1.0,
+      "misses": [
+        {
+          "cve": "CVE-2019-15903",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (document_parsing=False, dtd_parsing=True); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "cve": "CVE-2020-35525",
+          "expected": "controllable",
+          "sut": "unknown",
+          "sut_detail": "trigger unsatisfiable with the environment unpinned: the constraint model contradicts itself, so it carries no verdict",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "cve": "CVE-2020-8285",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (max_recursion_depth=100); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "cve": "CVE-2021-36690",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (table_info=1); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "cve": "CVE-2021-42379",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (use_after_free=False); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H"
+        },
+        {
+          "cve": "CVE-2023-0401",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (fips_enabled=False, hash_algorithm_known=True, legacy_provider_loaded=True); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "cve": "CVE-2023-3446",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (max_acceptable_length=10000); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L"
+        },
+        {
+          "cve": "CVE-2024-1086",
+          "expected": "controllable",
+          "sut": "environment-dependent",
+          "sut_detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (NF_ACCEPT=0, NF_DROP=-1); those defaults are LLM-asserted and unverified, so this is not a refutation",
+          "authority": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "disagreements": [],
+      "no_verdict_cases": [
+        {
+          "cve": "CVE-2014-0160",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2014-0224",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2016-2177",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13079",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13080",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13081",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13082",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13084",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13086",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13087",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2017-13088",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2019-1549",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2019-1563",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2019-5018",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2020-1968",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2020-8286",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2021-22876",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2021-23839",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2021-28831",
+          "expected": "controllable"
+        },
+        {
+          "cve": "CVE-2021-4160",
+          "expected": "controllable"
+        }
+      ]
+    }
+  },
+  "why_this_exists": "item #4 scores the `affected` verdict, which vex_judge_v2 decides at Q1. Q2/Q3 only grade the evidence tier and no answer key carried a tier, so Joern and Z3 contributed 0 to every published figure. This is the axis on which they are measurable."
+}

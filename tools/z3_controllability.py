@@ -63,8 +63,68 @@ _OPS = {
     ast.Lt: lambda l, r: l < r, ast.LtE: lambda l, r: l <= r,
     ast.Eq: lambda l, r: l == r, ast.NotEq: lambda l, r: l != r,
     ast.Add: lambda l, r: l + r, ast.Sub: lambda l, r: l - r,
-    ast.Mult: lambda l, r: l * r,
+    ast.Mult: lambda l, r: l * r, ast.Mod: lambda l, r: l % r,
+    ast.Div: lambda l, r: l / r, ast.FloorDiv: lambda l, r: l / r,
+    # Bitwise only type-checks over bit-vectors, so a trigger using these is
+    # solved in bv mode from the start - see _needs_bv.
+    ast.BitAnd: lambda l, r: l & r, ast.BitOr: lambda l, r: l | r,
+    ast.BitXor: lambda l, r: l ^ r,
+    ast.LShift: lambda l, r: l << r, ast.RShift: lambda l, r: l >> r,
 }
+
+# Operators z3 rejects on Int: the trigger has to be solved over bit-vectors.
+_BITWISE = (ast.BitAnd, ast.BitOr, ast.BitXor, ast.LShift, ast.RShift, ast.Invert)
+
+
+def _needs_bv(tree):
+    """True when the predicate uses a bitwise operator.
+
+    `parser_flags & 0x0008` is a perfectly ordinary flag test, but z3's Int sort
+    has no `&`, so translating it raises and the whole CVE used to come back
+    `unparseable trigger`. Bit-vectors have the operator, so these triggers go
+    straight to bv mode instead of trying Int first."""
+    return any(isinstance(n, _BITWISE)
+               or (isinstance(n, ast.BinOp) and isinstance(n.op, _BITWISE))
+               for n in ast.walk(tree))
+
+
+def _const_int(node):
+    """The literal int a node folds to, or None if it is not a pure literal."""
+    try:
+        v = ast.literal_eval(node)
+    except Exception:
+        return None
+    return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
+def _dotted(node):
+    """`sqlite.max_length` -> "sqlite.max_length", for an Attribute chain.
+
+    The LLM sometimes writes a qualified name where it declared a flat one; a
+    dotted atom keeps the two distinguishable instead of failing to parse."""
+    parts = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+        return ".".join(reversed(parts))
+    return None
+
+
+def _inline_model_refs(trigger, model):
+    """Replace `environment_fixed['k']` in the trigger with the value declared for k.
+
+    The LLM occasionally refers to its own environment table from inside the
+    predicate instead of naming the variable. That is a reference to a value the
+    model already states, so it is substituted rather than treated as an opaque
+    subscript - otherwise the trigger is unparseable and the CVE scores no
+    verdict at all."""
+    env = (model or {}).get("environment_fixed") or {}
+    for k, v in env.items():
+        for q in ("'", '"'):
+            trigger = trigger.replace("environment_fixed[%s%s%s]" % (q, k, q), repr(v))
+    return trigger
 
 
 _BV = 32   # bit-width for the overflow-aware (bit-vector) re-check
@@ -136,6 +196,16 @@ def _to_z3(node, env, owner, bv=False):
         return z3.Not(_as_bool(_to_z3(node.operand, env, owner, bv)))
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
         return -_to_z3(node.operand, env, owner, bv)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Invert):
+        return ~_to_z3(node.operand, env, owner, bv)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Pow):
+        # `2**32 - 1` is a bound, not a computation: fold it. A symbolic exponent
+        # is left opaque rather than handed to z3, which has no BitVec power.
+        l, r = _const_int(node.left), _const_int(node.right)
+        if l is not None and r is not None and 0 <= r <= 64:
+            v = l ** r
+            return z3.BitVecVal(v, _BV) if bv else v
+        return _fresh(env, owner, "int", bv)
     if isinstance(node, ast.BinOp) and type(node.op) in _OPS:
         return _OPS[type(node.op)](_to_z3(node.left, env, owner, bv), _to_z3(node.right, env, owner, bv))
     if isinstance(node, ast.Compare) and len(node.ops) == 1:
@@ -143,6 +213,18 @@ def _to_z3(node, env, owner, bv=False):
         if op in (ast.In, ast.NotIn):
             return _fresh(env, owner, "bool", bv)       # membership is opaque
         return _OPS[op](_to_z3(node.left, env, owner, bv), _to_z3(node.comparators[0], env, owner, bv))
+    if isinstance(node, ast.Attribute):
+        nm = _dotted(node)
+        if nm:
+            if nm not in env:
+                env[nm] = z3.BitVec(nm, _BV) if bv else z3.Int(nm)
+                owner.setdefault(nm, "attacker")
+            return env[nm]
+        return _fresh(env, owner, "int", bv)
+    if isinstance(node, ast.Subscript):
+        # A model reference was already inlined by _inline_model_refs; anything
+        # left is an index into attacker data (`buf[i]`), which is opaque.
+        return _fresh(env, owner, "int", bv)
     if isinstance(node, ast.Name):
         if node.id in ("True", "False"):
             return z3.BoolVal(node.id == "True")
@@ -163,10 +245,12 @@ def _to_z3(node, env, owner, bv=False):
     raise ValueError("unsupported node %s" % type(node).__name__)
 
 
-def _solve(model, trigger, bv):
+def _solve(model, trigger, bv, pin_env=True):
     """z3 check result for the trigger over the given numeric domain (raises on parse).
 
-    bv=False uses unbounded Int; bv=True uses _BV-bit vectors (wrapping arithmetic)."""
+    bv=False uses unbounded Int; bv=True uses _BV-bit vectors (wrapping arithmetic).
+    pin_env=False drops the environment defaults, which is how decide() tells a
+    structural refutation apart from one the LLM's own numbers created."""
     vs = (model or {}).get("variables") or []
     env = {v["name"]: _mk_var(v, bv) for v in vs if v.get("name")}
     owner = {v["name"]: (v.get("owner") or "attacker") for v in vs if v.get("name")}
@@ -174,7 +258,7 @@ def _solve(model, trigger, bv):
     s = z3.Solver()
     s.add(expr)
     # pin environment variables the attacker cannot change to their default values
-    for name, val in (model.get("environment_fixed") or {}).items():
+    for name, val in ((model.get("environment_fixed") or {}) if pin_env else {}).items():
         if name in env and owner.get(name) == "environment":
             try:
                 s.add(env[name] == val)
@@ -191,13 +275,19 @@ def decide(model):
     trigger = (model or {}).get("trigger") or ""
     if not trigger.strip():
         return "unknown", "no formal model produced"
-    trigger = _normalize(trigger)
+    trigger = _inline_model_refs(_normalize(trigger), model)
     try:
-        r = _solve(model, trigger, bv=False)
+        bitwise = _needs_bv(ast.parse(trigger, mode="eval"))
+    except Exception as e:
+        return "unknown", "unparseable trigger: %s" % e
+    bv_first = bitwise
+    try:
+        r = _solve(model, trigger, bv=bitwise)
     except Exception as e:
         return "unknown", "unparseable trigger: %s" % e
     if r == z3.sat:
-        return "controllable", "attacker inputs satisfy the trigger under env defaults"
+        return "controllable", ("attacker inputs satisfy the trigger under env defaults"
+                                + (" (bit-vector domain)" if bitwise else ""))
     if r == z3.unsat:
         # Unbounded Int can't see wraparound, so an overflow-driven trigger (CWE-190)
         # comes out UNSAT here. Retry over fixed-width bit-vectors before asserting
@@ -207,7 +297,31 @@ def decide(model):
                 return "controllable", "attacker inputs satisfy the trigger via %d-bit integer overflow" % _BV
         except Exception:
             pass
-        return "not-controllable", "trigger unsatisfiable even under integer overflow; needs an environment value the attacker cannot set"
+        # UNSAT is not yet a refutation. The pinned environment values are the LLM's
+        # guesses at defaults, and measurement over this corpus found that 9 of 10
+        # refutations disappeared once the pins were dropped - the LLM had written an
+        # `environment_fixed` value its own trigger contradicts (`max_recursion_depth
+        # < 100` pinned to exactly 100; `table_info == 0` pinned to 1). A verdict that
+        # rests on an unverifiable number is reported as such instead of being quoted
+        # as "the attacker cannot reach this".
+        pins = {k: v for k, v in (model.get("environment_fixed") or {}).items()
+                if any(vv.get("name") == k and vv.get("owner") == "environment"
+                       for vv in (model.get("variables") or []))}
+        if pins:
+            for dom in (bv_first, not bv_first):
+                try:
+                    if _solve(model, trigger, bv=dom, pin_env=False) == z3.sat:
+                        return ("environment-dependent",
+                                "trigger is satisfiable, and unsatisfiable only once the "
+                                "model's environment defaults are pinned (%s); those "
+                                "defaults are LLM-asserted and unverified, so this is "
+                                "not a refutation"
+                                % ", ".join("%s=%s" % kv for kv in sorted(pins.items())))
+                except Exception:
+                    pass
+        return ("unknown",
+                "trigger unsatisfiable with the environment unpinned: the constraint "
+                "model contradicts itself, so it carries no verdict")
     return "unknown", "z3 returned unknown"
 
 
@@ -252,7 +366,30 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cve")
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--redecide", action="store_true",
+                    help="re-run the solver over the models already in "
+                         "data/controllability.json and report every verdict that "
+                         "moves. Use after a change to decide()/_to_z3: the LLM is "
+                         "not called, so the constraint models stay byte-identical "
+                         "and the diff isolates the solver change")
     a = ap.parse_args()
+
+    if a.redecide:
+        out = json.load(open(OUT, encoding="utf-8")) if os.path.exists(OUT) else {}
+        moved = []
+        for cve in sorted(out):
+            rec = out[cve]
+            old = rec.get("verdict")
+            verdict, detail = decide(rec.get("model"))
+            if verdict != old:
+                moved.append((cve, old, verdict, detail))
+            rec["verdict"], rec["detail"] = verdict, detail
+        json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+        print("  re-decided %d stored models; %d verdicts moved" % (len(out), len(moved)))
+        for cve, old, new, detail in moved:
+            print("    %-18s %-16s -> %-16s %s" % (cve, old, new, detail))
+        print("-> %s (%d)" % (OUT, len(out)))
+        return
 
     cti = json.load(open(CTI, encoding="utf-8")) if os.path.exists(CTI) else {}
     loc = json.load(open(LOC, encoding="utf-8")) if os.path.exists(LOC) else {}

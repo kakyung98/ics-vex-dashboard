@@ -2339,9 +2339,14 @@ it judged. A model-ranked guess can keep a CVE in the affected pool; it can neve
   <div class="kpi"><div class="kpi-n">__Q3C__</div><div class="kpi-l">Q3 adversary-controllable</div></div>
   <div class="kpi"><div class="kpi-n">__CLR__</div><div class="kpi-l">clearances from source analysis</div></div>
 </div>
-<p class="hint" style="margin:14px 2px 0"><b>Zero.</b> Neither Q2 nor Q3 cleared a single CVE:
-<span class="mono">unreachable 0</span>, and the one <span class="mono">not-controllable</span> verdict
-(Spring4Shell) is held by the entry-model gate. Once indirect calls are
+<p class="hint" style="margin:14px 2px 0"><b>Zero clearances, and not for want of verdicts.</b>
+Q2 returned <span class="mono">not-reachable</span> on <b>__Q2U__</b> CVEs and Q3 returned
+<span class="mono">not-controllable</span> on <b>__Q3N__</b>; none of them cleared anything, because
+Q2/Q3 are optional in <code>vex_judge_v2</code> by design &mdash; a library snapshot has no consumer in
+it, so &ldquo;not reachable from an in-snapshot root&rdquo; false-negatives on the attack surface itself.
+Q3's refutations went to <b>__Q3E__</b> <span class="mono">environment-dependent</span>: each one held
+only while the LLM's own <code>environment_fixed</code> defaults were pinned, and unpinning them made
+the trigger satisfiable again, so they are not refutations. Once indirect calls are
 handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
 failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
 <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
@@ -2353,7 +2358,9 @@ already asserted.</p>
    .replace("__SOUND_ROWS__", sound_rows) \
    .replace("__SNAP__", str(c["snapshots"])).replace("__TGT__", str(c["targets_located"])) \
    .replace("__Q2R__", str(c["q2_reachable"])).replace("__Q3C__", str(c["q3_controllable"])) \
-   .replace("__CLR__", str(c["clearances_from_source_analysis"]))
+   .replace("__CLR__", str(c["clearances_from_source_analysis"])) \
+   .replace("__Q2U__", str(c["q2_unreachable"])).replace("__Q3N__", str(c["q3_not_controllable"])) \
+   .replace("__Q3E__", str(c.get("q3_environment_dependent", 0)))
 
 
 _DECISION_PAGE = _decision_page() + _q23_scope_section()

@@ -1,0 +1,5434 @@
+{
+  "CVE-2018-25032": {
+    "cve": "CVE-2018-25032",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "input_data",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "distant_matches",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "distant_matches > 10",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-7547": {
+    "cve": "CVE-2015-7547",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "address_family",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "address_family == AF_UNSPEC or address_family == AF_INET6",
+      "environment_fixed": {
+        "AF_UNSPEC": 0,
+        "AF_INET6": 10
+      }
+    }
+  },
+  "CVE-2016-9318": {
+    "cve": "CVE-2016-9318",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "entity_expansion_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "crafted_xml_document",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_xml_document and not entity_expansion_enabled",
+      "environment_fixed": {
+        "entity_expansion_enabled": false
+      }
+    }
+  },
+  "CVE-2016-9840": {
+    "cve": "CVE-2016-9840",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "tree_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > tree_size",
+      "environment_fixed": {
+        "tree_size": 31
+      }
+    }
+  },
+  "CVE-2016-9841": {
+    "cve": "CVE-2016-9841",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 4096
+      }
+    }
+  },
+  "CVE-2017-13077": {
+    "cve": "CVE-2017-13077",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_within_range",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "four_way_handshake",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_within_range and four_way_handshake",
+      "environment_fixed": {
+        "attacker_within_range": true
+      }
+    }
+  },
+  "CVE-2017-13078": {
+    "cve": "CVE-2017-13078",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_within_range",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "four_way_handshake",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_within_range and four_way_handshake",
+      "environment_fixed": {
+        "attacker_within_range": true
+      }
+    }
+  },
+  "CVE-2017-14491": {
+    "cve": "CVE-2017-14491",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "can_send_dns_response",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "can_send_dns_response",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2017-16544": {
+    "cve": "CVE-2017-16544",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "filename",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "autocomplete_enabled",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "autocomplete_enabled and 'escape_sequence' in filename",
+      "environment_fixed": {
+        "autocomplete_enabled": true
+      }
+    }
+  },
+  "CVE-2018-14526": {
+    "cve": "CVE-2018-14526",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_in_range",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "client_in_range",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "eapol_key_integrity_checked",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not eapol_key_integrity_checked and attacker_in_range and client_in_range",
+      "environment_fixed": {
+        "eapol_key_integrity_checked": false
+      }
+    }
+  },
+  "CVE-2018-14567": {
+    "cve": "CVE-2018-14567",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "use_lzma",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "crafted_xml_file",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "use_lzma and crafted_xml_file",
+      "environment_fixed": {
+        "use_lzma": true
+      }
+    }
+  },
+  "CVE-2018-15473": {
+    "cve": "CVE-2018-15473",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "username",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "username != 'valid_user'",
+      "environment_fixed": {
+        "valid_user": "admin"
+      }
+    }
+  },
+  "CVE-2018-18065": {
+    "cve": "CVE-2018-18065",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_authenticated",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "can_send_crafted_udp_packet",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "is_authenticated and can_send_crafted_udp_packet",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2018-20843": {
+    "cve": "CVE-2018-20843",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "num_colons",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "num_colons > 10",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2018-8740": {
+    "cve": "CVE-2018-8740",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malformed_sql_input",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "can_execute_sql_commands",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "database_schema_corrupted",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "malformed_sql_input and can_execute_sql_commands and database_schema_corrupted",
+      "environment_fixed": {
+        "can_execute_sql_commands": true
+      }
+    }
+  },
+  "CVE-2019-11477": {
+    "cve": "CVE-2019-11477",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger via 32-bit integer overflow",
+    "model": {
+      "variables": [
+        {
+          "name": "tcp_gso_segs",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "total_segments",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "tcp_gso_segs > 0 and total_segments > 0 and tcp_gso_segs * total_segments < tcp_gso_segs",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-13103": {
+    "cve": "CVE-2019-13103",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_self_referential",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_crafted",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "is_self_referential and is_crafted",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-13106": {
+    "cve": "CVE-2019-13106",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_ext4_filesystem",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_ext4_filesystem",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-15903": {
+    "cve": "CVE-2019-15903",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (document_parsing=False, dtd_parsing=True); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_xml_input",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "dtd_parsing",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "document_parsing",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_xml_input && !dtd_parsing && document_parsing",
+      "environment_fixed": {
+        "dtd_parsing": true,
+        "document_parsing": false
+      }
+    }
+  },
+  "CVE-2019-17498": {
+    "cve": "CVE-2019-17498",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "offset",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "offset < 0 or offset >= memory_size",
+      "environment_fixed": {
+        "memory_size": 1024
+      }
+    }
+  },
+  "CVE-2019-3855": {
+    "cve": "CVE-2019-3855",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "packet_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "packet_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 4096
+      }
+    }
+  },
+  "CVE-2019-3856": {
+    "cve": "CVE-2019-3856",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "keyboard_prompt_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "keyboard_prompt_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2019-3858": {
+    "cve": "CVE-2019-3858",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (sftp_packet_received=False); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_compromised_server",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "sftp_packet_received",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_compromised_server and sftp_packet_received",
+      "environment_fixed": {
+        "sftp_packet_received": false
+      }
+    }
+  },
+  "CVE-2019-5481": {
+    "cve": "CVE-2019-5481",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_kerberos_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "is_ftp_kerberos_code_executed",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "is_double_free_condition_met",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_kerberos_enabled and is_ftp_kerberos_code_executed and is_double_free_condition_met",
+      "environment_fixed": {
+        "is_kerberos_enabled": true,
+        "is_ftp_kerberos_code_executed": true,
+        "is_double_free_condition_met": true
+      }
+    }
+  },
+  "CVE-2019-5482": {
+    "cve": "CVE-2019-5482",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "tftp_request_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "tftp_request_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2019-6111": {
+    "cve": "CVE-2019-6111",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "intercepted_communication",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "recursive_operation",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "malicious_file_names",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "intercepted_communication and recursive_operation and malicious_file_names",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-8457": {
+    "cve": "CVE-2019-8457",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "invalid_rtree_tables",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "invalid_rtree_tables",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-10648": {
+    "cve": "CVE-2020-10648",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_fit_image",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "boot_default_config",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_fit_image and boot_default_config",
+      "environment_fixed": {
+        "boot_default_config": true
+      }
+    }
+  },
+  "CVE-2020-11655": {
+    "cve": "CVE-2020-11655",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malformed_query",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "agginfo_initialization",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "malformed_query and not agginfo_initialization",
+      "environment_fixed": {
+        "agginfo_initialization": false
+      }
+    }
+  },
+  "CVE-2020-13434": {
+    "cve": "CVE-2020-13434",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "input_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2020-13630": {
+    "cve": "CVE-2020-13630",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "snippet_enabled",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "fts_query",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "snippet_enabled and fts_query > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-15778": {
+    "cve": "CVE-2020-15778",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "destination_argument",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "backtick in destination_argument",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-1971": {
+    "cve": "CVE-2020-1971",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malicious_certificate",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "malicious_crl",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "malformed_edipartyname",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "(malicious_certificate and malicious_crl) or malformed_edipartyname",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-22218": {
+    "cve": "CVE-2020-22218",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "packet_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "packet_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 4096
+      }
+    }
+  },
+  "CVE-2020-25681": {
+    "cve": "CVE-2020-25681",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "can_forge_dns_replies",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "dns_replies_accepted",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "can_forge_dns_replies and dns_replies_accepted",
+      "environment_fixed": {
+        "dns_replies_accepted": true
+      }
+    }
+  },
+  "CVE-2020-25684": {
+    "cve": "CVE-2020-25684",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger via 32-bit integer overflow",
+    "model": {
+      "variables": [
+        {
+          "name": "reply_destination_address",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "reply_destination_port",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "expected_destination_address",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "expected_destination_port",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "reply_destination_address == expected_destination_address and reply_destination_port == expected_destination_port",
+      "environment_fixed": {
+        "expected_destination_address": 192.1681,
+        "expected_destination_port": 53
+      }
+    }
+  },
+  "CVE-2020-8177": {
+    "cve": "CVE-2020-8177",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "URL",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "Content-Disposition",
+          "type": "str",
+          "owner": "environment"
+        },
+        {
+          "name": "use_J_flag",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "use_J_flag and 'filename=' in Content-Disposition",
+      "environment_fixed": {
+        "Content-Disposition": "attachment; filename=example.txt"
+      }
+    }
+  },
+  "CVE-2021-20227": {
+    "cve": "CVE-2021-20227",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "sql_query",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_local",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_local and sql_query == 'specific_triggering_query'",
+      "environment_fixed": {
+        "is_local": true
+      }
+    }
+  },
+  "CVE-2021-23840": {
+    "cve": "CVE-2021-23840",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_int_length",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "input_length >= max_int_length - 1",
+      "environment_fixed": {
+        "max_int_length": 2147483647
+      }
+    }
+  },
+  "CVE-2021-31571": {
+    "cve": "CVE-2021-31571",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "queue_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_queue_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "queue_size > max_queue_size",
+      "environment_fixed": {
+        "max_queue_size": 1000000
+      }
+    }
+  },
+  "CVE-2021-31572": {
+    "cve": "CVE-2021-31572",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "item_count",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "item_count > 0 and buffer_size < item_count * 4",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-33574": {
+    "cve": "CVE-2021-33574",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "sigevent_freed",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "sigevent_freed",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-3450": {
+    "cve": "CVE-2021-3450",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "X509_V_FLAG_X509_STRICT",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "certificate_verification_purpose",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "X509_V_FLAG_X509_STRICT and (not certificate_verification_purpose or certificate_verification_purpose)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-3517": {
+    "cve": "CVE-2021-3517",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_file",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "file_processed",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "out_of_bounds_read",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_file and file_processed and out_of_bounds_read",
+      "environment_fixed": {
+        "file_processed": true
+      }
+    }
+  },
+  "CVE-2021-3518": {
+    "cve": "CVE-2021-3518",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_file",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "application_linked_with_libxml2",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_file and application_linked_with_libxml2",
+      "environment_fixed": {
+        "application_linked_with_libxml2": true
+      }
+    }
+  },
+  "CVE-2021-35942": {
+    "cve": "CVE-2021-35942",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "pattern",
+          "type": "string",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "pattern != '' and pattern != '0' and pattern != '-0' and pattern != '+0'",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-36369": {
+    "cve": "CVE-2021-36369",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_influences_auth_method",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "server_changes_login_process",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_influences_auth_method and server_changes_login_process",
+      "environment_fixed": {
+        "server_changes_login_process": true
+      }
+    }
+  },
+  "CVE-2021-3711": {
+    "cve": "CVE-2021-3711",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "SM2_encrypted_data",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "EVP_PKEY_decrypt_called_first_time",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "EVP_PKEY_decrypt_called_second_time",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "out_parameter_first_call",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "out_parameter_second_call",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "SM2_encrypted_data and EVP_PKEY_decrypt_called_first_time and not out_parameter_first_call and EVP_PKEY_decrypt_called_second_time and out_parameter_second_call",
+      "environment_fixed": {
+        "EVP_PKEY_decrypt_called_first_time": true,
+        "EVP_PKEY_decrypt_called_second_time": true,
+        "out_parameter_first_call": false,
+        "out_parameter_second_call": true
+      }
+    }
+  },
+  "CVE-2021-3712": {
+    "cve": "CVE-2021-3712",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_nul_terminated",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_processed_by_affected_function",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "not is_nul_terminated and is_processed_by_affected_function",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-3999": {
+    "cve": "CVE-2021-3999",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "buffer_size == 1",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-41617": {
+    "cve": "CVE-2021-41617",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "can_configure_AuthorizedKeysCommand",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "can_configure_AuthorizedPrincipalsCommand",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "sshd_group_memberships",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "can_configure_AuthorizedKeysCommand and can_configure_AuthorizedPrincipalsCommand and sshd_group_memberships",
+      "environment_fixed": {
+        "sshd_group_memberships": true
+      }
+    }
+  },
+  "CVE-2021-42374": {
+    "cve": "CVE-2021-42374",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_lzma_compressed",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_crafted",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "applet_format",
+          "type": "str",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_lzma_compressed and is_crafted and (applet_format == 'decompress' or applet_format == 'format')",
+      "environment_fixed": {
+        "applet_format": "decompress"
+      }
+    }
+  },
+  "CVE-2021-42375": {
+    "cve": "CVE-2021-42375",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_shell_command",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "filtered_command_input",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_shell_command != '' and not filtered_command_input",
+      "environment_fixed": {
+        "filtered_command_input": false
+      }
+    }
+  },
+  "CVE-2021-42376": {
+    "cve": "CVE-2021-42376",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_shell_command",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "delimiter_present",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_shell_command.contains('\\x03') and delimiter_present",
+      "environment_fixed": {
+        "delimiter_present": true
+      }
+    }
+  },
+  "CVE-2021-42378": {
+    "cve": "CVE-2021-42378",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_awk_pattern",
+          "type": "string",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_awk_pattern != ''",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-42379": {
+    "cve": "CVE-2021-42379",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (use_after_free=False); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_awk_pattern",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "use_after_free",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_awk_pattern == 'trigger' and use_after_free == True",
+      "environment_fixed": {
+        "use_after_free": false
+      }
+    }
+  },
+  "CVE-2021-42380": {
+    "cve": "CVE-2021-42380",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_awk_pattern",
+          "type": "string",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_awk_pattern != ''",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-42386": {
+    "cve": "CVE-2021-42386",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_awk_pattern",
+          "type": "string",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_awk_pattern != ''",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-44228": {
+    "cve": "CVE-2021-44228",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "log_message",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "jndi_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "message_lookup_enabled",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "jndi_enabled and message_lookup_enabled and ('${' in log_message)",
+      "environment_fixed": {
+        "jndi_enabled": true,
+        "message_lookup_enabled": true
+      }
+    }
+  },
+  "CVE-2022-0547": {
+    "cve": "CVE-2022-0547",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "num_auth_plugins",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "deferred_reply_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "correct_credentials",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "num_auth_plugins > 1 and deferred_reply_enabled and correct_credentials",
+      "environment_fixed": {
+        "num_auth_plugins": 2,
+        "deferred_reply_enabled": true
+      }
+    }
+  },
+  "CVE-2022-0778": {
+    "cve": "CVE-2022-0778",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "invalid_curve_params",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "certificate_parsing",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "private_key_parsing",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "invalid_curve_params && (certificate_parsing || private_key_parsing)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-0847": {
+    "cve": "CVE-2022-0847",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "flags",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "page_cache",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "read_only_file",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not flags and page_cache and read_only_file",
+      "environment_fixed": {
+        "page_cache": true,
+        "read_only_file": true
+      }
+    }
+  },
+  "CVE-2022-1292": {
+    "cve": "CVE-2022-1292",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "shell_metacharacters",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "sanitization_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "automatic_execution",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "shell_metacharacters and not sanitization_enabled and automatic_execution",
+      "environment_fixed": {
+        "sanitization_enabled": false,
+        "automatic_execution": true
+      }
+    }
+  },
+  "CVE-2022-2068": {
+    "cve": "CVE-2022-2068",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "file_name",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "True",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-22576": {
+    "cve": "CVE-2022-22576",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "has_valid_credentials",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "can_reuse_connections",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_sasl_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "protocol",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "has_valid_credentials and can_reuse_connections and is_sasl_enabled and (protocol == 'SMTP(S)' or protocol == 'IMAP(S)' or protocol == 'POP3(S)' or protocol == 'LDAP(S)')",
+      "environment_fixed": {
+        "is_sasl_enabled": true
+      }
+    }
+  },
+  "CVE-2022-22822": {
+    "cve": "CVE-2022-22822",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_binding_capacity",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > max_binding_capacity",
+      "environment_fixed": {
+        "max_binding_capacity": 2147483647
+      }
+    }
+  },
+  "CVE-2022-22965": {
+    "cve": "CVE-2022-22965",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "jdk_version",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "deployment_type",
+          "type": "string",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "jdk_version >= 9 and deployment_type == 'WAR'",
+      "environment_fixed": {
+        "deployment_type": "WAR"
+      }
+    }
+  },
+  "CVE-2022-23303": {
+    "cve": "CVE-2022-23303",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "cache_access_pattern",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "hostapd_version",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "wpa_supplicant_version",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "cache_access_pattern and (hostapd_version < 210 or wpa_supplicant_version < 210)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-23852": {
+    "cve": "CVE-2022-23852",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "XML_CONTEXT_BYTES",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "XML_CONTEXT_BYTES > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-25235": {
+    "cve": "CVE-2022-25235",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "xml_data",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_valid_utf8",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not is_valid_utf8",
+      "environment_fixed": {
+        "is_valid_utf8": false
+      }
+    }
+  },
+  "CVE-2022-25236": {
+    "cve": "CVE-2022-25236",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "namespace_separator",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "namespace_uri",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "namespace_separator and namespace_separator in namespace_uri",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-25315": {
+    "cve": "CVE-2022-25315",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_memory_allocation",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > max_memory_allocation",
+      "environment_fixed": {
+        "max_memory_allocation": 2147483647
+      }
+    }
+  },
+  "CVE-2022-27774": {
+    "cve": "CVE-2022-27774",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "credentials",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "redirect_protocol",
+          "type": "str",
+          "owner": "environment"
+        },
+        {
+          "name": "redirect_port",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "use_authentication",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "credentials and (redirect_protocol != 'http' or redirect_protocol != 'https') and use_authentication",
+      "environment_fixed": {
+        "redirect_protocol": "http",
+        "redirect_port": 80,
+        "use_authentication": true
+      }
+    }
+  },
+  "CVE-2022-28391": {
+    "cve": "CVE-2022-28391",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "dns_ptr_record_value",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_vt_compatible_terminal",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_vt_compatible_terminal and 'netstat' in dns_ptr_record_value",
+      "environment_fixed": {
+        "is_vt_compatible_terminal": true
+      }
+    }
+  },
+  "CVE-2022-29824": {
+    "cve": "CVE-2022-29824",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "file_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "file_size > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 2147483647
+      }
+    }
+  },
+  "CVE-2022-32221": {
+    "cve": "CVE-2022-32221",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "handle_used_for_put",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "CURLOPT_READFUNCTION_set",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "CURLOPT_POSTFIELDS_provided",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "handle_reused_for_post",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "handle_used_for_put and CURLOPT_READFUNCTION_set and CURLOPT_POSTFIELDS_provided and handle_reused_for_post",
+      "environment_fixed": {
+        "handle_used_for_put": true,
+        "CURLOPT_READFUNCTION_set": true
+      }
+    }
+  },
+  "CVE-2022-37434": {
+    "cve": "CVE-2022-37434",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "large_gzip_header_extra_field",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "calls_inflateGetHeader",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "large_gzip_header_extra_field and calls_inflateGetHeader",
+      "environment_fixed": {
+        "calls_inflateGetHeader": true
+      }
+    }
+  },
+  "CVE-2022-40303": {
+    "cve": "CVE-2022-40303",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "xml_document_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "xml_parse_huge_enabled",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "xml_document_size > 1024 * 1024 * 1024 and xml_parse_huge_enabled",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-40304": {
+    "cve": "CVE-2022-40304",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "invalid_entity_definition",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "invalid_entity_definition",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-41742": {
+    "cve": "CVE-2022-41742",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "ngx_http_mp4_module_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "specially_crafted_file",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "ngx_http_mp4_module_enabled and specially_crafted_file",
+      "environment_fixed": {
+        "ngx_http_mp4_module_enabled": true
+      }
+    }
+  },
+  "CVE-2022-4304": {
+    "cve": "CVE-2022-4304",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "num_trial_messages",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "padding_mode",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "time_per_message",
+          "type": "real",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "num_trial_messages > 0 and (padding_mode == 'PKCS#1 v1.5' or padding_mode == 'RSA-OAEP' or padding_mode == 'RSASVE') and time_per_message > 0",
+      "environment_fixed": {
+        "time_per_message": 0.001
+      }
+    }
+  },
+  "CVE-2022-46908": {
+    "cve": "CVE-2022-46908",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "untrusted_CLI_script",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "safe_option",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "untrusted_CLI_script and not safe_option",
+      "environment_fixed": {
+        "safe_option": false
+      }
+    }
+  },
+  "CVE-2023-0215": {
+    "cve": "CVE-2023-0215",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "BIO_passed_by_caller",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "CMS_recipient_public_key",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "BIO_passed_by_caller and not CMS_recipient_public_key",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-0286": {
+    "cve": "CVE-2023-0286",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "certificate_chain",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "CRL",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "CRL_checking_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "X400_address_in_CRL",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "(CRL_checking_enabled and ((certificate_chain and CRL) or (certificate_chain and X400_address_in_CRL) or (CRL and X400_address_in_CRL)))",
+      "environment_fixed": {
+        "CRL_checking_enabled": true,
+        "X400_address_in_CRL": false
+      }
+    }
+  },
+  "CVE-2023-27533": {
+    "cve": "CVE-2023-27533",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "user_name",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "telnet_options",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "protocol",
+          "type": "string",
+          "owner": "environment"
+        },
+        {
+          "name": "server_negotiation",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "protocol == 'TELNET' and server_negotiation == True",
+      "environment_fixed": {
+        "protocol": "TELNET",
+        "server_negotiation": true
+      }
+    }
+  },
+  "CVE-2023-27536": {
+    "cve": "CVE-2023-27536",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "CURLOPT_GSSAPI_DELEGATION",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "connection_reuse",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "user_permissions",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "connection_reuse and not user_permissions and CURLOPT_GSSAPI_DELEGATION != 0",
+      "environment_fixed": {
+        "connection_reuse": true,
+        "user_permissions": false
+      }
+    }
+  },
+  "CVE-2023-28450": {
+    "cve": "CVE-2023-28450",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "max_edns0_udp_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "max_edns0_udp_size == 4096",
+      "environment_fixed": {
+        "max_edns0_udp_size": 4096
+      }
+    }
+  },
+  "CVE-2023-28484": {
+    "cve": "CVE-2023-28484",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_invalid_xsd",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "triggers_null_pointer_dereference",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_invalid_xsd and triggers_null_pointer_dereference",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-34035": {
+    "cve": "CVE-2023-34035",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "spring_mvc_on_classpath",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "number_of_secured_servlets",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "dispatcher_servlet_secured",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "endpoints",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "spring_mvc_on_classpath and number_of_secured_servlets > 1 and dispatcher_servlet_secured and 'DispatcherServlet' not in endpoints",
+      "environment_fixed": {
+        "spring_mvc_on_classpath": true,
+        "number_of_secured_servlets": 2,
+        "dispatcher_servlet_secured": true
+      }
+    }
+  },
+  "CVE-2023-38408": {
+    "cve": "CVE-2023-38408",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "search_path",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_safe_directory",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "is_attacker_controlled_system",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_attacker_controlled_system and not is_safe_directory",
+      "environment_fixed": {
+        "is_safe_directory": false,
+        "is_attacker_controlled_system": true
+      }
+    }
+  },
+  "CVE-2023-38545": {
+    "cve": "CVE-2023-38545",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "host_name_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "use_socks5_proxy",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "use_socks5_proxy and host_name_length > 255",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-44487": {
+    "cve": "CVE-2023-44487",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "can_send_http2_requests",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "can_cancel_http2_requests",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "can_send_http2_requests and can_cancel_http2_requests",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-45322": {
+    "cve": "CVE-2023-45322",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "memory_allocation_fails",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "memory_allocation_fails",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-46218": {
+    "cve": "CVE-2023-46218",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "cookie_domain",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "url_hostname",
+          "type": "string",
+          "owner": "environment"
+        },
+        {
+          "name": "psl_domain",
+          "type": "string",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "cookie_domain.lower() == psl_domain.lower() and cookie_domain != url_hostname",
+      "environment_fixed": {
+        "psl_domain": "example.com"
+      }
+    }
+  },
+  "CVE-2023-46850": {
+    "cve": "CVE-2023-46850",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "send_buffer",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "free_buffer",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "use_buffer",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "free_buffer and use_buffer and send_buffer",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-48795": {
+    "cve": "CVE-2023-48795",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_can_send_packets",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "using_chacha20_poly1305",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "using_cbc_encrypt_then_mac",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_can_send_packets and (using_chacha20_poly1305 or using_cbc_encrypt_then_mac)",
+      "environment_fixed": {
+        "using_chacha20_poly1305": true,
+        "using_cbc_encrypt_then_mac": true
+      }
+    }
+  },
+  "CVE-2023-4911": {
+    "cve": "CVE-2023-4911",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "GLIBC_TUNABLES",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "binary_suid",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "binary_suid and 'malicious' in GLIBC_TUNABLES",
+      "environment_fixed": {
+        "binary_suid": true
+      }
+    }
+  },
+  "CVE-2023-52425": {
+    "cve": "CVE-2023-52425",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "token_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "token_size > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2023-7104": {
+    "cve": "CVE-2023-7104",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "record_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "buffer_size > record_size",
+      "environment_fixed": {
+        "record_size": 1024
+      }
+    }
+  },
+  "CVE-2023-7256": {
+    "cve": "CVE-2023-7256",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "remote_capture_setup",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "getaddrinfo_called",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "freeaddrinfo_called",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "freeaddrinfo_required",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "remote_capture_setup and (getaddrinfo_called and (not freeaddrinfo_called) and freeaddrinfo_required)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2024-1086": {
+    "cve": "CVE-2024-1086",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (NF_ACCEPT=0, NF_DROP=-1); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "hook_verdict",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "drop_error",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "NF_DROP",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "NF_ACCEPT",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "hook_verdict == NF_DROP and drop_error > 0 and drop_error == NF_ACCEPT",
+      "environment_fixed": {
+        "NF_DROP": -1,
+        "NF_ACCEPT": 0
+      }
+    }
+  },
+  "CVE-2024-2379": {
+    "cve": "CVE-2024-2379",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "cipher_or_curve",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "use_wolfSSL",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "is_QUIC_connection",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "use_wolfSSL and is_QUIC_connection and (cipher_or_curve != 'known_cipher' and cipher_or_curve != 'known_curve')",
+      "environment_fixed": {
+        "use_wolfSSL": true,
+        "is_QUIC_connection": true
+      }
+    }
+  },
+  "CVE-2024-2961": {
+    "cve": "CVE-2024-2961",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "input_string",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "charset_params",
+          "type": "string",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "len(input_string) > buffer_size and charset_params == 'ISO-2022-CN-EXT'",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2024-6387": {
+    "cve": "CVE-2024-6387",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "authentication_attempts",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_attempts",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "time_period",
+          "type": "real",
+          "owner": "environment"
+        },
+        {
+          "name": "elapsed_time",
+          "type": "real",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "authentication_attempts >= max_attempts and elapsed_time >= time_period",
+      "environment_fixed": {
+        "max_attempts": 6,
+        "time_period": 300.0
+      }
+    }
+  },
+  "CVE-2020-11868": {
+    "cve": "CVE-2020-11868",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "spoofed_source_ip",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "spoofed_source_ip != 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-33909": {
+    "cve": "CVE-2021-33909",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "buffer_size > max_buffer_size",
+      "environment_fixed": {
+        "max_buffer_size": 4194304
+      }
+    }
+  },
+  "CVE-2023-32233": {
+    "cve": "CVE-2023-32233",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "batch_request_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "anonymous_set_count",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_batch_request",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "is_batch_request and batch_request_size > 0 and anonymous_set_count > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2014-0198": {
+    "cve": "CVE-2014-0198",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "ssl_mode_release_buffers",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "alert_condition_triggered",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "ssl_mode_release_buffers and alert_condition_triggered",
+      "environment_fixed": {
+        "ssl_mode_release_buffers": true
+      }
+    }
+  },
+  "CVE-2014-0221": {
+    "cve": "CVE-2014-0221",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "dtls_hello_message_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_invalid_handshake",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "is_invalid_handshake and dtls_hello_message_length > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2014-3470": {
+    "cve": "CVE-2014-3470",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "use_anonymous_ecdh",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "use_anonymous_ecdh",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-0207": {
+    "cve": "CVE-2015-0207",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "dtls_version",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "server_version",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "dtls_version == 1 and server_version == 2",
+      "environment_fixed": {
+        "server_version": 2
+      }
+    }
+  },
+  "CVE-2015-0209": {
+    "cve": "CVE-2015-0209",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malformed_ec_private_key",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "file_import_handled_improperly",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "malformed_ec_private_key and file_import_handled_improperly",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-0287": {
+    "cve": "CVE-2015-0287",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "choice_structure_reinitialized",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "adb_structure_reinitialized",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "attacker_input_valid",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "structure_reuse_enabled",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not choice_structure_reinitialized or not adb_structure_reinitialized or not attacker_input_valid or not structure_reuse_enabled",
+      "environment_fixed": {
+        "choice_structure_reinitialized": false,
+        "adb_structure_reinitialized": false,
+        "structure_reuse_enabled": true
+      }
+    }
+  },
+  "CVE-2015-0288": {
+    "cve": "CVE-2015-0288",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "invalid_key",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "invalid_key",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-0290": {
+    "cve": "CVE-2015-0290",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_non_blocking_io",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "is_64bit_x86",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "has_aes_ni_support",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_non_blocking_io and is_64bit_x86 and has_aes_ni_support",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-0292": {
+    "cve": "CVE-2015-0292",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "base64_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "decoded_length",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "base64_length < decoded_length",
+      "environment_fixed": {
+        "decoded_length": 0
+      }
+    }
+  },
+  "CVE-2015-1787": {
+    "cve": "CVE-2015-1787",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "client_auth_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "ephemeral_dh_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "client_key_exchange_length",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "client_auth_enabled and ephemeral_dh_enabled and (client_key_exchange_length == 0)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-8035": {
+    "cve": "CVE-2015-8035",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "compressed_data_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "decompression_error",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "compressed_data_length > 0 and not decompression_error",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2016-9842": {
+    "cve": "CVE-2016-9842",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "shift_amount",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "negative_integer",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "negative_integer < 0 and shift_amount > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2017-3737": {
+    "cve": "CVE-2017-3737",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "handshake_error",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "ssl_read_write_called",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "handshake_error and ssl_read_write_called",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2017-8872": {
+    "cve": "CVE-2017-8872",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2017-9047": {
+    "cve": "CVE-2017-9047",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "content_type",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "prefix_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "name_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "(content_type == XML_ELEMENT_CONTENT_ELEMENT) and (prefix_length + name_length >= buffer_size)",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2017-9048": {
+    "cve": "CVE-2017-9048",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "element_content_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "element_content_length >= buffer_size - 2",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2017-9049": {
+    "cve": "CVE-2017-9049",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "dict_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "key_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "fast_key_threshold",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "dict_size > 0 and key_length > fast_key_threshold",
+      "environment_fixed": {
+        "fast_key_threshold": 128
+      }
+    }
+  },
+  "CVE-2017-9050": {
+    "cve": "CVE-2017-9050",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "dict_size",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "string_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "offset",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "string_length > dict_size + offset",
+      "environment_fixed": {
+        "dict_size": 0
+      }
+    }
+  },
+  "CVE-2018-9251": {
+    "cve": "CVE-2018-9251",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "xml_content_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "lzma_memlimit_error",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "lzma_memlimit_error and xml_content_length > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-16168": {
+    "cve": "CVE-2019-16168",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "sz_field",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "attacker_input",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "attacker_input == 0 and sz_field == 0",
+      "environment_fixed": {
+        "sz_field": 0
+      }
+    }
+  },
+  "CVE-2019-19242": {
+    "cve": "CVE-2019-19242",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "column_index",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "table_index",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "expr_type",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "expr_type == 100 and column_index != table_index",
+      "environment_fixed": {
+        "expr_type": 100
+      }
+    }
+  },
+  "CVE-2019-19244": {
+    "cve": "CVE-2019-19244",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "use_distinct",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "use_window_function",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "order_by_usage",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "use_distinct and use_window_function and (order_by_usage == 1 or order_by_usage == 2)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-19317": {
+    "cve": "CVE-2019-19317",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "generated_column_name",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "colUsed_bitmask",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "generated_column_name != '' and colUsed_bitmask != 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-19603": {
+    "cve": "CVE-2019-19603",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "view_name",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "statement",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "statement == 'SELECT * FROM ' + view_name + ' LIMIT 1' and view_name != 'existing_view'",
+      "environment_fixed": {
+        "view_name": "existing_view"
+      }
+    }
+  },
+  "CVE-2019-19880": {
+    "cve": "CVE-2019-19880",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "order_by_clause",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "window_definition",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "constant_integer_value",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "constant_integer_value == 0 and 'ORDER BY' in order_by_clause and 'window_definition' in window_definition",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-19923": {
+    "cve": "CVE-2019-19923",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "left_join_view_query",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "distinct_select",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "right_side_view",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "null_pointer",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "left_join_view_query and distinct_select and right_side_view and not null_pointer",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-19924": {
+    "cve": "CVE-2019-19924",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "parser_tree",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "error_handling",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "error_handling or parser_tree != 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-19925": {
+    "cve": "CVE-2019-19925",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "pathname",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "pathname == 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-19926": {
+    "cve": "CVE-2019-19926",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "sqlite_version",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "sqlite_version == 33001 and attacker_input != 0",
+      "environment_fixed": {
+        "sqlite_version": 33001
+      }
+    }
+  },
+  "CVE-2019-19959": {
+    "cve": "CVE-2019-19959",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "filename",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "db_config",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "filename < 0 or db_config == 3001",
+      "environment_fixed": {
+        "db_config": 3001
+      }
+    }
+  },
+  "CVE-2019-20218": {
+    "cve": "CVE-2019-20218",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_sql",
+          "type": "string",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "attacker_input_sql != '' and 'WITH' in attacker_input_sql and 'ERROR' in attacker_input_sql",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2019-20388": {
+    "cve": "CVE-2019-20388",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "schema_memory",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "input_memory",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "input_memory > 0 and schema_memory == 0",
+      "environment_fixed": {
+        "schema_memory": 0
+      }
+    }
+  },
+  "CVE-2019-3823": {
+    "cve": "CVE-2019-3823",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "len",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "buffer",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "len == 5 and buffer != 0",
+      "environment_fixed": {
+        "len": 5
+      }
+    }
+  },
+  "CVE-2019-9936": {
+    "cve": "CVE-2019-9936",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "prefix_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "transaction_state",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "fts5_enabled",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "transaction_state and fts5_enabled and prefix_length > 0",
+      "environment_fixed": {
+        "fts5_enabled": true
+      }
+    }
+  },
+  "CVE-2019-9937": {
+    "cve": "CVE-2019-9937",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "fts5_interleaved_reads_writes",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "transaction_state",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "fts5_interleaved_reads_writes and transaction_state == 1",
+      "environment_fixed": {
+        "transaction_state": 1
+      }
+    }
+  },
+  "CVE-2020-13871": {
+    "cve": "CVE-2020-13871",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_sql",
+          "type": "string",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "attacker_input_sql == 'SELECT * FROM table_name WINDOW w AS ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW'",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-1967": {
+    "cve": "CVE-2020-1967",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "signature_algorithm",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "handshake_in_progress",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "tls_version",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "handshake_in_progress and tls_version == 3 and signature_algorithm not in [valid_signature_algorithms] and tls_version >= 3",
+      "environment_fixed": {
+        "handshake_in_progress": true,
+        "tls_version": 3,
+        "valid_signature_algorithms": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      }
+    }
+  },
+  "CVE-2020-24977": {
+    "cve": "CVE-2020-24977",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_entity",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_entity >= buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2020-29562": {
+    "cve": "CVE-2020-29562",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (irreversible_char=0); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "ucs4_input",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "irreversible_char",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "ucs4_input == irreversible_char and irreversible_char >= 0x110000",
+      "environment_fixed": {
+        "irreversible_char": 0
+      }
+    }
+  },
+  "CVE-2020-7595": {
+    "cve": "CVE-2020-7595",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "eof_reached",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "xml_entity_decode_state",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "xml_entity_decode_depth",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not eof_reached and xml_entity_decode_depth < 1000",
+      "environment_fixed": {
+        "xml_entity_decode_state": 0
+      }
+    }
+  },
+  "CVE-2020-9327": {
+    "cve": "CVE-2020-9327",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "generated_column",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "auxiliary_vtab_operator",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "generated_column and auxiliary_vtab_operator",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-23841": {
+    "cve": "CVE-2021-23841",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "issuer_field_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "issuer_field_valid",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "not issuer_field_valid or issuer_field_length < 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-27645": {
+    "cve": "CVE-2021-27645",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "netgroup_request",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "netgroup_request == 2 or netgroup_request == 3",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-36690": {
+    "cve": "CVE-2021-36690",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (table_info=1); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "sql_query",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "table_info",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "sql_query != 0 and table_info == 0",
+      "environment_fixed": {
+        "table_info": 1
+      }
+    }
+  },
+  "CVE-2021-42381": {
+    "cve": "CVE-2021-42381",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_pattern_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "free_called",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "hash_init_called",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_pattern_length > 0 and free_called and hash_init_called",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-42382": {
+    "cve": "CVE-2021-42382",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_pattern_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "free_var_index",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "pattern_byte_at_free_index",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_pattern_length > 0 and pattern_byte_at_free_index == free_var_index",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-42383": {
+    "cve": "CVE-2021-42383",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_pattern_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "free_called",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "evaluate_called",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_pattern_length > 0 and free_called and evaluate_called",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-42384": {
+    "cve": "CVE-2021-42384",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_pattern_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "handle_special_call_count",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_pattern_length > 0 and handle_special_call_count == 1",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-42385": {
+    "cve": "CVE-2021-42385",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_pattern_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "free_called",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "evaluate_called",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_pattern_length > 0 and free_called and evaluate_called",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-43396": {
+    "cve": "CVE-2021-43396",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_internal_state_reset",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "is_inbuf_null",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "is_internal_state_reset and is_inbuf_null",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-1473": {
+    "cve": "CVE-2022-1473",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "decode_certificate",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "process_liveliness",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "periodic_decode",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "decode_certificate and process_liveliness and periodic_decode",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-30065": {
+    "cve": "CVE-2022-30065",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_pattern_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "free_var_index",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "copyvar_condition",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "crafted_pattern_length > 0 and copyvar_condition and free_var_index < crafted_pattern_length",
+      "environment_fixed": {
+        "free_var_index": 0
+      }
+    }
+  },
+  "CVE-2022-34835": {
+    "cve": "CVE-2022-34835",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "command_length",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "buffer_size < 0 and command_length > 0",
+      "environment_fixed": {
+        "command_length": 16
+      }
+    }
+  },
+  "CVE-2022-3786": {
+    "cve": "CVE-2022-3786",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "email_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "dot_count",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "email_length > max_buffer_size and dot_count > 0",
+      "environment_fixed": {
+        "max_buffer_size": 256
+      }
+    }
+  },
+  "CVE-2022-4203": {
+    "cve": "CVE-2022-4203",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malicious_certificate_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "name_constraint_length",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "trusted_issuer_path_exists",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "ca_signed_malicious_certificate",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not trusted_issuer_path_exists and (ca_signed_malicious_certificate or not ca_signed_malicious_certificate) and malicious_certificate_length > name_constraint_length",
+      "environment_fixed": {
+        "trusted_issuer_path_exists": false,
+        "ca_signed_malicious_certificate": true
+      }
+    }
+  },
+  "CVE-2022-4450": {
+    "cve": "CVE-2022-4450",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "payload_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "header_length",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "name_length",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "file_format",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "payload_length == 0 and file_format",
+      "environment_fixed": {
+        "header_length": 10,
+        "name_length": 12
+      }
+    }
+  },
+  "CVE-2023-0216": {
+    "cve": "CVE-2023-0216",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malformed_data",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_untrusted",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "malformed_data and is_untrusted",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-0217": {
+    "cve": "CVE-2023-0217",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malformed_dsa_public_key",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_untrusted_source",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "malformed_dsa_public_key and is_untrusted_source",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-0401": {
+    "cve": "CVE-2023-0401",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (fips_enabled=False, hash_algorithm_known=True, legacy_provider_loaded=True); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "hash_algorithm_known",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "hash_algorithm_available",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "fips_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "legacy_provider_loaded",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "attacker_influences_pkcs7_data",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "attacker_influences_hash_algorithm",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "hash_algorithm_known and not hash_algorithm_available and (fips_enabled or not legacy_provider_loaded) and attacker_influences_pkcs7_data and attacker_influences_hash_algorithm",
+      "environment_fixed": {
+        "hash_algorithm_known": true,
+        "fips_enabled": false,
+        "legacy_provider_loaded": true
+      }
+    }
+  },
+  "CVE-2023-2650": {
+    "cve": "CVE-2023-2650",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "sub_identifier_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "message_size_limit",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "sub_identifier_size > 10000 or sub_identifier_size < -10000",
+      "environment_fixed": {
+        "message_size_limit": 102400
+      }
+    }
+  },
+  "CVE-2023-2975": {
+    "cve": "CVE-2023-2975",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "empty_associated_data",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "call_with_null_pointer",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "empty_associated_data and call_with_null_pointer",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-3446": {
+    "cve": "CVE-2023-3446",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (max_acceptable_length=10000); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "modulus_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_acceptable_length",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "modulus_length > max_acceptable_length and modulus_length <= 10000",
+      "environment_fixed": {
+        "max_acceptable_length": 10000
+      }
+    }
+  },
+  "CVE-2023-3817": {
+    "cve": "CVE-2023-3817",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "p_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "q_length",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "q_length > p_length",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-38546": {
+    "cve": "CVE-2023-38546",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "cookies_enabled",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "source_handle_read_cookies",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "file_exists",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "file_readable",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "cookies_enabled and not source_handle_read_cookies and file_exists and file_readable",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-39615": {
+    "cve": "CVE-2023-39615",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2023-4527": {
+    "cve": "CVE-2023-4527",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "tcp_response_size",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "no_aaaa_mode",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "address_family",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "address_family == 0 and no_aaaa_mode and tcp_response_size > 2048",
+      "environment_fixed": {
+        "tcp_response_size": 2049,
+        "no_aaaa_mode": true,
+        "address_family": 0
+      }
+    }
+  },
+  "CVE-2023-4806": {
+    "cve": "CVE-2023-4806",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults (bit-vector domain)",
+    "model": {
+      "variables": [
+        {
+          "name": "nss_module_implements_gethostbyname2_r",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "nss_module_implements_getcanonname_r",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "nss_module_implements_gethostbyname3_r",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "ipv6_count",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "ipv4_count",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "address_family",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "flags",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "(not nss_module_implements_gethostbyname3_r) and nss_module_implements_gethostbyname2_r and nss_module_implements_getcanonname_r and ipv6_count > 0 and ipv4_count > 0 and address_family == 2 and (flags & 0b111 == 0b111)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-5363": {
+    "cve": "CVE-2023-5363",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "keylen",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "ivlen",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "keylen != ivlen or keylen < 0 or ivlen < 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-5678": {
+    "cve": "CVE-2023-5678",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "p_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "q_length",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "p_length > 1000 or q_length > 1000",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-6246": {
+    "cve": "CVE-2023-6246",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "program_name_length",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "ident_argument_set",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "openlog_called",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not openlog_called or (not ident_argument_set and program_name_length > 1024)",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-6779": {
+    "cve": "CVE-2023-6779",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "message_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_int",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "message_length > max_int",
+      "environment_fixed": {
+        "max_int": 2147483647
+      }
+    }
+  },
+  "CVE-2023-6780": {
+    "cve": "CVE-2023-6780",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "message_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "message_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2024-0232": {
+    "cve": "CVE-2024-0232",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "array_index",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "node_count",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "free_flag",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "array_index >= node_count and free_flag",
+      "environment_fixed": {
+        "node_count": 10
+      }
+    }
+  },
+  "CVE-2024-0727": {
+    "cve": "CVE-2024-0727",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "malformed_field",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "pkcs12_field_null",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "malformed_field and pkcs12_field_null",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2024-4340": {
+    "cve": "CVE-2024-4340",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "nested_list_depth",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "nested_list_depth > 1000",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2024-6119": {
+    "cve": "CVE-2024-6119",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_otherName",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "expected_name",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_otherName and not expected_name",
+      "environment_fixed": {
+        "expected_name": false
+      }
+    }
+  },
+  "CVE-2025-15467": {
+    "cve": "CVE-2025-15467",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "iv_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_iv_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "iv_length > max_iv_size",
+      "environment_fixed": {
+        "max_iv_size": 12
+      }
+    }
+  },
+  "CVE-2025-29088": {
+    "cve": "CVE-2025-29088",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "sz",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "nBig",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "sz * nBig > 2147483647",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2015-0291": {
+    "cve": "CVE-2015-0291",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "invalid_signature_algorithms",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_renegotiation",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "invalid_signature_algorithms and is_renegotiation",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2016-3709": {
+    "cve": "CVE-2016-3709",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "user_input",
+          "type": "str",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "user_input != ''",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2017-7375": {
+    "cve": "CVE-2017-7375",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults (bit-vector domain)",
+    "model": {
+      "variables": [
+        {
+          "name": "entity_reference",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "parser_flags",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "not parser_flags & 0x0008 and entity_reference == 'malformed_entity_reference'",
+      "environment_fixed": {
+        "parser_flags": 0
+      }
+    }
+  },
+  "CVE-2018-16890": {
+    "cve": "CVE-2018-16890",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "ntlm_message_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "offset",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "ntlm_message_length > 0 and offset > ntlm_message_length",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2018-18440": {
+    "cve": "CVE-2018-18440",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "image_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "image_size > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 4096
+      }
+    }
+  },
+  "CVE-2019-13104": {
+    "cve": "CVE-2019-13104",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "crafted_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "crafted_length < 0 or crafted_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 4096
+      }
+    }
+  },
+  "CVE-2019-1547": {
+    "cve": "CVE-2019-1547",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "use_explicit_params",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "has_cofactor",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "number_of_signatures",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "use_explicit_params and not has_cofactor and number_of_signatures > 0",
+      "environment_fixed": {
+        "has_cofactor": false
+      }
+    }
+  },
+  "CVE-2019-3822": {
+    "cve": "CVE-2019-3822",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "nt_response_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "nt_response_length > buffer_size and nt_response_length >= 1000",
+      "environment_fixed": {
+        "buffer_size": 512
+      }
+    }
+  },
+  "CVE-2019-3857": {
+    "cve": "CVE-2019-3857",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "signal_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "padding_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "total_length",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "signal_length > 0 and padding_length > 0 and total_length > signal_length + padding_length and total_length < 2**31",
+      "environment_fixed": {
+        "total_length": "2**31 - 1"
+      }
+    }
+  },
+  "CVE-2019-5436": {
+    "cve": "CVE-2019-5436",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "packet_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_packet_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "packet_length > max_packet_size",
+      "environment_fixed": {
+        "max_packet_size": 512
+      }
+    }
+  },
+  "CVE-2020-35525": {
+    "cve": "CVE-2020-35525",
+    "verdict": "unknown",
+    "detail": "trigger unsatisfiable with the environment unpinned: the constraint model contradicts itself, so it carries no verdict",
+    "model": {
+      "variables": [
+        {
+          "name": "query",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "query == 2 and not environment_fixed['intersec_enabled']",
+      "environment_fixed": {
+        "intersec_enabled": 1
+      }
+    }
+  },
+  "CVE-2020-35527": {
+    "cve": "CVE-2020-35527",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "view_definition",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "nested_from_clause",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "alter_table_command",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "nested_from_clause and alter_table_command",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-8231": {
+    "cve": "CVE-2020-8231",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "connection_index",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "wrong_connection_index",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "connection_index != wrong_connection_index and attacker_input == wrong_connection_index",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2020-8285": {
+    "cve": "CVE-2020-8285",
+    "verdict": "environment-dependent",
+    "detail": "trigger is satisfiable, and unsatisfiable only once the model's environment defaults are pinned (max_recursion_depth=100); those defaults are LLM-asserted and unverified, so this is not a refutation",
+    "model": {
+      "variables": [
+        {
+          "name": "wildcard_pattern",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "max_recursion_depth",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "len(wildcard_pattern) > 0 and max_recursion_depth < 100",
+      "environment_fixed": {
+        "max_recursion_depth": 100
+      }
+    }
+  },
+  "CVE-2021-22890": {
+    "cve": "CVE-2021-22890",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_controlled_https_proxy",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "is_tls_1_3",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "curl_accepts_proxy_cert",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "proxy_mitm_attack_possible",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_controlled_https_proxy and is_tls_1_3 and curl_accepts_proxy_cert and proxy_mitm_attack_possible",
+      "environment_fixed": {
+        "is_tls_1_3": true,
+        "curl_accepts_proxy_cert": true,
+        "proxy_mitm_attack_possible": true
+      }
+    }
+  },
+  "CVE-2021-22924": {
+    "cve": "CVE-2021-22924",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "path1",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "path2",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "case_sensitive",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "issuer_cert",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "not case_sensitive and path1 != path2 and issuer_cert",
+      "environment_fixed": {
+        "case_sensitive": false
+      }
+    }
+  },
+  "CVE-2021-22945": {
+    "cve": "CVE-2021-22945",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_size",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "second_input_size",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "attacker_input_size > 0 and second_input_size > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2021-31239": {
+    "cve": "CVE-2021-31239",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "vfs_config",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input != vfs_config",
+      "environment_fixed": {
+        "vfs_config": 0
+      }
+    }
+  },
+  "CVE-2021-3449": {
+    "cve": "CVE-2021-3449",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_tls1_2",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "renegotiation_enabled",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "has_signature_algorithms",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "has_signature_algorithms_cert",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "is_tls1_2 and renegotiation_enabled and not has_signature_algorithms and has_signature_algorithms_cert",
+      "environment_fixed": {
+        "is_tls1_2": true,
+        "renegotiation_enabled": true
+      }
+    }
+  },
+  "CVE-2021-3998": {
+    "cve": "CVE-2021-3998",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "path_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "path",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "config_max_len",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "path_length > config_max_len",
+      "environment_fixed": {
+        "config_max_len": 4096
+      }
+    }
+  },
+  "CVE-2022-2274": {
+    "cve": "CVE-2022-2274",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "is_vulnerable_architecture",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "uses_2048_bit_rsa_key",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "attacker_can_trigger_rsa_computation",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "is_vulnerable_architecture and uses_2048_bit_rsa_key and attacker_can_trigger_rsa_computation",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2022-2347": {
+    "cve": "CVE-2022-2347",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "wLength",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "wLength > 4096",
+      "environment_fixed": {
+        "buffer_size": 4096
+      }
+    }
+  },
+  "CVE-2022-30552": {
+    "cve": "CVE-2022-30552",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 256
+      }
+    }
+  },
+  "CVE-2022-30790": {
+    "cve": "CVE-2022-30790",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 256
+      }
+    }
+  },
+  "CVE-2022-3602": {
+    "cve": "CVE-2022-3602",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "email_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "email_content",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "stack_layout",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "stack_protection",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "email_length > 0 and email_content % 4 == 0 and not stack_protection and stack_layout == 0",
+      "environment_fixed": {
+        "stack_protection": false,
+        "stack_layout": 0
+      }
+    }
+  },
+  "CVE-2023-27535": {
+    "cve": "CVE-2023-27535",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "previous_ftp_account",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "previous_alternative_to_user",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "previous_ftp_ssl_ccc",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "previous_use_ssl",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "current_ftp_account",
+          "type": "str",
+          "owner": "environment"
+        },
+        {
+          "name": "current_alternative_to_user",
+          "type": "str",
+          "owner": "environment"
+        },
+        {
+          "name": "current_ftp_ssl_ccc",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "current_use_ssl",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "previous_ftp_account != current_ftp_account or previous_alternative_to_user != current_alternative_to_user or previous_ftp_ssl_ccc != current_ftp_ssl_ccc or previous_use_ssl != current_use_ssl",
+      "environment_fixed": {
+        "current_ftp_account": "default_account",
+        "current_alternative_to_user": "default_alternative_to_user",
+        "current_ftp_ssl_ccc": 0,
+        "current_use_ssl": 0
+      }
+    }
+  },
+  "CVE-2023-27537": {
+    "cve": "CVE-2023-27537",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "thread1_free",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "thread2_free",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "hsts_data_shared",
+          "type": "bool",
+          "owner": "environment"
+        },
+        {
+          "name": "mutex_lock",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "(hsts_data_shared and not mutex_lock) and (thread1_free and thread2_free)",
+      "environment_fixed": {
+        "hsts_data_shared": true,
+        "mutex_lock": false
+      }
+    }
+  },
+  "CVE-2023-27538": {
+    "cve": "CVE-2023-27538",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "ssh_option_modified",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "connection_reused",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "ssh_option_modified and connection_reused",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2023-5156": {
+    "cve": "CVE-2023-5156",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_flag",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "attacker_flag",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2024-28882": {
+    "cve": "CVE-2024-28882",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "exit_notifications",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "session_validity",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "exit_notifications > 1 and session_validity > 0",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2024-33599": {
+    "cve": "CVE-2024-33599",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "client_requests",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "cache_size",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "client_requests > cache_size",
+      "environment_fixed": {
+        "cache_size": 100
+      }
+    }
+  },
+  "CVE-2024-33600": {
+    "cve": "CVE-2024-33600",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "response_type",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "cache_status",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "netgroup_response",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "client_request",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "notfound == client_request and cache_status == 0",
+      "environment_fixed": {
+        "response_type": 0,
+        "cache_status": 0,
+        "netgroup_response": 0
+      }
+    }
+  },
+  "CVE-2024-33601": {
+    "cve": "CVE-2024-33601",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "memory_allocation_failure",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "memory_allocation_failure",
+      "environment_fixed": {}
+    }
+  },
+  "CVE-2024-33602": {
+    "cve": "CVE-2024-33602",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "buffer_size",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "string_length",
+          "type": "int",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "string_length > buffer_size",
+      "environment_fixed": {
+        "buffer_size": 1024
+      }
+    }
+  },
+  "CVE-2024-5594": {
+    "cve": "CVE-2024-5594",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_controlled_push_reply",
+          "type": "bool",
+          "owner": "attacker"
+        },
+        {
+          "name": "server_control",
+          "type": "bool",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_controlled_push_reply and not server_control",
+      "environment_fixed": {
+        "server_control": false
+      }
+    }
+  },
+  "CVE-2025-29087": {
+    "cve": "CVE-2025-29087",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "separator_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "result_buffer_size",
+          "type": "int",
+          "owner": "environment"
+        },
+        {
+          "name": "max_memory_allocation",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "separator_length > 1024 * 1024 and result_buffer_size < max_memory_allocation",
+      "environment_fixed": {
+        "max_memory_allocation": 1024
+      }
+    }
+  },
+  "CVE-2025-3277": {
+    "cve": "CVE-2025-3277",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "attacker_input_length",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "sqlite_default_max_length",
+          "type": "int",
+          "owner": "environment"
+        }
+      ],
+      "trigger": "attacker_input_length > sqlite_default_max_length and attacker_input_length <= 2**32 - 1",
+      "environment_fixed": {
+        "sqlite_default_max_length": 2147483647
+      }
+    }
+  },
+  "CVE-2026-42945": {
+    "cve": "CVE-2026-42945",
+    "verdict": "controllable",
+    "detail": "attacker inputs satisfy the trigger under env defaults",
+    "model": {
+      "variables": [
+        {
+          "name": "request_uri",
+          "type": "str",
+          "owner": "attacker"
+        },
+        {
+          "name": "pcre_capture_count",
+          "type": "int",
+          "owner": "attacker"
+        },
+        {
+          "name": "replacement_string_contains_question_mark",
+          "type": "bool",
+          "owner": "attacker"
+        }
+      ],
+      "trigger": "pcre_capture_count > 0 and replacement_string_contains_question_mark",
+      "environment_fixed": {}
+    }
+  }
+}

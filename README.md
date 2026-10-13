@@ -538,6 +538,125 @@ weaker `component` tier. Every exclusion is recorded per CVE in
 Current coverage over the 267 collected snapshots: Q1 267/267
 (`present` 222, `component_only` 45), Q2 223, Q3 223.
 
+### Are Joern and Z3 actually measured? Until now, no
+
+Item #4 scores the `affected` verdict, and `vex_judge_v2` decides that at **Q1**.
+Q2 and Q3 only set the evidence tier, and no answer key carried a tier - so however
+much Joern and Z3 ran, their contribution to every published figure was exactly
+**0**. `data/vex_q23_gt.jsonl` (`tools/build_q23_gt.py`) is the axis on which they
+become measurable, scored by `tools/eval_q23_agreement.py` and runnable from the
+console. It is a **supplementary disclosure with no acceptance criterion**: it is
+not one of the two certification items.
+
+Its unit is a **(CVE, question) pair**, not a CVE. The population is the same 267
+collected-source CVEs as item #4; each can carry up to two labels, so 534 pairs are
+possible, **285** are labelled and 249 are held out. 41 CVEs carry no label at all.
+
+The authorities are deliberately outside this repository's own tooling:
+
+| question | authority | what it can say |
+|---|---|---|
+| **Q2** reachability | the component's **shipped public headers** | a vulnerable function declared in an installed header *is* an entry point for a consumer - no call-graph reasoning involved |
+| **Q3** controllability | **NVD CVSS v3 AV/UI** | `UI:N` with `AV` in {N,A,L} is an authority asserting the attacker alone supplies the triggering input |
+
+| | labels | scored | abstained | TP | FN | precision | recall |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| **Q2 - Joern** | 75 | 58 | 16 (21.3%) | 56 | 2 | - | **0.9655** |
+| **Q3 - Z3** | 210 | 166 | 8 (3.8%) | 166 | 0 | - | 1.0000 |
+
+Why so much is held out, by design:
+
+| question | reason | n |
+|---|---|---:|
+| Q2 | not on the public surface - whether a public function *calls* an interior one is a call-graph question, which is the SUT's own method | 143 |
+| Q2 | Q1 located no function (`component_only`), so there is nothing to reach | 45 |
+| Q2 | reserved `__` identifier: an installed header may declare it, but no consumer calls it | 4 |
+| Q3 | CVSS requires a second party or physical access (`UI:R` / `AV:P`) | 37 |
+| Q3 | the record is **CVSS v2**, which has no User Interaction metric at all | 19 |
+| Q3 | no CVSS vector in the NVD cache | 1 |
+
+**Neither precision is reported, and that is the finding, not an omission.** Both
+keys are one-sided by construction. A public header says nothing about whether an
+*internal* function is unreachable - the public ones call it. And CVSS `UI:R` does
+not mean the triggering value is not attacker-chosen: a malicious file is entirely
+attacker-written, the user merely opens it. With no negative class a precision
+comes out `1.0000` by construction and would describe the key rather than the
+solver, so the figure is withheld with its reason attached in the result JSON.
+
+**Q2's two misses are the whole point.** Joern returned `not-reachable` on only 4
+CVEs, and **2 of those 4 contradict the authority**: `GENERAL_NAME_cmp`
+(CVE-2020-1971) and zlib's `inflate` (CVE-2022-37434) are both declared in a
+shipped public header. This is exactly the false negative `joern_reachability.py`
+predicted in its own docstring - a library snapshot contains no consumer, so the
+attack surface itself looks unreachable from an in-snapshot root. The prediction
+now has a number behind it, and it is why **Q2 must never refute**.
+
+#### What building the key exposed in the solvers
+
+Measuring them found defects that running them never did:
+
+- **Z3 could not parse 5 of its own triggers.** `BitAnd`, `Mod`, `Pow`,
+  `Subscript` and `Attribute` were unimplemented, so `parser_flags & 0x0008`
+  (CVE-2017-7375) and `email_content % 4 == 0` (CVE-2022-3602) scored no verdict at
+  all. Bitwise needed more than a table entry - z3's `Int` sort has no `&`, so
+  `_needs_bv` now routes those predicates to bit-vectors from the start. Q3's
+  `unknown` went 6 -> 1, with **all 217 existing verdicts unchanged** (`--redecide`
+  re-runs the solver over the stored models, so a solver change can be isolated
+  from a model change).
+- **Every Z3 refutation rested on an unverifiable number.** Of 10
+  `not-controllable` verdicts, **9 became satisfiable once the LLM's own
+  `environment_fixed` defaults were unpinned** - the model had written a default
+  its own trigger contradicts (`max_recursion_depth < 100` pinned to exactly 100;
+  `table_info == 0` pinned to 1). Those are now reported as
+  `environment-dependent`, not as refutations. On this corpus Z3 refutes nothing,
+  which is the honest reading.
+- **Joern lost 11 CVEs to entry points that were not functions.** The CTI's
+  `entry_points` are LLM text, and it had written `awk`, `-J`,
+  `X509_V_FLAG_CRL_CHECK` (a macro) and `RSA decryption functions`. The
+  intersection with the CPG was empty and the query answered "no entry model"
+  rather than falling back. The fallback now happens *inside Scala*, after the
+  intersection, so the CPG decides which names are real: `unknown` 62 -> 51, no
+  other verdict moved. Those 11 are tagged in their detail as resting on
+  call-graph **roots** (629-6,167 of them), a far weaker basis than a named entry
+  point, and the distinction is recorded rather than averaged away.
+
+#### The answer key was wrong four times before it was right
+
+The first cut labelled 94 CVEs reachable. Auditing what each label actually cited
+removed 19 of them, every one for a false justification rather than a wrong
+conclusion:
+
+- OpenSSL's `ssl/ssl_locl.h` (`locl` = local) is an internal header; 5 labels
+  claimed `tls1_process_heartbeat` was public API.
+- SQLite's `src/sqliteInt.h` and dnsmasq's `src/dnsmasq.h` are internal; a project
+  with no `include/` tree stages nothing for installation, so an
+  implementation-directory header cannot be the public surface. Dropping
+  implementation-directory headers *wholesale* was measured first and **rejected**:
+  pre-1.1.0 OpenSSL really does keep its public `ssl/ssl.h` beside the sources, so
+  the blunt rule would have discarded 35 correct labels to remove 13 wrong ones.
+- `__vsyslog_internal` and `__tcp_retransmit_skb` are reserved `__` identifiers -
+  declared in an installed header, but not names a consumer calls.
+
+Two of those rounds were real bugs rather than judgement calls, and both failed
+**silently**: the implementation-directory bucket compared a snapshot-prefixed path
+against a snapshot-relative one and so never matched once, and `_cvss_parts`
+skipped the first vector segment unconditionally, which swallowed `AV` on CVSS v2
+records and reported 19 of them as unparseable rather than as what they are.
+
+#### The retired execution-verified scope
+
+Item #4 used to publish a third scope scoring only the ground truth's four
+`execution_verified` labels (2 CVEs x 2 builds, precision 0.6667). It has been
+**withdrawn**: those labels came from an execution-verification loop
+(`results/exec_verification*.json`, August 2025) that the Q0-Q3 solver pipeline
+replaced, so the scope advertised a figure produced by a methodology the SUT no
+longer uses, with no path to growing it - the collected corpus is overwhelmingly
+ICS firmware that cannot be built and triggered. The four labels **remain** in
+`data/vex_gt_all.jsonl`, because execution is sound evidence and deleting correct
+labels would be the worse error; what is gone is the claim that scoring them
+constitutes an independent evaluation. Independence is now carried by the Q2/Q3
+axis above.
+
 ### What earns a ground-truth label
 
 A label has to be **read out of code**, because the thing being tested is a
@@ -600,13 +719,16 @@ structurally 0 and precision the identity 1.0), filling them from vendor
 assertions, or counting undecidable as FP. So the claim is **"precision over the
 evidence-labelled subset of a 267 population"**, never "precision over 267".
 
-### Three scopes, because one number cannot carry the claim
+### Two scopes, because one number cannot carry the claim
 
 | scope | precision | TP/FP/TN/FN | worth |
 |---|---|---|---|
 | vulnerable build, gate **off** | **0.9718** | 138/4/0/0 | the quotable figure — largest scope sharing no oracle with the GT |
 | both builds, gate **live** | 0.9930 | 141/1/10/0 | the only scope that exercises `not_affected` — **circular** |
-| execution-verified only | 0.6667 | 2/1/1/0 | no shared oracle at all — too small to carry a verdict |
+
+A third scope (execution-verified only, 0.6667 over 4 labels) was **retired** —
+see *The retired execution-verified scope* above. Independent evidence is now
+carried by the Q2/Q3 axis, whose authorities sit outside this repository.
 
 > **The gated figure is circular.** The patch gate decides from the fix signature
 > plus the NVD range — the same two authorities the GT's `patch_verified` labels
@@ -615,14 +737,14 @@ evidence-labelled subset of a 267 population"**, never "precision over 267".
 > naming the shared-oracle cases. The quotable figure is measured on
 > `data/vex_v2_pregate.json` (`vex_judge_v2 --all --no-patch-gate`).
 >
-> The execution-verified scope is **below the acceptance threshold and published
-> anyway**. Its one false positive is CVE-2024-4340's patched build: execution
-> proves sqlparse 0.5.0 does not fault, but the fix added a guard *inside*
-> `flatten` rather than removing it, so Q1 still reads `present`, and no source
-> carries a fix commit for it, so the gate has no signature to clear it with.
-> **Without a fix diff, a patched build is indistinguishable from a vulnerable one
-> by presence alone.** That limit is the finding; the figure was not tuned to
-> remove it.
+> The retired execution-verified scope left one finding worth keeping, because it
+> is about the SUT rather than about that scope. Its single false positive was
+> CVE-2024-4340's patched build: execution proves sqlparse 0.5.0 does not fault,
+> but the fix added a guard *inside* `flatten` rather than removing it, so Q1 still
+> reads `present`, and no source carries a fix commit for it, so the gate has no
+> signature to clear it with. **Without a fix diff, a patched build is
+> indistinguishable from a vulnerable one by presence alone.** That limit stands
+> whatever scope is published.
 
 **#3 ground truth** (`tools/build_cpe_match_gt.py` → `data/cpe_match_eval.jsonl`, 41,868
 records over 6,461 CVEs and 532 vendors, uncapped) comes from CISA CSAF `affects` assertions cross-checked against NVD
