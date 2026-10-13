@@ -435,7 +435,7 @@ by score invites reading its top as the result.
 | GE | 209 | 27 | 63.2% | 27 | 0 | **1.0000** |
 | ABB | 166 | 24 | 54.8% | 24 | 0 | **1.0000** |
 | Advantech | 155 | 107 | 15.5% | 107 | 0 | **1.0000** |
-| *(그 외 522개 벤더)* | 3,518 | 1,799 | 50.2% | 1,788 | 11 | 0.9939 |
+| *(the other 522 vendors)* | 3,518 | 1,799 | 50.2% | 1,788 | 11 | 0.9939 |
 
 **Read precision and abstention together.** A vendor the matcher mostly declines to
 identify scores well on what little it does answer — Honeywell reads 1.0000 over 6 scored

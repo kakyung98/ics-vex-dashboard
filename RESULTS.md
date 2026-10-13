@@ -1,79 +1,84 @@
-# ICS-VEX 시스템 구축·평가 결과
+# ICS-VEX — build and evaluation results
 
-CISA ICS-CERT 어드바이저리에서 역방향으로 구축한 SBOM 데이터셋 위에서,
-**증거 기반 VEX 판정**을 수행하고 공개 정답지와 대조한 결과.
+Evidence-based VEX adjudication over an SBOM dataset reconstructed backwards from
+CISA ICS-CERT advisories, compared against the public ground truth.
 
-> **기준일 2026-09-10.** 이 문서는 현재 코드·데이터와 일치한다.
-> 이전 판에 있던 **추정 기반 학습 성능 수치는 §7 로 격리**했다 — 그 라벨(AV × 합성 노출도)이
-> 폐기되었고, 모델 가중치도 저장소에 없어 재현 불가하기 때문이다.
+> **As of 2026-09-10.** This document matches the current code and data.
+> The **estimate-based training figures** carried by earlier editions are **isolated in
+> §7** — their labels (AV x synthetic exposure) were retired, and the model weights are
+> not in the repository, so they cannot be reproduced.
 
 ---
 
-## 1. 축 — ICSA 어드바이저리
+## 1. The axis — ICSA advisories
 
-CISA 는 **ICSA 1건당 CSAF 문서 1개**를 발행한다. 본 시스템도 같은 축을 쓴다.
-그래야 산출물이 [cisagov/CSAF](https://github.com/cisagov/CSAF) 와 파일 단위로 대응한다.
+CISA publishes **one CSAF document per ICSA**. This system uses the same axis, so that
+its output corresponds file-for-file with [cisagov/CSAF](https://github.com/cisagov/CSAF).
 
 ```
-ICSA 1건  →  역방향 SBOM 1개 (reverse_sbom/<icsa-id>_SBOM-CVE.json)  →  VEX 문서 1개
+1 ICSA  ->  1 reverse SBOM (reverse_sbom/<icsa-id>_SBOM-CVE.json)  ->  1 VEX document
 ```
 
-| 축 | 개수 | 성격 |
+| axis | count | nature |
 |---|---|---|
-| ICSA 어드바이저리 (수집) | **3,767** | 2010–2026 전량 |
-| → CVE 포함 = SBOM 생성 | **3,695** | **문서 축** — VEX 1개씩 |
-| ICSA × CVE = statement | **13,025** | **판정 축** — VEX statement 와 1:1 |
-| 고유 CVE | **11,336** | 취약점 모집단 |
+| ICSA advisories (collected) | **3,767** | all of 2010-2026 |
+| -> contains a CVE = SBOM generated | **3,695** | **document axis** — one VEX each |
+| ICSA x CVE = statement | **13,025** | **adjudication axis** — 1:1 with a VEX statement |
+| distinct CVEs | **11,336** | the vulnerability population |
 
-ICSA 당 statement 는 **중앙값 1건, 최대 490건**. 편차가 크므로 CVE 단위 worst-case 집계
-(어느 한 자산이 affected 면 CVE 전체가 affected)는 폐기했다 — 같은 CVE 가 제품에 따라
-갈리는 것이 VEX 의 존재 이유다.
+Statements per ICSA run to a **median of 1 and a maximum of 490**. The spread is wide
+enough that worst-case aggregation per CVE (if any one asset is affected, the whole CVE
+is affected) was abandoned — the same CVE splitting by product is the reason VEX exists.
 
 ---
 
-## 2. 파이프라인
+## 2. Pipeline
 
-| 단계 | 스크립트 | 산출물 |
+| step | script | output |
 |---|---|---|
-| 1. 어드바이저리 수집 | `tools/fetch_cisa_advisories.py` | `data/cisa_advisories.json` |
-| 2. 악용신호 수집 | `tools/fetch_exploit_signals.py` | `data/exploit_signals.json` (KEV·EPSS) |
-| 3. 정답지 고정 | `tools/collect_gt_icsa.py` | `data/gt_icsa/` (CISA 원본 + manifest) |
-| 4. 역방향 SBOM | `src/build_reverse_sbom.py` | `reverse_sbom/*.json`, `data/findings.csv` |
-| 5. 모델 변형 주입 | `tools/inject_product_variants.py` | SBOM 에 `product_tree` 모델 단위 |
-| 6. OSS 코드 수집 | `tools/collect_code_gh.py` | `data/code_evidence.json` |
-| 7. ~~실행 검증~~ | **종료된 캠페인 — 재현 불가.** 러너는 b4fc1bc8 에서 제거됐다. 보존된 산출물(`results/exec_verification*.json`, `results/verify_build_logs/`)만 하류가 읽는다 | — |
-| 8. 배치 판정 | `src/vex_batch.py` | `results/vex_batch.jsonl` |
-| 9. Ground Truth | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
-| 10. 대조·평가 | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | 콘솔 리포트 |
-| 11. 사이트 빌드 | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
+| 1. collect advisories | `tools/fetch_cisa_advisories.py` | `data/cisa_advisories.json` |
+| 2. collect exploit signals | `tools/fetch_exploit_signals.py` | `data/exploit_signals.json` (KEV, EPSS) |
+| 3. pin the ground truth | `tools/collect_gt_icsa.py` | `data/gt_icsa/` (CISA originals + manifest) |
+| 4. reverse SBOM | `src/build_reverse_sbom.py` | `reverse_sbom/*.json`, `data/findings.csv` |
+| 5. inject model variants | `tools/inject_product_variants.py` | per-model `product_tree` in the SBOM |
+| 6. collect OSS code | `tools/collect_code_gh.py` | `data/code_evidence.json` |
+| 7. ~~execution verification~~ | **a closed campaign — not reproducible.** The runner was removed in b4fc1bc8; only the preserved output (`results/exec_verification*.json`, `results/verify_build_logs/`) is read downstream | — |
+| 8. batch adjudication | `src/vex_batch.py` | `results/vex_batch.jsonl` |
+| 9. ground truth | `src/build_ground_truth.py` | `data/vex_dataset.jsonl` |
+| 10. comparison and evaluation | `tools/compare_cisa_csaf.py`, `tools/eval_variant_derivation.py` | console report |
+| 11. site build | `tools/build_sbom_index.py`, `tools/build_site.py` | `*.html`, `*.json` |
 
-> 3·6·7 단계가 8·9 단계보다 **먼저** 실행되어야 한다. 증거 계층과 상류 판정을 읽어
-> 각 statement 의 tier 를 결정하기 때문이다.
-> 11 단계의 `build_sbom_index.py` 는 `build_site.py` 가 갱신하지 않으므로 별도로 돌려야 한다.
+> Steps 3, 6 and 7 must run **before** steps 8 and 9: those read the evidence tier and the
+> upstream verdicts to decide each statement's tier.
+> In step 11, `build_sbom_index.py` is not refreshed by `build_site.py` and has to be run
+> separately.
 
 ---
 
-## 3. 판정 규칙 — 증거만이 status 를 정한다
+## 3. The adjudication rule — only evidence sets a status
 
-강한 순서로 게이트를 통과시킨다. 어느 게이트도 통과하지 못하면 `under_investigation` 이다.
+Gates are tried strongest first. A statement that passes none of them is
+`under_investigation`.
 
-| tier | 조건 | status |
+| tier | condition | status |
 |---|---|---|
-| `upstream-asserted` | 벤더/CISA 가 `flags[].label` 로 이미 판정 | 그대로 채택 (출처 기록) |
-| `sbom-evidenced` | 영향 컴포넌트/모델이 이 SBOM 에 부재 | `not_affected` + `component_not_present` |
-| `execution-verified` | 취약 버전 빌드 → 재현 실행 → 트리거 관측 | `affected` (패치본에서 소멸 시 `fixed`) |
-| `under-investigation` | 그 외 전부 | `under_investigation` |
+| `upstream-asserted` | the vendor or CISA already adjudicated it via `flags[].label` | adopted as-is (source recorded) |
+| `sbom-evidenced` | the affected component or model is absent from this SBOM | `not_affected` + `component_not_present` |
+| `execution-verified` | build the vulnerable version -> run the reproducer -> observe the trigger | `affected` (`fixed` when it disappears in the patched build) |
+| `under-investigation` | everything else | `under_investigation` |
 
-**배치 맥락(네트워크 위치·노출도)은 status 를 정하지 않는다.** CISA justification 5종 중
-배치 환경을 근거로 인정하는 항목이 없고, 토폴로지가 바뀌면 그런 판정은 조용히 거짓이 된다.
-운영 맥락은 **SSVC 우선순위로만** 들어간다.
+**Deployment context (network position, exposure) does not set a status.** None of CISA's
+five justifications accepts deployment as grounds, and a verdict resting on it goes
+quietly false the moment the topology changes. Operational context enters **only as SSVC
+priority**.
 
-> `component_not_present` 는 버전 대조가 불필요한 유일한 justification 이다.
-> 이 코퍼스는 전 컴포넌트 버전이 `NOASSERTION` 이라, 실질적으로 유일하게 성립하는 경로다.
+> `component_not_present` is the only justification that needs no version comparison.
+> Every component version in this corpus is `NOASSERTION`, which makes it effectively the
+> only path that can be established at all.
 
 ---
 
-## 4. 결과 — VEX 판정 (statement 13,025)
+## 4. Results — VEX adjudication (13,025 statements)
 
 ```
 by status   UNDER_INVESTIGATION 13,002 (99.82%)
@@ -85,325 +90,368 @@ by tier     under-investigation 13,002
             execution-verified       5
 ```
 
-`not_affected` 18건의 justification: `component_not_present` 10 ·
-`vulnerable_code_not_in_execute_path` 5 · `vulnerable_code_not_present` 3.
+Justifications behind the 18 `not_affected`: `component_not_present` 10,
+`vulnerable_code_not_in_execute_path` 5, `vulnerable_code_not_present` 3.
 
-### 왜 99.8% 가 미확정인가 — 소스 확보 계층
+### Why 99.8% is undetermined — the source-availability tiers
 
-| 계층 | statement | 비율 |
+| tier | statements | share |
 |---|---|---|
-| `source-unavailable` (벤더 폐쇄 펌웨어) | 11,129 | 85.4% |
-| `source-pending` (OSS 이나 코드 미수집) | 1,842 | 14.1% |
+| `source-unavailable` (closed vendor firmware) | 11,129 | 85.4% |
+| `source-pending` (OSS, code not yet collected) | 1,842 | 14.1% |
 | `source-available-unverified` | 31 | 0.24% |
 | `execution-verified` | 5 | 0.04% |
 | `upstream-asserted` | 18 | 0.14% |
 
-**85.4% 는 소스를 원리적으로 얻을 수 없다.** 이것이 결함이 아니라 ICS 도메인의 실제 조건이며,
-본 연구가 겨냥하는 공백이다.
+**For 85.4% the source cannot be obtained in principle.** That is not a defect but the
+actual condition of the ICS domain, and it is the gap this work is aimed at.
 
 ---
 
-## 5. 공개 정답지 대조
+## 5. Comparison against the public ground truth
 
-### 5.1 정답지 자체가 거의 없다
+### 5.1 There is almost no ground truth to compare against
 
-CISA CSAF 저장소 전체(**3,984 파일**)를 전수 파싱한 결과:
+Parsing the entire CISA CSAF repository (**3,984 files**):
 
-| 항목 | 건수 | 비율 |
+| item | count | share |
 |---|---|---|
 | `document.category == "csaf_vex"` (OT) | **0** | **0%** |
-| `vulnerabilities[].flags` 보유 | **12** | **0.31%** |
-| `known_not_affected` 보유 | 25 | 0.64% |
-| `known_affected` 보유 | 3,890 | 99.9% |
+| carries `vulnerabilities[].flags` | **12** | **0.31%** |
+| carries `known_not_affected` | 25 | 0.64% |
+| carries `known_affected` | 3,890 | 99.9% |
 
-`flags` 를 가진 12건은 **전부 ICSA 접두사**이며 11건이 Siemens, 1건이 Mobotix 다.
-IT 어드바이저리 88건은 `csaf_vex` 프로파일이지만 `flags` 는 쓰지 않는다.
+All 12 documents that carry `flags` are **ICSA-prefixed**; 11 are Siemens and 1 is
+Mobotix. The 88 IT advisories use the `csaf_vex` profile but do not use `flags`.
 
-도입 시점: **2024-08-22 최초**(`icsa-24-235-03`), 2025-06-12·2025-08-14·2026-01-15·2026-05-14 소급 백필,
-**2026-02 이후 신규 발행 시점에 동반**. 2010–2023 의 2,155건에는 0건.
-연도별 채택률 2024 0.7% → 2025 0.8% → 2026 1.4%.
+Adoption timeline: **first on 2024-08-22** (`icsa-24-235-03`), retroactive backfills on
+2025-06-12, 2025-08-14, 2026-01-15 and 2026-05-14, and **shipped with new publications
+from 2026-02 onwards**. Zero across the 2,155 advisories of 2010-2023. Adoption by year:
+2024 0.7% -> 2025 0.8% -> 2026 1.4%.
 
-이 12건 / 18 (ICSA, CVE) 쌍을 `data/gt_icsa/` 에 원본째 고정했다.
+Those 12 documents and 18 (ICSA, CVE) pairs are pinned verbatim in `data/gt_icsa/`.
 
-### 5.2 상류 채택과 자체 유도의 분리
+### 5.2 Upstream adoption and own derivation are kept apart
 
-`tools/compare_cisa_csaf.py` 는 두 갈래를 절대 섞지 않는다.
+`tools/compare_cisa_csaf.py` never mixes the two.
 
 ```
-대조 가능 ICSA : 3,664
-CISA 프로파일  : csaf_security_advisory 3,664  (csaf_vex 0건)
+comparable ICSAs : 3,664
+CISA profile     : csaf_security_advisory 3,664  (csaf_vex 0)
 
-[A] 상류 채택 (CISA CSAF 를 그대로 실은 것) : 18   justification 일치 18/18
-    -> 자체 판정 성능이 아니다. 성능 지표에서 제외한다.
-[B] 자체 유도 대상                          : 0
+[A] upstream-adopted (carried straight from CISA CSAF) : 18   justification match 18/18
+    -> not own adjudication performance. Excluded from the metrics.
+[B] own derivation                                     : 0
 ```
 
-CISA 라벨을 먹고 CISA 라벨과 대조하면 무의미한 100% 가 나온다. 그래서 `route` 로 출처를
-구분하고 [A] 를 성능에서 제외한다.
+Feeding on CISA labels and then comparing against CISA labels yields a meaningless 100%.
+So `route` records the provenance and [A] is excluded from performance.
 
-### 5.3 모델 단위 독립 유도 — 실제 성적
+### 5.3 Per-model independent derivation — the real score
 
-`tools/eval_variant_derivation.py`. 입력을 자산소유자가 권고문에서 읽는 정보로 제한한다.
+`tools/eval_variant_derivation.py`. Inputs are restricted to what an asset owner can read
+from the advisory.
 
-| | 항목 | 사용 |
+| | item | use |
 |---|---|---|
-| **입력** | `product_tree` (모델 목록) | 허용 |
-| **입력** | `product_status.known_affected` | 허용 |
-| **정답** | `product_status.known_not_affected` | **금지** |
-| **정답** | `vulnerabilities[].flags[].label` | **금지** |
+| **input** | `product_tree` (the model list) | allowed |
+| **input** | `product_status.known_affected` | allowed |
+| **answer** | `product_status.known_not_affected` | **forbidden** |
+| **answer** | `vulnerabilities[].flags[].label` | **forbidden** |
 
-유도 규칙: **내 모델이 이 CVE 의 영향 목록에 없다 → `not_affected` / `component_not_present`.**
+Derivation rule: **my model is not in this CVE's affected list -> `not_affected` /
+`component_not_present`.**
 
 ```
-모델 단위 (product_id)   TP 278 / FP 676 / FN 0
+per model (product_id)   TP 278 / FP 676 / FN 0
                          precision 0.291 | recall 1.000 | F1 0.451
-(ICSA, CVE) 쌍           justification 일치 10/18
+(ICSA, CVE) pairs        justification match 10/18
 ```
 
-| 정답 label | 쌍 | 일치 |
+| ground-truth label | pairs | matched |
 |---|---|---|
 | `component_not_present` | 10 | **10 / 10** |
 | `vulnerable_code_not_in_execute_path` | 5 | 0 / 5 |
 | `vulnerable_code_not_present` | 3 | 0 / 3 |
 
-**제품 구조로 판정되는 건은 전부 맞히고, 소스코드 분석이 필요한 건은 전부 틀린다.**
-능력 경계와 정확히 일치한다.
+**Everything decided by product structure is right, and everything needing source analysis
+is wrong.** That matches the capability boundary exactly.
 
-FP 676건은 전부 **CISA 가 열거하지 않은** 모델이다. `known_not_affected` 를 입력에서 뺐으므로
-"영향 없음"과 "언급 안 됨"을 구별할 수 없다 — 알고리즘 결함이 아니라 **공개 데이터의 상한**이다.
+All 676 false positives are models **CISA did not enumerate**. With `known_not_affected`
+withheld from the input there is no way to tell "not affected" from "not mentioned" — not
+an algorithmic defect but **the ceiling of the public data**.
 
-18쌍 중 OSS 카탈로그로 컴포넌트를 특정할 수 있는 것은 `CVE-2023-38545`(libcurl) **1건뿐**이다.
-나머지 17건은 CISA 도 벤더도 어떤 컴포넌트인지 밝히지 않은 독점 코드다.
+Of the 18 pairs, the component can be identified from the OSS catalogue in exactly
+**one**: `CVE-2023-38545` (libcurl). The other 17 are proprietary code whose component
+neither CISA nor the vendor disclosed.
 
-### 5.4 모델 변형 주입
+### 5.4 Model-variant injection
 
-`tools/inject_product_variants.py` 가 CISA CSAF 의 `product_tree` 를 SBOM 에 주입한다.
+`tools/inject_product_variants.py` injects CISA CSAF's `product_tree` into the SBOM.
 
 ```
-SBOM 1,937개에 모델 변형 24,380개 주입, 취약점 6,721건을 영향 모델로 한정
-icsa-25-191-06: 컴포넌트 1개 → 65개 (모델 64 + 장비 1), CVE-2025-40742 → affects 44 모델
+24,380 model variants injected into 1,937 SBOMs, narrowing 6,721 findings to affected models
+icsa-25-191-06: 1 component -> 65 (64 models + 1 device), CVE-2025-40742 -> affects 44 models
 ```
 
-주입된 affected 목록은 **상류가 알려준 사실**이다. 이를 근거로 낸 판정은 `variant:source=cisa-csaf`
-로 표시되며 자체 유도와 구분된다.
+An injected affected list is **a fact supplied by upstream**. A verdict resting on it is
+marked `variant:source=cisa-csaf` and kept distinct from own derivation.
 
 ---
 
-## 6. 코드 수준 판정 — Q2–Q4
+## 6. Code-level adjudication — Q2-Q4
 
-코드 수준 질문 세 개가 구현되어 소스 스냅샷 **104건** 위에서 실행됐다. CISA 의 다섯 번째
-정당화 사유 `inline_mitigations_already_exist` 는 이 프로젝트에서 판정하지 않는다. (실행검증 캠페인은
-106건을 시도했으나 2건 —— CVE-2021-33909, CVE-2023-32233 —— 은 CVE Processor
-단계에서 즉시 실패해 소스를 받지 못했다. 코드 수준 분석의 모집단은 104다. 이 2건은
-이후 fix 가 건드린 파일만 부분 스냅샷으로 수집해 타깃은 지목했지만, Q3/Q4 는 돌리지 않는다.)
-Q4 의 `not-controllable` 1건(Spring4Shell)은 진입 모델 게이트가 `under_investigation` 으로
-묶는다 — Java 는 리플렉션·프레임워크 디스패치로 요청이 들어와 정적 그래프가 볼 수 없다. 공유 규칙은
-`src/vex_decision.py` 한 곳에 있고, 콘솔의 **VEX Flag Decision Logic** 페이지가 그
-모듈에서 생성되므로 문서와 구현이 어긋날 수 없다.
+Three code-level questions are implemented and were run over **104** source snapshots.
+CISA's fifth justification, `inline_mitigations_already_exist`, is not adjudicated by this
+project. (The execution-verification campaign attempted 106 CVEs, but 2 — CVE-2021-33909
+and CVE-2023-32233 — failed immediately at the CVE Processor step and no source was
+fetched. The population for code-level analysis is 104. Those 2 were later collected as
+partial snapshots covering only the files the fix touched, which is enough to name a
+target but not to run Q3/Q4.)
+Q4's single `not-controllable` verdict (Spring4Shell) is held at `under_investigation` by
+the entry-model gate — in Java requests arrive through reflection and framework dispatch,
+which a static graph cannot see. The shared rule lives in one place,
+`src/vex_decision.py`, and the console's **VEX Flag Decision Logic** page is generated
+from that module, so the documented rule and the executed rule cannot diverge.
 
-| Q | 도구 | 결과 | 면책 |
+| Q | tool | result | cleared |
 |---|---|---|---|
-| Q2 취약 코드 존재 | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS 쌍 0.333 | 0 |
-| Q3 실행 경로 | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
-| Q4 공격자 통제 | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
+| Q2 vulnerable code present | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS pairs 0.333 | 0 |
+| Q3 execution path | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
+| Q4 adversary control | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
 
-**소스 수준 분석은 이 코퍼스에서 아무것도 면책하지 못한다.** 이는 도구의 실패가
-아니라 공개 기록의 재현이다 — CISA OT CSAF 3,984건 전체에서
-`vulnerable_code_cannot_be_controlled_by_adversary` 와
-`inline_mitigations_already_exist` 는 **각각 0회** 쓰였다. 여기서 살아남는 정당화
-사유는 `component_not_present` 와 upstream 인용뿐이다.
+**Source-level analysis clears nothing on this corpus.** That is not a failure of the
+tooling but a reproduction of the public record — across all 3,984 CISA OT CSAF documents,
+`vulnerable_code_cannot_be_controlled_by_adversary` and
+`inline_mitigations_already_exist` have each been used **zero times**. The only
+justifications that survive here are `component_not_present` and upstream citation.
 
-### 6.1 취약 함수 지목 — 세 경로, 서로 다른 면책 권한
+### 6.1 Naming the vulnerable function — three routes, different clearance rights
 
-코드 수준 질문은 *어느 함수를* 판정할지 알아야 하고, 판정의 강도는 그 함수를
-고른 근거의 강도를 넘을 수 없다. 그래서 경로를 기록하고 그것이 결론의 상한이
-된다 (`data/vuln_targets.json`).
+A code-level question has to know *which function* it is judging, and the strength of the
+verdict cannot exceed the strength of the grounds on which that function was picked. So
+the route is recorded and becomes the ceiling on the conclusion
+(`data/vuln_targets.json`).
 
-| 경로 | 방법 | CVE | 면책 가능 |
+| route | method | CVEs | may clear |
 |---|---|---|---|
-| A `patch` | fix 커밋이 수정한 함수. fix 커밋은 NVD 레퍼런스, Debian 보안 트래커, 프로젝트 자체 보안 데이터(curl.se, openssl-library.org, w1.fi), 프로젝트 이력의 로컬 `git log` 검색(`git_grep_fix_commits.py`), CVE ID가 적힌 커밋 메시지에서 확보 (`extract_vuln_funcs.py`, diff 캐시 `fetch_patches.py`) | 75 | 가능 |
-| A `patch-partial` | A 와 같으나 fix 가 건드린 파일만 fix 부모 커밋에서 수집 (리눅스 CVE 2건) | 2 | **불가** — 전체 프로그램이 없음 |
-| B `description` | NVD 설명이 지목 **&&** 그 이름이 스냅샷에 실제 정의됨 (`locate_vuln_funcs.py`) | 28 | 가능 |
-| C `codebert` | Devign 파인튜닝 CodeBERT 랭킹 (`rank_codebert.py`) | 0 | **불가 — 미채택** |
-| — | 미확보 (CVE-2023-28450: fix 가 `#define` 기본값만 변경) | 1 | 불가 |
+| A `patch` | the functions the fix commit edited. Fix commits come from NVD references, the Debian security tracker, the projects' own security data (curl.se, openssl-library.org, w1.fi), a local `git log` search of project history (`git_grep_fix_commits.py`), and commit messages carrying the CVE ID (`extract_vuln_funcs.py`, diff cache `fetch_patches.py`) | 75 | yes |
+| A `patch-partial` | as A, but only the files the fix touched, collected at the fix's parent commit (2 Linux CVEs) | 2 | **no** — the whole program is absent |
+| B `description` | the NVD description names it **and** that name is actually defined in the snapshot (`locate_vuln_funcs.py`) | 28 | yes |
+| C `codebert` | Devign-finetuned CodeBERT ranking (`rank_codebert.py`) | 0 | **no — not adopted** |
+| — | not obtained (CVE-2023-28450: the fix changes only a `#define` default) | 1 | no |
 
-경로 B는 코드 문맥 필터를 건다 — 토큰이 `_`/CamelCase를 포함하거나, `foo()` 형태로
-호출되거나, "the X function"으로 명시돼야 한다. 그렇지 않으면 `and`·`service`·
-`process` 같은 영어 단어가 함수명과 우연히 겹쳐 잡힌다. 익스포트 매크로
-(`ZLIB_INTERNAL`)와 설명이 *호출되는* 함수로 언급한 libc(`memset`)는 배제한다.
+Route B applies a code-context filter — the token must contain `_` or CamelCase, be called
+as `foo()`, or be written as "the X function". Without it, ordinary English words like
+`and`, `service` and `process` are caught by coinciding with a function name. Export
+macros (`ZLIB_INTERNAL`) and libc functions the description mentions as being *called*
+(`memset`) are excluded.
 
-**경로 C는 측정된 음성 결과다.** 당시 확보된 타깃을 정답으로 채점하면 top-1
-0.056 / top-5 0.111 / **top-20 0.148** 로, 무작위(0.021) 대비 약 7배지만 정답의
-median 랭크가 4,000개 중 450위다. 이 모델은 "이 함수가 일반적으로 위험해
-보이는가"에 답하지 "이 CVE의 함수인가"에 답하지 않으므로, 85%의 경우 진짜 타깃이
-상위 20위 밖이다. 따라서 status 결정에 쓰지 않고 해당 CVE는 `under_investigation`
-으로 둔다 (`results/codebert_rank.json`).
+**Route C is a measured negative result.** Scored against the targets available at the
+time, it reached top-1 0.056 / top-5 0.111 / **top-20 0.148** — about 7x random (0.021),
+but the median rank of the correct answer was 450th of 4,000. The model answers "does this
+function look generally dangerous", not "is this the function of this CVE", so in 85% of
+cases the real target falls outside the top 20. It is therefore not used to decide a
+status and those CVEs stay `under_investigation` (`results/codebert_rank.json`).
 
-### 6.2 보수적 순회 — "못 찾음"을 "없음"으로 읽지 않기
+### 6.2 Conservative traversal — not reading "not found" as "not there"
 
-정적 분석에서 **"못 찾음"과 "없음"은 똑같이 보이고**, 그 혼동은 항상 같은 방향
-—— 거짓 면책 —— 으로 기운다. 실제로 네 건을 발견했고 그중 둘은 이미 판정을
-내놓은 뒤에 잡혔다.
+In static analysis **"not found" and "not there" look identical**, and the confusion
+always leans the same way — towards a false clearance. Four instances were found, two of
+them after a verdict had already been issued.
 
-| 불완전성 | 증상 | 대가 |
+| incompleteness | symptom | cost |
 |---|---|---|
-| K&R 정의 | tree-sitter가 구식 C에서 ERROR를 내고 정의를 잃음 (zlib 1.2.8 `inflate.c` ERROR 89개, `inflate` 소실) | 호출 대상이 도달 불가로 보임 |
-| 매크로 래핑 헤더 | `ZEXTERN int ZEXPORT inflate OF((...))` → 공개 API 3개만 인식 | 공격면이 축소돼 보임 |
-| 간접 호출 | 정적 그래프는 `f()`만 봄; 디스패치 테이블·콜백 (`sqlite3_create_function(..., rtreenode, ...)`) 비가시 | **거짓 `not_affected` 6건** (Q4 초판) |
+| K&R definitions | tree-sitter emits ERROR on old-style C and loses the definition (zlib 1.2.8 `inflate.c`: 89 ERRORs, `inflate` lost) | the callee looks unreachable |
+| macro-wrapped headers | `ZEXTERN int ZEXPORT inflate OF((...))` -> only 3 public APIs recognised | the attack surface looks smaller |
+| indirect calls | a static graph sees only `f()`; dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible | **6 false `not_affected`** (first Q4 run) |
 
-수정은 모두 같은 방향이다 — 도달 가능의 범위를 **넓히기만** 하고 좁히지 않는다.
-K&R·매크로 서명은 정규식 스캐너가 파서를 보조하고, 주소가 참조되는 모든 함수를
-오염 루트로 편입한다. 각 수정은 겨냥한 거짓 면책을 전부 제거했다.
+Every fix moves the same way — it only **widens** what counts as reachable, never narrows
+it. A regex scanner assists the parser on K&R and macro signatures, and every
+address-taken function is admitted as a taint root. Each fix removed the false clearances
+it was aimed at, in full.
 
-### 6.3 타깃 커버리지 — 7 → 105 / 106
+### 6.3 Target coverage — 7 -> 105 / 106
 
-코드 수준 질문은 타깃 없이는 성립하지 않으므로, 커버리지가 Q3/Q4를 묶는
-제약이다. 개선의 대부분은 도메인 난제가 아니라 **수집기와 추출기의 결함**을 고친
-결과였다.
+A code-level question does not exist without a target, so coverage is the constraint that
+binds Q3/Q4. Most of the gain came not from domain difficulty but from fixing **defects in
+the collector and the extractor**.
 
-| 단계 | 누적 | 고친 것 |
+| step | cumulative | what was fixed |
 |---|---|---|
-| 시작 | 7 | — |
-| 패치 diff 파싱 | 25 | tier-A 캐시가 6,000자에서 잘려 소스 hunk 소실 → 커밋 재수집 |
-| NVD 설명 지목 (path B) | 52 | 설명이 지목한 이름 ∩ 스냅샷 정의 |
-| NVD 레퍼런스 전량 | 55 | `fetch_nvd.py` 의 `references[:6]` 슬라이싱 |
-| 포지 어댑터 | 55 | gitweb `a=commitdiff`, cgit, kernel.org·openssl GitHub 폴백 |
-| GitHub PR 패치 | 60 | NVD 는 커밋(20)보다 PR(44)을 훨씬 자주 인용 |
-| 프로젝트 1차 출처 | — | curl.se JSON 의 fix 커밋(6건 모두 실제 수정으로 확인), openssl-library.org 권고의 커밋 링크 |
-| 커밋 메시지 검색 | — | 메시지에 CVE ID 가 적힌 커밋 (GitHub 검색, 37건 중 11건 적중 — 문서·테스트 커밋은 아래 검증에서 걸러짐) |
-| git hunk 헤더 | 70 | 추출기가 `ZLIB_INTERNAL`·`PREFIX` 같은 매크로를 함수명으로 읽던 4건 복구 |
-| 로컬 `git log` 검색 | 78 | 프로젝트별 blobless 미러에서 레퍼런스의 커밋·Fossil·티켓·버그 키로 검색. 이슈 번호는 그 프로젝트 저장소에만 묶음(Terrapin 에서 타 프로젝트 `#445` 가 OpenSSH 커밋에 오매칭) |
-| Debian 트래커 NOTE | 88 | NVD 가 커밋을 인용하지 않는 CVE 의 upstream fix 링크. bugzilla `show_bug.cgi?id=` 를 커밋으로 읽던 패턴 교정 |
-| 추출기 결함 수정 | 101 | K&R 정의(zlib 1.2.12 `inflate` 소실), 파일 간 이동한 함수(OpenSSH `subprocess`), `.c.in`·Perl(`c_rehash`)·Java, merge 커밋의 first-parent diff |
-| 1차 권고 인용 fix | 103 | u-boot·busybox·dropbear·spring 커밋, w1.fi 2022-1 패치, Alpine 패치(upstream 미수정) — 근거를 `ADVISORY_FIX` 에 기록 |
-| 부분 스냅샷(커널) | 104 | fix 가 건드린 파일만 fix 의 부모 커밋에서 수집. `patch-partial` 은 면책 불가, Q3/Q4 미실행 |
-| 파서·문맥 교정 | **105** | 리터럴 속 `'}'` 가 함수를 조기 종료(ash `readtoken1`), 오류 노드로 잘린 tree-sitter 범위, hunk 선행 문맥 속 함수 헤더(CVE-2021-33909 `seq_buf_alloc`), spring-security 6.1.0 추가 |
+| start | 7 | — |
+| patch diff parsing | 25 | the tier-A cache truncated at 6,000 chars and lost source hunks -> commits re-collected |
+| NVD description naming (path B) | 52 | names the description gives, intersected with snapshot definitions |
+| all NVD references | 55 | `references[:6]` slicing in `fetch_nvd.py` |
+| forge adapters | 55 | gitweb `a=commitdiff`, cgit, kernel.org and openssl GitHub fallbacks |
+| GitHub PR patches | 60 | NVD cites PRs (44) far more often than commits (20) |
+| project primary sources | — | fix commits from curl.se JSON (all 6 confirmed real fixes), commit links in openssl-library.org advisories |
+| commit-message search | — | commits carrying the CVE ID in the message (GitHub search, 11 hits of 37 — doc and test commits are filtered by the verification below) |
+| git hunk headers | 70 | recovered 4 cases where the extractor read macros like `ZLIB_INTERNAL` and `PREFIX` as function names |
+| local `git log` search | 78 | searching per-project blobless mirrors by the references' commit, Fossil, ticket and bug keys. An issue number is bound to that project's repository only (in Terrapin, another project's `#445` mis-matched an OpenSSH commit) |
+| Debian tracker NOTEs | 88 | upstream fix links for CVEs where NVD cites no commit. Corrected a pattern that read bugzilla `show_bug.cgi?id=` as a commit |
+| extractor defect fixes | 101 | K&R definitions (zlib 1.2.12 `inflate` lost), functions moved between files (OpenSSH `subprocess`), `.c.in`, Perl (`c_rehash`) and Java, first-parent diffs of merge commits |
+| fixes cited by primary advisories | 103 | u-boot, busybox, dropbear and spring commits, the w1.fi 2022-1 patch, Alpine patches (not fixed upstream) — grounds recorded in `ADVISORY_FIX` |
+| partial snapshots (kernel) | 104 | only the files the fix touched, at the fix's parent commit. `patch-partial` may not clear and Q3/Q4 are not run |
+| parser and context corrections | **105** | a `'}'` inside a literal ended a function early (ash `readtoken1`), tree-sitter ranges cut by error nodes, function headers in a hunk's leading context (CVE-2021-33909 `seq_buf_alloc`), spring-security 6.1.0 added |
 
-**기준선 교정 — 기존 60건 중 일부는 근거가 없었다.** 3건은 타깃 자체가 틀려 제거했다:
-CVE-2021-3517·3518 은 전부 테스트 함수(`test_xmlIO` 등, 루트의 `testapi.c`)였고,
-CVE-2023-48795(Terrapin, 스냅샷은 dropbear)는 libssh2 의 `src/packet.c` diff 가 파일명만
-같은 dropbear `packet.c` 에 대입되어 나온 함수였다. 또 4건에서 fix diff 어디에도 나오지
-않는 함수(`sftp_packetlist_flush` ×3, `nodePush`)가 오귀속으로 들어가 있어 제거했다.
+**Baseline correction — some of the original 60 had no grounds.** Three were removed for
+having the wrong target outright: CVE-2021-3517 and -3518 were entirely test functions
+(`test_xmlIO` and friends, in the root's `testapi.c`), and CVE-2023-48795 (Terrapin, whose
+snapshot is dropbear) produced a function by applying libssh2's `src/packet.c` diff to
+dropbear's merely identically-named `packet.c`. Four more carried functions that appear
+nowhere in the fix diff (`sftp_packetlist_flush` x3, `nodePush`) and were removed as
+misattributions.
 
-**추출 규칙 수정**
+**Extraction rule changes**
 
-- 릴리스 커밋 제외 — 캐시된 diff 의 24%(108개 중 26개)가 릴리스·버전범프 커밋. 같은 CVE 에 fix 커밋이 있으면 제외
-- 표 수 기준선 폐기 → fix 커밋이 닿는 함수의 **합집합**. 기준선은 캐시된 diff 사본 수에 따라 멤버가 바뀌었다. 합집합은 안전한 방향의 오류다 — Q3/Q4 는 모든 타깃이 도달 불가여야만 면책한다
-- 앵커 귀속 = 파일 첫 등장이 아니라 **hunk 위치에서 가장 가까운 등장**
-- 루트의 테스트 파일(`testapi.c`, `runtests.c`) 제외, 헤더 파일의 hunk 문맥은 투표에서 제외(가까운 프로토타입일 뿐)
-- **같은 파일인지는 내용으로 판정** — diff 의 식별자가 후보 파일에 50% 이상 있어야 함. 경로 모양 규칙은 양쪽으로 틀렸다(OpenBSD `usr.bin/ssh/` 와 portable 루트는 같은 파일, libssh2 `src/packet.c` 와 dropbear `packet.c` 는 다른 파일). 결정적 사례에서 식별자 겹침은 0.8·1.0·1.0 대 0.13·0.10 으로 갈렸다. 라이선스 주석의 기여자 이름은 식별자에서 뺀다
+- Release commits excluded — 24% of cached diffs (26 of 108) were release or version-bump
+  commits. They are dropped when the same CVE has a real fix commit.
+- The majority-vote baseline was dropped in favour of the **union** of functions the fix
+  commits touch. The baseline's membership changed with the number of cached diff copies.
+  The union errs in the safe direction — Q3/Q4 may clear only when *every* target is
+  unreachable.
+- Anchor attribution = the occurrence **nearest the hunk**, not the first in the file.
+- Test files at the root (`testapi.c`, `runtests.c`) excluded; hunk context from header
+  files excluded from the vote (it is only a nearby prototype).
+- **Whether two files are the same file is decided by content** — at least 50% of the
+  diff's identifiers must appear in the candidate file. Path-shape rules were wrong in both
+  directions (OpenBSD's `usr.bin/ssh/` and the portable root are the same file; libssh2's
+  `src/packet.c` and dropbear's `packet.c` are not). On the decisive cases the identifier
+  overlap split 0.8 / 1.0 / 1.0 against 0.13 / 0.10. Contributor names in licence comments
+  are excluded from the identifiers.
 
-**검증** — git 이 hunk 마다 적는 함수명 중 스냅샷에 실제로 존재하는 것을 기준으로 보면, 문맥이 있는
-패치 근거 40건 모두 fix 가 건드린 함수를 타깃이 전부 포함한다(평균 1.000). 이는 **내부 일관성
-지표**이지 타깃이 곧 취약 함수라는 증명은 아니다. CVE-2023-46850 은 fix 가 2.5.5 에 없는
-`tls_process_state` 를 고쳐, 타깃이 이후 리팩터링을 건너 추정된 것이라 약하다.
+**Verification** — measured against the function names git writes on each hunk, restricted
+to those that actually exist in the snapshot, all 40 patch-grounded cases with context have
+targets that contain every function the fix touched (mean 1.000). This is an **internal
+consistency measure**, not proof that a target is the vulnerable function. CVE-2023-46850
+is weak: its fix edits `tls_process_state`, which does not exist in 2.5.5, so the target
+was inferred across a later refactor.
 
-**측정 후 기각한 경로** — 릴리스 간 diff(12건 중 게이트 통과 1건), OSV 의 `fixed` SHA(릴리스
-커밋을 가리킴), CodeBERT 랭킹(top-20 recall 0.148).
+**Routes measured and rejected** — inter-release diffs (1 of 12 passed the gate), OSV's
+`fixed` SHA (points at release commits), CodeBERT ranking (top-20 recall 0.148).
 
-**70 → 105 검증** — 새로 얻은 타깃마다 "fix 가 실제로 바꾼 줄이 스냅샷의 그 함수 안에 있는가"를
-확인했고, 규칙 수정으로 기존 타깃에서 빠진 이름(25건 변동)은 모두 바뀐 줄을 하나도 담지 않은
-문맥 잡음이었다(예: libssh2 `sftp_packet_ask`, libxml2 `xmlBufferCat` 등). 역시 일관성 검사다.
+**70 -> 105 verification** — every newly obtained target was checked for "does a line the
+fix actually changed fall inside that function in the snapshot", and every name the rule
+changes dropped from an existing target (25 changes) turned out to be context noise
+containing none of the changed lines (libssh2 `sftp_packet_ask`, libxml2 `xmlBufferCat`
+and so on). This too is a consistency check.
 
-남은 1건과 약한 타깃:
+The one remaining case and the weak targets:
 
 ```
-1   CVE-2023-28450  fix 가 config.h 의 EDNS_PKTSZ 기본값만 바꿈 — 편집된 함수 없음
-    CVE-2021-33909, CVE-2023-32233  부분 스냅샷(patch-partial) — 면책 불가, Q3/Q4 미실행
-    CVE-2021-42375  fix 커밋 추정 (Claroty 의 트리거 문자 $ { } # ↔ ${#var} 파싱 수정)
-    CVE-2017-13077/13078  AP 측 KRACK 우회 커밋 — 프로토콜 수정이 아님
-    CVE-2022-28391  upstream 미수정, Alpine 패치 기준
-    CVE-2023-46850  fix 가 2.5.5 에 없는 tls_process_state 를 수정
+1   CVE-2023-28450  the fix changes only the EDNS_PKTSZ default in config.h - no function edited
+    CVE-2021-33909, CVE-2023-32233  partial snapshots (patch-partial) - may not clear, Q3/Q4 not run
+    CVE-2021-42375  fix commit inferred (Claroty's trigger characters $ { } # <-> the ${#var} parsing fix)
+    CVE-2017-13077/13078  AP-side KRACK workaround commits - not a protocol fix
+    CVE-2022-28391  not fixed upstream; the Alpine patch is the basis
+    CVE-2023-46850  the fix edits tls_process_state, which is absent from 2.5.5
 ```
 
 ---
 
-## 7. 데이터 성격 (정직한 고지)
+## 7. What the data is (stated plainly)
 
-**[진짜] CISA ICS-CERT 실데이터**
-- 어드바이저리 3,767건 (2010–2026), 고유 CVE 11,336개
-- CVE ↔ 장비(vendor/product) 매핑, CWE, CVSS v3/v4 벡터 — 전부 CISA 공식값
-- KEV 149 statements, EPSS 실측
-- CISA CSAF 원본 `product_tree` / `product_status` (정답지 및 모델 변형)
+**[real] CISA ICS-CERT data**
+- 3,767 advisories (2010-2026), 11,336 distinct CVEs
+- CVE <-> device (vendor/product) mapping, CWE, CVSS v3/v4 vectors — all official CISA values
+- KEV 149 statements, measured EPSS
+- original CISA CSAF `product_tree` / `product_status` (ground truth and model variants)
 
-**[합성] 장비 주변 컴포넌트 인벤토리**
-- 컴포넌트 구성은 OSS 카탈로그 귀속 + 벤더모듈 잔여로 생성
-- SBOM 컴포넌트 버전은 **전 건 `NOASSERTION`** — 버전 범위 대조가 원리상 불가능하다.
-  이 사실 자체가 `under_investigation` 의 주요 근거로 문장에 반영된다.
-- `ics:network-exposure` 속성은 합성값이다. **판정에 쓰이지 않는다** (§7 참조).
+**[synthetic] the component inventory around the device**
+- Component composition is generated from OSS catalogue attribution plus a vendor-module
+  remainder.
+- Every SBOM component version is **`NOASSERTION`**, which makes version-range comparison
+  impossible in principle. That fact is itself written into the statements as a primary
+  reason for `under_investigation`.
+- The `ics:network-exposure` attribute is synthetic. **It is not used in adjudication**
+  (see §7).
 
-**[제거됨] 추정 라벨**
-- 이전 판의 학습 타깃은 99.8% 가 `AV × 합성 노출도` 로 만든 추정치였다. 폐기했다.
-- 현재 `label` == 증거 기반 status (`UNDER_INVESTIGATION` 13,002 / `LIKELY_NOT_AFFECTED` 18 /
-  `LIKELY_AFFECTED` 5). 3-class 분류 학습은 **더 이상 성립하지 않는다.**
-
----
-
-## 8. 폐기된 실험 (이력 보존)
-
-> 아래는 **현재 데이터·코드로 재현되지 않는다.** 학습 라벨이 폐기되었고
-> (`models/` 의 가중치도 저장소에 없다), 남긴 이유는 무엇을 시도했고 왜 접었는지의 기록이다.
-
-**라벨 의존 수치 — 전부 무효**
-- SecureBERT 상태 분류 Macro F1 0.904 등 §5 계열 수치는 AV 추정 라벨 기준이다.
-  라벨이 잠재 속성(AV·노출도)의 결정론적 함수였으므로, 그 성능은 "VEX 판정 능력"이 아니라
-  **"산문에서 AV·노출도를 복원하는 능력"** 이었다. 축을 걷어낸 지금 측정 대상 자체가 없다.
-
-**라벨 무관 수치 — 관측 자체는 유효, 다만 미재현**
-- **SecureBERT ICS-DAPT**: CISA 어드바이저리 52,061 문장 continued MLM (3 epochs)
-  → ICS 텍스트 perplexity 4.01 → **2.23** (−44.4%), ICS 용어 복원 0.303 → 0.386 (n=145).
-  대부분의 이득이 epoch 0 에서 발생.
-- **CodeBERT 파인튜닝**: Devign(~21k C 함수) 취약탐지 F1 **0.659** (문헌 수준 도달).
-  그러나 "같은 함수의 취약 vs 패치 변형 구분"에는 전이되지 않음(0.457).
-  → 백포트 탐지는 분류가 아니라 **레퍼런스 매칭**으로 푸는 것이 옳다는 근거.
+**[removed] estimated labels**
+- 99.8% of the earlier edition's training targets were estimates built from `AV x synthetic
+  exposure`. They were retired.
+- `label` now equals the evidence-based status (`UNDER_INVESTIGATION` 13,002 /
+  `LIKELY_NOT_AFFECTED` 18 / `LIKELY_AFFECTED` 5). **Three-class classification training no
+  longer holds.**
 
 ---
 
-## 9. 한계
+## 8. Retired experiments (kept as a record)
 
-1. **확정 판정이 0.18%** — 13,025 중 실행검증 5 + 상류채택 18. 나머지는 전부
-   `under_investigation`. 확보한 증거의 정직한 반영이며, 늘리는 유일한 길은 실행검증
-   대상 CVE 를 늘리는 것이다.
-2. **자체 유도 성적은 모델 단위 재현에 한정** — §5.3 의 recall 1.000 은 "CISA 가 열거한
-   모델 중 not_affected 를 놓치지 않는다"는 뜻이고, precision 0.291 은 열거되지 않은
-   모델을 구별할 수 없다는 공개 데이터의 한계다.
-3. **소스코드 근거 justification 은 0/8** — `not_in_execute_path`, `vulnerable_code_not_present`
-   는 취약 컴포넌트가 특정되어야 하는데, 18쌍 중 17건은 컴포넌트명조차 공개되지 않았다.
-4. **버전 대조 불가** — 전 컴포넌트 `NOASSERTION`. 실행검증된 CVE 조차 해당 장비가 취약본을
-   쓰는지 확인할 수 없어 ICS 안전 우선 원칙으로 취약본을 가정한다(`version_unconfirmed: true`).
-5. **실행 검증의 구조적 제약** — 안전 설계상 자체 완결형 라이브러리만 다룬다. ICS CVE 대부분은
-   폐쇄 펌웨어라 원리상 이 경로에 오를 수 없고, 펌웨어에 번들된 OSS 만이 후보다.
-6. **컴포넌트 인벤토리는 합성** — 장비↔CVE↔CWE↔CVSS 만 CISA 실데이터다. 실제 자산의 SBOM 이
-   입력되면 `component_not_present` 레인의 성능은 달라진다(여기 수치는 하한이 아니다).
-7. **모델 변형은 CISA 의존** — `product_tree` 가 없는 어드바이저리(전체의 절반)에서는
-   모델 단위 판정이 불가능하다.
+> None of the below **reproduces on the current data and code.** The training labels were
+> retired and the weights under `models/` are not in the repository. They are kept as a
+> record of what was tried and why it was dropped.
+
+**Label-dependent figures — all void**
+- The §5-series figures such as SecureBERT status classification Macro F1 0.904 rest on
+  the AV-estimated labels. Because the label was a deterministic function of latent
+  attributes (AV, exposure), that performance was not "VEX adjudication ability" but
+  **"ability to recover AV and exposure from prose"**. With the axis removed there is
+  nothing left to measure.
+
+**Label-independent figures — the observations hold, but are not reproduced**
+- **SecureBERT ICS-DAPT**: continued MLM over 52,061 sentences of CISA advisories (3
+  epochs) -> ICS-text perplexity 4.01 -> **2.23** (-44.4%), ICS term recovery 0.303 ->
+  0.386 (n=145). Most of the gain occurs in epoch 0.
+- **CodeBERT finetuning**: vulnerability detection on Devign (~21k C functions) F1
+  **0.659**, at the level of the literature. It did not transfer to "tell the vulnerable
+  and patched variants of the same function apart" (0.457) — grounds for solving backport
+  detection as **reference matching** rather than as classification.
 
 ---
 
-## 10. 재현
+## 9. Limitations
+
+1. **0.18% of verdicts are conclusive** — 5 execution-verified plus 18 upstream-adopted out
+   of 13,025. Everything else is `under_investigation`. That is an honest reflection of the
+   evidence obtained, and the only way to raise it is to raise the number of CVEs that can
+   be execution-verified.
+2. **The own-derivation score covers per-model reproduction only** — §5.3's recall 1.000
+   means "among the models CISA enumerated, no `not_affected` is missed", and precision
+   0.291 is the limit of public data: models that were not enumerated cannot be told apart.
+3. **Source-grounded justifications are 0/8** — `not_in_execute_path` and
+   `vulnerable_code_not_present` require the vulnerable component to be identified, and in
+   17 of the 18 pairs not even the component name is public.
+4. **Version comparison is impossible** — every component is `NOASSERTION`. Even for an
+   execution-verified CVE there is no way to confirm the device runs the vulnerable build,
+   so ICS safety-first assumes it does (`version_unconfirmed: true`).
+5. **Execution verification is structurally limited** — by safety design it handles only
+   self-contained libraries. Most ICS CVEs are closed firmware and cannot reach this path
+   in principle; only OSS bundled into firmware is a candidate.
+6. **The component inventory is synthetic** — only device <-> CVE <-> CWE <-> CVSS is real
+   CISA data. With a real asset SBOM as input the `component_not_present` lane would
+   perform differently (the figures here are not a lower bound).
+7. **Model variants depend on CISA** — per-model adjudication is impossible for advisories
+   with no `product_tree`, which is half of them.
+
+---
+
+## 10. Reproducing
 
 ```bash
-python tools/fetch_cisa_advisories.py     # ~25분 (3,767건 크롤)
-python tools/fetch_exploit_signals.py     # ~5분 (KEV·EPSS)
+python tools/fetch_cisa_advisories.py     # ~25 min (crawls 3,767 advisories)
+python tools/fetch_exploit_signals.py     # ~5 min (KEV, EPSS)
 
 git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF
-python tools/collect_gt_icsa.py --csaf-repo /tmp/CSAF     # 정답지 고정
+python tools/collect_gt_icsa.py --csaf-repo /tmp/CSAF     # pin the ground truth
 
-python src/build_reverse_sbom.py                          # 수 분
+python src/build_reverse_sbom.py                          # a few minutes
 python tools/inject_product_variants.py --csaf-repo /tmp/CSAF
 
-python tools/collect_code_gh.py           # OSS 취약/패치 실코드 (gh 인증 필요)
-# 실행 검증은 재현 절차에 없다 - 러너가 제거되어 이 저장소만으로는 실행할 수 없다.
-# 하류는 보존된 results/exec_verification*.json 을 읽는다.
+python tools/collect_code_gh.py           # real vulnerable/patched OSS code (needs gh auth)
+# Execution verification is not in the reproduction steps - the runner was removed and
+# cannot be run from this repository alone. Downstream reads the preserved
+# results/exec_verification*.json.
 
-python src/vex_batch.py                   # 배치 판정
-python src/build_ground_truth.py          # 증거 계층 결정
+python src/vex_batch.py                   # batch adjudication
+python src/build_ground_truth.py          # decide the evidence tiers
 
-python tools/compare_cisa_csaf.py --csaf-repo /tmp/CSAF   # 상류/자체 분리 대조
-python tools/eval_variant_derivation.py                   # 모델 단위 독립 유도 성적
+python tools/compare_cisa_csaf.py --csaf-repo /tmp/CSAF   # upstream/own split comparison
+python tools/eval_variant_derivation.py                   # per-model independent derivation
 
 python tools/build_sbom_index.py && python tools/build_site.py
 ```
 
-캐시(`data/*.json`, `results/exec_verification*.json`)가 있으면 크롤 단계는 건너뛸 수 있다.
-실행 검증을 건너뛰면 `execution-verified` 계층이 비고, 상류 채택 18건만 확정으로 남는다.
+With the caches present (`data/*.json`, `results/exec_verification*.json`) the crawl steps
+can be skipped. Skipping execution verification leaves the `execution-verified` tier empty,
+and only the 18 upstream-adopted verdicts remain conclusive.
