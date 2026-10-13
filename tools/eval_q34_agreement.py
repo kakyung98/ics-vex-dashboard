@@ -178,7 +178,7 @@ def main():
     a = ap.parse_args()
     for p in (a.gt, a.reach, a.ctrl):
         if not os.path.isfile(p):
-            print("없음: %s" % p)
+            print("missing: %s" % p)
             return
     r = score(a.gt, a.reach, a.ctrl)
     os.makedirs(os.path.dirname(a.out), exist_ok=True)

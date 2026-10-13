@@ -112,7 +112,7 @@ def av_branch(av):
 
 def classify(av, answers):
     """Walk the tree.
-    answers: {node_id: True/False} (True = 예/yes, False = 아니오/no) for decision nodes.
+    answers: {node_id: True/False} (True = yes, False = no) for decision nodes.
     Returns {status, justification, path:[{node,q,answer}], av_branch, complete}.
     Stops (complete=False) at the first decision node with no answer supplied.
     """
