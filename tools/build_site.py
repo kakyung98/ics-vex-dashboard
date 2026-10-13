@@ -226,8 +226,10 @@ html = html.replace("async function run(){",
                     "  if(!Object.keys(VRANGES).length){try{VRANGES=await(await fetch('cve_version_ranges.json')).json();}catch(e){}}\n",
                     1)
 
-# Pages this static build does not publish, by key. See the note below cert.html.
-_SITE_EXCLUDE = {"cert"}
+# Pages this static build does not publish, by key. Both are runtime-only: they
+# POST to the local FastAPI server, so a static copy would be dead controls. See
+# the note below where the stale files are removed.
+_SITE_EXCLUDE = {"cert", "asset-vex"}
 
 # emit one static file per page (same shared shell/script, different nav+content)
 _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
@@ -250,10 +252,11 @@ for key, fname in [("analyzer", "index.html"),
 # /api/cert/*, which only the local FastAPI server answers, so a copy on Pages
 # would be a Run button that silently does nothing. It stays on the local
 # server, and the published nav does not advertise it.
-_stale = os.path.join(SITE, "cert.html")
-if os.path.isfile(_stale):
-    os.remove(_stale)
-    print("  removed stale site/cert.html")
+for _name in ("cert.html", "asset-vex.html"):
+    _stale = os.path.join(SITE, _name)
+    if os.path.isfile(_stale):
+        os.remove(_stale)
+        print("  removed stale site/%s" % _name)
 
 sz = lambda n: os.path.getsize(os.path.join(SITE, n)) / 1024
 print("wrote site/ pages + json:")
