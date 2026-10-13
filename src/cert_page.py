@@ -87,7 +87,7 @@ function itemCard(it){
       (it.acceptance==null ? '보조 공시' : '시험항목 #'+it.id)+'</span>'+
       '<b style="font-size:16px">'+it.name+'</b>'+
       '<span class="hint">'+(it.acceptance==null
-        ? '인증 시험항목이 아니며 합격기준이 없습니다'
+        ? (it.acceptance_label || '인증 시험항목이 아니며 합격기준이 없습니다')
         : '합격기준 정밀도 ≥ '+(it.acceptance*100).toFixed(0)+'%')+'</span></div>'+
     '<dl class="cert-grid">'+
       '<dt>지표</dt><dd><code>'+it.metric+'</code></dd>'+
@@ -176,13 +176,23 @@ function certPoll(id, job){
 function certShowQ34(res, box, j){
   const NAME = {Q3:'Q3 도달가능성 (Joern)', Q4:'Q4 제어가능성 (Z3)'};
   let h = '<div class="cert-warn" style="margin:0 0 12px">'+
+    '<b>합격기준은 모순 = 0 입니다.</b> 재현율에 기준을 걸 수 없습니다 &mdash; '+
+    '정답셋에 음성 클래스가 없어서 <b>아무것도 분석하지 않고 전부 양성이라 답하는 '+
+    '시스템이 재현율 100%를 받습니다</b>. 이 파이프라인이 입는 해는 한 방향뿐이라 '+
+    '(과잉 양성은 아무것도 해제하지 않아 안전하고, <b>과잉 반박이 거짓 해제를 만듭니다</b>) '+
+    '기준은 &ldquo;외부 권위가 양성이라 단언한 건을 솔버가 음성으로 주장하지 않을 것&rdquo; 입니다. '+
+    '인증 시험항목이 아니며, 이 기준은 본 저장소가 스스로 세운 것입니다.</div>'+
+    '<div class="cert-warn" style="margin:0 0 12px">'+
     '<b>보조 공시입니다.</b> 시험항목 #4의 정밀도는 <code>affected</code> 판정에 대한 값이고, '+
     '그 판정은 Q2(존재)에서 결정됩니다 &mdash; Q3/Q4는 증거 등급만 바꾸며 정답 라벨이 없었으므로 '+
     '공시된 어떤 수치에도 기여분이 <b>0</b> 이었습니다. 이 축은 그 두 엔진이 측정 대상이 되는 '+
     '지점이고, 권위는 저장소 바깥입니다(출하 공개 헤더 · NVD CVSS AV/UI).</div>';
   ['Q3','Q4'].forEach(function(q){
     const d = res.per_question[q]; if(!d) return;
-    h += '<div style="margin:0 0 14px"><b>'+NAME[q]+'</b>'+
+    const vcls = d.pass ? 'cert-pass' : 'cert-fail';
+    h += '<div style="margin:0 0 14px"><b>'+NAME[q]+'</b> '+
+      '<span class="'+vcls+'" style="font-weight:700">'+(d.pass?'PASS':'FAIL')+'</span> '+
+      '<span class="hint">모순 '+d.contradictions+'건 · 기준 모순 = 0</span>'+
       '<div class="cert-kv"><span>TP <b>'+d.TP+'</b></span><span>FP <b>'+d.FP+'</b></span>'+
       '<span>FN <b>'+d.FN+'</b></span><span>TN <b>'+d.TN+'</b></span>'+
       '<span>라벨 <b>'+d.labels+'</b></span>'+

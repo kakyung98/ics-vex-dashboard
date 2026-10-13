@@ -1,6 +1,8 @@
 {
   "test": "Q3 reachability / Q4 controllability agreement with external authorities",
-  "status": "supplementary disclosure - no certification acceptance criterion",
+  "status": "supplementary disclosure - not a certification test item; the criterion below is this repository's own, not the scheme's",
+  "pass": false,
+  "acceptance_criterion": "contradictions == 0 for both questions",
   "ground_truth": "data\\vex_q34_gt.jsonl",
   "sut": {
     "Q3": "tools/joern_reachability (Joern CPG call graph)",
@@ -24,6 +26,13 @@
       "precision": null,
       "precision_null_reason": "the answer key has no negative class for this question, so a precision would be 1.0000 by construction and would describe the key rather than the solver",
       "recall": 0.9655,
+      "contradictions": 2,
+      "contradiction_cases": [
+        "CVE-2020-1971",
+        "CVE-2022-37434"
+      ],
+      "acceptance_criterion": "contradictions == 0 (no refutation against an authority-confirmed positive)",
+      "pass": false,
       "misses": [
         {
           "cve": "CVE-2018-18440",
@@ -176,6 +185,10 @@
       "precision": null,
       "precision_null_reason": "the answer key has no negative class for this question, so a precision would be 1.0000 by construction and would describe the key rather than the solver",
       "recall": 1.0,
+      "contradictions": 0,
+      "contradiction_cases": [],
+      "acceptance_criterion": "contradictions == 0 (no refutation against an authority-confirmed positive)",
+      "pass": true,
       "misses": [
         {
           "cve": "CVE-2019-15903",
