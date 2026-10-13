@@ -41,13 +41,21 @@ sys.path.insert(0, os.path.join(BASE, "src"))
 import cpe_match_l0l3 as M
 from cpe_match_l0l3 import identify_product
 
-def _use_ai():
-    """Swap in the retrieval-backed matcher. Same contract, so only the binding
-    changes: the AI path runs only where the string cascade abstains."""
-    global M, identify_product
-    import cpe_match_ai as AI
-    M = AI
-    identify_product = AI.identify_product
+def _matcher(which):
+    """The matcher module for this run. Both expose the same contract, so the
+    choice is just which module `score` calls.
+
+    This used to rebind the module-level `M` and `identify_product`. That is
+    process-wide and permanent, so once an `ai` run had happened, every later
+    `string` run in the same process silently used the retrieval matcher and
+    reported its numbers under the other label - which is exactly what the web
+    app does, since it serves both variants from one process. Returning the
+    module instead keeps the selection inside the call that made it.
+    """
+    if which == "ai":
+        import cpe_match_ai as AI
+        return AI
+    return M
 
 DATA = os.path.join(BASE, "data", "cpe_match_eval.jsonl")
 OUT = os.path.join(BASE, "results", "cpe_match_precision.json")
@@ -170,8 +178,8 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     is ~14k components and takes minutes, so the caller needs to be able to report
     where it is without this function knowing anything about HTTP.
     """
-    if matcher == "ai":
-        _use_ai()
+    MM = _matcher(matcher)
+    identify = MM.identify_product
     gt, cases, conflicts, unreachable = load_gt(data)
     tp = fp = unlabelled = abstained = unadjudicable = 0
     fp_axis = collections.Counter()
@@ -184,13 +192,13 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
         comp = {"name": case["name"], "version": case["version"] or ""}
         if case.get("cpe"):
             comp["cpe"] = case["cpe"]
-        product, _how = identify_product(comp)
+        product, _how = identify(comp)
         if not product:
             abstained += 1              # identified nothing: no prediction to score
             continue
         if _how == "model-number":
             labels = case.get("cve_label") or {}
-            for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=strict):
+            for pred in MM.cves_for(comp, sbom_vendor=case["publisher"], strict=strict):
                 lab = labels.get(pred["cve"])
                 if lab is None:
                     unlabelled += 1
@@ -203,7 +211,7 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
             continue
         product_ok = any(same_product(product, p) for p in case["correct_products"])
         indeterminate = not product_ok and name_supports(product, case["name"])
-        for pred in M.cves_for(comp, sbom_vendor=case["publisher"], strict=strict):
+        for pred in MM.cves_for(comp, sbom_vendor=case["publisher"], strict=strict):
             if indeterminate:
                 unadjudicable += 1
                 continue
@@ -272,8 +280,11 @@ def main():
                                   "Pass it when scoring a non-default --data: the fixed "
                                   "output path silently overwrote the whole-corpus result "
                                   "with a 104-scoped one once already")
-    ap.add_argument("--matcher", choices=["string", "ai"], default="string",
-                    help="'ai' adds semantic retrieval behind the string cascade")
+    ap.add_argument("--matcher", choices=["string", "ai"], default="ai",
+                    help="'ai' (default) adds semantic retrieval behind the string "
+                         "cascade; 'string' is the cascade alone. The retrieval "
+                         "stage degrades to the cascade when the encoder is not "
+                         "installed, so 'ai' is safe on a fresh checkout")
     ap.add_argument("--strict", action="store_true",
                     help="SUT precision mode: drop co-listed-vendor CVEs")
     a = ap.parse_args()

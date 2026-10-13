@@ -43,14 +43,17 @@ ITEMS = {
         "name_en": "SBOM -> CVE identification precision",
         "metric": "precision = TP / (TP + FP)",
         "acceptance": 0.80,
-        "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
+        "sut": "src/cpe_match_ai (L0 NVD CPE index + L3 vendor guard + trained-encoder retrieval)",
         "dataset": {"gt": "data/cpe_match_eval.jsonl"},
         "runtime_hint": "약 8분 (14,173개 컴포넌트 × 전체 NVD CPE 인덱스)",
+        # The retrieval-backed matcher is the default SUT: the string cascade
+        # abstains on 6,633 of 14,173 components and every one of those answers
+        # was reachable, so the cascade alone is the ablation, not the system.
         "variants": [
-            {"key": "string", "label": "문자열 캐스케이드 (기본 SUT)"},
-            {"key": "ai", "label": "+ 학습 인코더 검색 (의미 기반 보강)"},
+            {"key": "ai", "label": "문자열 캐스케이드 + 학습 인코더 검색 (기본 SUT)"},
+            {"key": "string", "label": "문자열 캐스케이드만 (비교용 ablation)"},
         ],
-        "reference": {"string": 0.9499, "ai": 0.9490},
+        "reference": {"ai": 0.949, "string": 0.9499},
     },
     "4": {
         "id": "4",
