@@ -139,7 +139,7 @@ whose source could not be obtained. Failing to prove absence is not evidence of 
 look identical</b>. If the parser loses a function, its callees appear unreachable &mdash; and an unreachable
 vulnerable function reads as <span class="mono">not_affected</span>. So every uncertainty in this pipeline is
 resolved toward <span class="mono">affected</span> or <span class="mono">under_investigation</span>, never
-toward a clearance. The first Q3 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
+toward a clearance. The first Q4 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
 removed every one of them.</p>
 </div>
 
@@ -163,12 +163,12 @@ removed every one of them.</p>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q1&ndash;Q3)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q2&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
+      <div class="vm-step"><b>Q3 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
+      <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
     </div>
@@ -196,9 +196,9 @@ removed every one of them.</p>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
 <tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
     <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
-<tr><td class="mono">4</td><td>A code question (Q1&ndash;Q3) clears, the target is trustworthy and the graph complete</td>
+<tr><td class="mono">4</td><td>A code question (Q2&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
     <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
-<tr><td class="mono">5</td><td>Q1&ndash;Q3 all evaluated and all still vulnerable</td>
+<tr><td class="mono">5</td><td>Q2&ndash;Q4 all evaluated and all still vulnerable</td>
     <td><span class="pill pill-aff">affected</span></td></tr>
 <tr><td class="mono">&mdash;</td><td>anything else</td>
     <td><span class="pill pill-und">under_investigation</span></td></tr>
@@ -211,7 +211,7 @@ topology changes &mdash; so operational context enters only as an SSVC priority,
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">The code questions, as implemented</h2>
 <table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
-<tbody><tr><td class="mono"><b>Q1</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 104 source-collectable CVEs: present 92, component-only 12 (the function could not be located)</td></tr><tr><td class="mono"><b>Q2</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 104 source-collectable CVEs: reachable 65, not-reachable 1, unknown 38 (16 oversized snapshots skipped, 12 with no located function)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 56, not-controllable 3, unknown 45 (trigger not formalisable to SMT); the model formalises, the solver decides</td></tr></tbody></table>
+<tbody><tr><td class="mono"><b>Q2</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 104 source-collectable CVEs: present 92, component-only 12 (the function could not be located)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 104 source-collectable CVEs: reachable 65, not-reachable 1, unknown 38 (16 oversized snapshots skipped, 12 with no located function)</td></tr><tr><td class="mono"><b>Q4</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 213, not-controllable 0, environment-dependent 9. The solver refutes NOTHING on this corpus, and that is the honest reading: every refutation it used to report disappeared once the LLM's own `environment_fixed` defaults were unpinned, so those cases are reported as environment-dependent rather than quoted as clearances</td></tr></tbody></table>
 </div>
 
 <div class="card">
@@ -226,21 +226,26 @@ it judged. A model-ranked guess can keep a CVE in the affected pool; it can neve
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">Why the call graph is walked conservatively</h2>
 <table class="tbl"><thead><tr><th>Incompleteness</th><th>What it does</th><th>Why it would be a false clearance</th></tr></thead>
-<tbody><tr><td><b>K&R definitions</b></td><td class="hint">tree-sitter emits ERROR nodes on old-style C and drops the definition (zlib 1.2.8's inflate.c: 89 errors, `inflate` lost). A regex scanner supplements the parse.</td><td class="hint" style="font-size:13px">a lost definition makes its callees look unreachable = a false clearance</td></tr><tr><td><b>Macro-wrapped headers</b></td><td class="hint">`ZEXTERN int ZEXPORT inflate OF((z_streamp, int));` parsed to 3 of zlib's public functions; a regex fallback recovers them.</td><td class="hint" style="font-size:13px">a missed public entry shrinks the attack surface = a false clearance</td></tr><tr><td><b>Indirect calls</b></td><td class="hint">a static graph sees only `f()`. Dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible, so every address-taken function is treated as a root.</td><td class="hint" style="font-size:13px">this single fix overturned all 6 clearances the first Q3 run produced</td></tr><tr><td><b>Entry-model completeness</b></td><td class="hint">Q3 seeds its walk from I/O readers, the public API and address-taken functions. When neither of the last two is found - Java, where requests arrive through reflection and framework dispatch - a missing tainted path is not evidence.</td><td class="hint" style="font-size:13px">Spring4Shell (CVE-2022-22965) was cleared as not-controllable by exactly this gap</td></tr><tr><td><b>Graph completeness</b></td><td class="hint">call resolution = defined callees / all callees, median 0.67. Below 0.50 the graph is too incomplete to argue from.</td><td class="hint" style="font-size:13px">an argument from absence needs the graph to be near-complete</td></tr></tbody></table>
+<tbody><tr><td><b>K&R definitions</b></td><td class="hint">tree-sitter emits ERROR nodes on old-style C and drops the definition (zlib 1.2.8's inflate.c: 89 errors, `inflate` lost). A regex scanner supplements the parse.</td><td class="hint" style="font-size:13px">a lost definition makes its callees look unreachable = a false clearance</td></tr><tr><td><b>Macro-wrapped headers</b></td><td class="hint">`ZEXTERN int ZEXPORT inflate OF((z_streamp, int));` parsed to 3 of zlib's public functions; a regex fallback recovers them.</td><td class="hint" style="font-size:13px">a missed public entry shrinks the attack surface = a false clearance</td></tr><tr><td><b>Indirect calls</b></td><td class="hint">a static graph sees only `f()`. Dispatch tables and callbacks (`sqlite3_create_function(..., rtreenode, ...)`) are invisible, so every address-taken function is treated as a root.</td><td class="hint" style="font-size:13px">this single fix overturned all 6 clearances the first Q4 run produced</td></tr><tr><td><b>Entry-model completeness</b></td><td class="hint">Q4 seeds its walk from I/O readers, the public API and address-taken functions. When neither of the last two is found - Java, where requests arrive through reflection and framework dispatch - a missing tainted path is not evidence.</td><td class="hint" style="font-size:13px">Spring4Shell (CVE-2022-22965) was cleared as not-controllable by exactly this gap</td></tr><tr><td><b>Graph completeness</b></td><td class="hint">call resolution = defined callees / all callees, median 0.67. Below 0.50 the graph is too incomplete to argue from.</td><td class="hint" style="font-size:13px">an argument from absence needs the graph to be near-complete</td></tr></tbody></table>
 </div>
 
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">What the rule produced</h2>
 <div class="kpis">
-  <div class="kpi"><div class="kpi-n">104</div><div class="kpi-l">source snapshots</div></div>
-  <div class="kpi"><div class="kpi-n">105</div><div class="kpi-l">vulnerable function located</div></div>
-  <div class="kpi"><div class="kpi-n">100</div><div class="kpi-l">Q2 reachable</div></div>
-  <div class="kpi"><div class="kpi-n">99</div><div class="kpi-l">Q3 adversary-controllable</div></div>
+  <div class="kpi"><div class="kpi-n">267</div><div class="kpi-l">source snapshots</div></div>
+  <div class="kpi"><div class="kpi-n">222</div><div class="kpi-l">vulnerable function located</div></div>
+  <div class="kpi"><div class="kpi-n">168</div><div class="kpi-l">Q3 reachable</div></div>
+  <div class="kpi"><div class="kpi-n">213</div><div class="kpi-l">Q4 adversary-controllable</div></div>
   <div class="kpi"><div class="kpi-n">0</div><div class="kpi-l">clearances from source analysis</div></div>
 </div>
-<p class="hint" style="margin:14px 2px 0"><b>Zero.</b> Neither Q2 nor Q3 cleared a single CVE:
-<span class="mono">unreachable 0</span>, and the one <span class="mono">not-controllable</span> verdict
-(Spring4Shell) is held by the entry-model gate. Once indirect calls are
+<p class="hint" style="margin:14px 2px 0"><b>Zero clearances, and not for want of verdicts.</b>
+Q3 returned <span class="mono">not-reachable</span> on <b>4</b> CVEs and Q4 returned
+<span class="mono">not-controllable</span> on <b>0</b>; none of them cleared anything, because
+Q3/Q4 are optional in <code>vex_judge_v2</code> by design &mdash; a library snapshot has no consumer in
+it, so &ldquo;not reachable from an in-snapshot root&rdquo; false-negatives on the attack surface itself.
+Q4's refutations went to <b>9</b> <span class="mono">environment-dependent</span>: each one held
+only while the LLM's own <code>environment_fixed</code> defaults were pinned, and unpinning them made
+the trigger satisfiable again, so they are not refutations. Once indirect calls are
 handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
 failure &mdash; it matches the public record exactly: across CISA's entire OT corpus (3,984 documents)
 <span class="mono">vulnerable_code_cannot_be_controlled_by_adversary</span> and
@@ -250,14 +255,14 @@ already asserted.</p>
 </div>
 
 <div class="card">
-  <h3 style="margin:0 0 6px">Q2 도달가능성 · Q3 제어가능성을 적용하는 취약점 유형</h3>
+  <h3 style="margin:0 0 6px">Q3 도달가능성 · Q4 제어가능성을 적용하는 취약점 유형</h3>
   <p class="hint" style="margin:0 0 12px">
-  Q2(Joern 도달가능성)와 Q3(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
+  Q3(Joern 도달가능성)와 Q4(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
   <code>affected</code> 뒤의 증거 등급만 올립니다. 그래서 전수 실행이 아니라
   <b>취약점 유형별로 선별</b>합니다. 스냅샷마다 CPG를 새로 빌드해야 하므로 비용이 크고,
   유형에 따라서는 경로를 찾아도 주장이 달라지지 않기 때문입니다.
-  규칙은 <code>tools/select_q23_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
-  제외 사유는 CVE별로 <code>data/q23_targets.json</code> 에 기록됩니다.</p>
+  규칙은 <code>tools/select_q34_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
+  제외 사유는 CVE별로 <code>data/q34_targets.json</code> 에 기록됩니다.</p>
 
   <div class="cert-kv" style="margin-bottom:12px">
     <span>분석 대상 <b>38</b></span>
@@ -281,7 +286,7 @@ already asserted.</p>
 
   <p class="hint" style="margin-top:12px">
   <b>분류에 없는 CWE이거나 CWE가 없으면 분석하는 쪽으로 기울입니다.</b>
-  Q2/Q3는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
+  Q3/Q4는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
   근거가 약한 레코드입니다 &mdash; 비대칭이 분명할 때는 싼 쪽으로 틀리는 것이 맞습니다.</p>
 </div>
 
@@ -362,7 +367,7 @@ function identifyComp(c){
   if(rb[0]&&rb[1]>=0.90&&(rb[1]-(rb[3]||0))>=0.05)return rb[0];
   return null;}
 
-function computeVex(sbom,exp){const rawComps=(sbom.components||[]).filter(c=>c&&c.name);const comps=rawComps.map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(let ci=0;ci<comps.length;ci++){const name=comps[ci][0],ver=comps[ci][1];const comp=identifyComp(rawComps[ci]);if(!comp)continue;const cves=cvesForVersion(comp,ver);for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}for(const _cid in byCve){const _vv=VEX_V2[_cid];if(_vv){byCve[_cid].final_vex=_vv.vex;byCve[_cid].justification=_vv.justification||byCve[_cid].justification;byCve[_cid].v2={vex:_vv.vex,justification:_vv.justification,basis:_vv.basis,q1:_vv.q1,q2:_vv.q2,q3:_vv.q3};}}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
+function computeVex(sbom,exp){const rawComps=(sbom.components||[]).filter(c=>c&&c.name);const comps=rawComps.map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(let ci=0;ci<comps.length;ci++){const name=comps[ci][0],ver=comps[ci][1];const comp=identifyComp(rawComps[ci]);if(!comp)continue;const cves=cvesForVersion(comp,ver);for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}for(const _cid in byCve){const _vv=VEX_V2[_cid];if(_vv){byCve[_cid].final_vex=_vv.vex;byCve[_cid].justification=_vv.justification||byCve[_cid].justification;byCve[_cid].v2={vex:_vv.vex,justification:_vv.justification,basis:_vv.basis,q2:_vv.q2,q3:_vv.q3,q4:_vv.q4};}}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
 function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url,v2:r.v2}))};}
 
 async function run(){
@@ -383,7 +388,7 @@ async function run(){
     const nextcol = f.v2
       ? '<span class="hint" title="'+_v2Title(f.v2)+'">'+_v2Label(f.v2)+'</span>'
       : f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q3</span>'
+      ? '<span class="hint">source available &middot; judged by Q2&ndash;Q4</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -474,27 +479,27 @@ function toggleV2(id){var e=document.getElementById(id);if(e)e.style.display=(e.
 function _v2Reach(v2){if(!v2)return '<span class="hint">—</span>';
   if(v2.justification)return '<span class="mono" style="font-size:12px">not in exec path</span>';
   var p;
-  if(v2.q1==='present'){p=['present'];if(v2.q2==='reachable'){p.push('reachable');if(v2.q3==='controllable')p.push('controllable');}}
-  else if(v2.q1==='component_only')p=['component only'];
-  else p=[v2.q1||'?'];
+  if(v2.q2==='present'){p=['present'];if(v2.q3==='reachable'){p.push('reachable');if(v2.q4==='controllable')p.push('controllable');}}
+  else if(v2.q2==='component_only')p=['component only'];
+  else p=[v2.q2||'?'];
   return '<span class="mono" style="font-size:12px">'+p.join(' · ')+'</span>';}
-// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q1) decides the
-// verdict; reachability (Q2) and controllability (Q3) are OPTIONAL evidence that only raise
+// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q2) decides the
+// verdict; reachability (Q3) and controllability (Q4) are OPTIONAL evidence that only raise
 // confidence, so they are shown as optional rows (green tick when confirmed, else neutral /
 // "not applicable"), never as a red refutation next to an affected verdict.
 function _v2Reason(cve,v2,repo){
   if(!v2)return '';
-  var q1ok=(v2.q1==='present'), q2reach=(v2.q2==='reachable');
-  var decided=(v2.q1==='present'?'vulnerable code present (Q1)'
-              :v2.q1==='component_only'?'vulnerable component present; function not located (Q1)'
-              :'vulnerable code NOT present (Q1)');
+  var q2ok=(v2.q2==='present'), q3reach=(v2.q3==='reachable');
+  var decided=(v2.q2==='present'?'vulnerable code present (Q2)'
+              :v2.q2==='component_only'?'vulnerable component present; function not located (Q2)'
+              :'vulnerable code NOT present (Q2)');
   var opt=function(lbl,val,ok){var col=(ok?'var(--safe,#3fb950)':'var(--ink3)');
     return '<div style="display:flex;gap:10px;align-items:flex-start"><span class="hint" style="min-width:150px">'+lbl+'</span><span class="mono" style="color:'+col+'">'+esc(val)+'</span></div>';};
-  var q2txt=q2reach?'reachable \u2713'
-           :(!q1ok?'not applicable (function not located)'
-            :v2.q2==='not-reachable'?'no in-snapshot path (library caller external \u2014 not a refutation)'
+  var q3txt=q3reach?'reachable \u2713'
+           :(!q2ok?'not applicable (function not located)'
+            :v2.q3==='not-reachable'?'no in-snapshot path (library caller external \u2014 not a refutation)'
             :'not analysed (oversized / no CPG)');
-  var q3txt=(q1ok&&q2reach)?(v2.q3==='controllable'?'controllable \u2713':v2.q3==='not-controllable'?'not controllable':'undetermined')
+  var q4txt=(q2ok&&q3reach)?(v2.q4==='controllable'?'controllable \u2713':v2.q4==='not-controllable'?'not controllable':'undetermined')
            :'not applicable';
   var links='<a href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">NVD &#8599;</a>'
     +(repo?' &middot; <a href="'+repo+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">source repo &#8599;</a>':'');
@@ -502,8 +507,8 @@ function _v2Reason(cve,v2,repo){
     +'<div style="margin-bottom:6px"><b>Reason:</b> '+esc(v2.basis||'')+(v2.justification?' <span class="hint">('+esc(v2.justification)+')</span>':'')+'</div>'
     +'<div style="margin-bottom:8px"><b>Decided at:</b> <span class="mono">'+decided+'</span>'+(v2.tier?' <span class="hint">&middot; evidence tier: <b>'+esc(v2.tier)+'</b></span>':'')+'</div>'
     +'<div class="hint" style="margin:6px 0 3px">Optional source evidence (raises confidence, not required for the verdict):</div>'
-    +opt('&middot; reachable (Joern)',q2txt,q2reach)
-    +opt('&middot; controllable (Z3)',q3txt,q1ok&&q2reach&&v2.q3==='controllable')
+    +opt('&middot; reachable (Joern)',q3txt,q3reach)
+    +opt('&middot; controllable (Z3)',q4txt,q2ok&&q3reach&&v2.q4==='controllable')
     +'<div style="margin-top:8px" class="hint">'+links+'</div>'
     +'</div>';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});
@@ -733,12 +738,12 @@ function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);v
 function _v2Label(v){
   if(v.vex==='LIKELY_NOT_AFFECTED')return 'VEX-v2: <b>not_affected</b> &middot; '+(v.justification||'not in execute path');
   if(v.vex==='LIKELY_AFFECTED'){
-    if(v.q2==='reachable'&&v.q3==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
-    if(v.q2==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
-    if(v.q1==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
+    if(v.q3==='reachable'&&v.q4==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
+    if(v.q3==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
+    if(v.q2==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
     return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
   return 'VEX-v2: under investigation';}
-function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \u2014 '):'')+'VEX-v2 evidence \u2014 Q1 present: '+(v.q1||'?')+' \u00b7 Q2 reach (Joern): '+(v.q2||'?')+' \u00b7 Q3 control (Z3): '+(v.q3||'?');}
+function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \u2014 '):'')+'VEX-v2 evidence \u2014 Q2 present: '+(v.q2||'?')+' \u00b7 Q3 reach (Joern): '+(v.q3||'?')+' \u00b7 Q4 control (Z3): '+(v.q4||'?');}
 function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};

@@ -211,7 +211,7 @@ function identifyComp(c){
   if(rb[0]&&rb[1]>=0.90&&(rb[1]-(rb[3]||0))>=0.05)return rb[0];
   return null;}
 
-function computeVex(sbom,exp){const rawComps=(sbom.components||[]).filter(c=>c&&c.name);const comps=rawComps.map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(let ci=0;ci<comps.length;ci++){const name=comps[ci][0],ver=comps[ci][1];const comp=identifyComp(rawComps[ci]);if(!comp)continue;const cves=cvesForVersion(comp,ver);for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}for(const _cid in byCve){const _vv=VEX_V2[_cid];if(_vv){byCve[_cid].final_vex=_vv.vex;byCve[_cid].justification=_vv.justification||byCve[_cid].justification;byCve[_cid].v2={vex:_vv.vex,justification:_vv.justification,basis:_vv.basis,q1:_vv.q1,q2:_vv.q2,q3:_vv.q3};}}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
+function computeVex(sbom,exp){const rawComps=(sbom.components||[]).filter(c=>c&&c.name);const comps=rawComps.map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(let ci=0;ci<comps.length;ci++){const name=comps[ci][0],ver=comps[ci][1];const comp=identifyComp(rawComps[ci]);if(!comp)continue;const cves=cvesForVersion(comp,ver);for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}for(const _cid in byCve){const _vv=VEX_V2[_cid];if(_vv){byCve[_cid].final_vex=_vv.vex;byCve[_cid].justification=_vv.justification||byCve[_cid].justification;byCve[_cid].v2={vex:_vv.vex,justification:_vv.justification,basis:_vv.basis,q2:_vv.q2,q3:_vv.q3,q4:_vv.q4};}}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
 function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url,v2:r.v2}))};}
 
 async function run(){
@@ -232,7 +232,7 @@ async function run(){
     const nextcol = f.v2
       ? '<span class="hint" title="'+_v2Title(f.v2)+'">'+_v2Label(f.v2)+'</span>'
       : f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q3</span>'
+      ? '<span class="hint">source available &middot; judged by Q2&ndash;Q4</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -323,27 +323,27 @@ function toggleV2(id){var e=document.getElementById(id);if(e)e.style.display=(e.
 function _v2Reach(v2){if(!v2)return '<span class="hint">—</span>';
   if(v2.justification)return '<span class="mono" style="font-size:12px">not in exec path</span>';
   var p;
-  if(v2.q1==='present'){p=['present'];if(v2.q2==='reachable'){p.push('reachable');if(v2.q3==='controllable')p.push('controllable');}}
-  else if(v2.q1==='component_only')p=['component only'];
-  else p=[v2.q1||'?'];
+  if(v2.q2==='present'){p=['present'];if(v2.q3==='reachable'){p.push('reachable');if(v2.q4==='controllable')p.push('controllable');}}
+  else if(v2.q2==='component_only')p=['component only'];
+  else p=[v2.q2||'?'];
   return '<span class="mono" style="font-size:12px">'+p.join(' · ')+'</span>';}
-// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q1) decides the
-// verdict; reachability (Q2) and controllability (Q3) are OPTIONAL evidence that only raise
+// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q2) decides the
+// verdict; reachability (Q3) and controllability (Q4) are OPTIONAL evidence that only raise
 // confidence, so they are shown as optional rows (green tick when confirmed, else neutral /
 // "not applicable"), never as a red refutation next to an affected verdict.
 function _v2Reason(cve,v2,repo){
   if(!v2)return '';
-  var q1ok=(v2.q1==='present'), q2reach=(v2.q2==='reachable');
-  var decided=(v2.q1==='present'?'vulnerable code present (Q1)'
-              :v2.q1==='component_only'?'vulnerable component present; function not located (Q1)'
-              :'vulnerable code NOT present (Q1)');
+  var q2ok=(v2.q2==='present'), q3reach=(v2.q3==='reachable');
+  var decided=(v2.q2==='present'?'vulnerable code present (Q2)'
+              :v2.q2==='component_only'?'vulnerable component present; function not located (Q2)'
+              :'vulnerable code NOT present (Q2)');
   var opt=function(lbl,val,ok){var col=(ok?'var(--safe,#3fb950)':'var(--ink3)');
     return '<div style="display:flex;gap:10px;align-items:flex-start"><span class="hint" style="min-width:150px">'+lbl+'</span><span class="mono" style="color:'+col+'">'+esc(val)+'</span></div>';};
-  var q2txt=q2reach?'reachable \u2713'
-           :(!q1ok?'not applicable (function not located)'
-            :v2.q2==='not-reachable'?'no in-snapshot path (library caller external \u2014 not a refutation)'
+  var q3txt=q3reach?'reachable \u2713'
+           :(!q2ok?'not applicable (function not located)'
+            :v2.q3==='not-reachable'?'no in-snapshot path (library caller external \u2014 not a refutation)'
             :'not analysed (oversized / no CPG)');
-  var q3txt=(q1ok&&q2reach)?(v2.q3==='controllable'?'controllable \u2713':v2.q3==='not-controllable'?'not controllable':'undetermined')
+  var q4txt=(q2ok&&q3reach)?(v2.q4==='controllable'?'controllable \u2713':v2.q4==='not-controllable'?'not controllable':'undetermined')
            :'not applicable';
   var links='<a href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">NVD &#8599;</a>'
     +(repo?' &middot; <a href="'+repo+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">source repo &#8599;</a>':'');
@@ -351,8 +351,8 @@ function _v2Reason(cve,v2,repo){
     +'<div style="margin-bottom:6px"><b>Reason:</b> '+esc(v2.basis||'')+(v2.justification?' <span class="hint">('+esc(v2.justification)+')</span>':'')+'</div>'
     +'<div style="margin-bottom:8px"><b>Decided at:</b> <span class="mono">'+decided+'</span>'+(v2.tier?' <span class="hint">&middot; evidence tier: <b>'+esc(v2.tier)+'</b></span>':'')+'</div>'
     +'<div class="hint" style="margin:6px 0 3px">Optional source evidence (raises confidence, not required for the verdict):</div>'
-    +opt('&middot; reachable (Joern)',q2txt,q2reach)
-    +opt('&middot; controllable (Z3)',q3txt,q1ok&&q2reach&&v2.q3==='controllable')
+    +opt('&middot; reachable (Joern)',q3txt,q3reach)
+    +opt('&middot; controllable (Z3)',q4txt,q2ok&&q3reach&&v2.q4==='controllable')
     +'<div style="margin-top:8px" class="hint">'+links+'</div>'
     +'</div>';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});
@@ -582,12 +582,12 @@ function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);v
 function _v2Label(v){
   if(v.vex==='LIKELY_NOT_AFFECTED')return 'VEX-v2: <b>not_affected</b> &middot; '+(v.justification||'not in execute path');
   if(v.vex==='LIKELY_AFFECTED'){
-    if(v.q2==='reachable'&&v.q3==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
-    if(v.q2==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
-    if(v.q1==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
+    if(v.q3==='reachable'&&v.q4==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
+    if(v.q3==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
+    if(v.q2==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
     return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
   return 'VEX-v2: under investigation';}
-function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \u2014 '):'')+'VEX-v2 evidence \u2014 Q1 present: '+(v.q1||'?')+' \u00b7 Q2 reach (Joern): '+(v.q2||'?')+' \u00b7 Q3 control (Z3): '+(v.q3||'?');}
+function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \u2014 '):'')+'VEX-v2 evidence \u2014 Q2 present: '+(v.q2||'?')+' \u00b7 Q3 reach (Joern): '+(v.q3||'?')+' \u00b7 Q4 control (Z3): '+(v.q4||'?');}
 function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
