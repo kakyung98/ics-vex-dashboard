@@ -81,15 +81,15 @@ ICS-VEXForge → **통합보안 관리 플랫폼** 으로 전달되는 VEX 데�
 | `evidence.basis` | string | ✅ | 사람이 읽는 근거 한 줄 |
 | `evidence.decided_by` | enum(string) | ✅ | 판정을 확정한 단계: `presence` \| `source-absence` \| `sbom` |
 | `evidence.method` | string | ➖ | 분석 방법 (예: `"VEX-v2 (CTI + Joern + Z3)"`) |
-| `evidence.gates` | object | ✅ | 게이트별 결과 → 아래 (계층: **존재가 판정, Q2/Q3는 선택적 증거**) |
-| `evidence.gates.presence` | enum \| null | ✅ | Q1: `present` \| `component_only` \| `absent` \| `null` |
-| `evidence.gates.reachability` | enum \| null | ➖ | Q2(Joern): `reachable` \| `not-reachable` \| `unknown` \| `null` |
-| `evidence.gates.controllability` | enum \| null | ➖ | Q3(Z3): `controllable` \| `not-controllable` \| `unknown` \| `null` |
+| `evidence.gates` | object | ✅ | 게이트별 결과 → 아래 (계층: **존재가 판정, Q3/Q4는 선택적 증거**) |
+| `evidence.gates.presence` | enum \| null | ✅ | Q2: `present` \| `component_only` \| `absent` \| `null` |
+| `evidence.gates.reachability` | enum \| null | ➖ | Q3(Joern): `reachable` \| `not-reachable` \| `unknown` \| `null` |
+| `evidence.gates.controllability` | enum \| null | ➖ | Q4(Z3): `controllable` \| `not-controllable` \| `unknown` \| `null` |
 
 - `evidence.tier` enum: `verified`(존재+도달+제어) \| `reachable`(존재+도달) \| `present`(존재만) \|
   `component`(컴포넌트만, 함수 미국지화) \| `sbom-evidenced`(SBOM에 부재) \| `not-present`(소스에 함수 부재) \|
   `under-investigation`.
-- **주의(UI 표출 원칙)**: `reachability`/`controllability` 는 **선택적 증거**다. Q2가 `reachable` 이 아닐 때
+- **주의(UI 표출 원칙)**: `reachability`/`controllability` 는 **선택적 증거**다. Q3가 `reachable` 이 아닐 때
   `controllability` 값은 판정에 쓰이지 않으므로 UI에서 "not applicable" 로 표시할 것 (게이트 순서 존중).
 
 #### (e) 위험/우선순위 컨텍스트
@@ -173,7 +173,7 @@ ICS-VEXForge → **통합보안 관리 플랫폼** 으로 전달되는 VEX 데�
   "impact_statement": null,
   "evidence": {
     "tier": "present",
-    "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
+    "basis": "vulnerable code present; not refuted (Q3/Q4 optional and not decisive here)",
     "decided_by": "presence",
     "method": "VEX-v2 (CTI + Joern + Z3)",
     "gates": { "presence": "present", "reachability": "not-reachable", "controllability": "controllable" }

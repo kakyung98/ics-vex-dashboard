@@ -35,7 +35,7 @@ def main():
                      "basis": x.get("basis"),      # the per-CVE reason (evidence tier)
                      "evidence_tier": x.get("evidence_tier"),
                      "component": (loc.get(cve) or {}).get("component"),
-                     "evidence": {"q1": (loc.get(cve) or {}).get("q1"),
+                     "evidence": {"q2": (loc.get(cve) or {}).get("q2"),
                                   "reachability": (reach.get(cve) or {}).get("verdict"),
                                   "controllability": (ctrl.get(cve) or {}).get("verdict")}})
     summary = {
@@ -50,11 +50,11 @@ def main():
         "justifications": dict(collections.Counter(
             x["justification"] for x in v2.values() if x.get("justification"))),
         "gates": {
-            "q1_present": dict(collections.Counter(x["q1"] for x in loc.values())),
-            "q2_reachable_joern": dict(collections.Counter(x["verdict"] for x in reach.values())),
-            "q3_controllable_z3": dict(collections.Counter(x["verdict"] for x in ctrl.values())),
+            "q2_present": dict(collections.Counter(x["q2"] for x in loc.values())),
+            "q3_reachable_joern": dict(collections.Counter(x["verdict"] for x in reach.values())),
+            "q4_controllable_z3": dict(collections.Counter(x["verdict"] for x in ctrl.values())),
         },
-        "note": "VEX justifications are a hierarchy: presence (Q1) decides (present -> affected, "
+        "note": "VEX justifications are a hierarchy: presence (Q2) decides (present -> affected, "
                 "absent -> not_affected). Reachability (Joern) and controllability (Z3) are "
                 "OPTIONAL - they only raise the evidence_tier, they never refute (a library "
                 "snapshot has no consumer, so not-reachable false-negatives on the API itself).",

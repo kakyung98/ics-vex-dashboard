@@ -78,11 +78,11 @@ FILES = {
         "data/vex_v2_patched.json",
         "vex_judge_v2 --build patched: the verdicts for the vendor's remediated "
         "releases (data/fixed_releases/). A patched build cannot be judged pre-gate - "
-        "Q1 reads 'present' on 10 of 12, because a fix edits the vulnerable function "
+        "Q2 reads 'present' on 10 of 12, because a fix edits the vulnerable function "
         "rather than deleting it - so these come from the gate-live run"),
     "item4/predictions_gated.json": (
         "data/vex_v2.json",
-        "vex_judge_v2 with the Q0 patch gate live, over the vulnerable build. Needed "
+        "vex_judge_v2 with the Q1 patch gate live, over the vulnerable build. Needed "
         "to score the full population alongside the patched verdicts; circular on the "
         "patch_verified cases, which the result records"),
     "item4/result_allbuilds.json": (
@@ -161,7 +161,7 @@ and is free under a precision-only metric, so it is disclosed here.
 | `input.jsonl` | **what the SUT is fed**: CVE + source/patch evidence |
 | `ground_truth.jsonl` | answer key, affected / not_affected ({i4tot} cases) |
 | `predictions.json` | SUT output, pre-gate, vulnerable build — what `result.json` scores |
-| `predictions_gated.json` | SUT output with the Q0 patch gate live |
+| `predictions_gated.json` | SUT output with the Q1 patch gate live |
 | `predictions_patched.json` | SUT output for the vendor's remediated releases |
 | `result.json` | **headline**: vulnerable build, gate off |
 | `result_allbuilds.json` | both builds, gate live |
@@ -181,15 +181,15 @@ The third scope is **below the acceptance criterion**, and it is published anywa
 because it is a disclosure scope rather than the certification metric. Its single
 false positive is instructive: CVE-2024-4340's patched build (sqlparse 0.5.0).
 Execution proves that release does not fault, but the fix added a guard *inside*
-`flatten` rather than removing it, so Q1 still reads `present` - and NVD carries no
+`flatten` rather than removing it, so Q2 still reads `present` - and NVD carries no
 fix commit for this CVE, so the patch gate has no signature to clear it with. The
 system therefore says `affected` about a build that demonstrably is not. That is
 the honest shape of the limit: **without a fix diff, a patched build is
 indistinguishable from a vulnerable one by presence alone.** The figure was not
 tuned to remove it.
 
-**Why the patched build needs the gate.** Q1 asks whether the vulnerable function is
-*defined*, and a fix edits that function rather than deleting it — Q1 reads `present`
+**Why the patched build needs the gate.** Q2 asks whether the vulnerable function is
+*defined*, and a fix edits that function rather than deleting it — Q2 reads `present`
 on 10 of the 12 collected patched trees. So there is no pre-gate patched figure to
 quote, and the gate decides from the fix signature plus the NVD range, which is where
 most of this GT's labels come from. `result_independent.json` is the scope that
@@ -237,7 +237,7 @@ because resolving that string is the task being scored.
     python tools/vex_judge_v2.py --all                      # gate live, vulnerable
     python tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.json
     python tools/build_func_index.py --build patched        # index fixed_releases
-    python tools/source_locate.py   --build patched --all   # Q1 on the patched tree
+    python tools/source_locate.py   --build patched --all   # Q2 on the patched tree
     python tools/vex_judge_v2.py    --build patched --all   # patched verdicts
     python tools/build_benchmark_bundle.py
 """

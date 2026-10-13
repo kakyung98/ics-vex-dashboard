@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """VEX-v2 · step 4 — reachability, decided by Joern (CPG).
 
-Q2: is the vulnerable function reachable from an externally-controllable entry
+Q3: is the vulnerable function reachable from an externally-controllable entry
 point? Joern builds a Code Property Graph of the snapshot and answers whether the
 target method is transitively called from an entry method.
 

@@ -207,9 +207,9 @@ class Store:
                                       "justification": _r.get("justification"),
                                       "basis": _r.get("basis"),
                                       "tier": _r.get("evidence_tier"),
-                                      "q1": _ev.get("q1"),
-                                      "q2": _ev.get("reachability"),
-                                      "q3": _ev.get("controllability")}
+                                      "q2": _ev.get("q2"),
+                                      "q3": _ev.get("reachability"),
+                                      "q4": _ev.get("controllability")}
         # CISA ICS advisories (the corpus provenance)
         adv_raw = _load(os.path.join(DATA, "cisa_advisories.json"), {})
         adv = list(adv_raw.values()) if isinstance(adv_raw, dict) else (adv_raw or [])
@@ -347,7 +347,7 @@ class Store:
                 # show WHY a CVE is affected/not_affected when a row is clicked.
                 "v2": ({"basis": _v2.get("basis"), "justification": _v2.get("justification"),
                         "tier": _v2.get("tier"),
-                        "q1": _v2.get("q1"), "q2": _v2.get("q2"), "q3": _v2.get("q3")}
+                        "q2": _v2.get("q2"), "q3": _v2.get("q3"), "q4": _v2.get("q4")}
                        if _v2 else None),
             }
         # CVE-level view (unique CVEs, worst-case verdict across assets)
@@ -708,7 +708,7 @@ def vex_for_sbom(sbom, exposure=None):
             _row["evidence_tier"] = _vv.get("tier") or "vex-v2"
             _row["v2"] = {"vex": _vv["vex"], "justification": _vv.get("justification"),
                           "basis": _vv.get("basis"), "tier": _vv.get("tier"),
-                          "q1": _vv.get("q1"), "q2": _vv.get("q2"), "q3": _vv.get("q3")}
+                          "q2": _vv.get("q2"), "q3": _vv.get("q3"), "q4": _vv.get("q4")}
     cves = sorted(by_cve.values(),
                   key=lambda r: (-rank.get(r["final_vex"], 0), r["cve"]))
     by = Counter(r["final_vex"] for r in cves)
@@ -1318,7 +1318,7 @@ async function run(){
     const nextcol = f.v2
       ? '<span class="hint" title="'+_v2Title(f.v2)+'">'+_v2Label(f.v2)+'</span>'
       : f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q3</span>'
+      ? '<span class="hint">source available &middot; judged by Q2&ndash;Q4</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -1409,27 +1409,27 @@ function toggleV2(id){var e=document.getElementById(id);if(e)e.style.display=(e.
 function _v2Reach(v2){if(!v2)return '<span class="hint">—</span>';
   if(v2.justification)return '<span class="mono" style="font-size:12px">not in exec path</span>';
   var p;
-  if(v2.q1==='present'){p=['present'];if(v2.q2==='reachable'){p.push('reachable');if(v2.q3==='controllable')p.push('controllable');}}
-  else if(v2.q1==='component_only')p=['component only'];
-  else p=[v2.q1||'?'];
+  if(v2.q2==='present'){p=['present'];if(v2.q3==='reachable'){p.push('reachable');if(v2.q4==='controllable')p.push('controllable');}}
+  else if(v2.q2==='component_only')p=['component only'];
+  else p=[v2.q2||'?'];
   return '<span class="mono" style="font-size:12px">'+p.join(' · ')+'</span>';}
-// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q1) decides the
-// verdict; reachability (Q2) and controllability (Q3) are OPTIONAL evidence that only raise
+// expandable per-CVE reason. VEX justifications are a HIERARCHY: PRESENCE (Q2) decides the
+// verdict; reachability (Q3) and controllability (Q4) are OPTIONAL evidence that only raise
 // confidence, so they are shown as optional rows (green tick when confirmed, else neutral /
 // "not applicable"), never as a red refutation next to an affected verdict.
 function _v2Reason(cve,v2,repo){
   if(!v2)return '';
-  var q1ok=(v2.q1==='present'), q2reach=(v2.q2==='reachable');
-  var decided=(v2.q1==='present'?'vulnerable code present (Q1)'
-              :v2.q1==='component_only'?'vulnerable component present; function not located (Q1)'
-              :'vulnerable code NOT present (Q1)');
+  var q2ok=(v2.q2==='present'), q3reach=(v2.q3==='reachable');
+  var decided=(v2.q2==='present'?'vulnerable code present (Q2)'
+              :v2.q2==='component_only'?'vulnerable component present; function not located (Q2)'
+              :'vulnerable code NOT present (Q2)');
   var opt=function(lbl,val,ok){var col=(ok?'var(--safe,#3fb950)':'var(--ink3)');
     return '<div style="display:flex;gap:10px;align-items:flex-start"><span class="hint" style="min-width:150px">'+lbl+'</span><span class="mono" style="color:'+col+'">'+esc(val)+'</span></div>';};
-  var q2txt=q2reach?'reachable \\u2713'
-           :(!q1ok?'not applicable (function not located)'
-            :v2.q2==='not-reachable'?'no in-snapshot path (library caller external \\u2014 not a refutation)'
+  var q3txt=q3reach?'reachable \\u2713'
+           :(!q2ok?'not applicable (function not located)'
+            :v2.q3==='not-reachable'?'no in-snapshot path (library caller external \\u2014 not a refutation)'
             :'not analysed (oversized / no CPG)');
-  var q3txt=(q1ok&&q2reach)?(v2.q3==='controllable'?'controllable \\u2713':v2.q3==='not-controllable'?'not controllable':'undetermined')
+  var q4txt=(q2ok&&q3reach)?(v2.q4==='controllable'?'controllable \\u2713':v2.q4==='not-controllable'?'not controllable':'undetermined')
            :'not applicable';
   var links='<a href="https://nvd.nist.gov/vuln/detail/'+cve+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">NVD &#8599;</a>'
     +(repo?' &middot; <a href="'+repo+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">source repo &#8599;</a>':'');
@@ -1437,8 +1437,8 @@ function _v2Reason(cve,v2,repo){
     +'<div style="margin-bottom:6px"><b>Reason:</b> '+esc(v2.basis||'')+(v2.justification?' <span class="hint">('+esc(v2.justification)+')</span>':'')+'</div>'
     +'<div style="margin-bottom:8px"><b>Decided at:</b> <span class="mono">'+decided+'</span>'+(v2.tier?' <span class="hint">&middot; evidence tier: <b>'+esc(v2.tier)+'</b></span>':'')+'</div>'
     +'<div class="hint" style="margin:6px 0 3px">Optional source evidence (raises confidence, not required for the verdict):</div>'
-    +opt('&middot; reachable (Joern)',q2txt,q2reach)
-    +opt('&middot; controllable (Z3)',q3txt,q1ok&&q2reach&&v2.q3==='controllable')
+    +opt('&middot; reachable (Joern)',q3txt,q3reach)
+    +opt('&middot; controllable (Z3)',q4txt,q2ok&&q3reach&&v2.q4==='controllable')
     +'<div style="margin-top:8px" class="hint">'+links+'</div>'
     +'</div>';}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeCves();});
@@ -1668,12 +1668,12 @@ function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);v
 function _v2Label(v){
   if(v.vex==='LIKELY_NOT_AFFECTED')return 'VEX-v2: <b>not_affected</b> &middot; '+(v.justification||'not in execute path');
   if(v.vex==='LIKELY_AFFECTED'){
-    if(v.q2==='reachable'&&v.q3==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
-    if(v.q2==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
-    if(v.q1==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
+    if(v.q3==='reachable'&&v.q4==='controllable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern) + controllable (Z3)';
+    if(v.q3==='reachable')return 'VEX-v2: <b>affected</b> &middot; reachable (Joern)';
+    if(v.q2==='component_only')return 'VEX-v2: <b>affected</b> &middot; component present (function not localised)';
     return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
   return 'VEX-v2: under investigation';}
-function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \\u2014 '):'')+'VEX-v2 evidence \\u2014 Q1 present: '+(v.q1||'?')+' \\u00b7 Q2 reach (Joern): '+(v.q2||'?')+' \\u00b7 Q3 control (Z3): '+(v.q3||'?');}
+function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \\u2014 '):'')+'VEX-v2 evidence \\u2014 Q2 present: '+(v.q2||'?')+' \\u00b7 Q3 reach (Joern): '+(v.q3||'?')+' \\u00b7 Q4 control (Z3): '+(v.q4||'?');}
 function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
@@ -2104,7 +2104,7 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are judged by the code questions Q1&ndash;Q3 (Q1 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p>' + ANALYZER_HTML)
+                  'Source-available CVEs are judged by the code questions Q2&ndash;Q4 (Q2 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
@@ -2132,10 +2132,10 @@ _ICSSBOM_PAGE = """<h1 style="margin:0 0 8px">Synthetic SBOM dataset</h1>
 # Rendered from src/vex_decision.py so the documented rule and the executed rule
 # cannot drift apart.
 
-def _q23_scope_section():
-    """Which weakness classes get reachability (Q2) and controllability (Q3).
+def _q34_scope_section():
+    """Which weakness classes get reachability (Q3) and controllability (Q4).
 
-    The rule lives in tools/select_q23_targets and was invisible outside the
+    The rule lives in tools/select_q34_targets and was invisible outside the
     repository: a reader could see that some CVEs carry a Joern/Z3 verdict and
     others do not, with nothing saying why. Published here, read straight out of
     that module, so the page cannot drift from the rule it describes.
@@ -2143,9 +2143,9 @@ def _q23_scope_section():
     import importlib, json as _json, os as _os, sys as _sys
     _sys.path.insert(0, _os.path.join(BASE, "tools"))
     try:
-        Q = importlib.import_module("select_q23_targets")
+        Q = importlib.import_module("select_q34_targets")
     except Exception as e:                      # never break the page over this
-        return '<div class="card"><p class="hint">Q2/Q3 scope unavailable: %s</p></div>' % e
+        return '<div class="card"><p class="hint">Q3/Q4 scope unavailable: %s</p></div>' % e
 
     def _rows(table, cls):
         return "".join(
@@ -2156,20 +2156,20 @@ def _q23_scope_section():
                                key=lambda kv: int(kv[0].split("-")[1])))
 
     counts = {}
-    _p = _os.path.join(BASE, "data", "q23_targets.json")
+    _p = _os.path.join(BASE, "data", "q34_targets.json")
     if _os.path.isfile(_p):
         counts = (_json.load(open(_p, encoding="utf-8")) or {}).get("counts") or {}
 
     return """
 <div class="card">
-  <h3 style="margin:0 0 6px">Q2 도달가능성 · Q3 제어가능성을 적용하는 취약점 유형</h3>
+  <h3 style="margin:0 0 6px">Q3 도달가능성 · Q4 제어가능성을 적용하는 취약점 유형</h3>
   <p class="hint" style="margin:0 0 12px">
-  Q2(Joern 도달가능성)와 Q3(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
+  Q3(Joern 도달가능성)와 Q4(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
   <code>affected</code> 뒤의 증거 등급만 올립니다. 그래서 전수 실행이 아니라
   <b>취약점 유형별로 선별</b>합니다. 스냅샷마다 CPG를 새로 빌드해야 하므로 비용이 크고,
   유형에 따라서는 경로를 찾아도 주장이 달라지지 않기 때문입니다.
-  규칙은 <code>tools/select_q23_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
-  제외 사유는 CVE별로 <code>data/q23_targets.json</code> 에 기록됩니다.</p>
+  규칙은 <code>tools/select_q34_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
+  제외 사유는 CVE별로 <code>data/q34_targets.json</code> 에 기록됩니다.</p>
 
   <div class="cert-kv" style="margin-bottom:12px">
     <span>분석 대상 <b>__RUN__</b></span>
@@ -2193,7 +2193,7 @@ def _q23_scope_section():
 
   <p class="hint" style="margin-top:12px">
   <b>분류에 없는 CWE이거나 CWE가 없으면 분석하는 쪽으로 기울입니다.</b>
-  Q2/Q3는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
+  Q3/Q4는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
   근거가 약한 레코드입니다 &mdash; 비대칭이 분명할 때는 싼 쪽으로 틀리는 것이 맞습니다.</p>
 </div>
 """.replace("__IN_ROWS__", _rows(Q.INPUT_DRIVEN, "pill-ok")) \
@@ -2240,7 +2240,7 @@ whose source could not be obtained. Failing to prove absence is not evidence of 
 look identical</b>. If the parser loses a function, its callees appear unreachable &mdash; and an unreachable
 vulnerable function reads as <span class="mono">not_affected</span>. So every uncertainty in this pipeline is
 resolved toward <span class="mono">affected</span> or <span class="mono">under_investigation</span>, never
-toward a clearance. The first Q3 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
+toward a clearance. The first Q4 run produced <b>6 clearances; all 6 were false</b>, and the fixes below
 removed every one of them.</p>
 </div>
 
@@ -2264,12 +2264,12 @@ removed every one of them.</p>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q1&ndash;Q3)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q2&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q2 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
+      <div class="vm-step"><b>Q3 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q3 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
+      <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
     </div>
@@ -2297,9 +2297,9 @@ removed every one of them.</p>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
 <tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
     <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
-<tr><td class="mono">4</td><td>A code question (Q1&ndash;Q3) clears, the target is trustworthy and the graph complete</td>
+<tr><td class="mono">4</td><td>A code question (Q2&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
     <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
-<tr><td class="mono">5</td><td>Q1&ndash;Q3 all evaluated and all still vulnerable</td>
+<tr><td class="mono">5</td><td>Q2&ndash;Q4 all evaluated and all still vulnerable</td>
     <td><span class="pill pill-aff">affected</span></td></tr>
 <tr><td class="mono">&mdash;</td><td>anything else</td>
     <td><span class="pill pill-und">under_investigation</span></td></tr>
@@ -2335,16 +2335,16 @@ it judged. A model-ranked guess can keep a CVE in the affected pool; it can neve
 <div class="kpis">
   <div class="kpi"><div class="kpi-n">__SNAP__</div><div class="kpi-l">source snapshots</div></div>
   <div class="kpi"><div class="kpi-n">__TGT__</div><div class="kpi-l">vulnerable function located</div></div>
-  <div class="kpi"><div class="kpi-n">__Q2R__</div><div class="kpi-l">Q2 reachable</div></div>
-  <div class="kpi"><div class="kpi-n">__Q3C__</div><div class="kpi-l">Q3 adversary-controllable</div></div>
+  <div class="kpi"><div class="kpi-n">__Q3R__</div><div class="kpi-l">Q3 reachable</div></div>
+  <div class="kpi"><div class="kpi-n">__Q4C__</div><div class="kpi-l">Q4 adversary-controllable</div></div>
   <div class="kpi"><div class="kpi-n">__CLR__</div><div class="kpi-l">clearances from source analysis</div></div>
 </div>
 <p class="hint" style="margin:14px 2px 0"><b>Zero clearances, and not for want of verdicts.</b>
-Q2 returned <span class="mono">not-reachable</span> on <b>__Q2U__</b> CVEs and Q3 returned
-<span class="mono">not-controllable</span> on <b>__Q3N__</b>; none of them cleared anything, because
-Q2/Q3 are optional in <code>vex_judge_v2</code> by design &mdash; a library snapshot has no consumer in
+Q3 returned <span class="mono">not-reachable</span> on <b>__Q3U__</b> CVEs and Q4 returned
+<span class="mono">not-controllable</span> on <b>__Q4N__</b>; none of them cleared anything, because
+Q3/Q4 are optional in <code>vex_judge_v2</code> by design &mdash; a library snapshot has no consumer in
 it, so &ldquo;not reachable from an in-snapshot root&rdquo; false-negatives on the attack surface itself.
-Q3's refutations went to <b>__Q3E__</b> <span class="mono">environment-dependent</span>: each one held
+Q4's refutations went to <b>__Q4E__</b> <span class="mono">environment-dependent</span>: each one held
 only while the LLM's own <code>environment_fixed</code> defaults were pinned, and unpinning them made
 the trigger satisfiable again, so they are not refutations. Once indirect calls are
 handled soundly, a C library's public API reaches essentially all of its own code. This is not a tooling
@@ -2357,13 +2357,13 @@ already asserted.</p>
 """.replace("__Q_ROWS__", q_rows).replace("__SRC_ROWS__", src_rows) \
    .replace("__SOUND_ROWS__", sound_rows) \
    .replace("__SNAP__", str(c["snapshots"])).replace("__TGT__", str(c["targets_located"])) \
-   .replace("__Q2R__", str(c["q2_reachable"])).replace("__Q3C__", str(c["q3_controllable"])) \
+   .replace("__Q3R__", str(c["q3_reachable"])).replace("__Q4C__", str(c["q4_controllable"])) \
    .replace("__CLR__", str(c["clearances_from_source_analysis"])) \
-   .replace("__Q2U__", str(c["q2_unreachable"])).replace("__Q3N__", str(c["q3_not_controllable"])) \
-   .replace("__Q3E__", str(c.get("q3_environment_dependent", 0)))
+   .replace("__Q3U__", str(c["q3_unreachable"])).replace("__Q4N__", str(c["q4_not_controllable"])) \
+   .replace("__Q4E__", str(c.get("q4_environment_dependent", 0)))
 
 
-_DECISION_PAGE = _decision_page() + _q23_scope_section()
+_DECISION_PAGE = _decision_page() + _q34_scope_section()
 
 
 

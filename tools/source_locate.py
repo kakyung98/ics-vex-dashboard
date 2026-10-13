@@ -3,14 +3,14 @@
 """VEX-v2 · step 2 — source search: is the vulnerable component + function present?
 
 Given the CTI extraction (step 1), decide whether the vulnerable code is actually
-in the collected source snapshot. This is Q1 - the presence gate.
+in the collected source snapshot. This is Q2 - the presence gate.
 
 Function names come from the CTI extraction when it named any; NVD descriptions
 often name none, so it falls back to the patch-localised targets
 (data/vuln_targets.json, from the fix commit). Presence is checked against the
 per-snapshot function index (data/func_index/<CVE>.json: functions -> [file,lines]).
 
-  no function found  -> Q1 fails: not_affected / vulnerable_code_not_present
+  no function found  -> Q2 fails: not_affected / vulnerable_code_not_present
   function(s) found  -> the targets the reachability + controllability engines judge
 
 Out: data/source_locations.json  { <CVE>: {...} }
@@ -30,7 +30,7 @@ from build_func_index import roots as _build_roots  # noqa: E402  (one path tabl
 TARG = os.path.join(BASE, "data", "vuln_targets.json")
 CTI = os.path.join(BASE, "data", "cti_extractions.json")
 OUT = os.path.join(BASE, "data", "source_locations.json")
-# Q1 is asked of a BUILD, not of a CVE. The vulnerable tree and the vendor's
+# Q2 is asked of a BUILD, not of a CVE. The vulnerable tree and the vendor's
 # remediated release are two different answers to "is the vulnerable code here",
 # so each build gets its own snapshot root, function index and cache file; the
 # caller picks with `--build`.
@@ -76,16 +76,16 @@ def locate(cve, extraction, targets):
                       "file": locs[0][0] if locs else None,
                       "lines": locs[0][1:] if locs else None})
     any_found = any(f["found"] for f in found)
-    # Q1 verdict
+    # Q2 verdict
     if any_found:
-        q1 = "present"                       # -> reachability/controllability judge it
+        q2 = "present"                       # -> reachability/controllability judge it
     elif snap is not None:
-        q1 = "component_only"                # component in tree, no named vuln func found
+        q2 = "component_only"                # component in tree, no named vuln func found
     else:
-        q1 = "absent"                        # -> not_affected / vulnerable_code_not_present
+        q2 = "absent"                        # -> not_affected / vulnerable_code_not_present
     return {"cve": cve, "component": comp, "component_present": snap is not None,
             "snapshot": snap, "build": BUILD, "localization_source": src,
-            "functions": found, "any_function_found": any_found, "q1": q1}
+            "functions": found, "any_function_found": any_found, "q2": q2}
 
 
 def main():
@@ -94,7 +94,7 @@ def main():
     ap.add_argument("--cve")
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--build", choices=["vulnerable", "patched"], default="vulnerable",
-                    help="'patched' asks Q1 of data/fixed_releases/<CVE> instead, and "
+                    help="'patched' asks Q2 of data/fixed_releases/<CVE> instead, and "
                          "caches to data/source_locations_patched.json. Kept apart "
                          "because a patched build still DEFINES the vulnerable "
                          "function, so one shared cache would answer for the wrong tree")
@@ -124,8 +124,8 @@ def main():
         if a.cve:
             print(json.dumps(r, ensure_ascii=False, indent=2))
         else:
-            print("  %-18s comp=%-14s q1=%-13s funcs %d/%d (%s)"
-                  % (cve, r["component"][:14], r["q1"], nf, len(r["functions"]),
+            print("  %-18s comp=%-14s q2=%-13s funcs %d/%d (%s)"
+                  % (cve, r["component"][:14], r["q2"], nf, len(r["functions"]),
                      r["localization_source"]))
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     print("-> %s (%d)" % (OUT, len(out)))

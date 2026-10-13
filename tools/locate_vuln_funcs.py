@@ -3,7 +3,7 @@
 """Locate each CVE's vulnerable function WITHOUT depending on a fix commit.
 
 Three paths, strongest first. The path that produced a target is recorded,
-because it bounds what the downstream Q2/Q3 verdict may claim:
+because it bounds what the downstream Q3/Q4 verdict may claim:
 
   A patch        diff hunk -> enclosing function            (data/vuln_funcs.json)
   B description  NVD text names the function, and that name
@@ -33,7 +33,7 @@ _FILE = re.compile(r"[\w./-]+\.(?:c|h|cc|cpp|cxx)\b")
 
 
 # A name can be defined in the snapshot and still be a useless target. Two kinds
-# showed up and reached the Q2/Q3 stages before being caught:
+# showed up and reached the Q3/Q4 stages before being caught:
 #   ZLIB_INTERNAL  an export macro the parser read as a function name
 #   memset         libc, which the NVD text mentions as the *called* primitive
 #                  ("can memset() too much data"), not the vulnerable function
@@ -136,7 +136,7 @@ def main():
 
     # Components with only a partial snapshot (the files the fix touches, at its
     # parent commit). The function is located from real code, but the source
-    # label keeps Q2/Q3 from reading anything into it: they need the whole
+    # label keeps Q3/Q4 from reading anything into it: they need the whole
     # program, and a one-file call graph would call almost everything unreachable.
     for cve in sorted(set(patch) - set(out)):
         if os.path.isdir(os.path.join(PARTIAL, cve)):
@@ -144,7 +144,7 @@ def main():
             if keep:
                 out[cve] = {"targets": keep, "source": "patch-partial",
                             "evidence": "fix-commit hunk; partial snapshot (touched "
-                                        "files at the fix's parent) - no Q2/Q3"}
+                                        "files at the fix's parent) - no Q3/Q4"}
 
     json.dump(out, open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
     n = lambda s: sum(1 for v in out.values() if v["source"] == s)  # noqa: E731

@@ -137,7 +137,7 @@ def item4_inputs():
             "analysis_context": {
                 # the snapshot is a library tree with no consumer, so there is no
                 # entry point or attacker-input binding to declare; recording that
-                # honestly is why Q2/Q3 only grade confidence and never refute
+                # honestly is why Q3/Q4 only grade confidence and never refute
                 "entry_point": None,
                 "execution_path": None,
                 "attacker_input": None,

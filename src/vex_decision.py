@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """The VEX decision logic, in one place.
 
-The source-level Q1-Q3 gates are now the VEX-v2 engines (tools/source_locate.py,
+The source-level Q2-Q4 gates are now the VEX-v2 engines (tools/source_locate.py,
 joern_reachability.py, z3_controllability.py, orchestrated by vex_judge_v2.py). The
 other rule surfaces this module keeps aligned with:
   src/vex_source_unavailable.py  the closed-firmware decision tree
@@ -74,7 +74,7 @@ import os
 def _corpus():
     """The code-level counts, READ FROM THE CACHES rather than written down.
 
-    These were hard-coded at 104 snapshots / Q2 100 / Q3 99 from the old
+    These were hard-coded at 104 snapshots / Q3 100 / Q4 99 from the old
     execution-verification campaign, and stayed on the published page after the
     population grew to the full collected-source corpus - the site was quoting a
     superseded run. Deriving them means the page cannot drift from the caches
@@ -109,15 +109,15 @@ def _corpus():
         "snapshots": len(os.listdir(snapdir)) if os.path.isdir(snapdir) else 0,
         "targets_located": sum(1 for v in loc.values()
                                if (v or {}).get("any_function_found")),
-        "q2_reachable": c2.get("reachable", 0),
-        "q2_unreachable": c2.get("not-reachable", 0),
-        "q2_unknown": c2.get("unknown", 0),
-        "q3_controllable": c3.get("controllable", 0),
-        "q3_not_controllable": c3.get("not-controllable", 0),
+        "q3_reachable": c2.get("reachable", 0),
+        "q3_unreachable": c2.get("not-reachable", 0),
+        "q3_unknown": c2.get("unknown", 0),
+        "q4_controllable": c3.get("controllable", 0),
+        "q4_not_controllable": c3.get("not-controllable", 0),
         # A refutation that only holds once the LLM's own environment defaults are
         # pinned is reported separately by tools/z3_controllability, because it is
         # not a refutation - see that module.
-        "q3_environment_dependent": c3.get("environment-dependent", 0),
+        "q4_environment_dependent": c3.get("environment-dependent", 0),
         "clearances_from_source_analysis": cleared,
     }
 
@@ -126,7 +126,7 @@ CORPUS = _corpus()
 
 
 QUESTIONS = [
-    {"id": "Q1", "ask": "Is the vulnerable code present?",
+    {"id": "Q2", "ask": "Is the vulnerable code present?",
      "clears_with": ["component_not_present", "vulnerable_code_not_present"],
      "how": "the CTI-located vulnerable function is defined in the collected source "
             "(tools/source_locate.py; CTI function names, else the patch-localised "
@@ -134,21 +134,21 @@ QUESTIONS = [
      "state": "implemented",
      "result": "over the 104 source-collectable CVEs: present 92, component-only 12 "
                "(the function could not be located)"},
-    {"id": "Q2", "ask": "Is it on an executed path?",
+    {"id": "Q3", "ask": "Is it on an executed path?",
      "clears_with": ["vulnerable_code_not_in_execute_path"],
      "how": "Joern CPG call-graph reachability from entry points "
             "(tools/joern_reachability.py, call-graph-only - no dataflow)",
      "state": "implemented",
      "result": "over the 104 source-collectable CVEs: reachable 65, not-reachable 1, "
                "unknown 38 (16 oversized snapshots skipped, 12 with no located function)"},
-    {"id": "Q3", "ask": "Can an adversary control it?",
+    {"id": "Q4", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
      "how": "Z3 decides whether attacker-controlled inputs satisfy the trigger, from "
             "an LLM formalisation of the CTI (tools/z3_controllability.py)",
      "state": "implemented",
-     "result": "controllable %(q3_controllable)d, not-controllable "
-               "%(q3_not_controllable)d, environment-dependent "
-               "%(q3_environment_dependent)d. The solver refutes NOTHING on this "
+     "result": "controllable %(q4_controllable)d, not-controllable "
+               "%(q4_not_controllable)d, environment-dependent "
+               "%(q4_environment_dependent)d. The solver refutes NOTHING on this "
                "corpus, and that is the honest reading: every refutation it used to "
                "report disappeared once the LLM's own `environment_fixed` defaults "
                "were unpinned, so those cases are reported as "
@@ -171,9 +171,9 @@ SOUNDNESS = [
      "a static graph sees only `f()`. Dispatch tables and callbacks "
      "(`sqlite3_create_function(..., rtreenode, ...)`) are invisible, so every "
      "address-taken function is treated as a root.",
-     "this single fix overturned all 6 clearances the first Q3 run produced"),
+     "this single fix overturned all 6 clearances the first Q4 run produced"),
     ("Entry-model completeness",
-     "Q3 seeds its walk from I/O readers, the public API and address-taken "
+     "Q4 seeds its walk from I/O readers, the public API and address-taken "
      "functions. When neither of the last two is found - Java, where requests "
      "arrive through reflection and framework dispatch - a missing tainted path "
      "is not evidence.",
@@ -233,7 +233,7 @@ def triage(remediation_categories):
     return LIKELIHOOD_UNKNOWN, "remediation categories not recognised"
 
 
-def resolve(q1=None, q2=None, q3=None, target_source="none",
+def resolve(q2=None, q3=None, q4=None, target_source="none",
             call_resolution=0.0, upstream=None, sbom_absent=False,
             source_available=True, min_resolution=0.5):
     """Final VEX status for one (product, vulnerability) statement.
@@ -260,7 +260,7 @@ def resolve(q1=None, q2=None, q3=None, target_source="none",
         return UNDER_INV, None, "source not obtainable; context does not set status"
 
     # 4. a code-level clearance requires a trustworthy target and a usable graph
-    clears = {"q1": q1, "q2": q2, "q3": q3}
+    clears = {"q2": q2, "q3": q3, "q4": q4}
     cleared = [k for k, v in clears.items() if v == "clear"]
     if cleared:
         src = TARGET_SOURCES.get(target_source, TARGET_SOURCES["none"])
@@ -274,7 +274,7 @@ def resolve(q1=None, q2=None, q3=None, target_source="none",
 
     # 5. every gate answered "still vulnerable" -> affected, but only when the
     #    chain was actually evaluated end to end
-    if all(clears[k] == "pass" for k in ("q1", "q2", "q3")):
+    if all(clears[k] == "pass" for k in ("q2", "q3", "q4")):
         return AFFECTED, None, "vulnerable code present, reachable and controllable"
 
     return UNDER_INV, None, "insufficient evidence"

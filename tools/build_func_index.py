@@ -47,7 +47,7 @@ def _exts(root):
 
     Python is included only for a component that ships no compiled sources at all.
     Nearly every C snapshot carries build and doc scripts - libxml2 2.9.1 alone has
-    about 40 .py files - and every extra name in the index can only turn a Q1 miss
+    about 40 .py files - and every extra name in the index can only turn a Q2 miss
     into a hit, i.e. push a verdict toward `affected`. A pure-Python component
     (sqlparse, CVE-2024-4340) has no such ambiguity: its .py files ARE the source.
     """
