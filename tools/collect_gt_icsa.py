@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""CISA 가 판정 근거를 남긴 ICSA 를 정답지(ground truth)로 수집한다.
+"""Collect, as ground truth, the ICSAs where CISA left grounds for its verdict.
 
-공개 ICS 생태계에서 VEX 판정에 해당하는 라벨을 가진 어드바이저리는 극소수다.
-그 전부를 프로젝트 안에 고정해 두어, 임시 clone 없이도 대조·재현이 가능하게 한다.
+Very few advisories in the public ICS ecosystem carry a label amounting to a VEX
+verdict. All of them are pinned inside the project so that comparison and reproduction
+need no throwaway clone.
 
-수집 계층
-  tier-1 (justification 보유)  vulnerabilities[].flags[].label 이 있는 ICSA
-                               -> CISA 5종 justification 이 명시된 유일한 사례
-  tier-2 (status 만)           known_not_affected 는 있으나 flags 가 없는 ICSA
-                               -> "영향 없음"만 있고 근거는 없는 사례
+Collection tiers
+  tier-1 (has a justification)  ICSAs carrying vulnerabilities[].flags[].label
+                                -> the only cases stating one of CISA's five
+                                   justifications
+  tier-2 (status only)          ICSAs with known_not_affected but no flags
+                                -> "not affected" asserted with no grounds given
 
-사용:
+Usage:
   git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF
   python tools/collect_gt_icsa.py --csaf-repo /tmp/CSAF
 """
@@ -76,8 +78,9 @@ def main():
         os.makedirs(os.path.join(OUT, sub), exist_ok=True)
 
     man = {"generated_from": "cisagov/CSAF (OT, icsa-* only)",
-           "note": ("tier1 = CISA justification(flags) 보유 — 코드/SBOM 근거가 명시된 유일한 사례. "
-                    "tier2 = known_not_affected 만 있고 근거 없음."),
+           "note": ("tier1 = carries a CISA justification (flags) - the only cases where "
+                    "code or SBOM grounds are stated. tier2 = known_not_affected only, "
+                    "with no grounds."),
            "tier1": [], "tier2": []}
 
     for aid, (rec, src) in sorted(t1.items()):

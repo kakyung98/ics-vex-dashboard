@@ -178,8 +178,8 @@ def main():
         targets = [t for t in targets if t["oss"] not in SKIP_BY_DEFAULT]
     if a.limit:
         targets = targets[:a.limit]
-    print("대상 %d건 (kernel %s)" % (len(targets),
-                                    "포함" if a.include_kernel else "제외"))
+    print("%d targets (kernel %s)" % (len(targets),
+                                      "included" if a.include_kernel else "excluded"))
 
     index = json.load(open(INDEX, encoding="utf-8")) if os.path.isfile(INDEX) else {}
     ok = skip = fail = 0
@@ -235,11 +235,11 @@ def main():
     if not a.dry_run:
         json.dump(index, open(INDEX, "w", encoding="utf-8"),
                   ensure_ascii=False, indent=1)
-    print("\n수집 성공 %d  이미보유 %d  실패 %d" % (ok, skip, fail))
+    print("\ncollected %d  already held %d  failed %d" % (ok, skip, fail))
     if reasons:
         import collections
         kinds = collections.Counter(v.split(":")[0] for v in reasons.values())
-        print("실패 사유:", dict(kinds))
+        print("failure reasons:", dict(kinds))
     print("->", SNAP, "|", INDEX)
 
 

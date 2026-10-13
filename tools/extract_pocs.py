@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""verify_evidence 에서 생성된 PoC 와 critic/verifier 판정을 한곳에 모은다.
+"""Gather the PoCs produced by verify_evidence together with the critic and verifier
+verdicts.
 
-각 CVE 의 conversations/exploiter.json 에서 PoC 코드를 꺼내
-  results/pocs/<CVE>.py            실행 가능한 스크립트 (헤더 주석에 출처/판정)
-로 저장하고, 전체 인덱스를
-  results/pocs/INDEX.md            표(코드 유무·critic·verifier·티어)
-  results/pocs/index.json          기계판독
-로 쓴다. 읽기 전용 — 배치가 도는 중에도 안전하다.
+Takes the PoC code out of each CVE's conversations/exploiter.json and writes
+  results/pocs/<CVE>.py            a runnable script (provenance and verdict in the
+                                   header comment)
+plus an index of everything:
+  results/pocs/INDEX.md            a table (code present, critic, verifier, tier)
+  results/pocs/index.json          machine-readable
+Read-only - safe to run while a batch is in progress.
 """
 import csv
 import json
@@ -53,7 +55,8 @@ def main():
         poc = (poc or "").strip()
         crit_ok = str(crit.get("decision", crit.get("success", ""))).lower() in ("yes", "true", "accepted")
         crit_analysis = crit.get("analysis") or crit.get("reason") or ""
-        # 최종 판정은 Validator 단계(run.log)가 권위. ctf_verifier.json 은 에이전트 중간산출물.
+        # The Validator step (run.log) is the authority on the final verdict;
+        # ctf_verifier.json is an intermediate agent artefact.
         import re as _re
         veri_ok = bool(_re.search(r"Results:\s*\{'success':\s*'True'", _logtxt)) and                   ("CVE reproduced" in _logtxt or "Flag found" in _logtxt)
         veri_reason = "CVE reproduced (execution-verified)" if veri_ok else                       (veri.get("reason","") or "not reproduced")
@@ -84,7 +87,7 @@ def main():
             "critic_analysis": crit_analysis[:500],
         })
 
-    # 인덱스
+    # the index
     json.dump(rows, open(os.path.join(OUT, "index.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)
     with_poc = [r for r in rows if r["has_poc"]]

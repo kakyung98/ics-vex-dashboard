@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""시험항목 #3 — SBOM 기반 공개 취약점 식별 정밀도의 평가용 Ground Truth 생성.
+"""Test item #3 - build the ground truth for SBOM-based public vulnerability
+identification precision.
 
 GT must not be derivable from the thing it scores. `sbom_match` / `cpe_match_l0l3`
 decide identity from data/cpe_index.json, so that index is off limits here. The two
@@ -29,7 +30,7 @@ The corpus splits into two layers, and they are NOT scorable the same way:
 Only Layer A is emitted as scorable GT. Layer B is written to a separate file so the
 exclusion is auditable rather than hidden.
 
-Out: data/cpe_match_eval.jsonl        scorable GT (HWP 평가용 Ground Truth schema)
+Out: data/cpe_match_eval.jsonl        scorable GT (the evaluation ground-truth schema)
      data/cpe_match_eval_layerB.jsonl excluded embedded-layer pairs, with reason
 """
 import argparse
@@ -246,7 +247,7 @@ def harvest(population=None):
 
 
 def to_gt(rec, idx):
-    """Layer A pair -> HWP 평가용 Ground Truth record (applicable=true).
+    """Layer A pair -> an evaluation ground-truth record (applicable=true).
 
     `review_status` is "verified" only when CISA and NVD agree. When the CISA
     product_tree range puts the component inside the affected set but NVD's
@@ -391,7 +392,7 @@ def colisted_vendor_negatives(layer_a, detail, seed, per_positive=1):
     When vulnerable code lives in shared OSS, NVD attaches one CPE per vendor that
     ships it, so a zlib CVE carries zlib:zlib AND oracle:* AND apple:* AND
     canonical:*. Attributing this asset's component to one of those foreign
-    vendor:product pairs is the "잘못된 제품 매핑" FP that `cpe_match_l0l3.vendor_ok()`
+    vendor:product pairs is the "wrong product mapping" FP that `cpe_match_l0l3.vendor_ok()`
     exists to block, so it is the FP mode worth scoring.
 
     Skipped when the asset's own SBOM declares that component by name — there the
@@ -515,7 +516,7 @@ def main():
     # the manifest is what makes the figure reproducible: it records the sampling
     # knobs and, just as importantly, what was EXCLUDED and why
     manifest = {
-        "test": "SBOM CVE-identification precision (시험항목 #3) — ground truth",
+        "test": "SBOM CVE-identification precision (test item #3) - ground truth",
         "generated_from": {"corpus": "reverse_sbom/ (CISA CSAF)",
                            "applicability": "data/nvd_cpe_detail.json (NVD)"},
         "evidence_sources": ["CISA", "NVD"],

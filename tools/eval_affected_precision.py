@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""시험항목 #4 — VEX 'affected' 자동분류 정밀도(precision).
+"""Test item #4 - precision of the automatic VEX `affected` classification.
 
     precision = TP / (TP + FP) * 100        (target >= 85%)
-      TP: 'affected' 로 분류했고 실제로도 영향받는 경우
-      FP: 'affected' 로 분류했으나 실제로는 영향 없는 경우
+      TP: classified `affected` and genuinely affected
+      FP: classified `affected` but not actually affected
 
-여기서 '실제 영향'의 정답은 코드 근거로 뒷받침되는 라벨을 쓴다:
-  - 기본: held-out 코퍼스의 status 라벨 (vulnerable=affected / patched|safe=not_affected)
-  - --clean: fix-commit 으로 뒷받침되는 패치쌍 소스(CVEfixes/BigVul/seed)만 —
-             "SBOM 버전 + 소스 패치 여부" TP 정의에 가장 부합
-recall 은 이 시험 대상이 아니므로, 확신이 낮으면 abstain(under_investigation)해서
-정밀도를 지킨다. --abstain 로 '애매하면 affected 를 보류' 규칙을 켠다.
+The answer for "genuinely affected" is a label backed by code evidence:
+  - default: the status label of the held-out corpus
+             (vulnerable = affected / patched|safe = not_affected)
+  - --clean: only patch-pair sources backed by a fix commit (CVEfixes, BigVul, seed),
+             which fits the "SBOM version + whether the source is patched" definition of
+             a TP most closely
+Recall is not under test here, so low confidence abstains (under_investigation) to
+protect precision. --abstain turns on the rule that an ambiguous case withholds
+`affected`.
 
 Usage:
   python tools/eval_affected_precision.py [--n 1200] [--clean] [--abstain]
@@ -124,13 +127,13 @@ def main():
             print("  %d/%d  affected=%d  precision=%.2f%%" % (i + 1, len(test), affirmed, p), flush=True)
 
     prec = 100.0 * tp / (tp + fp) if (tp + fp) else 0.0
-    res = {"test": "affected precision (시험항목 #4)", "target_pct": 85.0,
+    res = {"test": "affected precision (test item #4)", "target_pct": 85.0,
            "ground_truth": "clean patch-pairs" if a.clean else "held-out corpus labels",
            "mode": "self-consistency 5/5 abstain" if a.abstain else "greedy",
            "n": len(test), "classified_affected": affirmed, "TP": tp, "FP": fp,
            "abstained": abstained, "precision_pct": round(prec, 2),
            "pass": prec >= 85.0}
-    print("\n=== 시험항목 #4 · affected precision ===")
+    print("\n=== test item #4 - affected precision ===")
     print("  ground truth : %s" % res["ground_truth"])
     print("  mode         : %s" % res["mode"])
     print("  classified affected = TP+FP = %d  (TP=%d, FP=%d)" % (affirmed, tp, fp))

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""run.log 최종 판정을 권위 소스로 각 CVE 의 outcome 을 재분류한다.
+"""Reclassify each CVE's outcome, taking run.log's final verdict as the authority.
 
-배치 러너의 verify_ok 정규식이 좁아 실제 execution-verified 를 exploit-generated 로
-오분류했다. 여기서는 각 evidence 의 run.log 를 직접 읽어 정확히 티어를 매긴다:
-  execution-verified : 최종 Results success=True + ('CVE reproduced' | 'Flag found')
+The batch runner's verify_ok regex was too narrow and misfiled genuinely
+execution-verified records as exploit-generated. This reads each evidence's run.log
+directly and assigns the tier exactly:
+  execution-verified : final Results success=True and ('CVE reproduced' | 'Flag found')
   exploit-generated  : 'Critic accepted the exploit'
   build-only         : 'Critic accepted the repo build'
-  failed             : 그 외
-verify_full_summary.csv 의 outcome/verify_ok 컬럼을 제자리 정정한다(백업 남김).
+  failed             : everything else
+Corrects the outcome and verify_ok columns of verify_full_summary.csv in place, leaving a
+backup.
 """
 import csv, glob, os, re, shutil
 
@@ -53,10 +55,10 @@ def main():
 
     from collections import Counter
     dist = Counter(r["outcome"] for r in rows)
-    print("재분류 결과 (run.log 권위):")
+    print("Reclassification (run.log is the authority):")
     for k in ("execution-verified","exploit-generated","build-only","failed"):
         print(f"  {dist.get(k,0):>3}  {k}")
-    print(f"\n정정된 항목: {len(changed)}")
+    print(f"\nentries corrected: {len(changed)}")
     for cve, old, new in changed:
         print(f"  {cve}: {old} -> {new}")
 

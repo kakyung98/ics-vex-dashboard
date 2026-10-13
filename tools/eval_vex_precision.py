@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""시험항목 #4 — VEX 기반 식별된 취약점 영향 판단 정밀도.
+"""Test item #4 - precision of the VEX affected judgment.
 
     precision = TP / (TP + FP)              (acceptance: >= 0.85)
 
@@ -127,7 +127,7 @@ def score(gt_path=GT, sut_path=SUT, sut_patched=None, build="vulnerable",
     recall = tp / (tp + fn) if (tp + fn) else None
 
     return {
-        "test": "VEX affected-judgment precision (시험항목 #4)",
+        "test": "VEX affected-judgment precision (test item #4)",
         "sut": "tools/vex_judge_v2 (cached: %s)" % ", ".join(
             "%s=%s" % (b, os.path.relpath(
                 sut_path if b == "vulnerable" else sut_patched, BASE))
@@ -192,10 +192,10 @@ def main():
 
     for p in (a.gt, a.sut):
         if not os.path.isfile(p):
-            print("없음: %s" % p)
+            print("missing: %s" % p)
             return
     if a.sut_patched and not os.path.isfile(a.sut_patched):
-        print("없음: %s" % a.sut_patched)
+        print("missing: %s" % a.sut_patched)
         return
 
     res = score(a.gt, a.sut, a.sut_patched, build=a.build,
@@ -208,7 +208,7 @@ def main():
     no_sut_for_build = res["gt_cases_no_sut_for_build"] or {}
     per_build, fp_rows = res["per_build"], res["fp_cases"]
 
-    print("=== 시험항목 #4 · VEX 영향 판단 정밀도 ===")
+    print("=== test item #4 - VEX affected-judgment precision ===")
     print("  SUT            : %s" % res["sut"])
     print("  GT             : %s  (%d cases)" % (res["ground_truth"], len(gt)))
     print("  build scored   : %s" % a.build)

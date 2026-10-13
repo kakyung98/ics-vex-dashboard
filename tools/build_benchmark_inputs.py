@@ -156,7 +156,7 @@ def write(path, rows):
 def main():
     for p in (GT3, GT4):
         if not os.path.isfile(p):
-            print("먼저 번들을 만드십시오: python tools/build_benchmark_bundle.py")
+            print("build the bundle first: python tools/build_benchmark_bundle.py")
             return
     print("benchmark inputs:")
     write(os.path.join(BASE, "data", "bench_input_item3.jsonl"), item3_inputs())

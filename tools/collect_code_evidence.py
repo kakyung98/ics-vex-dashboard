@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-OSS CVE -> 실제 취약/패치 코드 수집 (CodeBERT 입력).
+OSS CVE -> collect the real vulnerable and patched code (input for CodeBERT).
 
-OSV 에서 각 CVE 의 FIX 커밋(GitHub)을 찾아 diff 를 가져오고,
-첫 코드 파일 hunk 에서 취약 코드(pre-patch)와 패치 코드(post-patch)를 재구성한다.
+Finds each CVE's FIX commit (on GitHub) through OSV, fetches the diff, and reconstructs
+the vulnerable (pre-patch) and patched (post-patch) code from the first code file's
+hunk.
 
-  vuln_code    = context + 삭제(-) 라인  (패치 전 = 취약)
-  patched_code = context + 추가(+) 라인  (패치 후 = 수정)
+  vuln_code    = context + the deleted (-) lines   (pre-patch = vulnerable)
+  patched_code = context + the added (+) lines     (post-patch = fixed)
 
-출력: data/code_evidence.json  { CVE: {repo, file, commit, vuln_code, patched_code} }
-커버리지는 부분적이다(OSV 가 커밋을 제공하는 CVE 만). 나머지는 코드 미확보로 남는다.
+Output: data/code_evidence.json  { CVE: {repo, file, commit, vuln_code, patched_code} }
+Coverage is partial - only CVEs for which OSV supplies a commit. The rest stay without
+code.
 """
 import json, os, re, sys, time, urllib.request, urllib.error
 
@@ -50,8 +52,8 @@ def osv_commits(cve):
 
 
 def parse_diff(diff):
-    """첫 코드 파일의 첫 hunk -> (file, vuln_code, patched_code)."""
-    # 파일 블록 분리
+    """The first hunk of the first code file -> (file, vuln_code, patched_code)."""
+    # Split into file blocks
     blocks = re.split(r"(?m)^diff --git ", diff)
     for b in blocks:
         fm = re.search(r"^\+\+\+ b/(.+)$", b, re.M)
@@ -60,7 +62,7 @@ def parse_diff(diff):
         fpath = fm.group(1).strip()
         if not fpath.lower().endswith(CODE_EXT):
             continue
-        # 첫 hunk
+        # the first hunk
         hm = re.search(r"(?ms)^@@[^\n]*@@\n(.*?)(?=\n@@|\Z)", b)
         if not hm:
             continue
