@@ -201,30 +201,73 @@ marked `variant:source=cisa-csaf` and kept distinct from own derivation.
 
 ## 6. Code-level adjudication — Q2-Q4
 
-Three code-level questions are implemented and were run over **104** source snapshots.
-CISA's fifth justification, `inline_mitigations_already_exist`, is not adjudicated by this
-project. (The execution-verification campaign attempted 106 CVEs, but 2 — CVE-2021-33909
-and CVE-2023-32233 — failed immediately at the CVE Processor step and no source was
-fetched. The population for code-level analysis is 104. Those 2 were later collected as
-partial snapshots covering only the files the fix touched, which is enough to name a
-target but not to run Q3/Q4.)
-Q4's single `not-controllable` verdict (Spring4Shell) is held at `under_investigation` by
-the entry-model gate — in Java requests arrive through reflection and framework dispatch,
-which a static graph cannot see. The shared rule lives in one place,
-`src/vex_decision.py`, and the console's **VEX Flag Decision Logic** page is generated
-from that module, so the documented rule and the executed rule cannot diverge.
+The source-level pipeline is now the VEX-v2 engines: an LLM structures the CTI, and the
+solvers decide — Joern for reachability (Q3), Z3 for controllability (Q4), orchestrated by
+`tools/vex_judge_v2.py`. It runs over the **267** collected-source CVEs. (This supersedes
+the earlier execution-verification campaign of 104 snapshots; the retired engines
+`callgraph_reach.py` / `taint_reach.py` are gone, and the 5 historical execution-verified
+records are kept only as a historical conclusive tier — see §8.) CISA's fifth
+justification, `inline_mitigations_already_exist`, is not adjudicated.
 
-| Q | tool | result | cleared |
+The gate hierarchy is the central design choice: **Q2 presence decides; Q3 and Q4 are
+optional and only grade the evidence tier, never refuting.** A library snapshot has no
+consumer in it, so "not reachable from an in-snapshot root" false-negatives on the attack
+surface itself. The shared rule lives in one place, `src/vex_decision.py`, and the
+console's **VEX Flag Decision Logic** page is generated from that module, so the documented
+rule and the executed rule cannot diverge.
+
+| Q | engine | result over 267 | decides? |
 |---|---|---|---|
-| Q2 vulnerable code present | `tools/judge_ics_cves.py` | held-out macro-F1 0.892 / ICS pairs 0.333 | 0 |
-| Q3 execution path | `tools/callgraph_reach.py` | reachable 100, target-not-found 4, no-source 0 | **0** |
-| Q4 adversary control | `tools/taint_reach.py` | controllable 99, target-not-found 4, no-source 0 | **0** |
+| Q2 presence | `tools/source_locate.py` | present 222, component_only 45 | **yes** — present -> affected |
+| Q3 reachability | `tools/joern_reachability.py` (Joern CPG) | reachable 168, unknown 51, not-reachable 4 | no (tier only) |
+| Q4 controllability | `tools/z3_controllability.py` (Z3) | controllable 213, environment-dependent 9, unknown 1 | no (tier only) |
 
-**Source-level analysis clears nothing on this corpus.** That is not a failure of the
-tooling but a reproduction of the public record — across all 3,984 CISA OT CSAF documents,
-`vulnerable_code_cannot_be_controlled_by_adversary` and
+Of the 168 `reachable`, 157 rest on a CTI-named entry point and 11 on the snapshot's
+call-graph roots (a weaker basis, recorded in each verdict's detail). The resulting
+evidence tiers over the 267: `verified` 144, `present` 63, `component` 45, `reachable` 11,
+`patch-verified` 4. Final verdicts: `affected` 263, `fixed` 4.
+
+**Source-level analysis clears nothing on this corpus**, and that is by design, not
+weakness: Q3/Q4 never refute. It also reproduces the public record — across all 3,984 CISA
+OT CSAF documents, `vulnerable_code_cannot_be_controlled_by_adversary` and
 `inline_mitigations_already_exist` have each been used **zero times**. The only
 justifications that survive here are `component_not_present` and upstream citation.
+
+> **Q4 used to report `not-controllable` on 9 CVEs. It no longer does, and that is the
+> honest reading.** Every one of those refutations became satisfiable once the LLM's own
+> `environment_fixed` defaults were unpinned — the model had written a default its own
+> trigger contradicts (`max_recursion_depth < 100` pinned to exactly 100; `table_info == 0`
+> pinned to 1). They are now reported as `environment-dependent`, not as refutations. On
+> this corpus Z3 refutes nothing.
+
+### 6.0 Are the solvers measured? The Q3/Q4 agreement axis
+
+Because Q2 presence decides the verdict, Joern and Z3 contribute **0** to item #4's
+precision figure. They are measured on a separate axis
+(`tools/eval_q34_agreement.py`, ground truth `data/vex_q34_gt.jsonl`, 285 labels) whose
+authorities sit outside this repository: a component's shipped **public headers** for
+reachability, and **NVD CVSS AV/UI** for controllability. This is a supplementary
+disclosure, not a certification item.
+
+| | labels | scored | contradictions | recall | verdict |
+|---|---:|---:|---:|---:|---|
+| Q3 — Joern | 75 | 58 | **2** | 0.9655 | **FAIL** |
+| Q4 — Z3 | 210 | 166 | 0 | 1.0000 | PASS |
+
+The acceptance criterion is **contradictions == 0**, not recall or precision. Neither of
+those can carry a bar here: the answer key is one-sided (a public header cannot say an
+internal function is *un*reachable, and CVSS cannot say an input is *not* attacker-chosen),
+so a precision reads 1.0000 by construction and a recall threshold is passed outright by a
+solver that answers "yes" to everything. The harm this pipeline can take is
+one-directional — an over-positive solver clears nothing and is safe, while an
+over-refuting one produces false clearances — so the bar is placed there: the solver must
+never assert the negative where an outside authority asserts the positive.
+
+**Q3 fails, and is published failing.** Joern returned `not-reachable` on only 4 CVEs, and
+2 of those 4 contradict the authority: `GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's
+`inflate` (CVE-2022-37434) are both declared in a shipped public header. Half of what Joern
+refuted on this corpus is wrong — which is precisely why Q3 must never decide, and the
+measurement that justifies the gate hierarchy above.
 
 ### 6.1 Naming the vulnerable function — three routes, different clearance rights
 
@@ -276,6 +319,10 @@ it was aimed at, in full.
 A code-level question does not exist without a target, so coverage is the constraint that
 binds Q3/Q4. Most of the gain came not from domain difficulty but from fixing **defects in
 the collector and the extractor**.
+
+The table below is the historical record of that work on the 104/106-snapshot campaign;
+the routes and fixes it describes are the same localization methodology now applied over
+the current **267** collected-source CVEs (Q2 present 222, component_only 45).
 
 | step | cumulative | what was fixed |
 |---|---|---|
