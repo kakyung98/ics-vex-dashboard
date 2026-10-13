@@ -2764,11 +2764,12 @@ PAGES = {
 _NAV_GROUPS = [
     ("Analyzer", [
         ("analyzer", "index.html", "ICS-VEXForge"),
-        ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
     ]),
-    # The VEX decision method, in two halves: the source-available tree and the
-    # source-unavailable asset-attribute estimate. Grouped apart from the analyzer.
+    # The methodology pages: how SBOM->CVE identification is bounded, and the two
+    # halves of the VEX decision (source-available tree + source-unavailable
+    # asset-attribute estimate). Grouped apart from the analyzer tool.
     ("Method", [
+        ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
         ("asset-vex", "asset-vex.html", "Asset-based VEX (no source)"),
     ]),
