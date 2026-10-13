@@ -33,7 +33,7 @@ import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
 import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
 from cert_page import CERT_PAGE      # the /cert.html markup + client script
-from asset_vex_page import ASSET_VEX_PAGE  # the /asset-vex.html markup + client
+from asset_vex_page import ASSET_VEX_PAGE, ASSET_AV_MODAL_JS  # /asset-vex.html + shared modal JS
 import asset_av_judge as AV                # source-less exploitability logic
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
@@ -1291,6 +1291,14 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .cwerow b{text-align:right;font-family:var(--mono)}
 .clk{cursor:pointer}
 .vexf{display:block;margin:9px 0}.vexf>span{display:block;margin-bottom:3px}.vexf input,.vexf select{width:100%}
+.av-grp{margin:10px 0}.av-grp h4{margin:0 0 6px;font-size:13px;color:var(--ink2)}
+.av-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:9px}
+.av-f{display:flex;flex-direction:column;gap:3px;font-size:13px}.av-f span{color:var(--ink2)}
+.av-f select,.av-f input{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13px;font-family:var(--sans)}
+.av-verdict{font-size:20px;font-weight:800;padding:10px 14px;border-radius:10px;margin-bottom:10px}
+.av-aff{background:rgba(229,103,92,.15);color:var(--aff)}.av-safe{background:rgba(67,190,124,.15);color:var(--safe)}.av-und{background:rgba(224,178,76,.15);color:var(--und)}
+.av-chip{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;margin:2px 4px 2px 0;font-size:12px;font-family:var(--mono)}
+.btn-go{font-size:15px;padding:9px 20px}
 .vexset .badge{outline:2px solid var(--accent)}.clk:hover{opacity:.8}
 .cwename{color:var(--ink3);font-size:12px;margin-left:6px}
 /* drill-down modal */
@@ -1694,7 +1702,11 @@ function _autoStatus(cve){
   const f=(_lastVex&&_lastVex.cves||[]).find(x=>x.cve===cve)||{};
   let raw=f.final_vex, just=f.justification||'';
   return {status:_canonStatus(raw), justification:just, cvss:f.cvss, component:f.component||'', av:f.av||''};}
-function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){return {status:'under_investigation',source_collectable:false};}return {status:(ov.status||auto.status),source_collectable:true};}
+function _rowStatus(cve){var f=((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{};var auto=_autoStatus(cve);var ov=_vexFields[cve]||{};if(!f.source_collectable&&f.justification!=='component_not_present'){
+  // Source-uncollectable defaults to under_investigation, but a saved
+  // asset-attribute estimate (estimated_by:'asset-attribute') overrides it.
+  if(ov.estimated_by==='asset-attribute'&&ov.status){return {status:ov.status,source_collectable:false,estimated:true};}
+  return {status:'under_investigation',source_collectable:false};}return {status:(ov.status||auto.status),source_collectable:true};}
 function _abstainBlock(d){
   // An abstention is a decision, not a gap. The matcher declines rather than
   // guess when no CPE product is a clear winner - picking one at 0.381 against
@@ -1715,7 +1727,7 @@ function _abstainBlock(d){
     +rows+'</tbody></table></details>';
 }
 function _esc(v){return String(v==null?'':v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
-function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est='';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
+function _vexCellInner(cve){var rs=_rowStatus(cve);var col=_statCol(rs.status);var est=rs.estimated?' <span class="hint" style="font-size:11px">(asset-based)</span>':'';return '<span class="badge" style="background:'+col+'22;color:'+col+'">'+_statLabel(rs.status)+'</span>'+est+' <button class="treebtn" style="padding:2px 7px;font-size:12px" onclick="openVexEditor(\\''+cve+'\\')">&#9998; VEX</button>';}
 // VEX-v2 evidence label — shows the PER-CVE reason (evidence tier), not a blanket claim.
 // affected is the VEX default for present code; the tier says how strong the evidence is.
 function _v2Label(v){
@@ -1762,6 +1774,7 @@ function _opt(list,cur){return list.map(o=>'<option value="'+o[0]+'"'+(o[0]===cu
 function _fld(id,label,val){return '<label class="vexf"><span class="hint">'+esc(label)+'</span><input id="'+id+'" class="srch" value="'+esc(val||'')+'"></label>';}
 function _ssvcPanel(cve){var p=ssvcFor(cve);var h='<label class="vexf"><span class="hint">Exploitation (auto: KEV/EPSS)</span><select id="vf-e" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_EXPL,p.exploitation)+'</select></label>';h+='<label class="vexf"><span class="hint">System Exposure (auto: deployment exposure)</span><select id="vf-x" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_EXPO,p.exposure)+'</select></label>';h+='<label class="vexf"><span class="hint">Automatable (auto: CVSS AV)</span><select id="vf-a" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_AUTO,p.automatable)+'</select></label>';h+='<label class="vexf"><span class="hint">Human Impact (safety/mission &mdash; operator input)</span><select id="vf-h" class="srch" onchange="ssvcRecalc()">'+_opt(SSVC_HI,p.human_impact)+'</select></label>';h+='<div id="vf-ssvc-dec" class="vm-verd" style="margin-top:4px"></div>';return h;}function _ssvcCur(){return {exploitation:_v('vf-e'),exposure:_v('vf-x'),automatable:_v('vf-a'),human_impact:_v('vf-h')};}function ssvcRecalc(){var p=_ssvcCur();var d=ssvcDecide(p);var el=document.getElementById('vf-ssvc-dec');if(el)el.innerHTML='SSVC priority: <b style="color:'+(SSVC_COL[d]||'var(--ink)')+'">'+d+'</b> &middot; <span class="mono hint">'+ssvcVector(p)+'</span>';}
 function openVexEditor(cve){
+  _avModalVerdict=null;
   const auto=_autoStatus(cve); const f=Object.assign({},auto,_vexFields[cve]||{});
   document.getElementById('mtitle').textContent='VEX statement — '+cve;
   let h='<div class="srch-meta">'+esc(f.component)+' · auto status: <b>'+esc(auto.status)+'</b>'+(auto.cvss!=null?(' · CVSS '+auto.cvss):'')+'</div>';
@@ -1773,8 +1786,22 @@ function openVexEditor(cve){
   document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
 function _vexEditorBody(cve,f){
   f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
-  var _uncb=!(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{}).source_collectable;
-  if(_uncb){return _fld('vf-prog','Investigation progress',f.investigation_progress)+_fld('vf-missing','Missing evidence',f.missing_evidence)+_fld('vf-plan','Planned update',f.planned_update);}
+  var row=(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{});
+  var _uncb=!row.source_collectable;
+  if(_uncb){
+    // Source-uncollectable: no function to locate, so run the asset-attribute
+    // estimation instead (five NVAS flowcharts -> attack vectors -> match CVSS AV).
+    var av=row.av||'';
+    var h='<div class="srch-meta" style="margin-bottom:8px">CVSS AV: <b>'+(av||'—')+'</b> &middot; '
+      +'enter the asset attributes to estimate exploitability. Blank fields &rarr; under_investigation.</div>';
+    h+='<div id="av-modal-form">'+avAssetFormHtml('modal')+'</div>';
+    h+='<div style="margin:10px 0"><button class="treebtn" onclick="avModalAssess(\\''+cve+'\\',\\''+av+'\\')">Assess exploitability</button></div>';
+    h+='<div id="av-modal-out" style="margin-bottom:10px"></div>';
+    h+='<details style="margin-top:4px"><summary class="hint">Investigation notes (optional)</summary>'
+      +_fld('vf-prog','Investigation progress',f.investigation_progress)
+      +_fld('vf-missing','Missing evidence',f.missing_evidence)
+      +_fld('vf-plan','Planned update',f.planned_update)+'</details>';
+    return h;}
   const st=f.status;
   if(st==='not_affected')
     return '<label class="vexf"><span class="hint">Justification (flags)</span><select id="vf-just" class="srch">'+_opt(VEX_JUST,f.justification&&VEX_JUST.some(j=>j[0]===f.justification)?f.justification:_ovJust(f.justification))+'</select></label>'
@@ -1787,11 +1814,25 @@ function _vexEditorBody(cve,f){
   return _fld('vf-prog','Investigation progress',f.investigation_progress)+_fld('vf-missing','Missing evidence',f.missing_evidence)+_fld('vf-plan','Planned update',f.planned_update);
 }
 function vexStatusChange(cve){const st=document.getElementById('vf-status').value;const f=Object.assign({},_autoStatus(cve),_vexFields[cve]||{},{status:st});document.getElementById('vf-body').innerHTML=_vexEditorBody(cve,f);}
+var _avModalVerdict=null;
+async function avModalAssess(cve,av){
+  _avModalVerdict=await avAssessForm('modal',cve,av,'av-modal-out');
+}
 function _v(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 function saveVexFields(cve){
   var _unc=!(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{}).source_collectable;
   var o;
-  if(_unc){o={status:'under_investigation',investigation_progress:_v('vf-prog'),missing_evidence:_v('vf-missing'),planned_update:_v('vf-plan')};}
+  if(_unc){
+    // Adopt the asset-attribute estimate as the VEX status when one was produced;
+    // otherwise fall back to recording the free-text investigation notes.
+    if(_avModalVerdict){
+      o={status:_avModalVerdict.status, basis:_avModalVerdict.reason,
+         av_vectors:_avModalVerdict.vectors||null, estimated_by:'asset-attribute',
+         investigation_progress:_v('vf-prog'),missing_evidence:_v('vf-missing'),planned_update:_v('vf-plan')};
+    } else {
+      o={status:'under_investigation',investigation_progress:_v('vf-prog'),missing_evidence:_v('vf-missing'),planned_update:_v('vf-plan')};
+    }
+  }
   else{var st=_v('vf-status');o={status:st};
     if(st==='not_affected'){o.justification=_v('vf-just');o.action_statement=_v('vf-impact');}
     else if(st==='affected'){o.remediation=_v('vf-remed');o.action_statement=_v('vf-action');}
@@ -2105,6 +2146,7 @@ async function openAdvisory(id){await loadSbomIndex();let a=ADV_LIST.find(x=>Str
 if(document.getElementById('sbom-q'))initIcsSbom();
 
 if(document.getElementById('adv-q'))initSource();
+__ASSET_AV_JS__
 </script></body></html>"""
 
 # ---- page content blocks (split across 3 pages) --------------------------
@@ -2751,7 +2793,8 @@ def make_page(active):
     return (FRONTEND_TEMPLATE
             .replace("__VEX_TREE__", json.dumps(VT.TREE, ensure_ascii=False))
             .replace("__NAV__", nav_html(active))
-            .replace("__CONTENT__", content))
+            .replace("__CONTENT__", content)
+            .replace("__ASSET_AV_JS__", ASSET_AV_MODAL_JS))
 
 
 app = build_app()

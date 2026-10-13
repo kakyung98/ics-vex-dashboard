@@ -197,3 +197,76 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 """.replace("__ASSET_GROUPS__", _groups_html(ASSET_FIELDS)) \
    .replace("__EXTRA_FIELDS__", "".join(_field_html(k, l, t) for k, l, t in EXTRA_FIELDS))
+
+
+# --- shared with the analyzer's VEX editor modal --------------------------------
+# The modal renders the same attribute form per source-uncollectable CVE. To keep
+# one source of truth, the field schema is generated here from the SAME lists the
+# standalone page uses, as a JS array, and injected into the shared frontend script
+# (api_server __ASSET_AV_JS__). Both forms therefore ask for identical fields.
+import json as _json
+
+
+def _js_schema():
+    def opts(typ, key):
+        if typ in ("bool", "tri"):
+            base = [["", "unknown" if typ == "tri" else "—"], ["y", "Yes"], ["n", "No"]]
+            return base
+        if typ.startswith("enum:"):
+            lab = _LOC_LABEL if key == "physical_location" else (
+                _ACC_LABEL if key == "access_right" else {})
+            return [["", "—"]] + [[v, lab.get(v, v)] for v in typ[5:].split("|")]
+        return []
+    groups = [{"title": t, "fields": [{"k": k, "label": l, "type": ty, "opts": opts(ty, k)}
+                                      for k, l, ty in fs]}
+              for t, fs in ASSET_FIELDS]
+    extra = [{"k": k, "label": l, "type": ty, "opts": opts(ty, k)}
+             for k, l, ty in EXTRA_FIELDS]
+    return _json.dumps({"groups": groups, "extra": extra}, ensure_ascii=False)
+
+
+ASSET_AV_MODAL_JS = """
+// Asset-attribute exploitability form, shared by /asset-vex.html and the analyzer's
+// source-uncollectable VEX editor. Schema generated from src/asset_vex_page.py.
+var ASSET_AV_SCHEMA = __SCHEMA__;
+function _avOpts(opts, cur){return opts.map(function(o){
+  return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+o[1]+'</option>';}).join('');}
+function _avFieldHtml(f, pfx){
+  return '<label class="av-f"><span>'+f.label+'</span>'
+    +'<select data-avk="'+f.k+'" data-avp="'+pfx+'">'+_avOpts(f.opts,'')+'</select></label>';}
+function avAssetFormHtml(pfx){
+  var h='';
+  ASSET_AV_SCHEMA.groups.forEach(function(g){
+    h+='<div class="av-grp"><h4>'+g.title+'</h4><div class="av-grid">'
+      +g.fields.map(function(f){return _avFieldHtml(f,pfx);}).join('')+'</div></div>';});
+  h+='<div class="av-grp"><h4>CVE-derived facts <span class="hint">(optional, from the CVE description)</span></h4>'
+    +'<div class="av-grid">'+ASSET_AV_SCHEMA.extra.map(function(f){return _avFieldHtml(f,pfx);}).join('')+'</div></div>';
+  return h;}
+function avCollectForm(pfx){
+  var attrs={}, extra={}, extraKeys={};
+  ASSET_AV_SCHEMA.extra.forEach(function(f){extraKeys[f.k]=1;});
+  document.querySelectorAll('select[data-avp="'+pfx+'"]').forEach(function(s){
+    var k=s.getAttribute('data-avk'), v=s.value, val;
+    if(v==='y')val=true; else if(v==='n')val=false; else if(v!=='')val=v; else val=null;
+    if(extraKeys[k]){ if(val!==null)extra[k]=val; } else { attrs[k]=val; }
+  });
+  return {attributes:attrs, extra:extra};}
+async function avAssessForm(pfx, cve, av, outId){
+  var out=document.getElementById(outId); if(out)out.textContent='assessing\u2026';
+  var c=avCollectForm(pfx);
+  try{
+    var r=await fetch('/api/asset-vex',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({cve:cve, av:av, attributes:c.attributes, extra:c.extra})});
+    var j=await r.json();
+    if(!r.ok){ if(out)out.innerHTML='<span style="color:var(--aff)">'+(j.detail||'error')+'</span>'; return null; }
+    if(out)out.innerHTML=avVerdictHtml(j); return j;
+  }catch(e){ if(out)out.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; return null; }}
+function avVerdictHtml(j){
+  var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
+  var h='<div class="av-verdict '+cls+'">'+j.status.replace(/_/g,' ').toUpperCase()+'</div>';
+  h+='<p style="margin:0 0 10px">'+(j.reason||'')+'</p>';
+  if(j.vectors){h+='<div style="margin-bottom:6px"><b>Attack vectors on the asset</b></div>';
+    h+= j.vectors.length ? j.vectors.map(function(v){return '<span class="av-chip">'+v+'</span>';}).join('') : '<span class="hint">none</span>';}
+  if(j.missing&&j.missing.length)h+='<div class="hint" style="margin-top:8px">missing: '+j.missing.join(', ')+'</div>';
+  return h;}
+""".replace("__SCHEMA__", _js_schema())
