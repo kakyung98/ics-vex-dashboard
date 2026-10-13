@@ -248,7 +248,9 @@ for key, fname in [("analyzer", "index.html"),
                    ("dataset", "corpus.html"), ("dataset", "collectable.html"),
                    ("published-vex", "published-vex.html"),
                    ("ics-sbom", "ics-sbom.html"),
-                   ("asset-vex", "asset-vex.html")]:
+                   # the asset-attribute estimate is merged into the decision page;
+                   # asset-vex.html stays as an alias so old links resolve
+                   ("vex-decision", "asset-vex.html")]:
     page = (html.replace("__NAV__", A.nav_html(key, exclude=_SITE_EXCLUDE))
                 .replace("__CONTENT__", A.PAGES[key][1]))
     open(os.path.join(SITE, fname), "w", encoding="utf-8").write(page)
