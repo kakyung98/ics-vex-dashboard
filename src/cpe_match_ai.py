@@ -160,6 +160,28 @@ def retrieve(name, k=TOP_K):
     return [(keys[i], float(sims[i])) for i in top]
 
 
+_UNAVAILABLE = [None]          # set once the encoder is known to be missing
+
+
+def available():
+    """Is the retrieval stage usable here?
+
+    The encoder is 477 MB and not in the repository, so a checkout that has not
+    run tools/train_cpe_encoder.py does not have it. This path is now the default
+    matcher, which means a missing encoder must COST RECALL, never raise: the
+    string cascade's answers are still correct, there are simply fewer of them.
+    Checked once and remembered, because the failure is a missing directory and
+    will not resolve itself mid-run.
+    """
+    if _UNAVAILABLE[0] is None:
+        try:
+            _encoder()
+            _UNAVAILABLE[0] = False
+        except Exception as e:
+            _UNAVAILABLE[0] = "%s: %s" % (type(e).__name__, str(e)[:120])
+    return _UNAVAILABLE[0] is False
+
+
 def identify_product(component):
     """(product, how) or (None, reason). The string cascade decides first."""
     product, how = L.identify_product(component)
@@ -168,7 +190,15 @@ def identify_product(component):
     name = str(component.get("name") or "").strip()
     if not name:
         return None, how
-    cands = retrieve(name)
+    if not available():
+        # the cascade's own reason is the honest one; say the retrieval stage was
+        # not consulted rather than implying it looked and found nothing
+        return None, "%s [retrieval unavailable: %s]" % (how, _UNAVAILABLE[0])
+    try:
+        cands = retrieve(name)
+    except Exception as e:
+        _UNAVAILABLE[0] = "%s: %s" % (type(e).__name__, str(e)[:120])
+        return None, "%s [retrieval failed: %s]" % (how, _UNAVAILABLE[0])
     if not cands:
         return None, "ai: no candidate"
     best, score = cands[0]

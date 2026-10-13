@@ -8,7 +8,7 @@ down, because written-down figures are what went stale last time.
 
 | item | metric | result | acceptance | scored on |
 |---|---|---|---|---|
-| #3 | SBOM -> CVE identification precision | **94.99%** (TP 10,294 / FP 543) | >= 0.80 | 10,837 labelled predictions |
+| #3 | SBOM -> CVE identification precision | **94.90%** (TP 10,653 / FP 572) | >= 0.80 | 11,225 labelled predictions |
 | #4 | VEX affected-judgment precision | **97.18%** (TP 138 / FP 4) | >= 0.85 | 142 (CVE, build) cases |
 
 #3 identifies CVEs from the SBOM, #4 judges whether the identified CVEs actually
@@ -29,12 +29,12 @@ same `score()` functions these results came from.
 | `manifest.json` | how the GT was built |
 | `result.json` | the scored run |
 
-**Read `result.json` with its coverage stated.** Precision is 94.99% over 10,837
-scored predictions — 6.32% of what the matcher emits. The rest are CVEs the
-ground truth does not enumerate for that component (133,570), or cases where CISA
+**Read `result.json` with its coverage stated.** Precision is 94.90% over 11,225
+scored predictions — 6.45% of what the matcher emits. The rest are CVEs the
+ground truth does not enumerate for that component (134,641), or cases where CISA
 says the ICS product is affected while NVD files the CVE against an embedded third
-party (27,031): the two authorities disagree about what the CVE is filed against,
-not about what the component is. The matcher also declines to identify 6,633 of
+party (28,105): the two authorities disagree about what the CVE is filed against,
+not about what the component is. The matcher also declines to identify 6,241 of
 14,173 components rather than guess at an ambiguous name; abstaining costs recall
 and is free under a precision-only metric, so it is disclosed here.
 

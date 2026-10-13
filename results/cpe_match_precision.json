@@ -1,6 +1,6 @@
 {
   "test": "SBOM CVE-identification precision (시험항목 #3)",
-  "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
+  "sut": "src/cpe_match_ai (retrieval behind the cascade)",
   "sut_mode": "recall-safe (default)",
   "ground_truth": "data\\cpe_match_eval.jsonl",
   "gt_labels": 35195,
@@ -10,23 +10,23 @@
   },
   "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN product; the SUT reports (product, vendor-of-that-product) so it can never emit them. The product axis is scored by closed-world rule instead.",
   "sut_runs": 14173,
-  "sut_abstained": 6633,
-  "TP": 10294,
-  "FP": 543,
-  "scored": 10837,
-  "unlabelled_predictions": 133570,
-  "unadjudicable_predictions": 27031,
+  "sut_abstained": 6241,
+  "TP": 10653,
+  "FP": 572,
+  "scored": 11225,
+  "unlabelled_predictions": 134641,
+  "unadjudicable_predictions": 28105,
   "unadjudicable_reason": "SUT resolved the product the component name itself carries, but the GT's vendor-anchored CPE names a different (usually embedded) product for that CVE; the authorities disagree on filing, not on identity",
-  "labelled_share_pct": 6.32,
+  "labelled_share_pct": 6.45,
   "fp_by_axis": {
-    "product": 298,
+    "product": 327,
     "identifier": 240,
     "version": 5
   },
   "tp_by_path": {
     "model-number": 6954
   },
-  "precision": 0.9499,
+  "precision": 0.949,
   "acceptance_criterion": "precision >= 0.80",
   "pass": true,
   "fp_examples": [
@@ -265,6 +265,33 @@
       "axis": "product"
     },
     {
+      "component": "Moxa NPort 5150 <= 3.7",
+      "sut_product": "nport_5150_firmware",
+      "correct_products": [
+        "nport_5110_firmware"
+      ],
+      "cve": "CVE-2017-14028",
+      "axis": "product"
+    },
+    {
+      "component": "Moxa NPort 5150 <= 3.7",
+      "sut_product": "nport_5150_firmware",
+      "correct_products": [
+        "nport_5110_firmware"
+      ],
+      "cve": "CVE-2017-16715",
+      "axis": "product"
+    },
+    {
+      "component": "Moxa NPort 5150 <= 3.7",
+      "sut_product": "nport_5150_firmware",
+      "correct_products": [
+        "nport_5110_firmware"
+      ],
+      "cve": "CVE-2017-16719",
+      "axis": "product"
+    },
+    {
       "component": "OSIsoft LLC Applications using PI Asset Framework (AF) Client <= PI AF",
       "sut_product": "pi_asset_framework_client",
       "correct_products": [
@@ -363,33 +390,6 @@
         "compactlogix_1768-l43_firmware"
       ],
       "cve": "CVE-2012-6436",
-      "axis": "product"
-    },
-    {
-      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
-      "sut_product": "guardlogix_controllers",
-      "correct_products": [
-        "compactlogix_1768-l43_firmware"
-      ],
-      "cve": "CVE-2012-6437",
-      "axis": "product"
-    },
-    {
-      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
-      "sut_product": "guardlogix_controllers",
-      "correct_products": [
-        "compactlogix_1768-l43_firmware"
-      ],
-      "cve": "CVE-2012-6438",
-      "axis": "product"
-    },
-    {
-      "component": "Rockwell Automation GuardLogix 5570 controllers vers:all/*",
-      "sut_product": "guardlogix_controllers",
-      "correct_products": [
-        "compactlogix_1768-l43_firmware"
-      ],
-      "cve": "CVE-2012-6439",
       "axis": "product"
     }
   ]

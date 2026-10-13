@@ -393,7 +393,7 @@ otherwise an identity.
 
 | item | metric | result | acceptance | scored over |
 |---|---|---|---|---|
-| **#3** | SBOM → CVE identification precision | **0.9499** (TP 10,294 / FP 543) | ≥ 0.80 | 10,837 scored, uncapped ground truth |
+| **#3** | SBOM → CVE identification precision | **0.9490** (TP 10,653 / FP 572) | ≥ 0.80 | 11,225 scored, uncapped ground truth |
 | **#4** | VEX affected-judgment precision | **0.9718** (TP 138 / FP 4) | ≥ 0.85 | 142 of 152 GT cases, population 267 |
 
 The evaluation datasets are bundled on their own in [`benchmark/`](benchmark/) — answer
@@ -423,7 +423,7 @@ constraint rather than an inconsistency.
 CISA advisories 3,845 / CVEs 11,550              one corpus
   │
   ├── item #3   SBOM -> CVE identification       whole corpus
-  │                                              precision 0.9499 (TP 10,294 / FP 543)
+  │                                              precision 0.9490 (TP 10,653 / FP 572)
   │
   └── filter: source COLLECTED  ->  267 CVEs
         │
@@ -602,8 +602,17 @@ product from the same shared-code CVE. What the figure does **not** cover:
   Charging those as FPs would penalise the matcher for a gap in the ground truth.
 - **41.9% of the corpus is excluded up front** (`data/cpe_match_eval_layerB.jsonl`): pairs where the
   ICS name appears nowhere in NVD, so no name-based matcher can reach the answer.
-- **6,633 of 14,173 components (47%) are abstentions** — the matcher declined to identify. Legitimate
-  under a precision-only metric, and disclosed because it is a free lift to the score.
+- **6,241 of 14,173 components (44%) are abstentions** under the default matcher (the string cascade alone abstains on 6,633), and they are a defect rather than a
+  ceiling. Measured: for **every one of the 6,633** the ground truth's correct product IS a key in
+  the index, so the answer was reachable and the matcher failed to reach it — 6,631 of them report
+  `ambiguous`. It is not a threshold that can be tuned, either. Over a 300-case sample the top-ranked
+  candidate is correct **9.3%** of the time, and the score distributions overlap almost entirely
+  (correct: median 0.485, p10 0.415, p90 0.551; wrong: median 0.436, p10 0.333, p90 0.550) — any cut
+  that admits half the correct answers admits half the wrong ones. Stripping version text and
+  qualifiers from the ICS name does not help either (9.0%, fixing 4 cases and breaking 5). That is a
+  limit of string similarity itself, which is why the retrieval stage exists and why abstaining is
+  the safe behaviour in the meantime: guessing at a 0.42 tie is how a Schneider I/O module's CVE
+  lands on a VIVOTEK camera.
 - 32 CISA/NVD version-range disagreements are held out as `conflict` rather than labelled verified.
 - The 377 co-listed-vendor negatives are **unreachable for this SUT** and reported as such, not
   deleted: `cves_for` returns `(product, vendor-of-that-product-entry)`, so it can never emit
