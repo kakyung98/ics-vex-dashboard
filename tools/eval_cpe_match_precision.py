@@ -185,6 +185,13 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     fp_axis = collections.Counter()
     by_path = collections.Counter()
     fp_rows = []
+    # Per-vendor, because the corpus is not uniform and the single figure hides
+    # that: Siemens alone is 47.6% of the components, and the matcher abstains on
+    # 43.9% inside the ten largest vendors against 55.5% outside them. Reporting
+    # the breakdown is the alternative to SCOPING to those vendors - scoping
+    # would raise the number by removing the harder half, which is the same trap
+    # the retired per-vendor cap fell into (0.9870 -> 0.9499 when it was lifted).
+    vend = collections.defaultdict(collections.Counter)
 
     for i, case in enumerate(cases):
         if progress and i % 200 == 0:
@@ -192,9 +199,12 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
         comp = {"name": case["name"], "version": case["version"] or ""}
         if case.get("cpe"):
             comp["cpe"] = case["cpe"]
+        _v = (case.get("publisher") or "?").strip() or "?"
+        vend[_v]["components"] += 1
         product, _how = identify(comp)
         if not product:
             abstained += 1              # identified nothing: no prediction to score
+            vend[_v]["abstained"] += 1
             continue
         if _how == "model-number":
             labels = case.get("cve_label") or {}
@@ -205,9 +215,11 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
                 elif lab:
                     tp += 1
                     by_path["model-number"] += 1
+                    vend[_v]["TP"] += 1
                 else:
                     fp += 1
                     fp_axis["identifier"] += 1
+                    vend[_v]["FP"] += 1
             continue
         product_ok = any(same_product(product, p) for p in case["correct_products"])
         indeterminate = not product_ok and name_supports(product, case["name"])
@@ -218,6 +230,7 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
             if not product_ok:
                 fp += 1
                 fp_axis["product"] += 1
+                vend[_v]["FP"] += 1
                 if len(fp_rows) < 40:
                     fp_rows.append({"component": case["name"][:70],
                                     "sut_product": product,
@@ -229,9 +242,11 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
                 unlabelled += 1
             elif label["applicable"]:
                 tp += 1
+                vend[_v]["TP"] += 1
             else:
                 fp += 1
                 fp_axis[label.get("_negative_family") or "?"] += 1
+                vend[_v]["FP"] += 1
                 if len(fp_rows) < 40:
                     fp_rows.append({"component": case["name"][:70],
                                     "sut_product": product,
@@ -266,6 +281,21 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
                               if (scored + unlabelled + unadjudicable) else 0.0,
         "fp_by_axis": dict(fp_axis),
         "tp_by_path": dict(by_path),
+        # Ordered by how much of the corpus each vendor is, not by how well it
+        # scores - a table sorted by precision invites reading the top of it as
+        # the result.
+        "by_vendor": [
+            {"vendor": v,
+             "components": c["components"],
+             "abstained": c["abstained"],
+             "abstention_pct": round(100.0 * c["abstained"] / c["components"], 1)
+             if c["components"] else None,
+             "TP": c["TP"], "FP": c["FP"],
+             "scored": c["TP"] + c["FP"],
+             "precision": round(c["TP"] / (c["TP"] + c["FP"]), 4)
+             if (c["TP"] + c["FP"]) else None}
+            for v, c in sorted(vend.items(),
+                               key=lambda kv: -kv[1]["components"])],
         "precision": round(prec, 4),
         "acceptance_criterion": "precision >= %.2f" % TARGET,
         "pass": prec >= TARGET,
@@ -321,6 +351,16 @@ def main():
           % unadjudicable)
     print("  PRECISION      = %.4f   (acceptance >= %.2f)  ->  %s"
           % (prec, TARGET, "PASS" if res["pass"] else "FAIL"))
+    bv = [r for r in res["by_vendor"] if r["scored"]][:10]
+    if bv:
+        print("  by vendor (top %d by corpus share):" % len(bv))
+        print("    %-26s %7s %7s %6s %6s  %s"
+              % ("vendor", "comps", "abstain", "TP", "FP", "precision"))
+        for r in bv:
+            print("    %-26s %7d %6.1f%% %6d %6d  %s"
+                  % (r["vendor"][:26], r["components"], r["abstention_pct"] or 0,
+                     r["TP"], r["FP"],
+                     "%.4f" % r["precision"] if r["precision"] is not None else "-"))
     if res["labelled_share_pct"] < 50 and unlabelled:
         print("  NOTE: under half the predictions carry a GT label; the figure "
               "describes the labelled slice only.")

@@ -413,6 +413,41 @@ corpus. Removing it took the ground truth from 7,640 to 41,868 records and the s
 0.9870 to 0.9499 — the cap had been holding back exactly the Siemens device names the
 matcher is weakest on, so the lower number is the more honest one.
 
+### Per-vendor, because the corpus is not uniform
+
+One figure cannot answer "how does it do on OUR equipment" when Siemens alone is
+47.6% of the components. Scoping the test to the largest vendors was considered and
+rejected: the matcher abstains on **43.9%** inside the ten largest and **55.5%** outside
+them, so that scope would raise the number by removing the harder half — the same trap
+the retired per-vendor cap fell into (0.9870 → 0.9499 when it was lifted). The split is
+published instead, ordered by corpus share rather than by precision, since a table sorted
+by score invites reading its top as the result.
+
+| vendor | components | scored | abstained | TP | FP | precision |
+|---|---:|---:|---:|---:|---:|---:|
+| Siemens | 6,740 | 8,420 | 31.7% | 8,163 | 257 | **0.9695** |
+| Mitsubishi Electric | 1,208 | 105 | 76.3% | 83 | 22 | **0.7905** |
+| Rockwell Automation | 718 | 479 | 29.1% | 227 | 252 | **0.4739** |
+| Schneider Electric | 608 | 168 | 45.6% | 158 | 10 | **0.9405** |
+| Honeywell | 365 | 6 | 83.0% | 6 | 0 | **1.0000** |
+| Hitachi Energy | 275 | 46 | 77.1% | 46 | 0 | **1.0000** |
+| Moxa | 211 | 44 | 79.1% | 24 | 20 | **0.5455** |
+| GE | 209 | 27 | 63.2% | 27 | 0 | **1.0000** |
+| ABB | 166 | 24 | 54.8% | 24 | 0 | **1.0000** |
+| Advantech | 155 | 107 | 15.5% | 107 | 0 | **1.0000** |
+| *(그 외 522개 벤더)* | 3,518 | 1,799 | 50.2% | 1,788 | 11 | 0.9939 |
+
+**Read precision and abstention together.** A vendor the matcher mostly declines to
+identify scores well on what little it does answer — Honeywell reads 1.0000 over 6 scored
+predictions having abstained on 83% of its components. The two columns are one result.
+
+The breakdown earns its place by showing what the aggregate hides: **Rockwell Automation
+at 0.4739** is far below the corpus figure, and its false positives are one repeated
+mistake — `CompactLogix 5380 controllers` resolved to the family key
+`compactlogix_controllers` where the ground truth names the specific
+`compactlogix_5380_firmware`. A product family and a model are different CPE products, and
+nothing in the aggregate would have surfaced that.
+
 ### One corpus, two populations — on purpose
 
 Both items come from one corpus: CISA ICS-CERT advisories (3,845 advisories, 11,550 CVEs,
