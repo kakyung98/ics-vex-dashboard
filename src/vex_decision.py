@@ -139,8 +139,11 @@ QUESTIONS = [
      "how": "Joern CPG call-graph reachability from entry points "
             "(tools/joern_reachability.py, call-graph-only - no dataflow)",
      "state": "implemented",
-     "result": "over the 104 source-collectable CVEs: reachable 65, not-reachable 1, "
-               "unknown 38 (16 oversized snapshots skipped, 12 with no located function)"},
+     "result": "reachable %(q3_reachable)d, not-reachable %(q3_unreachable)d, "
+               "unknown %(q3_unknown)d. Joern refutes almost nothing soundly here: of its "
+               "4 not-reachable verdicts, 2 contradict the public-header authority "
+               "(GENERAL_NAME_cmp, zlib inflate), which is why Q3 only grades the tier "
+               "and never refutes" % CORPUS},
     {"id": "Q4", "ask": "Can an adversary control it?",
      "clears_with": ["vulnerable_code_cannot_be_controlled_by_adversary"],
      "how": "Z3 decides whether attacker-controlled inputs satisfy the trigger, from "

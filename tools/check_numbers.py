@@ -45,27 +45,40 @@ def compute():
         n["campaign_attempted"] = len({r["cve"] for r in rows if r.get("cve")})
         n["campaign_outcomes"] = dict(collections.Counter(r.get("outcome") for r in rows))
 
-    tgt = _j("data", "vuln_targets.json", default={})
-    n["targets_located"] = sum(1 for v in tgt.values() if v.get("targets"))
-    n["targets_by_source"] = dict(collections.Counter(
-        v["source"] for v in tgt.values() if v.get("targets")))
+    # Targets, Q3 and Q4 now come from the VEX-v2 caches, not the retired engines.
+    # callgraph_reach.json / taint_reach.json / vuln_targets.json were the old
+    # execution-verification campaign and are gone; reading them left every figure
+    # here at 0 while the docs (correctly) showed the live numbers. src/vex_decision
+    # already derives these from the same caches, so this reads straight from it to
+    # keep the checker and the page on one source.
+    loc = _j("data", "source_locations.json", default={})
+    n["targets_located"] = sum(1 for v in loc.values()
+                               if (v or {}).get("any_function_found"))
 
-    q3 = _j("results", "callgraph_reach.json", default=[])
-    c2 = collections.Counter(r.get("verdict", r.get("status")) for r in q3)
-    n["q3_rows"], n["q3"] = len(q3), dict(c2)
-    n["q3_reachable"], n["q3_unreachable"] = c2.get("reachable", 0), c2.get("unreachable", 0)
+    reach = _j("data", "reachability.json", default={})
+    c2 = collections.Counter((v or {}).get("verdict") for v in reach.values())
+    n["q3_rows"], n["q3"] = len(reach), dict(c2)
+    n["q3_reachable"] = c2.get("reachable", 0)
+    n["q3_unreachable"] = c2.get("not-reachable", 0)       # VEX-v2 spells it with a hyphen
 
-    q4 = _j("results", "taint_reach.json", default=[])
-    c3 = collections.Counter(r.get("verdict", r.get("status")) for r in q4)
-    n["q4_rows"], n["q4"] = len(q4), dict(c3)
+    ctrl = _j("data", "controllability.json", default={})
+    c3 = collections.Counter((v or {}).get("verdict") for v in ctrl.values())
+    n["q4_rows"], n["q4"] = len(ctrl), dict(c3)
     n["q4_controllable"] = c3.get("controllable", 0)
     n["q4_not_controllable"] = c3.get("not-controllable", 0)
+    n["q4_environment_dependent"] = c3.get("environment-dependent", 0)
 
-    # A clearance is a `not_affected` outcome, not a raw verdict: Q4's gates
-    # (target source, graph completeness, entry-model roots) can hold a
-    # not-controllable verdict at under_investigation - Spring4Shell is one.
-    n["q4_cleared"] = sum(1 for r in q4 if r.get("vex") == "not_affected")
-    n["clearances_from_source_analysis"] = n["q3_unreachable"] + n["q4_cleared"]
+    # A clearance is an actual `not_affected` final verdict, not a raw refutation.
+    # The old formula added q3_unreachable, because the retired engine let a
+    # not-reachable verdict clear a CVE. VEX-v2 does NOT: Q3/Q4 are optional and
+    # never refute, so a not-reachable verdict only weakens the tier. The count is
+    # therefore the not_affected finals in vex_v2.json alone - 0 here - which is how
+    # src/vex_decision.CORPUS derives it, so the two agree.
+    v2 = _j("data", "vex_v2.json", default={})
+    v2rows = v2 if isinstance(v2, list) else list(v2.values())
+    n["q4_cleared"] = sum(1 for r in v2rows if isinstance(r, dict)
+                          and r.get("final_vex") == "not_affected")
+    n["clearances_from_source_analysis"] = n["q4_cleared"]
 
     rank = _j("results", "codebert_rank.json", default={})
     if rank:
@@ -94,15 +107,19 @@ def compute():
 # console renders; covering all three here means --write leaves nothing to fix
 # by hand (the prose used to print "must be edited by hand" and drifted).
 DOC_FILES = ("README.md", "RESULTS.md", os.path.join("src", "vex_decision.py"))
+# The VEX-v2 vocabulary: `reachable N, not-reachable N, unknown N` for Q3 and
+# `controllable N, not-controllable N, environment-dependent N` for Q4. These are
+# the phrases the docs and the console prose actually use now; the retired
+# `target-not-found / no-source` format is gone.
 _DOC_ROWS = {
-    "Q3": (re.compile(r"reachable \d+, target-not-found \d+, no-source \d+"),
-           lambda n: "reachable %d, target-not-found %d, no-source %d" % (
-               n["q3"].get("reachable", 0), n["q3"].get("target-not-found", 0),
-               n["q3"].get("no-source", 0))),
-    "Q4": (re.compile(r"controllable \d+, target-not-found \d+, no-source \d+"),
-           lambda n: "controllable %d, target-not-found %d, no-source %d" % (
-               n["q4"].get("controllable", 0), n["q4"].get("target-not-found", 0),
-               n["q4"].get("no-source", 0))),
+    "Q3": (re.compile(r"reachable \d+, not-reachable \d+, unknown \d+"),
+           lambda n: "reachable %d, not-reachable %d, unknown %d" % (
+               n["q3"].get("reachable", 0), n["q3"].get("not-reachable", 0),
+               n["q3"].get("unknown", 0))),
+    "Q4": (re.compile(r"controllable \d+, not-controllable \d+, environment-dependent \d+"),
+           lambda n: "controllable %d, not-controllable %d, environment-dependent %d" % (
+               n["q4"].get("controllable", 0), n["q4"].get("not-controllable", 0),
+               n["q4"].get("environment-dependent", 0))),
 }
 
 
@@ -159,12 +176,12 @@ def main():
     # CORPUS fix), so verify them too.
     print("\n== QUESTIONS[].result prose ==")
     prose = {
-        "Q3": "reachable %d, target-not-found %d, no-source %d" % (
-            n["q3"].get("reachable", 0), n["q3"].get("target-not-found", 0),
-            n["q3"].get("no-source", 0)),
-        "Q4": "controllable %d, target-not-found %d, no-source %d" % (
-            n["q4"].get("controllable", 0), n["q4"].get("target-not-found", 0),
-            n["q4"].get("no-source", 0)),
+        "Q3": "reachable %d, not-reachable %d, unknown %d" % (
+            n["q3"].get("reachable", 0), n["q3"].get("not-reachable", 0),
+            n["q3"].get("unknown", 0)),
+        "Q4": "controllable %d, not-controllable %d, environment-dependent %d" % (
+            n["q4"].get("controllable", 0), n["q4"].get("not-controllable", 0),
+            n["q4"].get("environment-dependent", 0)),
     }
     for q in VD.QUESTIONS:
         want = prose.get(q["id"])
