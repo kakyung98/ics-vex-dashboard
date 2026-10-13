@@ -140,14 +140,26 @@ var AV_META = null;
 async function avLoad(){
   var cve=(document.getElementById('avCve').value||'').trim().toUpperCase();
   var box=document.getElementById('avMeta');
-  if(!/^CVE-\\d{4}-\\d+$/.test(cve)){ box.innerHTML='<span style="color:var(--aff)">Enter a valid CVE ID.</span>'; return; }
-  box.textContent='loading\\u2026';
+  if(!/^CVE-\d{4}-\d+$/.test(cve)){ box.innerHTML='<span style="color:var(--aff)">Enter a valid CVE ID.</span>'; return; }
+  box.textContent='loading\u2026';
+  // Runtime (window.__ICSVEX_RUNTIME): /api/cve_av gives AV + description.
+  // Static site: no server, so read the AV from the published cve_index.json.
+  if(window.__ICSVEX_RUNTIME){
+    try{
+      var r=await fetch('/api/cve_av/'+cve);
+      if(r.ok){ var j=await r.json(); if(j.found){ AV_META=j;
+        box.innerHTML='<b>CVSS AV: '+(j.av||'&mdash;')+'</b> &middot; <span class="mono">'+(j.vector||'no vector')+'</span>'
+          +(j.description?'<div style="margin-top:6px">'+esc(j.description)+'</div>':''); return; }
+        box.innerHTML='<span style="color:var(--aff)">CVE not found in the local NVD cache.</span>'; AV_META=null; return; }
+    }catch(e){}
+  }
   try{
-    var r=await fetch('/api/cve_av/'+cve); var j=await r.json();
-    if(!r.ok||!j.found){ box.innerHTML='<span style="color:var(--aff)">'+(j.detail||'CVE not found in the local NVD cache')+'</span>'; AV_META=null; return; }
-    AV_META=j;
-    box.innerHTML='<b>CVSS AV: '+(j.av||'&mdash;')+'</b> &middot; <span class="mono">'+(j.vector||'no vector')+'</span>'
-      +(j.description?'<div style="margin-top:6px">'+esc(j.description)+'</div>':'');
+    if(!window.__CVE_AV){ var ix=await (await fetch('cve_index.json')).json();
+      window.__CVE_AV={}; ix.forEach(function(x){ if(x.av)window.__CVE_AV[x.cve]=x.av; }); }
+    var av=window.__CVE_AV[cve];
+    if(!av){ box.innerHTML='<span style="color:var(--aff)">CVE not found, or it has no CVSS Attack Vector.</span>'; AV_META=null; return; }
+    AV_META={cve:cve, av:av, vector:null, description:null};
+    box.innerHTML='<b>CVSS AV: '+av+'</b> <span class="hint">(from the published CVE index)</span>';
   }catch(e){ box.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; AV_META=null; }
 }
 function avCollect(sel){
@@ -158,19 +170,12 @@ function avCollect(sel){
   });
   return o;
 }
-async function avAssess(){
+function avAssess(){
   var st=document.getElementById('avStatus');
   if(!AV_META){ st.innerHTML='<span style="color:var(--aff)">Load a CVE first.</span>'; return; }
   var attrs=avCollect('.av-grp'); var extraRaw=avCollect('.av-grid.ex');
-  // extra fields: keep only the three EXTRA keys, null stays null
-  var body={cve:AV_META.cve, av:AV_META.av, attributes:attrs, extra:extraRaw};
-  st.textContent='assessing\\u2026';
-  try{
-    var r=await fetch('/api/asset-vex',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    var j=await r.json();
-    if(!r.ok){ st.innerHTML='<span style="color:var(--aff)">'+(j.detail||'error')+'</span>'; return; }
-    st.textContent=''; avShow(j);
-  }catch(e){ st.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; }
+  var j=avAssessLocal(AV_META.av, attrs, extraRaw); j.cve=AV_META.cve;
+  st.textContent=''; avShow(j);
 }
 function avShow(j){
   var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
@@ -251,16 +256,15 @@ function avCollectForm(pfx){
     if(extraKeys[k]){ if(val!==null)extra[k]=val; } else { attrs[k]=val; }
   });
   return {attributes:attrs, extra:extra};}
-async function avAssessForm(pfx, cve, av, outId){
+function avAssessForm(pfx, cve, av, outId){
+  // Computed client-side via avAssessLocal (ASSET_AV_CLIENT_JS) - the judge is
+  // deterministic, so there is no server round-trip, which is what lets the same
+  // code run on the static site with no backend. Async kept for existing callers.
   var out=document.getElementById(outId); if(out)out.textContent='assessing\u2026';
   var c=avCollectForm(pfx);
-  try{
-    var r=await fetch('/api/asset-vex',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({cve:cve, av:av, attributes:c.attributes, extra:c.extra})});
-    var j=await r.json();
-    if(!r.ok){ if(out)out.innerHTML='<span style="color:var(--aff)">'+(j.detail||'error')+'</span>'; return null; }
-    if(out)out.innerHTML=avVerdictHtml(j); return j;
-  }catch(e){ if(out)out.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; return null; }}
+  var j=avAssessLocal(av, c.attributes, c.extra); j.cve=cve;
+  if(out)out.innerHTML=avVerdictHtml(j);
+  return Promise.resolve(j);}
 function avVerdictHtml(j){
   var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
   var h='<div class="av-verdict '+cls+'">'+j.status.replace(/_/g,' ').toUpperCase()+'</div>';
@@ -270,3 +274,65 @@ function avVerdictHtml(j){
   if(j.missing&&j.missing.length)h+='<div class="hint" style="margin-top:8px">missing: '+j.missing.join(', ')+'</div>';
   return h;}
 """.replace("__SCHEMA__", _js_schema())
+
+
+# --- client-side port of the judge, for the STATIC site (no server) -------------
+# asset_av_judge.judge/identify_vectors re-expressed in JS, so the published page
+# runs the whole assessment in the browser with no /api call. Kept here beside the
+# form schema so a change to one is an obvious prompt to check the other; the
+# Python remains the source of truth and tools/check_asset_av_parity.py can diff
+# the two by running identical cases through both.
+ASSET_AV_CLIENT_JS = r"""
+// Mirror of src/asset_av_judge.py. Keep in sync with the Python.
+var AV_VECTORS={N:['wired','wireless','supply_chain'],A:['wired','wireless','supply_chain'],
+  L:['wired','wireless','physical','pmmd','supply_chain'],P:['physical','pmmd']};
+function _avPmmd(a){ if(a.maint_port_sealed)return false; if(!a.maint_device_used)return false;
+  if(a.access_right==='admin')return false; return true; }
+function _avSupply(a){ if(!a.sys_env_configured)return false;
+  if(a.vendor_remote_access)return !a.work_approval;
+  if(!a.account_mgmt)return true; return a.access_right==='none'; }
+function _avWired(a){ if(!a.comm_connected)return false; if(!a.unidirectional)return true;
+  return !a.host_firewall; }
+function _avPhysical(a){ var loc=a.physical_location;
+  if(loc==='OCA')return true;
+  if(loc==='VA'){ if(!a.work_approval)return true; return a.access_right==='none'; }
+  if(loc==='PA'){ if(!a.physical_blocked)return true; return a.access_right==='none'; }
+  return false; }
+function _avWireless(a){ if(!a.wireless_capable)return false; if(!a.wireless_enabled)return false;
+  return !a.encrypted_comm; }
+var _AV_FC={pmmd:_avPmmd,supply_chain:_avSupply,wired:_avWired,physical:_avPhysical,wireless:_avWireless};
+var _AV_ATTRS=['maint_port_sealed','maint_device_used','sys_env_configured','vendor_remote_access',
+  'work_approval','account_mgmt','comm_connected','unidirectional','host_firewall',
+  'physical_location','physical_blocked','wireless_capable','wireless_enabled','encrypted_comm','access_right'];
+function avIdentifyVectors(a){ var out=[]; for(var v in _AV_FC){ if(_AV_FC[v](a))out.push(v); } return out.sort(); }
+function avMissing(a){ return _AV_ATTRS.filter(function(k){return a[k]===null||a[k]===undefined;}); }
+function avJudge(av, present, extra){
+  extra=extra||{};
+  if(!av)return {status:'under_investigation',reason:'no CVSS Attack Vector available for this CVE'};
+  var cand=AV_VECTORS[av]||[]; var overlap=cand.filter(function(v){return present.indexOf(v)>=0;});
+  var shown=overlap.length?overlap.join(', '):'none';
+  if(!overlap.length)return {status:'not_affected',reason:'the asset carries none of the attack vectors AV:'+av+' requires'};
+  if(av==='L')return {status:'affected',reason:'AV:L - a local action is reachable via a present vector ('+shown+')'};
+  if(av==='N'||av==='A'){
+    var req=extra.protocol_required;
+    if(req===null||req===undefined)return {status:'under_investigation',reason:'AV:'+av+' - whether a specific protocol/interface is required is unknown (needs the CVE description)'};
+    if(req){ var m=extra.protocol_match;
+      if(m===true)return {status:'affected',reason:'AV:'+av+' - the required protocol/interface is present'};
+      if(m===false)return {status:'not_affected',reason:'AV:'+av+' - the required protocol/interface is not present on the asset'};
+      return {status:'under_investigation',reason:'AV:'+av+' - a specific protocol/interface is required but the asset match is unknown'}; }
+    return {status:'affected',reason:'AV:'+av+' - no specific protocol required and a network vector is present ('+shown+')'}; }
+  if(av==='P'){ var pr=extra.pmmd_required;
+    if(pr===true){ if(present.indexOf('pmmd')>=0)return {status:'affected',reason:'AV:P - the exploit needs a PMMD and one is present'};
+      return {status:'not_affected',reason:'AV:P - the exploit needs a PMMD but none is present'}; }
+    if(pr===false){ if(present.indexOf('physical')>=0)return {status:'affected',reason:'AV:P - physical access is present and no PMMD is required'};
+      return {status:'under_investigation',reason:'AV:P - no PMMD required, but no physical-access vector is present; unresolved'}; }
+    return {status:'under_investigation',reason:'AV:P - whether the exploit requires a PMMD is unknown (needs the CVE description)'}; }
+  return {status:'under_investigation',reason:'unrecognised CVSS Attack Vector: '+av};
+}
+function avAssessLocal(av, attrs, extra){
+  var miss=avMissing(attrs);
+  if(miss.length)return {status:'under_investigation',reason:'asset attributes not fully entered ('+miss.length+' missing)',missing:miss,vectors:null,cvss_av:av};
+  var present=avIdentifyVectors(attrs); var r=avJudge(av,present,extra);
+  r.vectors=present; r.cvss_av=av; return r;
+}
+"""
