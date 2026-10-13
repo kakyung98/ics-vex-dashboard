@@ -121,8 +121,8 @@ def main():
     held = eval_names()
     titles, by_vendor, products, known = load_dictionary()
     if not titles:
-        print("사전 없음 또는 비어 있음: %s" % os.path.relpath(DICT, BASE))
-        print("  python tools/fetch_cpe_dictionary.py --vendors  로 먼저 수집하십시오.")
+        print("dictionary missing or empty: %s" % os.path.relpath(DICT, BASE))
+        print("  collect it first with python tools/fetch_cpe_dictionary.py --vendors")
         return
 
     rows = []

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""시험항목 #3 — SBOM 기반 공개 취약점 정보 식별 정밀도.
+"""Test item #3 - precision of SBOM-based public vulnerability identification.
 
     precision = TP / (TP + FP)              (acceptance: >= 0.80)
 
@@ -23,7 +23,7 @@ and kept out of TP/FP rather than guessed at, and the unlabelled share is printe
 a precision computed over a small labelled slice of a large prediction set is not
 representative, and hiding that would overstate the result.
 
-Per the test spec's 전제 조건, 'affected' is not considered: only whether an
+Per the test spec's preconditions, 'affected' is not considered: only whether an
 identified CVE maps exactly onto the component.
 
 Usage:
@@ -258,7 +258,7 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     scored = tp + fp
     prec = tp / scored if scored else 0.0
     return {
-        "test": "SBOM CVE-identification precision (시험항목 #3)",
+        "test": "SBOM CVE-identification precision (test item #3)",
         "sut": ("src/cpe_match_ai (retrieval behind the cascade)" if matcher == "ai"
                 else "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)"),
         "sut_mode": "strict (co-listed dropped)" if strict else "recall-safe (default)",
@@ -320,7 +320,7 @@ def main():
     a = ap.parse_args()
 
     if not os.path.isfile(a.data):
-        print("GT 없음: %s\n  python tools/build_cpe_match_gt.py 로 먼저 생성" % a.data)
+        print("no ground truth: %s\n  build it first with python tools/build_cpe_match_gt.py" % a.data)
         return
 
     res = score(a.data, matcher=a.matcher, strict=a.strict)
@@ -332,7 +332,7 @@ def main():
     unreachable, fp_axis = res["gt_unreachable_for_this_sut"], res["fp_by_axis"]
     by_path = res["tp_by_path"]
 
-    print("=== 시험항목 #3 · SBOM 기반 공개 취약점 식별 정밀도 ===")
+    print("=== test item #3 - SBOM-based public vulnerability identification precision ===")
     print("  SUT            : %s" % res["sut"])
     print("  mode           : %s" % res["sut_mode"])
     print("  GT labels      : %d  (conflict held out: %d)" % (gt_labels, conflicts))

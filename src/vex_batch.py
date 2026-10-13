@@ -62,7 +62,8 @@ except Exception:
 
 def run(limit=None, use_securebert=False, progress_every=1000):
     import build_ground_truth as G
-    # 실행 검증으로 확정된 CVE 맵. 파일에 항목이 늘면 자동으로 반영된다.
+    # The map of CVEs settled by execution verification. Adding entries to the file is
+    # picked up automatically.
     EXEC_MAP = G.load_exec_verification()
 
     code_cves = G.load_code_available()
@@ -113,17 +114,19 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                             else "oss-attributed" if tier in ("A", "C")
                             else "vendor-proprietary")
 
-            # 증거가 없으면 상태는 under_investigation 이다. 배치 맥락으로 추정하지 않는다.
+            # With no evidence the status is under_investigation. Deployment context is
+            # not used to guess.
             status, just, vocab = UNDER_INV, None, None
             basis = ("no code evidence collected for this component"
                      if av else "no CVSS attack vector in the source advisory")
             conf = None
             route = "no-evidence"
 
-            # --- 상류(CISA CSAF) 판정 우선 ---
-            # CISA/벤더가 이미 justification 을 명시한 건은 그대로 채택한다.
-            # 우리가 유도한 판정이 아니므로 route/evidence_tier 로 출처를 분리해 둔다
-            # (자체 판정 성능 평가 시 반드시 제외해야 한다).
+            # --- an upstream (CISA CSAF) verdict wins ---
+            # Where CISA or the vendor already stated a justification it is adopted
+            # as-is. It is not a verdict we derived, so route/evidence_tier keep the
+            # provenance separate - it must be excluded when measuring our own
+            # adjudication performance.
             _uj = (r.get("upstream_justification") or "").strip()
             if _uj:
                 status, just, vocab = NOT_AFFECTED, _uj, "csaf-openvex"
@@ -132,8 +135,9 @@ def run(limit=None, use_securebert=False, progress_every=1000):
                 conf = 1.0
                 route = "upstream-cisa-csaf"
 
-            # --- 실행 증거 우선 ---
-            # 샌드박스에서 실제로 트리거를 관측한 CVE 는 추정을 건너뛰고 확정한다.
+            # --- execution evidence wins ---
+            # A CVE whose trigger was actually observed in the sandbox skips estimation
+            # and is settled.
             _ex = EXEC_MAP.get(cve)
             if _ex:
                 _st, _bs = G.exec_verdict(_ex)

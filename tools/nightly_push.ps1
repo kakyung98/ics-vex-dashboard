@@ -1,5 +1,5 @@
-# ICS-VEX 나이틀리 GitHub 업데이트 — 매일 23:30 실행
-# 변경사항이 있을 때만 커밋/푸시한다. 로그는 tools/nightly_push.log 에 남긴다.
+# ICS-VEX nightly GitHub update - runs daily at 23:30.
+# Commits and pushes only when there are changes. Logs to tools/nightly_push.log.
 $ErrorActionPreference = "Continue"
 $repo = "C:\Users\user\Desktop\ICS-VEX"
 $log  = Join-Path $repo "tools\nightly_push.log"

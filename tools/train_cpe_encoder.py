@@ -70,8 +70,8 @@ def main():
 
     pos, neg = load_pairs(PAIRS)
     if not pos:
-        print("학습 쌍 없음: %s" % os.path.relpath(PAIRS, BASE))
-        print("  python tools/build_cpe_match_dataset.py  로 먼저 생성")
+        print("no training pairs: %s" % os.path.relpath(PAIRS, BASE))
+        print("  build them first with python tools/build_cpe_match_dataset.py")
         return
     # --seed used to reach only this Random(), while the two places that
     # actually decide the weights - DataLoader(shuffle=True) and the dropout in

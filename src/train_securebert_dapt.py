@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-SecureBERT ICS 도메인 적응 사전학습 (DAPT, continued MLM).
+SecureBERT domain-adaptive pretraining for ICS (DAPT, continued MLM).
 
-CISA ICS 어드바이저리 텍스트로 SecureBERT 를 라벨 없이 재적응한다.
-효과는 라벨과 무관한 MLM perplexity 로 측정: held-out ICS 문장에서
-vanilla vs ICS-DAPT 의 마스킹 복원 성능을 동일한 마스크로 비교한다.
+Re-adapts SecureBERT on CISA ICS advisory text without labels. The effect is measured by
+MLM perplexity, which is label-independent: vanilla and ICS-DAPT are compared on
+held-out ICS sentences under identical masks.
 
-출력: models/ics-securebert/ (적응 모델), results/dapt_metrics.json
+Output: models/ics-securebert/ (the adapted model), results/dapt_metrics.json
 """
 import json, os, re, sys, math, random
 import numpy as np, torch
@@ -36,7 +36,7 @@ def build_corpus():
         t = (v.get("title", "") + ". " + v.get("affected_text", "")).strip()
         if t:
             texts.append(t)
-    # 문장 단위 분할 + dedup
+    # Split into sentences and deduplicate
     sents = []
     seen = set()
     for t in texts:
@@ -68,7 +68,8 @@ def main():
 
     collator = DataCollatorForLanguageModeling(tokenizer=tok, mlm=True, mlm_probability=0.15)
 
-    # eval 세트를 한 번만 고정 마스킹 (before/after 동일 조건)
+    # Mask the eval set once and keep it fixed, so before and after face the same
+    # conditions
     torch.manual_seed(SEED)
     eval_batches = []
     for i in range(0, len(ev), 64):
@@ -86,7 +87,7 @@ def main():
     before = eval_loss(model)
     print("baseline (vanilla) eval MLM loss %.4f | ppl %.2f" % (before, math.exp(before)), flush=True)
 
-    # continued MLM 학습
+    # continued MLM training
     opt = torch.optim.AdamW(model.parameters(), lr=3e-5, weight_decay=0.01)
     loader = DataLoader(tr, batch_size=32, shuffle=True, collate_fn=collator)
     EPOCHS = 3
@@ -106,7 +107,7 @@ def main():
     os.makedirs(MODEL_OUT, exist_ok=True)
     model.save_pretrained(MODEL_OUT); tok.save_pretrained(MODEL_OUT)
 
-    # ICS 용어 마스킹 복원 비교
+    # Compare recovery of masked ICS terms
     def term_probe(m):
         m.eval(); ok = 0; tot = 0
         with torch.no_grad():

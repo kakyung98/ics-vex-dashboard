@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""시험항목 #4 — VEX 기반 식별된 취약점 영향 판단 정밀도의 평가용 Ground Truth 생성.
+"""Test item #4 - build the ground truth for VEX affected-judgment precision.
 
 The judged population is the source-collected CVEs (data/source_snapshots/, 107).
 `vex_judge_v2` returns `affected` for every one of them, so precision = TP/(TP+FP)
@@ -30,7 +30,7 @@ in its vulnerable snapshot and not_affected in its patched release. `build` name
 which, so the eval feeds the SUT the matching snapshot instead of silently scoring
 two contradictory labels against one run.
 
-Out: data/vex_gt_104.jsonl              scorable GT (HWP 평가용 Ground Truth schema)
+Out: data/vex_gt_104.jsonl              scorable GT (the evaluation ground-truth schema)
      data/vex_gt_104_manifest.json      coverage, exclusions, evidence-type mix
 """
 import argparse
@@ -457,7 +457,7 @@ def main():
     mix = collections.Counter((r["evidence_type"], r["expected_status"]) for r in rows)
     pop_n = len(population) if population is not None else len(os.listdir(SNAP))
     manifest = {
-        "test": "VEX affected-judgment precision (시험항목 #4) — ground truth",
+        "test": "VEX affected-judgment precision (test item #4) - ground truth",
         "population_source_collected": pop_n,
         "population_source": (a.population if a.population
                               else "data/source_snapshots/ (all collected)"),
@@ -493,7 +493,7 @@ def main():
     json.dump(manifest, open(man_path, "w", encoding="utf-8"),
               ensure_ascii=False, indent=2)
 
-    print("=== 시험항목 #4 GT ===")
+    print("=== test item #4 ground truth ===")
     print("  population (source-collected) : %d CVEs  [%s]"
           % (pop_n, a.population or "all snapshots"))
     print("  cases                         : %d  (CVEs covered: %d)"

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-NVD CVE 메타데이터 수집기.
+NVD CVE metadata collector.
 
-generate_ics_sbom.py 의 OSS 카탈로그에 등장하는 모든 CVE ID 에 대해
-NVD API 2.0 에서 실제 메타데이터(CVSS, CWE, 설명, 발행일, 참조)를 조회하여
-data/nvd_cache.json 에 캐시한다.
+For every CVE id appearing in generate_ics_sbom.py's OSS catalogue, fetches the real
+metadata (CVSS, CWE, description, publication date, references) from NVD API 2.0 and
+caches it in data/nvd_cache.json.
 
-- API 키 없이 동작하도록 rolling window(5 req / 30s) 보다 여유 있게 throttle 한다.
-- 캐시가 이미 있으면 미수집 CVE 만 이어서 조회한다(재실행 가능).
+- Throttled more conservatively than the rolling window (5 req / 30 s) so it works
+  without an API key.
+- With a cache already present it continues with the CVEs not yet fetched, so it is
+  re-runnable.
 """
 
 import argparse
@@ -27,7 +29,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 CACHE = os.path.join(DATA_DIR, "nvd_cache.json")
 
 API = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=%s"
-DELAY = 6.2          # 초. 무인증 rolling limit(5req/30s) 대비 여유
+DELAY = 6.2          # seconds; headroom against the unauthenticated limit (5 req/30 s)
 MAX_RETRY = 4
 
 
@@ -67,7 +69,7 @@ def save_cache(cache):
 
 
 def pick_metric(metrics):
-    """CVSS v3.1 > v3.0 > v2 순으로 선택."""
+    """Prefer CVSS v3.1, then v3.0, then v2."""
     for key, ver in (("cvssMetricV31", "3.1"), ("cvssMetricV30", "3.0"), ("cvssMetricV2", "2.0")):
         arr = metrics.get(key) or []
         if not arr:
@@ -129,7 +131,7 @@ def fetch(cve_id):
                 time.sleep(wait)
                 continue
             return {"id": cve_id, "error": "http-%d" % e.code}
-        except Exception as e:  # 네트워크 순간 오류
+        except Exception as e:  # a transient network error
             wait = DELAY * (attempt + 2)
             print("  retry %s (%s) sleep %.0fs" % (cve_id, type(e).__name__, wait), flush=True)
             time.sleep(wait)

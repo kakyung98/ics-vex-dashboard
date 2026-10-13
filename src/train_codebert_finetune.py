@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CodeBERT 취약점 탐지 파인튜닝 (인코더 동결 해제).
+CodeBERT vulnerability-detection finetuning (the encoder is unfrozen).
 
-frozen CodeBERT 의 추상적 취약성 분류 실패(0.50)를 실제 대규모 코퍼스로 개선.
-데이터: CodeXGLUE Defect Detection (Devign, ~27k C 함수, 취약/정상).
+Improves on frozen CodeBERT's failure at abstract vulnerability classification (0.50) by
+training on a real, large corpus.
+Data: CodeXGLUE Defect Detection (Devign, ~27k C functions, vulnerable/clean).
 
-절차:
-  1) Devign 으로 CodeBERT + 분류헤드 end-to-end 파인튜닝
-  2) Devign test 정확도/F1 보고 (실제 취약탐지 학습 확인)
-  3) 파인튜닝된 인코더로 우리 vuln/patch 매칭(GroupKFold) 재평가 -> 0.50 대비 개선?
-  4) models/codebert-vuln 저장
+Procedure:
+  1) finetune CodeBERT plus a classification head end-to-end on Devign
+  2) report Devign test accuracy and F1 (confirming it learned real detection)
+  3) re-evaluate our vuln/patch matching (GroupKFold) with the finetuned encoder -
+     does it beat 0.50?
+  4) save models/codebert-vuln
 
-출력: results/codebert_finetune_metrics.json
+Output: results/codebert_finetune_metrics.json
 """
 import json, os, sys, numpy as np, torch
 import torch.nn as nn
@@ -41,7 +43,7 @@ def main():
         rows = ds[split]
         if cap:
             rows = rows.select(range(min(cap, len(rows))))
-        funcs = [str(x) for x in list(rows["func"])]     # 최신 datasets 의 Column -> list[str]
+        funcs = [str(x) for x in list(rows["func"])]     # recent datasets: Column -> list[str]
         targets = [int(x) for x in list(rows["target"])]
         e = tok(funcs, truncation=True, max_length=MAXLEN, padding="max_length")
         return (torch.tensor(e["input_ids"]), torch.tensor(e["attention_mask"]),
@@ -86,18 +88,18 @@ def main():
                 print("  ep%d step%d loss %.4f" % (ep, steps, run / steps), flush=True)
         va = evaluate(Xva, Mva, Yva)
         print("epoch %d  train loss %.4f | val acc %.3f f1 %.3f" % (ep, run / steps, va[0], va[1]), flush=True)
-        if va[1] > best_f1:                    # validation F1 기준 최적 체크포인트
+        if va[1] > best_f1:                    # best checkpoint by validation F1
             best_f1 = va[1]; best_state = copy.deepcopy(model.state_dict())
             print("    * new best (val f1 %.3f) checkpointed" % best_f1, flush=True)
 
     if best_state is not None:
-        model.load_state_dict(best_state)      # 최적 가중치 복원
+        model.load_state_dict(best_state)      # restore the best weights
     te_acc, te_f1 = evaluate(Xte, Mte, Yte)
     print("Devign TEST  acc %.3f  f1 %.3f" % (te_acc, te_f1), flush=True)
     os.makedirs(MODEL_OUT, exist_ok=True)
     model.save_pretrained(MODEL_OUT); tok.save_pretrained(MODEL_OUT)
 
-    # --- 우리 vuln/patch 매칭 재평가 (파인튜닝 인코더) ---
+    # --- re-evaluate our vuln/patch matching with the finetuned encoder ---
     base = model.roberta.to(DEVICE).eval()
 
     def embed(snips):

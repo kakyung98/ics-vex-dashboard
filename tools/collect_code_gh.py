@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-OSS CVE -> 실제 취약/패치 코드 수집 (인증된 gh api 사용, 고신뢰).
+OSS CVE -> collect the real vulnerable and patched code, via the authenticated gh api
+(higher confidence).
 
-각 CVE 의 FIX 커밋 URL(NVD 참조 + OSV)을 모아, gh api 로 커밋 상세를 받아
-첫 코드 파일의 patch hunk 에서 취약/패치 코드를 재구성한다.
+Collects each CVE's FIX commit URLs (NVD references plus OSV), fetches the commit detail
+through the gh api, and reconstructs the vulnerable and patched code from the patch hunk
+of the first code file.
 
-출력: data/code_evidence.json (병합)
+Output: data/code_evidence.json (merged)
 """
 import json, os, re, subprocess, sys, time
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(BASE, "tools"))
 from generate_ics_sbom import OSS
-import collect_code_evidence as C   # osv_commits, parse_diff 재사용
+import collect_code_evidence as C   # reuses osv_commits and parse_diff
 OUT = os.path.join(BASE, "data", "code_evidence.json")
 GH = r"C:\Users\user\AppData\Local\Microsoft\WinGet\Packages\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\bin\gh.exe"
 CODE_EXT = (".c", ".h", ".cc", ".cpp", ".cxx", ".java", ".py", ".go", ".js", ".rb", ".php")

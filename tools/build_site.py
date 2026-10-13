@@ -19,9 +19,11 @@ import api_server as A          # reuses api_server.STORE (built on import) + FR
 
 S = A.STORE
 
-# 정적 사이트 산출물(HTML + JSON + adv/)은 site/ 로 모은다 (루트 정리).
-# 상대경로 fetch/링크가 site/ 안에서 자기완결적으로 해석된다.
-# 주의: 런타임 서버(api_server)가 읽는 sbom_index.json 은 루트에 그대로 둔다.
+# The static site output (HTML + JSON + adv/) is collected under site/, which keeps the
+# repository root clean and lets relative fetches and links resolve self-containedly
+# inside site/.
+# Note: sbom_index.json stays at the root, because the runtime server (api_server) reads
+# it from there.
 SITE = os.path.join(BASE, "site")
 os.makedirs(SITE, exist_ok=True)
 

@@ -159,12 +159,13 @@ def main():
         if not a.dry_run:
             json.dump(sbom, open(fp, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
 
-    print("연결한 SBOM        : %d / %d" % (n_sbom, len(files)))
-    print("추가된 affects 간선 : %d" % n_add)
-    print("  tier별           : %s" % dict(by_tier))
-    print("  순환(tier A)      : %d  -> link:circular-cves 로 표시, 채점에서 제외" % n_circ)
+    print("SBOMs linked           : %d / %d" % (n_sbom, len(files)))
+    print("affects edges added    : %d" % n_add)
+    print("  by tier              : %s" % dict(by_tier))
+    print("  circular (tier A)    : %d  -> marked link:circular-cves and excluded "
+          "from scoring" % n_circ)
     if a.dry_run:
-        print("(dry-run — 파일을 쓰지 않았다)")
+        print("(dry run - no files were written)")
 
 
 if __name__ == "__main__":
