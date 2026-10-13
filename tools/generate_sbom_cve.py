@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-SBOM -> CVE 식별기 (CycloneDX 1.7 VDR)
+SBOM -> CVE identifier (CycloneDX 1.7 VDR)
 
-sbom/ 의 각 SBOM 을 읽어 components[] 의 cpe / purl / version 만으로
-취약점 지식베이스(KB)와 대조하여 해당 자산에 존재하는 CVE 를 식별하고,
-동일한 CycloneDX 구조에 vulnerabilities[] 를 추가한 문서를 생성한다.
+Reads each SBOM under sbom/, identifies the CVEs present in that asset by matching the
+cpe / purl / version of components[] - and nothing else - against a vulnerability
+knowledge base, and writes a document in the same CycloneDX structure with
+vulnerabilities[] added.
 
-  sbom-cve/<원본이름>-CVE.json          자산별 CVE 식별 결과 (SBOM 전체 + vulnerabilities[])
-  sbom-cve/index.csv                     자산별 심각도 집계
-  sbom-cve/cve_summary.csv               CVE별 영향 자산 집계
-  sbom-cve/matching_report.txt           정답셋 대비 매칭 정확도 검증 결과
+  sbom-cve/<original name>-CVE.json   per-asset CVE identification (the whole SBOM plus
+                                      vulnerabilities[])
+  sbom-cve/index.csv                  severity totals per asset
+  sbom-cve/cve_summary.csv            affected assets per CVE
+  sbom-cve/matching_report.txt        matching accuracy against the ground truth
 
-CVE 메타데이터(CVSS, CWE, 설명, 발행일, 참조)는 data/nvd_cache.json 의
-NVD API 2.0 실측 데이터를 사용한다. 캐시가 없으면 해당 필드는 생략되고
-match:metadata-source property 에 unavailable 로 표기된다.
+CVE metadata (CVSS, CWE, description, publication date, references) comes from the real
+NVD API 2.0 data in data/nvd_cache.json. Without that cache those fields are omitted and
+the match:metadata-source property reads unavailable.
 
-주의: 매칭기는 SBOM 문서에 기록된 식별자만 입력으로 사용하며
-ground_truth CSV 를 참조하지 않는다. 정답셋은 사후 검증에만 쓰인다.
+Note: the matcher takes only the identifiers recorded in the SBOM document as input and
+never reads the ground_truth CSV. The ground truth is used for after-the-fact
+verification only.
 """
 
 import collections
@@ -43,11 +46,11 @@ SEVERITY_ORDER = ["critical", "high", "medium", "low", "none", "unknown"]
 
 
 # ---------------------------------------------------------------------------
-# 취약점 지식베이스
+# The vulnerability knowledge base
 # ---------------------------------------------------------------------------
 
 def build_kb():
-    """(cpe_vendor, cpe_product, version) 및 (purl_base, version) -> [CVE]"""
+    """(cpe_vendor, cpe_product, version) and (purl_base, version) -> [CVE]"""
     by_cpe = {}
     by_purl = {}
     for spec in OSS.values():
@@ -77,7 +80,7 @@ def parse_purl(purl):
 
 
 def identify(component, by_cpe, by_purl):
-    """컴포넌트 1건에 대한 CVE 식별. (cve목록, 매칭방식) 반환."""
+    """Identify CVEs for a single component. Returns (cve list, match method)."""
     cpe_key = parse_cpe(component.get("cpe"))
     if cpe_key and cpe_key in by_cpe:
         return by_cpe[cpe_key], "cpe-exact"
@@ -88,7 +91,7 @@ def identify(component, by_cpe, by_purl):
 
 
 # ---------------------------------------------------------------------------
-# CycloneDX vulnerability 객체 조립
+# Assembling the CycloneDX vulnerability object
 # ---------------------------------------------------------------------------
 
 def load_nvd():
@@ -143,7 +146,7 @@ def make_vuln(cve_id, hits, nvd, asset_props):
             v["references"] = [{"id": cve_id, "source": {"url": u}}
                                for u in meta["references"]]
 
-    # 식별 단계이므로 VEX 판정은 내리지 않고 in_triage 로 둔다.
+    # This is the identification step, so no VEX verdict is made - it stays in_triage.
     v["analysis"] = {
         "state": "in_triage",
         "detail": "Identified by SBOM component matching. VEX adjudication "
@@ -180,7 +183,7 @@ def score_of(v):
 
 
 # ---------------------------------------------------------------------------
-# 실행
+# Entry point
 # ---------------------------------------------------------------------------
 
 def main():
@@ -196,7 +199,7 @@ def main():
     index_rows = []
     cve_assets = collections.defaultdict(set)
     cve_sev = {}
-    produced = {}   # file -> {bom_ref: set(cve)}  (검증용)
+    produced = {}   # file -> {bom_ref: set(cve)}  (for verification)
     meta_missing = set()
 
     for fname in files:
@@ -213,7 +216,7 @@ def main():
             {"name": "ics:network-exposure", "value": tprops.get("ics:network-exposure", "")},
         ]
 
-        # --- 컴포넌트별 CVE 식별 -> CVE 기준으로 집계 ---------------------
+        # --- identify CVEs per component, then aggregate by CVE ------------
         per_cve = collections.defaultdict(list)
         prod = collections.defaultdict(set)
         for comp in sbom.get("components", []):
@@ -236,7 +239,8 @@ def main():
 
         counts = collections.Counter(severity_of(v) for v in vulns)
 
-        # --- 출력 문서 조립 (원본 SBOM 구조 유지 + vulnerabilities[]) -----
+        # --- assemble the output (the original SBOM structure plus
+        #     vulnerabilities[]) ---------------------------------------------
         out = dict(sbom)
         out["serialNumber"] = "urn:uuid:%s" % uuid.uuid5(NS, "sbom-cve::" + fname)
         out["properties"] = list(sbom.get("properties", [])) + [
@@ -268,7 +272,7 @@ def main():
         })
         md["tools"] = tools
 
-        # 원본 SBOM 으로의 역참조 추가
+        # Add a back-reference to the original SBOM
         top_out = json.loads(json.dumps(top))
         top_out.setdefault("externalReferences", []).append({
             "type": "bom",
@@ -324,7 +328,7 @@ def main():
                         ";".join(m.get("cwes", [])), len(cve_assets[cid]),
                         (m.get("published") or "")[:10]])
 
-    # --- 정답셋 대비 검증 --------------------------------------------------
+    # --- verification against the ground truth -----------------------------
     gt_path = os.path.join(SBOM_DIR, "ground_truth_vulnerable_components.csv")
     report = []
     if os.path.exists(gt_path):
@@ -344,7 +348,7 @@ def main():
         prec = tp / (tp + fp) if tp + fp else 0.0
         rec = tp / (tp + fn) if tp + fn else 0.0
         report = [
-            "SBOM -> CVE 매칭 검증 (정답셋: ground_truth_vulnerable_components.csv)",
+            "SBOM -> CVE matching check (ground truth: ground_truth_vulnerable_components.csv)",
             "",
             "  true positive : %d" % tp,
             "  false positive: %d" % fp,
@@ -352,7 +356,7 @@ def main():
             "  precision     : %.4f" % prec,
             "  recall        : %.4f" % rec,
             "",
-            "매칭은 SBOM 문서의 cpe/purl 식별자만 입력으로 사용하며 정답셋을 참조하지 않는다.",
+            "Matching uses only the cpe/purl identifiers in the SBOM document and never reads the ground truth.",
         ]
         with open(os.path.join(OUT_DIR, "matching_report.txt"), "w", encoding="utf-8") as f:
             f.write("\n".join(report) + "\n")
@@ -360,8 +364,8 @@ def main():
     total_cve_refs = sum(r["cve_total"] for r in index_rows)
     print("SBOM-CVE files    : %d" % len(index_rows))
     print("unique CVEs       : %d" % len(cve_assets))
-    print("CVE findings      : %d (자산별 CVE 항목 합계)" % total_cve_refs)
-    print("NVD metadata      : %d/%d CVE 보유" %
+    print("CVE findings      : %d (CVE entries summed over assets)" % total_cve_refs)
+    print("NVD metadata      : held for %d/%d CVEs" %
           (len(cve_assets) - len(meta_missing), len(cve_assets)))
     print("output dir        : %s" % OUT_DIR)
     if report:
