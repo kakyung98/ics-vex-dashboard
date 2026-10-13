@@ -101,7 +101,13 @@ ITEMS = {
         # contribute 0 to every published figure - item #4 scores the `affected`
         # verdict, which vex_judge_v2 decides at Q2, while Q3/Q4 only set the
         # evidence tier and no answer key carried a tier.
+        # Not a numeric precision threshold, so `acceptance` stays None and the
+        # page renders `acceptance_label` instead. The bar is on contradictions
+        # because the other candidates cannot carry one: precision has no negative
+        # class to fail against, and a recall threshold is met outright by a system
+        # that answers "yes" to everything. See tools/eval_q34_agreement.py.
         "acceptance": None,
+        "acceptance_label": "합격기준 모순 = 0 (자체 기준 · 인증 시험항목 아님)",
         "sut": "tools/joern_reachability (Joern CPG) + tools/z3_controllability (Z3)",
         "dataset": {"gt": "data/vex_q34_gt.jsonl",
                     "reach": "data/reachability.json",
@@ -110,13 +116,14 @@ ITEMS = {
         # one per question, and 249 of the 534 possible pairs are held out.
         "record_unit": "건 ((CVE, 질문) 쌍 · 모집단 267 CVE)",
         "runtime_hint": "즉시 (판정 캐시를 채점) · 권위 = 출하 공개 헤더 · NVD CVSS AV/UI",
-        "variants": [{"key": "both", "label": "Q3 + Q4 (보조 공시, 합격기준 없음)"}],
+        "variants": [{"key": "both", "label": "Q3 + Q4 (보조 공시 · 기준 모순 = 0)"}],
         # Recalls, not precisions: Q4's answer key has no negative class, so a
         # precision there is 1.0000 by construction. Q3's two misses are Joern
         # refuting `GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's `inflate`
         # (CVE-2022-37434) - both declared in a shipped public header, which is
         # exactly the false negative the module docstring predicted.
-        "reference": {"both": {"Q3_recall": 0.9655, "Q4_recall": 1.0}},
+        "reference": {"both": {"Q3_recall": 0.9655, "Q4_recall": 1.0,
+                               "Q3_contradictions": 2, "Q4_contradictions": 0}},
     },
 }
 
@@ -200,9 +207,13 @@ def _reproduces(res, ref, dataset):
         return None
     if isinstance(ref, dict):
         for q in ("Q3", "Q4"):
+            d = (res.get("per_question") or {}).get(q) or {}
             want = ref.get("%s_recall" % q)
-            got = ((res.get("per_question") or {}).get(q) or {}).get("recall")
+            got = d.get("recall")
             if want is not None and (got is None or abs(got - want) > 1e-9):
+                return False
+            wc = ref.get("%s_contradictions" % q)
+            if wc is not None and d.get("contradictions") != wc:
                 return False
         return True
     return abs(res["precision"] - ref) < 1e-9

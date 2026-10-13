@@ -122,6 +122,24 @@ def score(gt_path=GT, reach_path=REACH, ctrl_path=CTRL):
                 "precision would be 1.0000 by construction and would describe the "
                 "key rather than the solver"),
             "recall": round(tp / (tp + fn), 4) if (tp + fn) else None,
+            # The criterion is on CONTRADICTIONS, not on recall or precision.
+            # Neither of those can carry one here: precision has no negative class
+            # to fail against, and a recall threshold is passed outright by a
+            # system that answers "yes" to everything without analysing anything.
+            #
+            # What this pipeline can actually be harmed by is one-directional. An
+            # over-positive solver is safe - it clears nothing, it only leaves the
+            # tier weaker. An over-REFUTING solver produces false clearances, which
+            # is the failure that matters. So the bar is that the solver must never
+            # assert the negative where an outside authority asserts the positive.
+            # A trivial yes-to-everything solver passes this, and should: it is not
+            # the dangerous one.
+            "contradictions": fn,
+            "contradiction_cases": [w["cve"] for w in wrong
+                                    if w["expected"] == POSITIVE[q]],
+            "acceptance_criterion": "contradictions == 0 (no refutation against an "
+                                    "authority-confirmed positive)",
+            "pass": fn == 0,
             "misses": misses[:40],
             "disagreements": wrong[:40],
             "no_verdict_cases": absent[:20],
@@ -129,7 +147,13 @@ def score(gt_path=GT, reach_path=REACH, ctrl_path=CTRL):
 
     return {
         "test": "Q3 reachability / Q4 controllability agreement with external authorities",
-        "status": "supplementary disclosure - no certification acceptance criterion",
+        "status": "supplementary disclosure - not a certification test item; the "
+                  "criterion below is this repository's own, not the scheme's",
+        # The axis passes only if BOTH questions do. Reporting a per-question pass
+        # and then quoting the better one is how a two-part result turns into a
+        # one-part claim.
+        "pass": all(per[q]["pass"] for q in ("Q3", "Q4")),
+        "acceptance_criterion": "contradictions == 0 for both questions",
         "ground_truth": os.path.relpath(gt_path, BASE),
         "sut": {"Q3": "tools/joern_reachability (Joern CPG call graph)",
                 "Q4": "tools/z3_controllability (Z3 over an LLM constraint model)"},
@@ -169,6 +193,9 @@ def main():
         print("    precision %s   recall %s"
               % (d["precision"] if d["precision"] is not None else "n/a (no negative class)",
                  d["recall"]))
+        print("    contradictions %-3d  -> %s  (%s)"
+              % (d["contradictions"], "PASS" if d["pass"] else "FAIL",
+                 d["acceptance_criterion"]))
         if d["disagreements"]:
             print("    -- disagreements")
             for w in d["disagreements"][:6]:

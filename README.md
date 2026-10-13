@@ -545,8 +545,10 @@ Q3 and Q4 only set the evidence tier, and no answer key carried a tier - so howe
 much Joern and Z3 ran, their contribution to every published figure was exactly
 **0**. `data/vex_q34_gt.jsonl` (`tools/build_q34_gt.py`) is the axis on which they
 become measurable, scored by `tools/eval_q34_agreement.py` and runnable from the
-console. It is a **supplementary disclosure with no acceptance criterion**: it is
-not one of the two certification items.
+console. It is a **supplementary disclosure**: not one of the two certification
+items, and its bar - contradictions == 0 - is this repository's own, set where the
+damage is rather than on a figure a do-nothing solver would pass. See *The
+acceptance criterion is on contradictions, not on recall* below.
 
 Its unit is a **(CVE, question) pair**, not a CVE. The population is the same 267
 collected-source CVEs as item #4; each can carry up to two labels, so 534 pairs are
@@ -590,6 +592,43 @@ shipped public header. This is exactly the false negative `joern_reachability.py
 predicted in its own docstring - a library snapshot contains no consumer, so the
 attack surface itself looks unreachable from an in-snapshot root. The prediction
 now has a number behind it, and it is why **Q3 must never refute**.
+
+#### The acceptance criterion is on contradictions, not on recall
+
+A one-sided answer key cannot carry the usual bar, and the two obvious candidates
+both fail for the same reason - they are satisfied by a system that does no work:
+
+| candidate | why it does not work |
+|---|---:|
+| precision | no negative class exists, so it is `1.0000` by construction |
+| recall | **a solver that answers "yes" to everything scores 1.0000** without analysing anything |
+| abstention | abstaining is not harmful here; it only leaves the evidence tier weaker |
+
+What this pipeline can be harmed by is one-directional. An over-POSITIVE solver is
+safe: Q3/Q4 never clear a CVE, so saying "reachable" too often costs nothing but a
+weaker tier. An over-REFUTING solver produces false clearances, and that is the
+failure that matters. So the bar is set where the damage is:
+
+> **contradictions == 0** — the solver must never assert the negative on a case an
+> outside authority asserts as positive.
+
+A trivial yes-to-everything solver passes this, and should: it is not the dangerous
+one. The criterion is this repository's own; the certification scheme sets none for
+Q3/Q4, which are not test items.
+
+| | labels | scored | contradictions | verdict |
+|---|---:|---:|---:|---|
+| **Q3 — Joern** | 75 | 58 | **2** | **FAIL** |
+| **Q4 — Z3** | 210 | 166 | 0 | PASS |
+
+**Q3 fails, and is published failing.** Its two contradictions are
+`GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's `inflate` (CVE-2022-37434), both
+declared in a shipped public header and both called not-reachable by Joern. Half of
+everything Joern refuted on this corpus is wrong, which is a precise statement of
+why `vex_judge_v2` must keep Q3 non-deciding: the engine fails the safety bar, and
+the pipeline's defence is that it never lets Q3 act on a refutation in the first
+place. Removing the criterion because the engine fails it would delete the one
+measurement that justifies that design.
 
 #### What building the key exposed in the solvers
 
