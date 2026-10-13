@@ -39,26 +39,26 @@ UPLOADS = os.path.join(BASE, "data", "cert_uploads")
 ITEMS = {
     "3": {
         "id": "3",
-        "name": "SBOM 기반 공개 취약점 식별 정밀도",
+        "name": "SBOM-based public vulnerability identification precision",
         "name_en": "SBOM -> CVE identification precision",
         "metric": "precision = TP / (TP + FP)",
         "acceptance": 0.80,
         "sut": "src/cpe_match_ai (L0 NVD CPE index + L3 vendor guard + trained-encoder retrieval)",
         "dataset": {"gt": "data/cpe_match_eval.jsonl"},
-        "record_unit": "건 ((컴포넌트, CVE) 쌍)",
-        "runtime_hint": "약 8분 (14,173개 컴포넌트 × 전체 NVD CPE 인덱스)",
+        "record_unit": "records ((component, CVE) pairs)",
+        "runtime_hint": "about 8 min (14,173 components x the full NVD CPE index)",
         # The retrieval-backed matcher is the default SUT: the string cascade
         # abstains on 6,633 of 14,173 components and every one of those answers
         # was reachable, so the cascade alone is the ablation, not the system.
         "variants": [
-            {"key": "ai", "label": "문자열 캐스케이드 + 학습 인코더 검색 (기본 SUT)"},
-            {"key": "string", "label": "문자열 캐스케이드만 (비교용 ablation)"},
+            {"key": "ai", "label": "string cascade + trained-encoder retrieval (default SUT)"},
+            {"key": "string", "label": "string cascade only (ablation)"},
         ],
         "reference": {"ai": 0.949, "string": 0.9499},
     },
     "4": {
         "id": "4",
-        "name": "VEX 기반 식별된 취약점 영향 판단 정밀도",
+        "name": "VEX affected-judgment precision",
         "name_en": "VEX affected-judgment precision",
         "metric": "precision = TP / (TP + FP),  positive class = affected",
         "acceptance": 0.85,
@@ -67,8 +67,8 @@ ITEMS = {
                     "sut": "data/vex_v2_pregate.json",
                     "sut_patched": "data/vex_v2_patched.json",
                     "sut_gated": "data/vex_v2.json"},
-        "record_unit": "건 ((CVE, 빌드) 쌍)",
-        "runtime_hint": "즉시 (판정 캐시를 채점) · 모집단 = 소스 수집된 267 CVE 전수",
+        "record_unit": "records ((CVE, build) pairs)",
+        "runtime_hint": "instant (scores the verdict cache) - population = all 267 collected-source CVEs",
         # Three scopes, because one number cannot carry the whole claim. The
         # headline is the pre-gate vulnerable-build figure: it is the largest
         # scope whose ground truth does not share an oracle with the SUT.
@@ -86,16 +86,16 @@ ITEMS = {
         # authorities (shipped public headers, NVD CVSS) are outside this
         # repository's own tooling.
         "variants": [
-            {"key": "pregate", "label": "취약 빌드 · 패치게이트 OFF (주 지표, 비순환)"},
-            {"key": "allbuilds", "label": "전체 빌드 · 게이트 ON (순환 경고 포함)"},
+            {"key": "pregate", "label": "vulnerable build, patch gate OFF (headline, non-circular)"},
+            {"key": "allbuilds", "label": "both builds, gate ON (carries a circularity warning)"},
         ],
         "reference": {"pregate": 0.9718, "allbuilds": 0.993},
     },
     "q34": {
         "id": "q34",
-        "name": "Q3 도달가능성 / Q4 제어가능성 — 외부 권위와의 일치도",
+        "name": "Q3 reachability / Q4 controllability vs external authorities",
         "name_en": "Q3 reachability / Q4 controllability agreement",
-        "metric": "Q3 precision & recall · Q4 recall (정밀도는 음성 클래스 없음)",
+        "metric": "contradictions == 0; recall reported, precision withheld (no negative class)",
         # No acceptance criterion exists for this: it is not one of the two
         # certification items. It is here because without it Joern and Z3
         # contribute 0 to every published figure - item #4 scores the `affected`
@@ -107,16 +107,16 @@ ITEMS = {
         # class to fail against, and a recall threshold is met outright by a system
         # that answers "yes" to everything. See tools/eval_q34_agreement.py.
         "acceptance": None,
-        "acceptance_label": "합격기준 모순 = 0 (자체 기준 · 인증 시험항목 아님)",
+        "acceptance_label": "criterion: contradictions = 0 (this repository's own; not a certification test item)",
         "sut": "tools/joern_reachability (Joern CPG) + tools/z3_controllability (Z3)",
         "dataset": {"gt": "data/vex_q34_gt.jsonl",
                     "reach": "data/reachability.json",
                     "ctrl": "data/controllability.json"},
         # 285 labels over a 267-CVE population: a CVE carries up to two labels,
         # one per question, and 249 of the 534 possible pairs are held out.
-        "record_unit": "건 ((CVE, 질문) 쌍 · 모집단 267 CVE)",
-        "runtime_hint": "즉시 (판정 캐시를 채점) · 권위 = 출하 공개 헤더 · NVD CVSS AV/UI",
-        "variants": [{"key": "both", "label": "Q3 + Q4 (보조 공시 · 기준 모순 = 0)"}],
+        "record_unit": "labels ((CVE, question) pairs over a 267-CVE population)",
+        "runtime_hint": "instant (scores the verdict cache) - authorities = shipped public headers, NVD CVSS AV/UI",
+        "variants": [{"key": "both", "label": "Q3 + Q4 (supplementary; criterion contradictions = 0)"}],
         # Recalls, not precisions: Q4's answer key has no negative class, so a
         # precision there is 1.0000 by construction. Q3's two misses are Joern
         # refuting `GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's `inflate`

@@ -358,7 +358,7 @@ class Store:
             w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
             cve_worst[cve] = w["final_vex"]
             cve_tier[cve] = w.get("evidence_tier")
-            # under_investigation 이 왜 그렇게 많은지를 설명하는 축
+            # The axis that explains why there is so much under_investigation
             sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
             sc = sw.get("source_class") or "vendor-proprietary"
             # "code obtained" must mean code we ACTUALLY collected+analysed, so the
@@ -389,7 +389,8 @@ class Store:
             if len(parts) >= 2 and parts[1].isdigit():
                 yr[int(parts[1])] += 1
         self.by_year = {str(y): yr[y] for y in sorted(yr)}
-        # 축 4층: 출처(권고) / 문서(장비=SBOM) / 진술(장비x CVE) / 취약점(고유 CVE)
+        # Four axes: source (advisory) / document (device = SBOM) / statement
+        # (device x CVE) / vulnerability (distinct CVE)
         _fi = [r for rows in self.by_cve.values() for r in rows]
         _dev = {r.get("device") for r in _fi if r.get("device")}
         _fin_vex = Counter(r["final_vex"] for r in _fi)
@@ -405,18 +406,18 @@ class Store:
         _cve_prod_med = (sorted(_cve_prod.values())[len(_cve_prod) // 2] if _cve_prod else 0)
         self.cve_level = {
             "axes": {
-                # VEX 는 취약점(CVE) 단위 진술이므로 CVE 를 기준 축으로 둔다.
+                # A VEX statement is about a vulnerability, so the CVE is the reference axis.
                 "cves": len(cve_worst),
                 "statements": len(_fi),
                 "advisories_with_cves": len(_dev),
                 "advisories_collected": self.advisories.get("total", 0),
-                "cve_split": _cve_split,            # 제품에 따라 판정이 갈리는 CVE 수
+                "cve_split": _cve_split,            # CVEs whose verdict differs by product
                 "products_per_cve_median": _cve_prod_med,
                 "products_per_cve_max": (max(_cve_prod.values()) if _cve_prod else 0),
                 "statements_per_advisory_median": _med,
                 "statements_per_advisory_max": (max(_per_dev.values()) if _per_dev else 0),
             },
-            # VEX 진술 단위 판정 — worst-case 로 뭉개지 않은 원본
+            # Per-statement verdicts - the originals, not collapsed to a worst case
             "by_vex_statement": dict(_fin_vex),
             "by_justification": dict(_fin_just),
             "total_cves": len(cve_worst),
@@ -572,7 +573,7 @@ def vex_for_sbom(sbom, exposure=None):
             av = cv.get("av", "N")
             exp = exposure or G.exposure_for(comp["name"])
             has_pair = cv["id"] in STORE.pairs
-            # 증거가 없으면 under_investigation. 배치 맥락으로 추정하지 않는다.
+            # No evidence means under_investigation. Deployment context is not a substitute.
             status, just = UNDER_INV, None
             basis = "no code evidence collected for this component"
             tier = ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
@@ -667,10 +668,11 @@ def vex_for_sbom(sbom, exposure=None):
         kev = str(props.get("signal:kev", "")).lower() == "true"
         aff = ((v.get("affects") or [{}])[0] or {}).get("ref")
         exp = exposure or G.exposure_for(_top.get("name") or ref2name.get(aff, "") or "device")
-        # --- component_not_present 레인 ---
-        # VDR 이 지목한 컴포넌트가 이 SBOM 의 컴포넌트 목록에 없다면, 그 부재 자체가
-        # CISA justification `component_not_present` 의 근거다. 버전 대조가 필요 없어
-        # 컴포넌트 버전이 NOASSERTION 이어도 성립하는 유일한 확정 경로다.
+        # --- the component_not_present lane ---
+        # If the component the VDR names is absent from this SBOM's component list,
+        # that absence is itself the grounds for CISA's `component_not_present`
+        # justification. It needs no version comparison, which makes it the only
+        # conclusive path that still holds when a component version is NOASSERTION.
         if aff and aff not in ref2name:
             status, just = NOT_AFFECTED, "component_not_present"
             basis = ("the affected component is not present in this SBOM "
@@ -1358,7 +1360,7 @@ if(_ta){   // analyzer page only
 async function stats(){
   try{const s=await(await fetch('/api/summary')).json();
     const v=s.by_vex||{}, ax=s.axes||{};
-    // 축 카드 — CVE 가 VEX 판정 단위. 제품/statement 축은 표시하지 않는다.
+    // Axis cards - the CVE is the unit a VEX verdict is about. Product and statement axes are not shown.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
       const AX=[['cves','unique CVEs','the VEX judgement unit'],
@@ -1366,7 +1368,7 @@ async function stats(){
                 ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
-    // 'VEX verdict — per CVE' 카드는 제거됨. source-code reachability 축만 표시한다.
+    // The 'VEX verdict - per CVE' card was removed; only the source-code reachability axis is shown.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
       const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
@@ -1579,7 +1581,7 @@ async function advisories(){
 function avBranch(av){av=(av||'').toUpperCase();if(av==='N'||av==='A')return 'network';if(av==='L')return 'local';if(av==='P')return 'physical';return null;}
 function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;const path=[];
   while(true){const node=nodes[nid];
-    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'미기재')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
+    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'not stated')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
     const a=ans[nid];
     if(a===undefined||a===null)return{status:null,path:path,complete:false,pending:nid,question:node.q};
     path.push({node:nid,q:node.q,answer:!!a});
@@ -1619,10 +1621,11 @@ function _canonStatus(s){s=String(s||'');
   if(s==='under_investigation')return 'under_investigation';
   if(s==='fixed')return 'fixed';
   return 'under_investigation';}
-// CISA justification 은 근거가 있을 때만 붙인다. 매칭되지 않으면 null 을 돌려주고,
-// 호출부는 not_affected 를 포기하고 under_investigation 으로 내린다.
-// 배치 환경(perimeter/segmentation/firewall)은 어떤 justification 의 근거도 아니므로
-// 여기서 매핑하지 않는다 — 그런 주장은 토폴로지가 바뀌면 조용히 거짓이 된다.
+// A CISA justification is attached only when there are grounds for it. With no match
+// this returns null, and the caller gives up not_affected and falls to
+// under_investigation. Deployment context (perimeter, segmentation, firewall) is not
+// grounds for ANY justification, so it is not mapped here - a claim resting on it goes
+// quietly false the moment the topology changes.
 function _ovJust(j){j=String(j||'');
   if(!j)return null;
   if(/component_not_present/.test(j))return 'component_not_present';
@@ -1631,7 +1634,7 @@ function _ovJust(j){j=String(j||'');
   if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
   if(/inline_mitigations_already_exist/.test(j))return 'inline_mitigations_already_exist';
   return null;}
-// not_affected 로 내보내도 되는지: 유효한 justification 이 있어야만 허용한다.
+// Whether not_affected may be emitted at all: only with a valid justification.
 function _justOrNull(r){
   if(r.justification&&VEX_JUST.some(x=>x[0]===r.justification))return r.justification;
   return _ovJust(r.justification);}
@@ -1655,10 +1658,11 @@ function _abstainBlock(d){
       '<tr><td>'+_esc(x.component)+'</td><td class="mono">'+_esc(x.version)+'</td>'
       +'<td class="hint">'+_esc(x.reason||'')+'</td></tr>').join('');
   return '<details style="margin-top:12px"><summary class="hint">'
-    +'식별하지 못한 컴포넌트 '+u.length+'건 — 사유 보기</summary>'
-    +'<p class="hint" style="margin:8px 0">매처는 후보가 분명하지 않으면 <b>추측하지 않고 기권</b>합니다. '
-    +'ICS 장비 다수는 NVD CPE 사전에 항목 자체가 없어 이름 기반 매칭으로는 도달할 수 없습니다.</p>'
-    +'<table><thead><tr><th>Component</th><th>Version</th><th>기권 사유</th></tr></thead><tbody>'
+    +u.length+' components not identified — see why</summary>'
+    +'<p class="hint" style="margin:8px 0">When no candidate is clear the matcher <b>abstains '
+    +'rather than guessing</b>. Many ICS devices have no entry at all in the NVD CPE '
+    +'dictionary, so name-based matching cannot reach them.</p>'
+    +'<table><thead><tr><th>Component</th><th>Version</th><th>Reason for abstaining</th></tr></thead><tbody>'
     +rows+'</tbody></table></details>';
 }
 function _esc(v){return String(v==null?'':v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -1678,8 +1682,8 @@ function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
-// VEX 진술의 대상은 제품 전체가 아니라 컴포넌트다. SBOM 컴포넌트마다 안정적인
-// CSAF product_id 를 부여해, flags/product_status 가 "어느 컴포넌트인지" 를 담게 한다.
+// A VEX statement is about a component, not the whole product. Each SBOM component gets
+// a stable CSAF product_id so flags/product_status can say WHICH component they mean.
 let _pidMap=null;
 function _componentPids(){
   if(_pidMap)return _pidMap;
@@ -1697,7 +1701,7 @@ function _componentPids(){
 function _pidFor(component){
   const m=_componentPids(); const k=String(component||'').trim().toLowerCase();
   return (k&&m.byName[k])||null;}
-// 같은 SBOM 이면 같은 문서 ID 를 쓴다 (재실행마다 새 ID 가 나오면 추적성이 없다).
+// The same SBOM gets the same document id - a fresh id per run would destroy traceability.
 function _docId(name){let h=0;const t='ICSVEXFORGE|'+name;
   for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}
   return 'ICSVEXFORGE-'+(h>>>0).toString(16).toUpperCase();}
@@ -1755,7 +1759,7 @@ function saveVexFields(cve){
       products:[Object.assign({"@id":prodId},p.purl&&!cpid?{identifiers:{purl:p.purl}}:{})],
       timestamp:now,
       status:_effStatus(r)};
-    // status_notes 는 OpenVEX 스펙 필드다. 비표준 필드를 statement 에 직접 달지 않는다.
+    // status_notes is a field of the OpenVEX spec. No non-standard field is hung on a statement.
     const sn=[];
     if(r.status==='not_affected'&&st.status==='not_affected'){
       st.justification=_justOrNull(r);
@@ -1782,13 +1786,14 @@ function exportCsaf(){
   const used={};
   const vulns=rows.map(r=>{
     const st=_effStatus(r);
-    // 진술 대상은 컴포넌트. 매칭되는 컴포넌트가 없을 때만 제품 전체로 떨어진다.
+    // The statement is about a component; it falls back to the whole product only when
+    // no component matches.
     const cpid=_pidFor(r.component)||pid; used[cpid]=1;
     const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
     const notes=[{category:'other',title:'ICS-VEXForge assessment',
       text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
     if(st==='not_affected'){
-      // CSAF 는 justification 을 flags[].label 로 싣는다. 근거 없이는 여기 오지 않는다.
+      // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
       if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
     else if(st==='affected'){
@@ -1812,7 +1817,7 @@ function exportCsaf(){
     .concat(comps.map(c=>Object.assign({product_id:c.product_id,name:c.name},
       c.purl?{product_identification_helper:{purl:c.purl}}:{})));
   const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
-      // 우리는 제품 공급자가 아니다. vendor 로 발행하면 공급자 사칭이 된다.
+      // We are not the product supplier; publishing as `vendor` would impersonate one.
       publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
         namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
         issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
@@ -2151,7 +2156,7 @@ def _q34_scope_section():
         return "".join(
             '<tr><td class="mono"><b>%s</b></td><td>%s</td>'
             '<td><span class="pill %s">%s</span></td></tr>'
-            % (c, d, cls, "분석함" if cls == "pill-ok" else "제외")
+            % (c, d, cls, "analysed" if cls == "pill-ok" else "excluded")
             for c, d in sorted(table.items(),
                                key=lambda kv: int(kv[0].split("-")[1])))
 
@@ -2162,39 +2167,43 @@ def _q34_scope_section():
 
     return """
 <div class="card">
-  <h3 style="margin:0 0 6px">Q3 도달가능성 · Q4 제어가능성을 적용하는 취약점 유형</h3>
+  <h3 style="margin:0 0 6px">Which weakness classes get Q3 reachability and Q4 controllability</h3>
   <p class="hint" style="margin:0 0 12px">
-  Q3(Joern 도달가능성)와 Q4(Z3 제어가능성)은 <b>판정을 뒤집지 않습니다</b> &mdash;
-  <code>affected</code> 뒤의 증거 등급만 올립니다. 그래서 전수 실행이 아니라
-  <b>취약점 유형별로 선별</b>합니다. 스냅샷마다 CPG를 새로 빌드해야 하므로 비용이 크고,
-  유형에 따라서는 경로를 찾아도 주장이 달라지지 않기 때문입니다.
-  규칙은 <code>tools/select_q34_targets.py</code> 에 있고 이 표는 그 코드에서 직접 읽어 생성됩니다.
-  제외 사유는 CVE별로 <code>data/q34_targets.json</code> 에 기록됩니다.</p>
+  Q3 (Joern reachability) and Q4 (Z3 controllability) <b>never overturn a verdict</b> &mdash;
+  they only raise the evidence tier behind an <code>affected</code>. Running them is
+  therefore a cost question rather than a correctness one, and they are <b>selected by
+  weakness class</b> instead of run over everything: Joern builds a fresh CPG per
+  snapshot, and for some classes finding a path would not change the claim anyway.
+  The rule lives in <code>tools/select_q34_targets.py</code> and this table is generated by
+  importing that module, so the page cannot drift from the code. Every exclusion is
+  recorded per CVE in <code>data/q34_targets.json</code>.</p>
 
   <div class="cert-kv" style="margin-bottom:12px">
-    <span>분석 대상 <b>__RUN__</b></span>
-    <span>유형상 제외 <b>__SKIP__</b></span>
-    <span>추적할 함수 없음 <b>__NOFN__</b></span>
-    <span>기분석 <b>__DONE__</b></span>
+    <span>analysed <b>__RUN__</b></span>
+    <span>excluded by class <b>__SKIP__</b></span>
+    <span>no function to trace <b>__NOFN__</b></span>
+    <span>already analysed <b>__DONE__</b></span>
   </div>
 
-  <h4 style="margin:14px 0 6px">① 분석하는 유형 &mdash; 공격자 입력이 싱크에 닿는가가 열린 질문</h4>
-  <table class="tbl"><tr><th style="width:110px">CWE</th><th>설명</th><th style="width:90px">처리</th></tr>
+  <h4 style="margin:14px 0 6px">1. Analysed &mdash; whether attacker input reaches the sink is the open question</h4>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>description</th><th style="width:90px">handling</th></tr>
   __IN_ROWS__
   </table>
 
-  <h4 style="margin:18px 0 6px">② 제외하는 유형 &mdash; 놓인 자리와 무관하게 결함인 것</h4>
-  <p class="hint" style="margin:0 0 8px">깨진 암호, 잘못된 인증서 검증, 약한 난수는
-  <b>어디에 있든 틀렸습니다</b>. 경로를 찾아도 주장이 강해지지도 약해지지도 않으므로,
-  스냅샷당 CPG 빌드 비용을 치를 이유가 없습니다.</p>
-  <table class="tbl"><tr><th style="width:110px">CWE</th><th>설명</th><th style="width:90px">처리</th></tr>
+  <h4 style="margin:18px 0 6px">2. Excluded &mdash; wrong wherever they sit</h4>
+  <p class="hint" style="margin:0 0 8px">Broken crypto, missing certificate validation and
+  weak randomness are <b>defects regardless of where they sit</b>. A path to them neither
+  strengthens nor weakens the claim, so there is no reason to pay for a CPG build per
+  snapshot.</p>
+  <table class="tbl"><tr><th style="width:110px">CWE</th><th>description</th><th style="width:90px">handling</th></tr>
   __EX_ROWS__
   </table>
 
   <p class="hint" style="margin-top:12px">
-  <b>분류에 없는 CWE이거나 CWE가 없으면 분석하는 쪽으로 기울입니다.</b>
-  Q3/Q4는 증거를 더할 뿐 빼지 않으므로, 실행의 실패는 CPU 낭비지만 생략의 실패는
-  근거가 약한 레코드입니다 &mdash; 비대칭이 분명할 때는 싼 쪽으로 틀리는 것이 맞습니다.</p>
+  <b>An unclassified CWE, or none at all, leans towards analysing.</b>
+  Q3/Q4 only add evidence and never remove it, so running costs CPU while skipping costs
+  a weaker record &mdash; when the asymmetry is that clear, erring towards the cheap
+  failure is the right call.</p>
 </div>
 """.replace("__IN_ROWS__", _rows(Q.INPUT_DRIVEN, "pill-ok")) \
    .replace("__EX_ROWS__", _rows(Q.BY_CONSTRUCTION, "pill-aff")) \
@@ -2414,7 +2423,7 @@ def _vendor_precision_section():
                    x["abstention_pct"] if x["abstention_pct"] is not None else "&mdash;",
                    "{:,}".format(x["TP"]), "{:,}".format(x["FP"]), pr))
 
-    agg = {"vendor": "그 외 %d개 벤더" % len(rest),
+    agg = {"vendor": "other %d vendors" % len(rest),
            "components": sum(x["components"] for x in rest),
            "scored": sum(x["scored"] for x in rest),
            "TP": sum(x["TP"] for x in rest), "FP": sum(x["FP"] for x in rest),
@@ -2426,32 +2435,35 @@ def _vendor_precision_section():
 
     return """
 <div class="card" style="margin-top:18px">
-  <h3 style="margin:0 0 6px">벤더별 식별 정밀도 — 시험항목 #3</h3>
+  <h3 style="margin:0 0 6px">Identification precision per vendor &mdash; test item #3</h3>
   <p class="hint" style="margin:0 0 12px">
-  전체 정밀도 <b>%(prec).4f</b> (TP %(tp)s / FP %(fp)s) 는 코퍼스 전체에 대한 값입니다.
-  다만 코퍼스는 균질하지 않아 Siemens 한 곳이 컴포넌트의 <b>%(sie).1f%%</b> 를 차지합니다.
-  그래서 하나의 수치로는 &ldquo;우리 설비에서는 어떤가&rdquo; 에 답할 수 없어 벤더별로 분해해 공시합니다.</p>
+  The overall precision <b>%(prec).4f</b> (TP %(tp)s / FP %(fp)s) describes the whole corpus,
+  and the corpus is nowhere near uniform &mdash; Siemens alone is <b>%(sie).1f%%</b> of the
+  components. One figure therefore cannot answer &ldquo;how does it do on OUR equipment&rdquo;,
+  so the split is published instead.</p>
 
   <div class="cert-warn" style="margin:0 0 12px">
-  <b>상위 벤더로 범위를 좁히지 않았습니다.</b> 매처의 기권율은 상위 10개 벤더 안쪽이 43.9%%,
-  바깥이 55.5%% 입니다 &mdash; 범위를 좁히면 <b>어려운 쪽을 덜어내어</b> 수치가 올라갑니다.
-  이 저장소는 벤더별 상한(각 40건)으로 같은 실수를 한 적이 있고, 그 상한을 걷어내자
-  0.9870 → 0.9499 로 떨어졌습니다. 낮은 쪽이 코퍼스를 기술하는 정직한 수입니다.</p>
+  <b>The test was NOT scoped to the largest vendors.</b> The matcher abstains on 43.9%%
+  of components inside the ten largest and 55.5%% outside them, so narrowing the scope
+  would raise the figure by <b>removing the harder half</b>. This repository already made
+  that mistake once with a per-vendor cap of 40, and lifting the cap moved the score from
+  0.9870 to 0.9499. The lower number is the one that describes the corpus.</p>
   </div>
 
   <table class="tbl">
-    <tr><th>벤더</th><th style="text-align:right">컴포넌트</th>
-        <th style="text-align:right">채점</th><th style="text-align:right">기권율</th>
+    <tr><th>vendor</th><th style="text-align:right">components</th>
+        <th style="text-align:right">scored</th><th style="text-align:right">abstained</th>
         <th style="text-align:right">TP</th><th style="text-align:right">FP</th>
-        <th style="text-align:right">정밀도</th></tr>
+        <th style="text-align:right">precision</th></tr>
     %(rows)s
     %(rest)s
   </table>
   <p class="hint" style="margin-top:10px">
-  코퍼스 점유율 순이며 정밀도 순이 아닙니다 &mdash; 정밀도로 정렬하면 표의 윗부분을
-  결과로 읽게 됩니다. <b>채점</b> 은 정답 라벨이 붙어 실제로 점수가 매겨진 예측 수이고,
-  <b>기권율</b> 은 매처가 후보를 확정하지 못해 식별을 거부한 비율입니다 &mdash;
-  정밀도 단독 지표에서 기권은 점수를 깎지 않으므로 함께 읽어야 합니다.</p>
+  Ordered by share of the corpus, not by precision &mdash; a table sorted by score invites
+  reading its top as the result. <b>Scored</b> is the number of predictions that carried a
+  ground-truth label and were actually graded; <b>abstained</b> is the share the matcher
+  declined to identify because no candidate was clear. Read the two together: abstaining
+  costs nothing under precision alone.</p>
 </div>
 """ % {"prec": r["precision"], "tp": "{:,}".format(r["TP"]),
        "fp": "{:,}".format(r["FP"]),
@@ -2635,7 +2647,7 @@ PAGES = {
     "published-vex": ("Published VEX (CISA)",
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
-    "cert": ("인증시험 성능지표 평가", CERT_PAGE),
+    "cert": ("Certification performance metrics", CERT_PAGE),
 }
 # Two sections: the ANALYZER (interactive tools that take an SBOM and produce a VEX
 # judgement, in pipeline order) and the DATASET (the reference corpus those tools are
@@ -2647,7 +2659,7 @@ _NAV_GROUPS = [
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
     ]),
     ("Certification", [
-        ("cert", "cert.html", "성능지표 #3 / #4 평가"),
+        ("cert", "cert.html", "Test items #3 / #4"),
     ]),
     ("Dataset", [
         ("dataset", "dataset.html", "CVE Dataset"),
