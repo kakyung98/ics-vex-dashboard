@@ -1,0 +1,199 @@
+# -*- coding: utf-8 -*-
+"""The /asset-vex.html page: the asset-attribute exploitability assessment.
+
+For a source-less CVE the code-level tree (Q1-Q4) cannot run, so the user supplies
+the asset's real attributes and the server derives the attack vectors on that asset
+and matches them against the CVE's CVSS AV. Logic lives in src/asset_av_judge.py;
+this is only the form and the result rendering, which call /api/asset-vex.
+"""
+
+# Each field: (key, label, type). type "bool" -> yes/no, "enum:a|b|c" -> a select.
+# Grouped the way the NVAS spec groups the 22 asset attributes.
+ASSET_FIELDS = [
+    ("Mobile / maintenance device (PMMD)", [
+        ("maint_port_sealed", "Maintenance-port physically sealed", "bool"),
+        ("maint_device_used", "Maintenance device in use", "bool"),
+    ]),
+    ("Communication", [
+        ("comm_connected", "Asset is network-connected", "bool"),
+        ("unidirectional", "Communication is one-way only", "bool"),
+        ("wireless_capable", "Has wireless capability", "bool"),
+        ("wireless_enabled", "Wireless is enabled", "bool"),
+        ("encrypted_comm", "Communication is encrypted", "bool"),
+    ]),
+    ("Supply chain / system environment", [
+        ("sys_env_configured", "System environment is configured (apps/firmware/OS)", "bool"),
+        ("vendor_remote_access", "Vendor remote access is possible", "bool"),
+        ("account_mgmt", "Account management is supported", "bool"),
+    ]),
+    ("Location & physical", [
+        ("physical_location", "Physical location", "enum:VA|OCA|PA"),
+        ("physical_blocked", "Physically blocked / isolated", "bool"),
+    ]),
+    ("Security policy", [
+        ("host_firewall", "Host firewall applied", "bool"),
+        ("work_approval", "Work approval required", "bool"),
+        ("access_right", "Asset access right", "enum:admin|operator|none"),
+    ]),
+]
+
+# The CVE-derived facts of spec 3.5. Left as "unknown" they resolve conservatively.
+EXTRA_FIELDS = [
+    ("protocol_required", "AV:N/A &mdash; exploit requires a specific protocol/interface", "tri"),
+    ("protocol_match", "&nbsp;&nbsp;&mdash; the asset carries a matching protocol/interface", "tri"),
+    ("pmmd_required", "AV:P &mdash; exploit must use a portable maintenance device (PMMD)", "tri"),
+]
+
+_LOC_LABEL = {"VA": "VA &mdash; visitor-accessible area",
+              "OCA": "OCA &mdash; operation-controlled area",
+              "PA": "PA &mdash; protected area"}
+_ACC_LABEL = {"admin": "admin (관리자)", "operator": "operator (취급자)", "none": "none (없음)"}
+
+
+def _field_html(key, label, typ):
+    if typ == "bool":
+        opts = '<option value="">&mdash;</option><option value="y">Yes</option>' \
+               '<option value="n">No</option>'
+    elif typ == "tri":
+        opts = '<option value="">unknown</option><option value="y">Yes</option>' \
+               '<option value="n">No</option>'
+    elif typ.startswith("enum:"):
+        lab = _LOC_LABEL if key == "physical_location" else (
+            _ACC_LABEL if key == "access_right" else {})
+        opts = '<option value="">&mdash;</option>' + "".join(
+            '<option value="%s">%s</option>' % (v, lab.get(v, v))
+            for v in typ[5:].split("|"))
+    else:
+        opts = ""
+    return ('<label class="av-f"><span>%s</span>'
+            '<select data-k="%s">%s</select></label>' % (label, key, opts))
+
+
+def _groups_html(groups):
+    out = []
+    for title, fields in groups:
+        rows = "".join(_field_html(k, l, t) for k, l, t in fields)
+        out.append('<div class="av-grp"><h4>%s</h4><div class="av-grid">%s</div></div>'
+                   % (title, rows))
+    return "".join(out)
+
+
+ASSET_VEX_PAGE = """
+<h1 style="margin:0 0 6px">Asset-attribute exploitability assessment</h1>
+<p class="hint" style="margin:0 0 18px">
+For a CVE whose source cannot be collected, the code-level tree (Q1-Q4) does not apply.
+Enter the asset's real attributes instead: the server derives which <b>attack vectors</b>
+physically exist on the asset (five NVAS flowcharts) and matches them against the CVE's
+<b>CVSS Attack Vector</b> to decide <code>affected</code> / <code>not_affected</code> /
+<code>under_investigation</code>. Every input is a fact about one asset &mdash; this is not
+the retired synthetic-exposure estimate.</p>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="av-cve">
+    <label class="av-f" style="flex:1"><span>CVE ID</span>
+      <input id="avCve" placeholder="CVE-2022-37434" spellcheck="false"></label>
+    <button class="btn" onclick="avLoad()">Load CVE</button>
+  </div>
+  <div id="avMeta" class="hint" style="margin-top:10px"></div>
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <h3 style="margin:0 0 4px">Asset attributes</h3>
+  <p class="hint" style="margin:0 0 14px">All fields are required for a verdict. Any left
+  blank &rarr; <code>under_investigation</code> (the vector set cannot be trusted).</p>
+  __ASSET_GROUPS__
+</div>
+
+<div class="card" style="margin-bottom:18px">
+  <h3 style="margin:0 0 4px">CVE-derived facts <span class="hint">(optional, from the CVE description)</span></h3>
+  <p class="hint" style="margin:0 0 14px">Left <code>unknown</code> they resolve
+  conservatively &mdash; an unknown requirement never becomes <code>affected</code> on its own.</p>
+  <div class="av-grid">__EXTRA_FIELDS__</div>
+</div>
+
+<div style="margin-bottom:18px">
+  <button class="btn btn-go" onclick="avAssess()">Assess</button>
+  <span id="avStatus" class="hint" style="margin-left:10px"></span>
+</div>
+
+<div id="avResult"></div>
+
+<style>
+.av-cve{display:flex;gap:10px;align-items:flex-end}
+.av-grp{margin-bottom:16px}.av-grp h4{margin:0 0 8px;font-size:14px;color:var(--ink2)}
+.av-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+.av-f{display:flex;flex-direction:column;gap:4px;font-size:14px}
+.av-f span{color:var(--ink2)}
+.av-f select,.av-f input{background:var(--card2);color:var(--ink);border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;font-size:14px;font-family:var(--sans)}
+.btn-go{font-size:16px;padding:10px 24px}
+.av-verdict{font-size:26px;font-weight:800;padding:14px 18px;border-radius:12px;margin-bottom:12px}
+.av-aff{background:rgba(229,103,92,.15);color:var(--aff)}
+.av-safe{background:rgba(67,190,124,.15);color:var(--safe)}
+.av-und{background:rgba(224,178,76,.15);color:var(--und)}
+.av-chip{display:inline-block;background:var(--card2);border:1px solid var(--line);
+  border-radius:999px;padding:3px 12px;margin:2px 4px 2px 0;font-size:13px;font-family:var(--mono)}
+</style>
+
+<script>
+var AV_META = null;
+async function avLoad(){
+  var cve=(document.getElementById('avCve').value||'').trim().toUpperCase();
+  var box=document.getElementById('avMeta');
+  if(!/^CVE-\\d{4}-\\d+$/.test(cve)){ box.innerHTML='<span style="color:var(--aff)">Enter a valid CVE ID.</span>'; return; }
+  box.textContent='loading\\u2026';
+  try{
+    var r=await fetch('/api/cve_av/'+cve); var j=await r.json();
+    if(!r.ok||!j.found){ box.innerHTML='<span style="color:var(--aff)">'+(j.detail||'CVE not found in the local NVD cache')+'</span>'; AV_META=null; return; }
+    AV_META=j;
+    box.innerHTML='<b>CVSS AV: '+(j.av||'&mdash;')+'</b> &middot; <span class="mono">'+(j.vector||'no vector')+'</span>'
+      +(j.description?'<div style="margin-top:6px">'+esc(j.description)+'</div>':'');
+  }catch(e){ box.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; AV_META=null; }
+}
+function avCollect(sel){
+  var o={};
+  document.querySelectorAll(sel+' select').forEach(function(s){
+    var k=s.getAttribute('data-k'), v=s.value;
+    if(v==='y')o[k]=true; else if(v==='n')o[k]=false; else if(v!=='')o[k]=v; else o[k]=null;
+  });
+  return o;
+}
+async function avAssess(){
+  var st=document.getElementById('avStatus');
+  if(!AV_META){ st.innerHTML='<span style="color:var(--aff)">Load a CVE first.</span>'; return; }
+  var attrs=avCollect('.av-grp'); var extraRaw=avCollect('.av-grid.ex');
+  // extra fields: keep only the three EXTRA keys, null stays null
+  var body={cve:AV_META.cve, av:AV_META.av, attributes:attrs, extra:extraRaw};
+  st.textContent='assessing\\u2026';
+  try{
+    var r=await fetch('/api/asset-vex',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var j=await r.json();
+    if(!r.ok){ st.innerHTML='<span style="color:var(--aff)">'+(j.detail||'error')+'</span>'; return; }
+    st.textContent=''; avShow(j);
+  }catch(e){ st.innerHTML='<span style="color:var(--aff)">'+e+'</span>'; }
+}
+function avShow(j){
+  var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
+  var h='<div class="card"><div class="av-verdict '+cls+'">'+j.status.replace(/_/g,' ').toUpperCase()+'</div>';
+  h+='<p style="margin:0 0 12px">'+esc(j.reason||'')+'</p>';
+  if(j.vectors){
+    h+='<div style="margin-bottom:8px"><b>Attack vectors identified on the asset</b></div>';
+    h+= j.vectors.length ? j.vectors.map(function(v){return '<span class="av-chip">'+v+'</span>';}).join('')
+       : '<span class="hint">none</span>';
+  }
+  if(j.missing && j.missing.length){
+    h+='<div style="margin-top:10px"><b>Missing attributes ('+j.missing.length+')</b><div class="hint">'
+      +j.missing.join(', ')+'</div></div>';
+  }
+  h+='<div style="margin-top:14px" class="hint">CVE '+esc(j.cve||'')+' &middot; CVSS AV: '+(j.cvss_av||'&mdash;')+'</div>';
+  h+='</div>';
+  document.getElementById('avResult').innerHTML=h;
+}
+// tag the extra-fields grid so avCollect can target it
+document.addEventListener('DOMContentLoaded',function(){
+  var grids=document.querySelectorAll('.av-grid');
+  if(grids.length)grids[grids.length-1].classList.add('ex');
+});
+</script>
+""".replace("__ASSET_GROUPS__", _groups_html(ASSET_FIELDS)) \
+   .replace("__EXTRA_FIELDS__", "".join(_field_html(k, l, t) for k, l, t in EXTRA_FIELDS))

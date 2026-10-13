@@ -33,6 +33,8 @@ import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
 import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
 from cert_page import CERT_PAGE      # the /cert.html markup + client script
+from asset_vex_page import ASSET_VEX_PAGE  # the /asset-vex.html markup + client
+import asset_av_judge as AV                # source-less exploitability logic
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
 except Exception:
@@ -1047,6 +1049,49 @@ def build_app():
     # The page can run the measurement itself, so a reviewer does not have to take
     # the recorded figure on trust. Scoring happens in src/cert_eval, which calls
     # the same score() the CLI tools use; nothing is recomputed here.
+    @app.get("/api/cve_av/{cve}")
+    def cve_av(cve: str):
+        """CVSS Attack Vector + description for one CVE, for the asset-vex form."""
+        cve = cve.strip().upper()
+        vec = None
+        _cp = os.path.join(DATA, "nvd_cvss.json")
+        if os.path.isfile(_cp):
+            rec = _load(_cp, {}).get(cve)
+            if isinstance(rec, dict):
+                vec = rec.get("vector")
+        desc = None
+        _np = os.path.join(DATA, "nvd_cache.json")
+        if os.path.isfile(_np):
+            rec = _load(_np, {}).get(cve)
+            if isinstance(rec, dict):
+                desc = rec.get("description")
+        av = AV.parse_av(vec)
+        return {"found": bool(vec or desc), "cve": cve, "av": av,
+                "vector": vec, "description": desc}
+
+    class AssetVexReq(BaseModel):
+        cve: str = ""
+        av: str | None = None
+        attributes: dict = {}
+        extra: dict = {}
+
+    @app.post("/api/asset-vex")
+    def asset_vex(req: AssetVexReq):
+        """Assess a source-less CVE from user-supplied asset attributes."""
+        body = req.dict()
+        cve = (body.get("cve") or "").strip().upper()
+        av = body.get("av")
+        if av is None:                                  # fall back to the cache
+            _cp = os.path.join(DATA, "nvd_cvss.json")
+            rec = _load(_cp, {}).get(cve) if os.path.isfile(_cp) else None
+            if isinstance(rec, dict):
+                av = AV.parse_av(rec.get("vector"))
+        attrs = body.get("attributes") or {}
+        extra = body.get("extra") or {}
+        res = AV.assess(av, attrs, extra)
+        res["cve"] = cve
+        return res
+
     @app.get("/api/cert/items")
     def cert_items():
         return CERT.items()
@@ -1150,6 +1195,10 @@ def build_app():
     @app.get("/cert.html", response_class=HTMLResponse)
     def cert_page():
         return make_page("cert")
+
+    @app.get("/asset-vex.html", response_class=HTMLResponse)
+    def asset_vex_page():
+        return make_page("asset-vex")
 
     return app
 
@@ -2648,6 +2697,7 @@ PAGES = {
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
     "cert": ("Certification performance metrics", CERT_PAGE),
+    "asset-vex": ("Asset-attribute exploitability", ASSET_VEX_PAGE),
 }
 # Two sections: the ANALYZER (interactive tools that take an SBOM and produce a VEX
 # judgement, in pipeline order) and the DATASET (the reference corpus those tools are
@@ -2657,6 +2707,7 @@ _NAV_GROUPS = [
         ("analyzer", "index.html", "ICS-VEXForge"),
         ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
         ("vex-decision", "vex-decision.html", "VEX Flag Decision Logic"),
+        ("asset-vex", "asset-vex.html", "Asset-based VEX (no source)"),
     ]),
     ("Certification", [
         ("cert", "cert.html", "Test items #3 / #4"),
