@@ -174,32 +174,35 @@ by a better similarity threshold.</p>
 </div>
 
 <div class="card" style="margin-top:18px">
-  <h3 style="margin:0 0 6px">벤더별 식별 정밀도 — 시험항목 #3</h3>
+  <h3 style="margin:0 0 6px">Identification precision per vendor &mdash; test item #3</h3>
   <p class="hint" style="margin:0 0 12px">
-  전체 정밀도 <b>0.9490</b> (TP 10,653 / FP 572) 는 코퍼스 전체에 대한 값입니다.
-  다만 코퍼스는 균질하지 않아 Siemens 한 곳이 컴포넌트의 <b>47.6%</b> 를 차지합니다.
-  그래서 하나의 수치로는 &ldquo;우리 설비에서는 어떤가&rdquo; 에 답할 수 없어 벤더별로 분해해 공시합니다.</p>
+  The overall precision <b>0.9490</b> (TP 10,653 / FP 572) describes the whole corpus,
+  and the corpus is nowhere near uniform &mdash; Siemens alone is <b>47.6%</b> of the
+  components. One figure therefore cannot answer &ldquo;how does it do on OUR equipment&rdquo;,
+  so the split is published instead.</p>
 
   <div class="cert-warn" style="margin:0 0 12px">
-  <b>상위 벤더로 범위를 좁히지 않았습니다.</b> 매처의 기권율은 상위 10개 벤더 안쪽이 43.9%,
-  바깥이 55.5% 입니다 &mdash; 범위를 좁히면 <b>어려운 쪽을 덜어내어</b> 수치가 올라갑니다.
-  이 저장소는 벤더별 상한(각 40건)으로 같은 실수를 한 적이 있고, 그 상한을 걷어내자
-  0.9870 → 0.9499 로 떨어졌습니다. 낮은 쪽이 코퍼스를 기술하는 정직한 수입니다.</p>
+  <b>The test was NOT scoped to the largest vendors.</b> The matcher abstains on 43.9%
+  of components inside the ten largest and 55.5% outside them, so narrowing the scope
+  would raise the figure by <b>removing the harder half</b>. This repository already made
+  that mistake once with a per-vendor cap of 40, and lifting the cap moved the score from
+  0.9870 to 0.9499. The lower number is the one that describes the corpus.</p>
   </div>
 
   <table class="tbl">
-    <tr><th>벤더</th><th style="text-align:right">컴포넌트</th>
-        <th style="text-align:right">채점</th><th style="text-align:right">기권율</th>
+    <tr><th>vendor</th><th style="text-align:right">components</th>
+        <th style="text-align:right">scored</th><th style="text-align:right">abstained</th>
         <th style="text-align:right">TP</th><th style="text-align:right">FP</th>
-        <th style="text-align:right">정밀도</th></tr>
+        <th style="text-align:right">precision</th></tr>
     <tr><td><b>Siemens</b></td><td style="text-align:right" class="mono">6,740</td><td style="text-align:right" class="mono">8,420</td><td style="text-align:right" class="mono">31.7%</td><td style="text-align:right" class="mono">8,163</td><td style="text-align:right" class="mono">257</td><td style="text-align:right" class="mono"><b>0.9695</b></td></tr><tr><td><b>Mitsubishi Electric</b></td><td style="text-align:right" class="mono">1,208</td><td style="text-align:right" class="mono">105</td><td style="text-align:right" class="mono">76.3%</td><td style="text-align:right" class="mono">83</td><td style="text-align:right" class="mono">22</td><td style="text-align:right" class="mono"><b>0.7905</b></td></tr><tr><td><b>Rockwell Automation</b></td><td style="text-align:right" class="mono">718</td><td style="text-align:right" class="mono">479</td><td style="text-align:right" class="mono">29.1%</td><td style="text-align:right" class="mono">227</td><td style="text-align:right" class="mono">252</td><td style="text-align:right" class="mono"><b>0.4739</b></td></tr><tr><td><b>Schneider Electric</b></td><td style="text-align:right" class="mono">608</td><td style="text-align:right" class="mono">168</td><td style="text-align:right" class="mono">45.6%</td><td style="text-align:right" class="mono">158</td><td style="text-align:right" class="mono">10</td><td style="text-align:right" class="mono"><b>0.9405</b></td></tr><tr><td><b>Honeywell</b></td><td style="text-align:right" class="mono">365</td><td style="text-align:right" class="mono">6</td><td style="text-align:right" class="mono">83.0%</td><td style="text-align:right" class="mono">6</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr><tr><td><b>Hitachi Energy</b></td><td style="text-align:right" class="mono">275</td><td style="text-align:right" class="mono">46</td><td style="text-align:right" class="mono">77.1%</td><td style="text-align:right" class="mono">46</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr><tr><td><b>Moxa</b></td><td style="text-align:right" class="mono">211</td><td style="text-align:right" class="mono">44</td><td style="text-align:right" class="mono">79.1%</td><td style="text-align:right" class="mono">24</td><td style="text-align:right" class="mono">20</td><td style="text-align:right" class="mono"><b>0.5455</b></td></tr><tr><td><b>GE</b></td><td style="text-align:right" class="mono">209</td><td style="text-align:right" class="mono">27</td><td style="text-align:right" class="mono">63.2%</td><td style="text-align:right" class="mono">27</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr><tr><td><b>ABB</b></td><td style="text-align:right" class="mono">166</td><td style="text-align:right" class="mono">24</td><td style="text-align:right" class="mono">54.8%</td><td style="text-align:right" class="mono">24</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr><tr><td><b>Advantech</b></td><td style="text-align:right" class="mono">155</td><td style="text-align:right" class="mono">107</td><td style="text-align:right" class="mono">15.5%</td><td style="text-align:right" class="mono">107</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr><tr><td><b>Phoenix Contact</b></td><td style="text-align:right" class="mono">144</td><td style="text-align:right" class="mono">4</td><td style="text-align:right" class="mono">31.2%</td><td style="text-align:right" class="mono">4</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr><tr><td><b>Yokogawa</b></td><td style="text-align:right" class="mono">123</td><td style="text-align:right" class="mono">8</td><td style="text-align:right" class="mono">30.1%</td><td style="text-align:right" class="mono">8</td><td style="text-align:right" class="mono">0</td><td style="text-align:right" class="mono"><b>1.0000</b></td></tr>
-    <tr><td>그 외 520개 벤더</td><td style="text-align:right" class="mono">3,251</td><td style="text-align:right" class="mono">1,787</td><td style="text-align:right" class="mono">51.8%</td><td style="text-align:right" class="mono">1,776</td><td style="text-align:right" class="mono">11</td><td style="text-align:right" class="mono"><b>0.9938</b></td></tr>
+    <tr><td>other 520 vendors</td><td style="text-align:right" class="mono">3,251</td><td style="text-align:right" class="mono">1,787</td><td style="text-align:right" class="mono">51.8%</td><td style="text-align:right" class="mono">1,776</td><td style="text-align:right" class="mono">11</td><td style="text-align:right" class="mono"><b>0.9938</b></td></tr>
   </table>
   <p class="hint" style="margin-top:10px">
-  코퍼스 점유율 순이며 정밀도 순이 아닙니다 &mdash; 정밀도로 정렬하면 표의 윗부분을
-  결과로 읽게 됩니다. <b>채점</b> 은 정답 라벨이 붙어 실제로 점수가 매겨진 예측 수이고,
-  <b>기권율</b> 은 매처가 후보를 확정하지 못해 식별을 거부한 비율입니다 &mdash;
-  정밀도 단독 지표에서 기권은 점수를 깎지 않으므로 함께 읽어야 합니다.</p>
+  Ordered by share of the corpus, not by precision &mdash; a table sorted by score invites
+  reading its top as the result. <b>Scored</b> is the number of predictions that carried a
+  ground-truth label and were actually graded; <b>abstained</b> is the share the matcher
+  declined to identify because no candidate was clear. Read the two together: abstaining
+  costs nothing under precision alone.</p>
 </div>
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
@@ -340,7 +343,7 @@ if(_ta){   // analyzer page only
 async function stats(){
   try{const s=await(await fetch('cve_level.json')).json();
     const v=s.by_vex||{}, ax=s.axes||{};
-    // 축 카드 — CVE 가 VEX 판정 단위. 제품/statement 축은 표시하지 않는다.
+    // Axis cards - the CVE is the unit a VEX verdict is about. Product and statement axes are not shown.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
       const AX=[['cves','unique CVEs','the VEX judgement unit'],
@@ -348,7 +351,7 @@ async function stats(){
                 ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
-    // 'VEX verdict — per CVE' 카드는 제거됨. source-code reachability 축만 표시한다.
+    // The 'VEX verdict - per CVE' card was removed; only the source-code reachability axis is shown.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
       const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
@@ -561,7 +564,7 @@ async function advisories(){
 function avBranch(av){av=(av||'').toUpperCase();if(av==='N'||av==='A')return 'network';if(av==='L')return 'local';if(av==='P')return 'physical';return null;}
 function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;const path=[];
   while(true){const node=nodes[nid];
-    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'미기재')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
+    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'not stated')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
     const a=ans[nid];
     if(a===undefined||a===null)return{status:null,path:path,complete:false,pending:nid,question:node.q};
     path.push({node:nid,q:node.q,answer:!!a});
@@ -601,10 +604,11 @@ function _canonStatus(s){s=String(s||'');
   if(s==='under_investigation')return 'under_investigation';
   if(s==='fixed')return 'fixed';
   return 'under_investigation';}
-// CISA justification 은 근거가 있을 때만 붙인다. 매칭되지 않으면 null 을 돌려주고,
-// 호출부는 not_affected 를 포기하고 under_investigation 으로 내린다.
-// 배치 환경(perimeter/segmentation/firewall)은 어떤 justification 의 근거도 아니므로
-// 여기서 매핑하지 않는다 — 그런 주장은 토폴로지가 바뀌면 조용히 거짓이 된다.
+// A CISA justification is attached only when there are grounds for it. With no match
+// this returns null, and the caller gives up not_affected and falls to
+// under_investigation. Deployment context (perimeter, segmentation, firewall) is not
+// grounds for ANY justification, so it is not mapped here - a claim resting on it goes
+// quietly false the moment the topology changes.
 function _ovJust(j){j=String(j||'');
   if(!j)return null;
   if(/component_not_present/.test(j))return 'component_not_present';
@@ -613,7 +617,7 @@ function _ovJust(j){j=String(j||'');
   if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
   if(/inline_mitigations_already_exist/.test(j))return 'inline_mitigations_already_exist';
   return null;}
-// not_affected 로 내보내도 되는지: 유효한 justification 이 있어야만 허용한다.
+// Whether not_affected may be emitted at all: only with a valid justification.
 function _justOrNull(r){
   if(r.justification&&VEX_JUST.some(x=>x[0]===r.justification))return r.justification;
   return _ovJust(r.justification);}
@@ -637,10 +641,11 @@ function _abstainBlock(d){
       '<tr><td>'+_esc(x.component)+'</td><td class="mono">'+_esc(x.version)+'</td>'
       +'<td class="hint">'+_esc(x.reason||'')+'</td></tr>').join('');
   return '<details style="margin-top:12px"><summary class="hint">'
-    +'식별하지 못한 컴포넌트 '+u.length+'건 — 사유 보기</summary>'
-    +'<p class="hint" style="margin:8px 0">매처는 후보가 분명하지 않으면 <b>추측하지 않고 기권</b>합니다. '
-    +'ICS 장비 다수는 NVD CPE 사전에 항목 자체가 없어 이름 기반 매칭으로는 도달할 수 없습니다.</p>'
-    +'<table><thead><tr><th>Component</th><th>Version</th><th>기권 사유</th></tr></thead><tbody>'
+    +u.length+' components not identified — see why</summary>'
+    +'<p class="hint" style="margin:8px 0">When no candidate is clear the matcher <b>abstains '
+    +'rather than guessing</b>. Many ICS devices have no entry at all in the NVD CPE '
+    +'dictionary, so name-based matching cannot reach them.</p>'
+    +'<table><thead><tr><th>Component</th><th>Version</th><th>Reason for abstaining</th></tr></thead><tbody>'
     +rows+'</tbody></table></details>';
 }
 function _esc(v){return String(v==null?'':v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -660,8 +665,8 @@ function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
-// VEX 진술의 대상은 제품 전체가 아니라 컴포넌트다. SBOM 컴포넌트마다 안정적인
-// CSAF product_id 를 부여해, flags/product_status 가 "어느 컴포넌트인지" 를 담게 한다.
+// A VEX statement is about a component, not the whole product. Each SBOM component gets
+// a stable CSAF product_id so flags/product_status can say WHICH component they mean.
 let _pidMap=null;
 function _componentPids(){
   if(_pidMap)return _pidMap;
@@ -679,7 +684,7 @@ function _componentPids(){
 function _pidFor(component){
   const m=_componentPids(); const k=String(component||'').trim().toLowerCase();
   return (k&&m.byName[k])||null;}
-// 같은 SBOM 이면 같은 문서 ID 를 쓴다 (재실행마다 새 ID 가 나오면 추적성이 없다).
+// The same SBOM gets the same document id - a fresh id per run would destroy traceability.
 function _docId(name){let h=0;const t='ICSVEXFORGE|'+name;
   for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}
   return 'ICSVEXFORGE-'+(h>>>0).toString(16).toUpperCase();}
@@ -737,7 +742,7 @@ function saveVexFields(cve){
       products:[Object.assign({"@id":prodId},p.purl&&!cpid?{identifiers:{purl:p.purl}}:{})],
       timestamp:now,
       status:_effStatus(r)};
-    // status_notes 는 OpenVEX 스펙 필드다. 비표준 필드를 statement 에 직접 달지 않는다.
+    // status_notes is a field of the OpenVEX spec. No non-standard field is hung on a statement.
     const sn=[];
     if(r.status==='not_affected'&&st.status==='not_affected'){
       st.justification=_justOrNull(r);
@@ -764,13 +769,14 @@ function exportCsaf(){
   const used={};
   const vulns=rows.map(r=>{
     const st=_effStatus(r);
-    // 진술 대상은 컴포넌트. 매칭되는 컴포넌트가 없을 때만 제품 전체로 떨어진다.
+    // The statement is about a component; it falls back to the whole product only when
+    // no component matches.
     const cpid=_pidFor(r.component)||pid; used[cpid]=1;
     const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
     const notes=[{category:'other',title:'ICS-VEXForge assessment',
       text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
     if(st==='not_affected'){
-      // CSAF 는 justification 을 flags[].label 로 싣는다. 근거 없이는 여기 오지 않는다.
+      // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
       if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
     else if(st==='affected'){
@@ -794,7 +800,7 @@ function exportCsaf(){
     .concat(comps.map(c=>Object.assign({product_id:c.product_id,name:c.name},
       c.purl?{product_identification_helper:{purl:c.purl}}:{})));
   const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
-      // 우리는 제품 공급자가 아니다. vendor 로 발행하면 공급자 사칭이 된다.
+      // We are not the product supplier; publishing as `vendor` would impersonate one.
       publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
         namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
         issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},

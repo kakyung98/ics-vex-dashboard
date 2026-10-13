@@ -16,21 +16,22 @@ Two things the page must make legible rather than hide:
 """
 
 CERT_PAGE = """
-<h1 style="margin:0 0 6px">인증시험 성능지표 평가</h1>
+<h1 style="margin:0 0 6px">Certification performance metrics</h1>
 <p class="hint" style="margin:0 0 18px">
-시험항목 <b>#3 (SBOM 기반 공개 취약점 식별 정밀도)</b> 과
-<b>#4 (VEX 기반 식별된 취약점 영향 판단 정밀도)</b> 를 이 화면에서 직접 실행합니다.
-평가 데이터셋은 번들된 정답셋을 쓰거나, 동일 스키마의 <code>.jsonl</code> 을 업로드할 수 있습니다.
-채점은 CLI 측정 도구와 <b>같은 함수</b>(<code>tools/eval_cpe_match_precision.score</code>,
-<code>tools/eval_vex_precision.score</code>)를 호출하므로, 이 화면의 수치는 측정된 수치와
-정의상 같습니다 — 번들 데이터셋으로 실행하면 기록된 값과 일치하는지도 함께 표시됩니다.
+Run test item <b>#3 (SBOM-based public vulnerability identification precision)</b> and
+<b>#4 (VEX affected-judgment precision)</b> directly from this page, against the bundled
+ground truth or a <code>.jsonl</code> you upload in the same schema.
+Scoring calls the <b>same functions</b> the CLI measurement tools do
+(<code>tools/eval_cpe_match_precision.score</code>, <code>tools/eval_vex_precision.score</code>),
+so these figures are identical to the measured ones by construction &mdash; and a run on the
+bundled dataset also reports whether it landed on the recorded figure.
 </p>
 
 <div id="certItems"></div>
 
 <div class="card" style="margin-top:18px">
-  <h3 style="margin:0 0 8px">실행 이력</h3>
-  <div id="certJobs" class="hint">아직 실행한 평가가 없습니다.</div>
+  <h3 style="margin:0 0 8px">Run history</h3>
+  <div id="certJobs" class="hint">Nothing has been run yet.</div>
 </div>
 
 <style>
@@ -76,7 +77,7 @@ function dsRows(info, unit){
     (d.present ? '· '+(d.records!=null
                        ? d.records.toLocaleString()+(unit ? ' '+unit : ' records')+' · ' : '')+
                  fmtBytes(d.bytes)+' · sha256 '+d.sha256.slice(0,16)+'…'
-               : '<span style="color:#ff6b6b">없음</span>')+
+               : '<span style="color:#ff6b6b">missing</span>')+
     '</div>').join('');
 }
 
@@ -84,25 +85,25 @@ function itemCard(it){
   const vs = it.variants.map(v=>'<option value="'+v.key+'">'+v.label+'</option>').join('');
   return '<div class="cert-item" id="item'+it.id+'">'+
     '<div class="cert-head"><span class="cert-badge">'+
-      (it.acceptance==null ? '보조 공시' : '시험항목 #'+it.id)+'</span>'+
+      (it.acceptance==null ? 'SUPPLEMENTARY' : 'Test item #'+it.id)+'</span>'+
       '<b style="font-size:16px">'+it.name+'</b>'+
       '<span class="hint">'+(it.acceptance==null
-        ? (it.acceptance_label || '인증 시험항목이 아니며 합격기준이 없습니다')
-        : '합격기준 정밀도 ≥ '+(it.acceptance*100).toFixed(0)+'%')+'</span></div>'+
+        ? (it.acceptance_label || 'not a certification test item; no acceptance criterion')
+        : 'acceptance: precision &ge; '+(it.acceptance*100).toFixed(0)+'%')+'</span></div>'+
     '<dl class="cert-grid">'+
-      '<dt>지표</dt><dd><code>'+it.metric+'</code></dd>'+
+      '<dt>Metric</dt><dd><code>'+it.metric+'</code></dd>'+
       '<dt>SUT</dt><dd><code>'+it.sut+'</code></dd>'+
-      '<dt>소요</dt><dd>'+it.runtime_hint+'</dd>'+
+      '<dt>Runtime</dt><dd>'+it.runtime_hint+'</dd>'+
     '</dl>'+
     dsRows(it.dataset_info, it.record_unit)+
     '<div class="cert-run">'+
       '<select id="var'+it.id+'">'+vs+'</select>'+
-      '<button class="btn" onclick="certRun(\\''+it.id+'\\')">번들 데이터셋으로 평가</button>'+
+      '<button class="btn" onclick="certRun(\\''+it.id+'\\')">Evaluate on the bundled dataset</button>'+
       '<label class="hint" style="cursor:pointer">'+
         '<input type="file" id="up'+it.id+'" accept=".jsonl" style="display:none" '+
         'onchange="certUpload(\\''+it.id+'\\',this)"> '+
         '<span class="btn" onclick="document.getElementById(\\'up'+it.id+'\\').click()">'+
-        '데이터셋 업로드…</span></label>'+
+        'Upload a dataset&hellip;</span></label>'+
       '<span id="st'+it.id+'" class="hint"></span>'+
     '</div>'+
     '<div class="cert-bar" id="bar'+it.id+'" style="display:none"><i></i></div>'+
@@ -120,28 +121,28 @@ async function certLoad(){
 async function certRun(id, gt){
   const variant = document.getElementById('var'+id).value;
   const st = document.getElementById('st'+id);
-  st.textContent = '실행 중…';
+  st.textContent = 'running…';
   const body = {item:id, variant:variant};
   if(gt) body.gt_path = gt;
   const r = await fetch('/api/cert/run', {method:'POST',
       headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   const j = await r.json();
-  if(!r.ok){ st.textContent = '오류: '+(j.detail||'실행 실패'); return; }
+  if(!r.ok){ st.textContent = 'error: '+(j.detail||'run failed'); return; }
   certPoll(id, j.job);
 }
 
 async function certUpload(id, inp){
   const f = inp.files[0]; if(!f) return;
   const st = document.getElementById('st'+id);
-  st.textContent = '업로드 중… ('+fmtBytes(f.size)+')';
+  st.textContent = 'uploading… ('+fmtBytes(f.size)+')';
   const fd = new FormData(); fd.append('file', f); fd.append('item', id);
   const r = await fetch('/api/cert/upload', {method:'POST', body:fd});
   const j = await r.json();
   if(!r.ok || !j.valid || !j.valid.ok){
-    st.textContent = '거부: '+((j.valid&&j.valid.error)||j.detail||'스키마 불일치');
+    st.textContent = 'rejected: '+((j.valid&&j.valid.error)||j.detail||'schema mismatch');
     return;
   }
-  st.textContent = '업로드 완료 ('+j.valid.records_checked+'행 검증) · 평가 시작';
+  st.textContent = 'uploaded ('+j.valid.records_checked+' rows validated) - starting';
   certRun(id, j.path);
 }
 
@@ -154,58 +155,58 @@ function certPoll(id, job){
       bar.style.display='block';
       if(j.pct!=null){
         bar.firstChild.style.width = j.pct+'%';
-        st.textContent = '실행 중… '+j.pct+'% ('+j.progress.done.toLocaleString()+
+        st.textContent = 'running… '+j.pct+'% ('+j.progress.done.toLocaleString()+
                          ' / '+j.progress.total.toLocaleString()+')';
-      } else { st.textContent = '실행 중…'; }
+      } else { st.textContent = 'running…'; }
       setTimeout(tick, 1500); return;
     }
     bar.style.display='none';
     if(j.state === 'error'){
-      st.textContent = '오류';
+      st.textContent = 'error';
       document.getElementById('res'+id).style.display='block';
       document.getElementById('res'+id).innerHTML =
         '<pre style="color:#ff6b6b;font-size:11px;white-space:pre-wrap">'+j.error+'</pre>';
       certJobs(); return;
     }
-    st.textContent = '완료 ('+((j.finished-j.started)).toFixed(1)+'초)';
+    st.textContent = 'done ('+((j.finished-j.started)).toFixed(1)+'s)';
     certShow(id, j); certJobs();
   };
   tick();
 }
 
 function certShowQ34(res, box, j){
-  const NAME = {Q3:'Q3 도달가능성 (Joern)', Q4:'Q4 제어가능성 (Z3)'};
+  const NAME = {Q3:'Q3 reachability (Joern)', Q4:'Q4 controllability (Z3)'};
   let h = '<div class="cert-warn" style="margin:0 0 12px">'+
-    '<b>합격기준은 모순 = 0 입니다.</b> 재현율에 기준을 걸 수 없습니다 &mdash; '+
-    '정답셋에 음성 클래스가 없어서 <b>아무것도 분석하지 않고 전부 양성이라 답하는 '+
-    '시스템이 재현율 100%를 받습니다</b>. 이 파이프라인이 입는 해는 한 방향뿐이라 '+
-    '(과잉 양성은 아무것도 해제하지 않아 안전하고, <b>과잉 반박이 거짓 해제를 만듭니다</b>) '+
-    '기준은 &ldquo;외부 권위가 양성이라 단언한 건을 솔버가 음성으로 주장하지 않을 것&rdquo; 입니다. '+
-    '인증 시험항목이 아니며, 이 기준은 본 저장소가 스스로 세운 것입니다.</div>'+
+    '<b>The criterion is contradictions = 0.</b> Recall cannot carry one &mdash; '+
+    'the answer key has no negative class, so <b>a system that analyses nothing and '+
+    'answers positive to everything scores 100% recall</b>. The harm this pipeline can take '+
+    'is one-directional (an over-positive solver clears nothing and is safe; <b>an over-refuting solver produces false clearances</b>), so the bar is placed there: '+
+    'the solver must never assert the negative on a case an outside authority asserts as positive. '+
+    'This is not a certification test item, and the criterion is this repository&rsquo;s own.</div>'+
     '<div class="cert-warn" style="margin:0 0 12px">'+
-    '<b>보조 공시입니다.</b> 시험항목 #4의 정밀도는 <code>affected</code> 판정에 대한 값이고, '+
-    '그 판정은 Q2(존재)에서 결정됩니다 &mdash; Q3/Q4는 증거 등급만 바꾸며 정답 라벨이 없었으므로 '+
-    '공시된 어떤 수치에도 기여분이 <b>0</b> 이었습니다. 이 축은 그 두 엔진이 측정 대상이 되는 '+
-    '지점이고, 권위는 저장소 바깥입니다(출하 공개 헤더 · NVD CVSS AV/UI).</div>';
+    '<b>Supplementary disclosure.</b> Item #4&rsquo;s precision is about the <code>affected</code> verdict, and '+
+    'that verdict is decided at Q2 (presence) &mdash; Q3/Q4 only set the evidence tier, and no answer key carried a tier, so '+
+    'their contribution to every published figure was <b>0</b>. This is the axis on which '+
+    'those two engines become measurable, with authorities outside the repository (shipped public headers, NVD CVSS AV/UI).</div>';
   ['Q3','Q4'].forEach(function(q){
     const d = res.per_question[q]; if(!d) return;
     const vcls = d.pass ? 'cert-pass' : 'cert-fail';
     h += '<div style="margin:0 0 14px"><b>'+NAME[q]+'</b> '+
       '<span class="'+vcls+'" style="font-weight:700">'+(d.pass?'PASS':'FAIL')+'</span> '+
-      '<span class="hint">모순 '+d.contradictions+'건 · 기준 모순 = 0</span>'+
+      '<span class="hint">'+d.contradictions+' contradictions &middot; criterion 0</span>'+
       '<div class="cert-kv"><span>TP <b>'+d.TP+'</b></span><span>FP <b>'+d.FP+'</b></span>'+
       '<span>FN <b>'+d.FN+'</b></span><span>TN <b>'+d.TN+'</b></span>'+
-      '<span>라벨 <b>'+d.labels+'</b></span>'+
-      '<span>기권 <b>'+d.abstained+'</b> ('+(d.abstention_pct||0)+'%)</span></div>'+
-      '<div class="cert-kv"><span>정밀도 <b>'+
+      '<span>labels <b>'+d.labels+'</b></span>'+
+      '<span>abstained <b>'+d.abstained+'</b> ('+(d.abstention_pct||0)+'%)</span></div>'+
+      '<div class="cert-kv"><span>precision <b>'+
         (d.precision!=null ? (d.precision*100).toFixed(2)+'%' : '—')+'</b></span>'+
-      '<span>재현율 <b>'+(d.recall!=null ? (d.recall*100).toFixed(2)+'%' : '—')+'</b></span></div>'+
-      (d.precision_null_reason ? '<p class="hint" style="margin:6px 2px 0">정밀도 없음 &mdash; '+
+      '<span>recall <b>'+(d.recall!=null ? (d.recall*100).toFixed(2)+'%' : '—')+'</b></span></div>'+
+      (d.precision_null_reason ? '<p class="hint" style="margin:6px 2px 0">no precision &mdash; '+
         d.precision_null_reason+'</p>' : '')+
       (d.disagreements && d.disagreements.length
-        ? '<details style="margin-top:6px"><summary class="hint">불일치 '+
-          d.disagreements.length+'건 보기</summary><pre class="mono" style="white-space:pre-wrap">'+
-          d.disagreements.map(function(w){return w.cve+'  권위='+w.expected+
+        ? '<details style="margin-top:6px"><summary class="hint">see '+
+          d.disagreements.length+' disagreements</summary><pre class="mono" style="white-space:pre-wrap">'+
+          d.disagreements.map(function(w){return w.cve+'  authority='+w.expected+
             '  SUT='+w.sut+'\\n   '+(w.sut_detail||'');}).join('\\n')+'</pre></details>'
         : '')+
       '</div>';
@@ -214,14 +215,14 @@ function certShowQ34(res, box, j){
   // has no single precision to compare.
   const ref = j.reference_precision || {};
   if(j.reproduces === true){
-    h += '<div class="cert-ok">✔ 기록된 재현율 Q3 '+
+    h += '<div class="cert-ok">✔ matches the recorded recalls, Q3 '+
          (ref.Q3_recall*100).toFixed(2)+'% / Q4 '+(ref.Q4_recall*100).toFixed(2)+
-         '% 와 일치합니다 (sha256 '+j.gt_sha256.slice(0,16)+'…).</div>';
+         '% (sha256 '+j.gt_sha256.slice(0,16)+'…).</div>';
   } else if(j.reproduces === false){
-    h += '<div class="cert-warn">⚠ 기록된 재현율과 '+
-         '다릅니다. 정답셋 또는 엔진 '+
-         '판정이 갱신되었는지 '+
-         '확인하십시오.</div>';
+    h += '<div class="cert-warn">⚠ differs from the recorded recalls. '+
+         'Check whether the ground truth or the engine '+
+         'verdicts were '+
+         'regenerated.</div>';
   }
   box.innerHTML = h;
 }
@@ -240,31 +241,31 @@ function certShow(id, j){
 
   h += '<div class="cert-kv"><span>TP <b>'+res.TP+'</b></span><span>FP <b>'+res.FP+'</b></span>';
   if(res.TN!=null) h += '<span>TN <b>'+res.TN+'</b></span><span>FN <b>'+res.FN+'</b></span>';
-  if(res.scored!=null) h += '<span>채점 <b>'+res.scored.toLocaleString()+'</b></span>';
-  if(res.recall!=null) h += '<span class="hint">recall '+(res.recall*100).toFixed(2)+'% (비평가)</span>';
+  if(res.scored!=null) h += '<span>scored <b>'+res.scored.toLocaleString()+'</b></span>';
+  if(res.recall!=null) h += '<span class="hint">recall '+(res.recall*100).toFixed(2)+'% (not graded)</span>';
   h += '</div>';
 
   // Did this run land on the figure that was certified? Only meaningful for the
   // bundled dataset; an upload has nothing to be compared against.
   if(j.reproduces === true){
-    h += '<div class="cert-ok">✔ 기록된 측정값 '+(j.reference_precision*100).toFixed(2)+
-         '% 와 일치합니다 (번들 데이터셋 · sha256 '+j.gt_sha256.slice(0,16)+'…).</div>';
+    h += '<div class="cert-ok">✔ matches the recorded figure '+(j.reference_precision*100).toFixed(2)+
+         '% (bundled dataset, sha256 '+j.gt_sha256.slice(0,16)+'…).</div>';
   } else if(j.reproduces === false){
-    h += '<div class="cert-warn">⚠ 기록된 측정값 '+(j.reference_precision*100).toFixed(2)+
-         '% 와 다릅니다. 데이터셋 또는 판정 캐시가 갱신되었는지 확인하십시오.</div>';
+    h += '<div class="cert-warn">⚠ differs from the recorded figure '+(j.reference_precision*100).toFixed(2)+
+         '%. Check whether the dataset or the verdict cache was regenerated.</div>';
   } else if(j.dataset === 'uploaded'){
-    h += '<div class="cert-warn">업로드된 데이터셋입니다. 기록된 인증 측정값과의 '+
-         '대조 대상이 아니므로 위 수치는 이 데이터셋에 대한 결과입니다.</div>';
+    h += '<div class="cert-warn">This is an uploaded dataset. It is not compared against the recorded certification '+
+         'figure, so the numbers above describe this dataset only.</div>';
   }
 
   if(res.labelled_share_pct!=null){
-    h += '<div class="cert-warn">라벨된 예측 비율 '+res.labelled_share_pct+'% — '+
-         '정답셋이 열거하지 않는 CVE '+res.unlabelled_predictions.toLocaleString()+
-         '건과 기관 간 등록주체 불일치 '+res.unadjudicable_predictions.toLocaleString()+
-         '건은 채점에서 제외되었습니다. 위 수치는 라벨된 구간에 대한 값입니다.</div>';
+    h += '<div class="cert-warn">only '+res.labelled_share_pct+'% of predictions carry a label &mdash; '+
+         ''+res.unlabelled_predictions.toLocaleString()+
+         ' are CVEs the ground truth does not enumerate, and '+res.unadjudicable_predictions.toLocaleString()+
+         ' are unadjudicable because the two authorities disagree about what the CVE is filed against. Both are excluded from scoring, so the figures above describe the labelled slice.</div>';
   }
   if(res.circularity_warning){
-    h += '<div class="cert-warn">⚠ 순환성: '+res.circularity_warning+'</div>';
+    h += '<div class="cert-warn">⚠ circularity: '+res.circularity_warning+'</div>';
   }
   if(res.per_build && Object.keys(res.per_build).length>1){
     h += '<div class="cert-kv">'+Object.entries(res.per_build).map(([b,c])=>
@@ -274,14 +275,14 @@ function certShow(id, j){
 
   const fps = res.fp_examples || res.fp_cases || [];
   if(fps.length){
-    h += '<details style="margin-top:10px"><summary class="hint">오탐(FP) '+
-         fps.length+'건 보기</summary><table class="cert-fp"><tr>'+
+    h += '<details style="margin-top:10px"><summary class="hint">see '+
+         fps.length+' false positives</summary><table class="cert-fp"><tr>'+
          Object.keys(fps[0]).map(k=>'<th>'+k+'</th>').join('')+'</tr>'+
          fps.slice(0,40).map(r=>'<tr>'+Object.values(r).map(v=>
            '<td>'+String(v==null?'':v).slice(0,80)+'</td>').join('')+'</tr>').join('')+
          '</table></details>';
   }
-  h += '<details style="margin-top:8px"><summary class="hint">결과 JSON</summary>'+
+  h += '<details style="margin-top:8px"><summary class="hint">result JSON</summary>'+
        '<pre style="font-size:11px;white-space:pre-wrap;max-height:320px;overflow:auto">'+
        JSON.stringify(res,null,1).replace(/</g,'&lt;')+'</pre></details>';
   box.innerHTML = h; box.style.display='block';
@@ -290,10 +291,12 @@ function certShow(id, j){
 async function certJobs(){
   const r = await fetch('/api/cert/jobs'); const js = await r.json();
   const el = document.getElementById('certJobs');
-  if(!js.length){ el.innerHTML='아직 실행한 평가가 없습니다.'; return; }
-  el.innerHTML = '<table class="cert-fp"><tr><th>시각</th><th>항목</th><th>범위</th>'+
-    '<th>데이터셋</th><th>상태</th><th>정밀도</th><th>재현</th></tr>'+
-    js.map(j=>'<tr><td>'+new Date(j.started*1000).toLocaleTimeString()+'</td>'+
+  if(!js.length){ el.innerHTML='Nothing has been run yet.'; return; }
+  el.innerHTML = '<table class="cert-fp"><tr><th>time</th><th>item</th><th>scope</th>'+
+    '<th>dataset</th><th>state</th><th>precision</th><th>reproduces</th></tr>'+
+    // Fixed locale: toLocaleTimeString() follows the BROWSER, so the one Korean
+    // string left on this page came from the viewer rather than from the source.
+    js.map(j=>'<tr><td>'+new Date(j.started*1000).toLocaleTimeString('en-GB',{hour12:false})+'</td>'+
       '<td>#'+j.item+'</td><td>'+j.variant+'</td><td>'+j.dataset+'</td>'+
       '<td>'+j.state+'</td>'+
       '<td>'+(j.precision!=null ? (j.precision*100).toFixed(2)+'%' : '—')+

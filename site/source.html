@@ -275,7 +275,7 @@ if(_ta){   // analyzer page only
 async function stats(){
   try{const s=await(await fetch('cve_level.json')).json();
     const v=s.by_vex||{}, ax=s.axes||{};
-    // 축 카드 — CVE 가 VEX 판정 단위. 제품/statement 축은 표시하지 않는다.
+    // Axis cards - the CVE is the unit a VEX verdict is about. Product and statement axes are not shown.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
       const AX=[['cves','unique CVEs','the VEX judgement unit'],
@@ -283,7 +283,7 @@ async function stats(){
                 ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
-    // 'VEX verdict — per CVE' 카드는 제거됨. source-code reachability 축만 표시한다.
+    // The 'VEX verdict - per CVE' card was removed; only the source-code reachability axis is shown.
     const sk=document.getElementById('kpis-src');
     if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
       const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
@@ -496,7 +496,7 @@ async function advisories(){
 function avBranch(av){av=(av||'').toUpperCase();if(av==='N'||av==='A')return 'network';if(av==='L')return 'local';if(av==='P')return 'physical';return null;}
 function classifyTree(av,ans){const nodes=VEX_TREE.nodes;let nid=VEX_TREE.start;const path=[];
   while(true){const node=nodes[nid];
-    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'미기재')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
+    if(nid==='av_split'){const br=avBranch(av);path.push({node:nid,q:node.q,answer:(br||'not stated')});if(!br)return{status:'under_investigation',justification:'attack_vector_unstated',path:path,complete:false};nid=node.branch[br];continue;}
     const a=ans[nid];
     if(a===undefined||a===null)return{status:null,path:path,complete:false,pending:nid,question:node.q};
     path.push({node:nid,q:node.q,answer:!!a});
@@ -536,10 +536,11 @@ function _canonStatus(s){s=String(s||'');
   if(s==='under_investigation')return 'under_investigation';
   if(s==='fixed')return 'fixed';
   return 'under_investigation';}
-// CISA justification 은 근거가 있을 때만 붙인다. 매칭되지 않으면 null 을 돌려주고,
-// 호출부는 not_affected 를 포기하고 under_investigation 으로 내린다.
-// 배치 환경(perimeter/segmentation/firewall)은 어떤 justification 의 근거도 아니므로
-// 여기서 매핑하지 않는다 — 그런 주장은 토폴로지가 바뀌면 조용히 거짓이 된다.
+// A CISA justification is attached only when there are grounds for it. With no match
+// this returns null, and the caller gives up not_affected and falls to
+// under_investigation. Deployment context (perimeter, segmentation, firewall) is not
+// grounds for ANY justification, so it is not mapped here - a claim resting on it goes
+// quietly false the moment the topology changes.
 function _ovJust(j){j=String(j||'');
   if(!j)return null;
   if(/component_not_present/.test(j))return 'component_not_present';
@@ -548,7 +549,7 @@ function _ovJust(j){j=String(j||'');
   if(/cannot_be_controlled_by_adversary/.test(j))return 'vulnerable_code_cannot_be_controlled_by_adversary';
   if(/inline_mitigations_already_exist/.test(j))return 'inline_mitigations_already_exist';
   return null;}
-// not_affected 로 내보내도 되는지: 유효한 justification 이 있어야만 허용한다.
+// Whether not_affected may be emitted at all: only with a valid justification.
 function _justOrNull(r){
   if(r.justification&&VEX_JUST.some(x=>x[0]===r.justification))return r.justification;
   return _ovJust(r.justification);}
@@ -572,10 +573,11 @@ function _abstainBlock(d){
       '<tr><td>'+_esc(x.component)+'</td><td class="mono">'+_esc(x.version)+'</td>'
       +'<td class="hint">'+_esc(x.reason||'')+'</td></tr>').join('');
   return '<details style="margin-top:12px"><summary class="hint">'
-    +'식별하지 못한 컴포넌트 '+u.length+'건 — 사유 보기</summary>'
-    +'<p class="hint" style="margin:8px 0">매처는 후보가 분명하지 않으면 <b>추측하지 않고 기권</b>합니다. '
-    +'ICS 장비 다수는 NVD CPE 사전에 항목 자체가 없어 이름 기반 매칭으로는 도달할 수 없습니다.</p>'
-    +'<table><thead><tr><th>Component</th><th>Version</th><th>기권 사유</th></tr></thead><tbody>'
+    +u.length+' components not identified — see why</summary>'
+    +'<p class="hint" style="margin:8px 0">When no candidate is clear the matcher <b>abstains '
+    +'rather than guessing</b>. Many ICS devices have no entry at all in the NVD CPE '
+    +'dictionary, so name-based matching cannot reach them.</p>'
+    +'<table><thead><tr><th>Component</th><th>Version</th><th>Reason for abstaining</th></tr></thead><tbody>'
     +rows+'</tbody></table></details>';
 }
 function _esc(v){return String(v==null?'':v).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
@@ -595,8 +597,8 @@ function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
-// VEX 진술의 대상은 제품 전체가 아니라 컴포넌트다. SBOM 컴포넌트마다 안정적인
-// CSAF product_id 를 부여해, flags/product_status 가 "어느 컴포넌트인지" 를 담게 한다.
+// A VEX statement is about a component, not the whole product. Each SBOM component gets
+// a stable CSAF product_id so flags/product_status can say WHICH component they mean.
 let _pidMap=null;
 function _componentPids(){
   if(_pidMap)return _pidMap;
@@ -614,7 +616,7 @@ function _componentPids(){
 function _pidFor(component){
   const m=_componentPids(); const k=String(component||'').trim().toLowerCase();
   return (k&&m.byName[k])||null;}
-// 같은 SBOM 이면 같은 문서 ID 를 쓴다 (재실행마다 새 ID 가 나오면 추적성이 없다).
+// The same SBOM gets the same document id - a fresh id per run would destroy traceability.
 function _docId(name){let h=0;const t='ICSVEXFORGE|'+name;
   for(let i=0;i<t.length;i++){h=((h<<5)-h+t.charCodeAt(i))|0;}
   return 'ICSVEXFORGE-'+(h>>>0).toString(16).toUpperCase();}
@@ -672,7 +674,7 @@ function saveVexFields(cve){
       products:[Object.assign({"@id":prodId},p.purl&&!cpid?{identifiers:{purl:p.purl}}:{})],
       timestamp:now,
       status:_effStatus(r)};
-    // status_notes 는 OpenVEX 스펙 필드다. 비표준 필드를 statement 에 직접 달지 않는다.
+    // status_notes is a field of the OpenVEX spec. No non-standard field is hung on a statement.
     const sn=[];
     if(r.status==='not_affected'&&st.status==='not_affected'){
       st.justification=_justOrNull(r);
@@ -699,13 +701,14 @@ function exportCsaf(){
   const used={};
   const vulns=rows.map(r=>{
     const st=_effStatus(r);
-    // 진술 대상은 컴포넌트. 매칭되는 컴포넌트가 없을 때만 제품 전체로 떨어진다.
+    // The statement is about a component; it falls back to the whole product only when
+    // no component matches.
     const cpid=_pidFor(r.component)||pid; used[cpid]=1;
     const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
     const notes=[{category:'other',title:'ICS-VEXForge assessment',
       text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
     if(st==='not_affected'){
-      // CSAF 는 justification 을 flags[].label 로 싣는다. 근거 없이는 여기 오지 않는다.
+      // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
       if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
     else if(st==='affected'){
@@ -729,7 +732,7 @@ function exportCsaf(){
     .concat(comps.map(c=>Object.assign({product_id:c.product_id,name:c.name},
       c.purl?{product_identification_helper:{purl:c.purl}}:{})));
   const doc={document:{category:'csaf_vex',csaf_version:'2.0',title:'ICS-VEXForge VEX — '+p.name,
-      // 우리는 제품 공급자가 아니다. vendor 로 발행하면 공급자 사칭이 된다.
+      // We are not the product supplier; publishing as `vendor` would impersonate one.
       publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
         namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
         issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
