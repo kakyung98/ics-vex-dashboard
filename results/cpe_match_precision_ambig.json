@@ -1,0 +1,4507 @@
+{
+  "test": "SBOM CVE-identification precision (test item #3)",
+  "sut": "src/cpe_match_ai (retrieval behind the cascade)",
+  "sut_mode": "recall-safe (default)",
+  "ground_truth": "data\\cpe_match_eval_ambig.jsonl",
+  "gt_labels": 11605,
+  "gt_conflicts_held_out": 430,
+  "gt_ambiguous_held_out": 25116,
+  "gt_ambiguous_reason": "vendor anchors >1 NVD product for the CVE, so entries[0] is an unverified product pick (audit problem 1); the (component, CVE) is real but its product identity is not adjudicated, so it is held out of scoring",
+  "gt_unreachable_for_this_sut": {
+    "vendor": 4249
+  },
+  "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN product; the SUT reports (product, vendor-of-that-product) so it can never emit them. The product axis is scored by closed-world rule instead.",
+  "sut_runs": 4539,
+  "sut_abstained": 1503,
+  "TP": 3387,
+  "FP": 31,
+  "scored": 3418,
+  "unlabelled_predictions": 34207,
+  "unadjudicable_predictions": 6346,
+  "unadjudicable_reason": "SUT resolved the product the component name itself carries, but the GT's vendor-anchored CPE names a different (usually embedded) product for that CVE; the authorities disagree on filing, not on identity",
+  "labelled_share_pct": 7.77,
+  "fp_by_axis": {
+    "product": 26,
+    "version": 5
+  },
+  "tp_by_path": {
+    "model-number": 497
+  },
+  "by_vendor": [
+    {
+      "vendor": "Siemens",
+      "components": 1655,
+      "abstained": 521,
+      "abstention_pct": 31.5,
+      "TP": 1238,
+      "FP": 0,
+      "scored": 1238,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Rockwell Automation",
+      "components": 330,
+      "abstained": 49,
+      "abstention_pct": 14.8,
+      "TP": 212,
+      "FP": 14,
+      "scored": 226,
+      "precision": 0.9381
+    },
+    {
+      "vendor": "Schneider Electric",
+      "components": 258,
+      "abstained": 100,
+      "abstention_pct": 38.8,
+      "TP": 103,
+      "FP": 4,
+      "scored": 107,
+      "precision": 0.9626
+    },
+    {
+      "vendor": "Advantech",
+      "components": 134,
+      "abstained": 14,
+      "abstention_pct": 10.4,
+      "TP": 106,
+      "FP": 0,
+      "scored": 106,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Mitsubishi Electric",
+      "components": 128,
+      "abstained": 36,
+      "abstention_pct": 28.1,
+      "TP": 52,
+      "FP": 0,
+      "scored": 52,
+      "precision": 1.0
+    },
+    {
+      "vendor": "GE",
+      "components": 126,
+      "abstained": 68,
+      "abstention_pct": 54.0,
+      "TP": 27,
+      "FP": 0,
+      "scored": 27,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Hitachi Energy",
+      "components": 95,
+      "abstained": 57,
+      "abstention_pct": 60.0,
+      "TP": 46,
+      "FP": 0,
+      "scored": 46,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ABB",
+      "components": 83,
+      "abstained": 37,
+      "abstention_pct": 44.6,
+      "TP": 17,
+      "FP": 0,
+      "scored": 17,
+      "precision": 1.0
+    },
+    {
+      "vendor": "OSIsoft",
+      "components": 81,
+      "abstained": 10,
+      "abstention_pct": 12.3,
+      "TP": 33,
+      "FP": 1,
+      "scored": 34,
+      "precision": 0.9706
+    },
+    {
+      "vendor": "Moxa",
+      "components": 67,
+      "abstained": 38,
+      "abstention_pct": 56.7,
+      "TP": 19,
+      "FP": 8,
+      "scored": 27,
+      "precision": 0.7037
+    },
+    {
+      "vendor": "Keysight",
+      "components": 46,
+      "abstained": 43,
+      "abstention_pct": 93.5,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Emerson",
+      "components": 40,
+      "abstained": 8,
+      "abstention_pct": 20.0,
+      "TP": 22,
+      "FP": 0,
+      "scored": 22,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Fuji Electric",
+      "components": 35,
+      "abstained": 18,
+      "abstention_pct": 51.4,
+      "TP": 10,
+      "FP": 0,
+      "scored": 10,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Honeywell",
+      "components": 32,
+      "abstained": 11,
+      "abstention_pct": 34.4,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Yokogawa",
+      "components": 32,
+      "abstained": 11,
+      "abstention_pct": 34.4,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Wind",
+      "components": 28,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "OMRON",
+      "components": 26,
+      "abstained": 6,
+      "abstention_pct": 23.1,
+      "TP": 28,
+      "FP": 0,
+      "scored": 28,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Johnson",
+      "components": 24,
+      "abstained": 9,
+      "abstention_pct": 37.5,
+      "TP": 8,
+      "FP": 0,
+      "scored": 8,
+      "precision": 1.0
+    },
+    {
+      "vendor": "WAGO",
+      "components": 23,
+      "abstained": 21,
+      "abstention_pct": 91.3,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Ecava",
+      "components": 22,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 16,
+      "FP": 0,
+      "scored": 16,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Wibu-Systems AG",
+      "components": 20,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 25,
+      "FP": 3,
+      "scored": 28,
+      "precision": 0.8929
+    },
+    {
+      "vendor": "AVEVA",
+      "components": 20,
+      "abstained": 3,
+      "abstention_pct": 15.0,
+      "TP": 20,
+      "FP": 0,
+      "scored": 20,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Horner Automation",
+      "components": 20,
+      "abstained": 1,
+      "abstention_pct": 5.0,
+      "TP": 23,
+      "FP": 1,
+      "scored": 24,
+      "precision": 0.9583
+    },
+    {
+      "vendor": "FATEK Automation",
+      "components": 20,
+      "abstained": 2,
+      "abstention_pct": 10.0,
+      "TP": 26,
+      "FP": 0,
+      "scored": 26,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Eaton",
+      "components": 20,
+      "abstained": 6,
+      "abstention_pct": 30.0,
+      "TP": 10,
+      "FP": 0,
+      "scored": 10,
+      "precision": 1.0
+    },
+    {
+      "vendor": "WECON",
+      "components": 19,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 17,
+      "FP": 0,
+      "scored": 17,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sierra",
+      "components": 16,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 20,
+      "FP": 0,
+      "scored": 20,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AVEVA Software, LLC",
+      "components": 16,
+      "abstained": 8,
+      "abstention_pct": 50.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Inductive Automation",
+      "components": 16,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 11,
+      "FP": 0,
+      "scored": 11,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Phoenix Contact",
+      "components": 15,
+      "abstained": 4,
+      "abstention_pct": 26.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "B&R Automation",
+      "components": 15,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "WellinTech",
+      "components": 14,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 16,
+      "FP": 0,
+      "scored": 16,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Illumina",
+      "components": 14,
+      "abstained": 14,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "WIBU-SYSTEMS AG",
+      "components": 14,
+      "abstained": 9,
+      "abstention_pct": 64.3,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "mySCADA",
+      "components": 14,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 20,
+      "FP": 0,
+      "scored": 20,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​Siemens",
+      "components": 14,
+      "abstained": 12,
+      "abstention_pct": 85.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ARC Informatique",
+      "components": 14,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 11,
+      "FP": 0,
+      "scored": 11,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Datakit",
+      "components": 13,
+      "abstained": 10,
+      "abstention_pct": 76.9,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "LOYTEC",
+      "components": 13,
+      "abstained": 12,
+      "abstention_pct": 92.3,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AutomationDirect",
+      "components": 12,
+      "abstained": 12,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "LCDS",
+      "components": 12,
+      "abstained": 2,
+      "abstention_pct": 16.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Hospira",
+      "components": 12,
+      "abstained": 6,
+      "abstention_pct": 50.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Ashlar-Vellum",
+      "components": 12,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ThroughTek",
+      "components": 11,
+      "abstained": 11,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Johnson Controls",
+      "components": 11,
+      "abstained": 5,
+      "abstention_pct": 45.5,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Progea",
+      "components": 10,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Panasonic",
+      "components": 10,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 14,
+      "FP": 0,
+      "scored": 14,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Kantech, a subsidiary of Johnson Controls",
+      "components": 10,
+      "abstained": 6,
+      "abstention_pct": 60.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SpiderControl",
+      "components": 10,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sierra Wireless",
+      "components": 9,
+      "abstained": 6,
+      "abstention_pct": 66.7,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Trihedral",
+      "components": 9,
+      "abstained": 4,
+      "abstention_pct": 44.4,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Intel",
+      "components": 9,
+      "abstained": 7,
+      "abstention_pct": 77.8,
+      "TP": 11,
+      "FP": 0,
+      "scored": 11,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Cogent",
+      "components": 9,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Fuji",
+      "components": 9,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 13,
+      "FP": 0,
+      "scored": 13,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Open Design Alliance",
+      "components": 9,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 8,
+      "FP": 0,
+      "scored": 8,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Weintek",
+      "components": 9,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 6,
+      "FP": 0,
+      "scored": 6,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Hitron",
+      "components": 9,
+      "abstained": 9,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Treck",
+      "components": 8,
+      "abstained": 8,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Dover",
+      "components": 8,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 24,
+      "FP": 0,
+      "scored": 24,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AzeoTech",
+      "components": 8,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 14,
+      "FP": 0,
+      "scored": 14,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CodeWrights",
+      "components": 8,
+      "abstained": 8,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Red Lion Controls",
+      "components": 8,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 11,
+      "FP": 0,
+      "scored": 11,
+      "precision": 1.0
+    },
+    {
+      "vendor": "MICROSYS",
+      "components": 8,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Wind River",
+      "components": 7,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Measuresoft",
+      "components": 7,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 9,
+      "FP": 0,
+      "scored": 9,
+      "precision": 1.0
+    },
+    {
+      "vendor": "KUNBUS",
+      "components": 7,
+      "abstained": 7,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Cambium Networks",
+      "components": 6,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 21,
+      "FP": 0,
+      "scored": 21,
+      "precision": 1.0
+    },
+    {
+      "vendor": "FESTO, CODESYS",
+      "components": 6,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 36,
+      "FP": 0,
+      "scored": 36,
+      "precision": 1.0
+    },
+    {
+      "vendor": "NUUO",
+      "components": 6,
+      "abstained": 2,
+      "abstention_pct": 33.3,
+      "TP": 14,
+      "FP": 0,
+      "scored": 14,
+      "precision": 1.0
+    },
+    {
+      "vendor": "IOServer",
+      "components": 6,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Secheron",
+      "components": 6,
+      "abstained": 6,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "InduSoft",
+      "components": 6,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Treck Inc",
+      "components": 6,
+      "abstained": 4,
+      "abstention_pct": 66.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Johnson Controls, Inc",
+      "components": 6,
+      "abstained": 4,
+      "abstention_pct": 66.7,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CODESYS, GmbH",
+      "components": 6,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "MatrikonOPC",
+      "components": 6,
+      "abstained": 1,
+      "abstention_pct": 16.7,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Westermo",
+      "components": 5,
+      "abstained": 3,
+      "abstention_pct": 60.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "McAfee",
+      "components": 5,
+      "abstained": 4,
+      "abstention_pct": 80.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Cisco",
+      "components": 5,
+      "abstained": 5,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "APsystems",
+      "components": 5,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "7-Technologies",
+      "components": 5,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "OSIsoft LLC",
+      "components": 5,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Tollgrade",
+      "components": 5,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Priva",
+      "components": 5,
+      "abstained": 4,
+      "abstention_pct": 80.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "GEOVAP",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "mySCADA Technologies",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 6,
+      "FP": 0,
+      "scored": 6,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Opto 22",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "HCC Embedded",
+      "components": 4,
+      "abstained": 2,
+      "abstention_pct": 50.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Crestron",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Triangle",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Trimble",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Wind River, General Electric",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Softing",
+      "components": 4,
+      "abstained": 2,
+      "abstention_pct": 50.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Autodesk",
+      "components": 4,
+      "abstained": 2,
+      "abstention_pct": 50.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Innominate",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Contec",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 10,
+      "FP": 0,
+      "scored": 10,
+      "precision": 1.0
+    },
+    {
+      "vendor": "xArrow",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Exacq Technologies, Inc., a subsidiary of Johnson Controls Inc",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "EZAutomation",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Control By Web",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ETIC",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Trihedral Engineering Limited",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Orpak",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 8,
+      "FP": 0,
+      "scored": 8,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Infinite",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 14,
+      "FP": 0,
+      "scored": 14,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Trane",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Flexera",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Mobile",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Resource",
+      "components": 4,
+      "abstained": 2,
+      "abstention_pct": 50.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sensormatic Electronics, LLC, a subsidiary of Johnson Controls, Inc",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Miele Professional",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Exacq Technologies, a subsidiary of Johnson Controls, Inc",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Silex Technology",
+      "components": 4,
+      "abstained": 2,
+      "abstention_pct": 50.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "INEA",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Meteocontrol",
+      "components": 4,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sensormatic Electronics, LLC, a subsidiary of Johnson Controls",
+      "components": 4,
+      "abstained": 4,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Solar Controls",
+      "components": 4,
+      "abstained": 2,
+      "abstention_pct": 50.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "JTEKT ELECTRONICS CORPORATION",
+      "components": 3,
+      "abstained": 3,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Sungrow",
+      "components": 3,
+      "abstained": 1,
+      "abstention_pct": 33.3,
+      "TP": 8,
+      "FP": 0,
+      "scored": 8,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Samsung",
+      "components": 3,
+      "abstained": 3,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "VISAM",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "MZ Automation GmbH",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ICONICS, Mitsubishi Electric",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Teltonika",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 6,
+      "FP": 0,
+      "scored": 6,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Cognex",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Matrikon, a subsidiary of Honeywell",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "OpenSSL",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "MachineSense",
+      "components": 3,
+      "abstained": 3,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ICONICS",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Elipse",
+      "components": 3,
+      "abstained": 3,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Unitronics",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Invensys",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Exemys",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Johnson Controls Inc",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Quest",
+      "components": 3,
+      "abstained": 3,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Digi International, Inc",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Anviz",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "TEL-STER Sp. z o. o",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Enphase",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Xylem, Inc",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Motorola",
+      "components": 3,
+      "abstained": 2,
+      "abstention_pct": 66.7,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Fazecast",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Franklin",
+      "components": 3,
+      "abstained": 3,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Fujitsu Software",
+      "components": 3,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Growatt",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 30,
+      "FP": 0,
+      "scored": 30,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AUVESY",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 17,
+      "FP": 0,
+      "scored": 17,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ProPump",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 9,
+      "FP": 0,
+      "scored": 9,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Walchem",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "RoboDK",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Thales",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Prima Systems",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 9,
+      "FP": 0,
+      "scored": 9,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Open",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Tridium",
+      "components": 2,
+      "abstained": 1,
+      "abstention_pct": 50.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Fultek",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Mesa Labs",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CA",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CyberPower",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 8,
+      "FP": 0,
+      "scored": 8,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Iagona",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "EuroTel",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "InHand Networks",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Belden",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Dingtian",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Snap",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SuSE, Schneider Electric, Red Hat, Microsoft",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Microsoft Corporation",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 7,
+      "FP": 0,
+      "scored": 7,
+      "precision": 1.0
+    },
+    {
+      "vendor": "INVT",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 9,
+      "FP": 0,
+      "scored": 9,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Secomea",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Red Lion",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "goTenna",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 10,
+      "FP": 0,
+      "scored": 10,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Tec4Data",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Ruijie",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 10,
+      "FP": 0,
+      "scored": 10,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SpecView",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AGG Software",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "eWON",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Kabona",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SCADA",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Motorola Solutions",
+      "components": 2,
+      "abstained": 1,
+      "abstention_pct": 50.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Aethon",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CyberData",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Fernhill Software, Ltd",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​Schneider",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Bentley Systems",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Viessmann",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Controlled Electronic Management Systems Ltd., a subsidiary of Johnson Controls Inc",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "XZERES",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "HID Global",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Gardyn",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Paradox",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Hangzhou Xiongmai Technology Co., Ltd",
+      "components": 2,
+      "abstained": 1,
+      "abstention_pct": 50.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sauter",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Zebra",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Modbus Tools",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Monroe",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Apache Software Foundation",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "FANUC Corporation / FANUC America Corporation",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "3S",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 6,
+      "FP": 0,
+      "scored": 6,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Meridian Cooperative",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CareFusion",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Ilevia",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Hyundai Motor America",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Optimalog",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Nordex",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "IDenticard",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SUBNET",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Davolink",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "AXIS",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "C3-ilex",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​Weintek",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "2N",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Entes",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "OpenCode Systems",
+      "components": 2,
+      "abstained": 1,
+      "abstention_pct": 50.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Catapult",
+      "components": 2,
+      "abstained": 1,
+      "abstention_pct": 50.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Nortek",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Softing Industrial Automation, GmbH",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CKS, a subsidiary of Johnson Controls Inc",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CAREL",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Pilz",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Altair",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Gemalto",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Annke",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Host Engineering",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Claroty",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SOCOMEC",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Cassia Networks",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Grundfos Pumps Corporation",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Qognify",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Keysight Technologies",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Adminer",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "GENIVI Alliance",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "XINJE",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SIMPlight",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Horner",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sinapsi",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ETIC Telecom",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "EFACEC",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Inosoft",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "NetComm Wireless",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SMA Solar Technology AG",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Exacq Technologies, Inc., a subsidiary of Johnson Controls",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "IniNet",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Teledyne DALSA",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sensormatic Electronics, LLC, a subsidiary of Johnson Controls Inc",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Circontrol",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Envitech Ltd",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Lynxspring",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Digium",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Network",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Everest",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Datalogic",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "FANUC",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ORing",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "IBHsoftec",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "NREL",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ControlByWeb",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Ice Qube",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Triangle MicroWorks",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Valmet",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "I-GEN",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Canary",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "VIPA Controls",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SICK",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Sensormatic Electronics, LLC., a subsidiary of Johnson Controls, Inc",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Red",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Digital Canal Structural",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CP Plus",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Certec EDV GmbH",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​ARDEREG",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Eaton&#039;s",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Scadatec",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "BLF-Tech LLC",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Pangea Communications",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​Keysight",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Reliable Controls",
+      "components": 2,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AVEVA and Schneider Electric",
+      "components": 2,
+      "abstained": 2,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "OpenSSL Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 68,
+      "FP": 0,
+      "scored": 68,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Linux Kernel Organization",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 244,
+      "FP": 0,
+      "scored": 244,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SAE IT-systems",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Socomec",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "libexpat Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 23,
+      "FP": 0,
+      "scored": 23,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ScadaBR",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "GNU Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 40,
+      "FP": 0,
+      "scored": 40,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Saia Burgess Controls",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Equinox",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CODESYS GmbH",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SQLite Consortium",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 49,
+      "FP": 0,
+      "scored": 49,
+      "precision": 1.0
+    },
+    {
+      "vendor": "LS ELECTRIC",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Wind River Systems",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 9,
+      "FP": 0,
+      "scored": 9,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Gessler",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "BusyBox Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 9,
+      "FP": 0,
+      "scored": 9,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​APSystems",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "PiiGAB",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Fox",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Treck Inc.",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "IGL-Technologies",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "IPCOMM",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "wolfSSL Inc.",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sewio",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SenseLive",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ProMinent",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "DENX Software Engineering",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 22,
+      "FP": 0,
+      "scored": 22,
+      "precision": 1.0
+    },
+    {
+      "vendor": "OpenBSD Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 36,
+      "FP": 0,
+      "scored": 36,
+      "precision": 1.0
+    },
+    {
+      "vendor": "EVMAPA",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Radiometrics",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Chargemap",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "BINOM3",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Columbia Weather Systems, Inc",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "N-Tron",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "​GeoVision",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Baxter",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Baker",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "EV Energy",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "zlib Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 8,
+      "FP": 0,
+      "scored": 8,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Atlas Copco",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Post",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "VMware Tanzu",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Visonic",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "PTC",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 6,
+      "FP": 0,
+      "scored": 6,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SearchBlox",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "libssh2 Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 6,
+      "FP": 0,
+      "scored": 6,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CloudCharge",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SEW-EURODRIVE",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CTEK",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "KMC",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Econolite",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Net-SNMP Project",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ePower",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Computrols",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Kunbus",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "INVT Electric",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Portwell",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Universal Robots",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Philips",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Landis+Gyr",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SAUTER",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Lantech",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "EV2GO",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Axis Communications",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "ProSoft",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Milesight",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "​Hitachi",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "OmniMetrix",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Nokia",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "WECON Technology Co., Ltd",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 4,
+      "FP": 0,
+      "scored": 4,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Step Tools, Inc",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "CyberVision",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Alstom",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Everon",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Voltronic Power",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Dorsett",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Wecon Technologies",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Positron",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Mobility46",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Alisonic",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "NEXCOM",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "InSAT",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "MiCODUS",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Mendix, a subsidiary of Siemens",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Kastle",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Arbiter",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Sensormatic Electronics, a subsidiary of Johnson Controls Inc",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Eaton’s",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Solar-Log",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Interlogix is a part of Carrier Global Corporation",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "AMTELCO",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Columbia Weather Systems",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "​OPTO",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 5,
+      "FP": 0,
+      "scored": 5,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SDG Technologies",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Edimax",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "OpenVPN Inc.",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Vecna",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Uniview",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SMA",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Galil",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "ABUS",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Outback",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "JanTek",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "KNX Association",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "FATEK",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "INDAS",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​GE",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Amazon Web Services",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Inkscape",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 3,
+      "FP": 0,
+      "scored": 3,
+      "precision": 1.0
+    },
+    {
+      "vendor": "KUKA",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Deep",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Circutor",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Millbeck",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Centralite",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Endress+Hauser",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "AVTECH",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Automated Logic is a part of Carrier Global Corporation",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "EmbedThis Software",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Sequi",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Morpho",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Cooper",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Suprema",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "RONDS",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Open Automation Software",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Advantech/Broadwin",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "IRZ",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Tesla",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Rittal",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SUBNET Solutions Inc",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 2,
+      "FP": 0,
+      "scored": 2,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Integration",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "PX4",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "SWARCO TRAFFIC SYSTEMS",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "NAVTOR",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Cambium",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Kingspan",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Adcon",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Navis",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Kepware",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "​Rockwell",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "The Tcpdump Group",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Intrado",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "HIWIN",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Lantronix",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Beckhoff",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "Carrier",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 1,
+      "FP": 0,
+      "scored": 1,
+      "precision": 1.0
+    },
+    {
+      "vendor": "RLE",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "SAUTER Controls",
+      "components": 1,
+      "abstained": 1,
+      "abstention_pct": 100.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    },
+    {
+      "vendor": "Subnet Solutions Inc",
+      "components": 1,
+      "abstained": 0,
+      "abstention_pct": 0.0,
+      "TP": 0,
+      "FP": 0,
+      "scored": 0,
+      "precision": null
+    }
+  ],
+  "precision": 0.9909,
+  "acceptance_criterion": "precision >= 0.80",
+  "pass": true,
+  "fp_examples": [
+    {
+      "component": "OSIsoft LLC Applications using PI Asset Framework (AF) Client <= PI AF",
+      "sut_product": "pi_asset_framework_client",
+      "correct_products": [
+        "pi_data_archive",
+        "pi_vision"
+      ],
+      "cve": "CVE-2024-3467",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Armor Compact GuardLogix 5370 contro",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2017-14028",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2017-16715",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2017-16719",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2022-2043",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2022-2044",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens PSS(R)CAPE CAPE_14_installations_installed_from_material_dated",
+      "sut_product": "pss_cape",
+      "correct_products": [
+        "codemeter"
+      ],
+      "cve": "CVE-2021-20093",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens PSS(R)CAPE CAPE_14_installations_installed_from_material_dated",
+      "sut_product": "pss_cape",
+      "correct_products": [
+        "codemeter"
+      ],
+      "cve": "CVE-2021-20094",
+      "axis": "product"
+    },
+    {
+      "component": "Siemens PSS(R)CAPE CAPE_14_installations_installed_from_material_dated",
+      "sut_product": "pss_cape",
+      "correct_products": [
+        "codemeter"
+      ],
+      "cve": "CVE-2021-41057",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6435",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6436",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6437",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6438",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6439",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6440",
+      "axis": "product"
+    },
+    {
+      "component": "Rockwell Automation Allen-Bradley Compact GuardLogix 5370 controllers ",
+      "sut_product": "guardlogix_controllers",
+      "correct_products": [
+        "allen-bradley_l30erms_firmware"
+      ],
+      "cve": "CVE-2012-6441",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2017-14028",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2017-16715",
+      "axis": "product"
+    },
+    {
+      "component": "MOXA NPort <= 2.1",
+      "sut_product": "nport_5110_firmware",
+      "correct_products": [
+        "nport_iaw5000a-i\\/o_firmware"
+      ],
+      "cve": "CVE-2017-16719",
+      "axis": "product"
+    },
+    {
+      "component": "Schneider Electric Software, LLC ClearSCADA 2014 R1.1 <= 75.5387",
+      "sut_product": "clearscada",
+      "version": "75.5388",
+      "cve": "CVE-2017-6021",
+      "axis": "version"
+    },
+    {
+      "component": "Schneider Electric Software, LLC ClearSCADA 2015 R2 <= 77.5882",
+      "sut_product": "clearscada",
+      "version": "77.5883",
+      "cve": "CVE-2017-6021",
+      "axis": "version"
+    },
+    {
+      "component": "Schneider Electric Software, LLC ClearSCADA 2015 R1 <= 76.5648",
+      "sut_product": "clearscada",
+      "version": "76.5649",
+      "cve": "CVE-2017-6021",
+      "axis": "version"
+    },
+    {
+      "component": "Schneider Electric Software, LLC ClearSCADA 2014 R1 <= 75.5210",
+      "sut_product": "clearscada",
+      "version": "75.5211",
+      "cve": "CVE-2017-6021",
+      "axis": "version"
+    },
+    {
+      "component": "Horner Automation Cscape < 9.90 SP3.5",
+      "sut_product": "cscape",
+      "version": "9.90",
+      "cve": "CVE-2021-22663",
+      "axis": "version"
+    }
+  ]
+}

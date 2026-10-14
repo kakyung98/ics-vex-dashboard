@@ -132,3 +132,47 @@ The right next step the memo asks for is a GT remedy that verifies product ident
 independently (or holds the ambiguous pairs out as `ambiguous`), then a re-score —
 accepting that a correct GT may move 0.9490 in *either* direction, which is a gain
 in validity, not a regression.
+
+---
+
+## F. Remedy applied — multi-product pairs held out, re-scored
+
+The remedy from E, implemented. A Layer-A record whose vendor anchors **>1 distinct
+NVD product** is flagged `_ambiguous_product` in `build_cpe_match_gt.to_gt`
+(`evidence.product_match` is then `false`, since vendor agreement does not fix the
+product), and the scorer holds those records out exactly like a `conflict`: they are
+never scored and never seed `correct_products`, so `entries[0]`'s guess cannot leak
+back in. `applicable` stays `True` — CISA really does assert the (component, CVE); only
+the product *key* is unadjudicated.
+
+Reproduce: `build_cpe_match_gt.py --per-vendor 0 --out data/cpe_match_eval_ambig.jsonl`
+then `eval_cpe_match_precision.py --data data/cpe_match_eval_ambig.jsonl`.
+
+| | certified GT | ambiguous held out |
+|---|---:|---:|
+| precision | **0.9490** | **0.9909** |
+| TP / FP | 10,653 / 572 | 3,387 / 31 |
+| scored | 11,225 | 3,418 |
+| ambiguous held out | 0 | 25,116 |
+| labelled share | 6.45% | 7.77% |
+
+**Backward-compatible:** the certified `data/cpe_match_eval.jsonl` (no `_ambiguous_product`
+field) still re-scores to exactly **0.9490**, so the code change does not touch the
+submitted figure — only the new, flagged GT behaves differently.
+
+**Reading the move — it went UP, and why that is the honest direction.** Holding out the
+25,116 unverified-product positives removes a slice that was scoring ~0.931 (7,266 TP /
+541 FP of the held-out predictions), leaving the verified-single-product slice at 0.9909.
+So the 0.9490 blend was being *deflated*, not inflated: the certified scorer charged the
+SUT product-axis FPs on components where the GT's own product key was an arbitrary
+`entries[0]` pick, so the SUT resolving to a *different* same-vendor product looked wrong
+against an answer key that was itself unverified. (The audit's section-C inflation
+hypothesis concerned TP; empirically the FP-deflation effect dominated — both can hold.)
+
+**What 0.9909 is, stated honestly.** It is precision over the slice where the GT's product
+identity is independently establishable (the vendor anchors exactly one NVD product):
+3,418 scored of ~44k predictions. It is a *cleaner* number on a *smaller* base, not a
+higher score on the same base. The 25,116 held-out pairs are genuinely unadjudicable from
+CISA + NVD vendor-matching alone; closing them would need a third authority fixing which
+product each CVE is filed against. This is the validity gain the memo asked for — the
+figure moved because the measurement got more honest, not because the SUT changed.
