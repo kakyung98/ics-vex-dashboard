@@ -1334,11 +1334,21 @@ border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mo
 textarea.dragover{border-color:var(--accent);border-style:dashed;background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
 select,button{font-family:var(--sans);font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
 background:var(--card2);color:var(--ink)}button.primary{background:var(--accent);color:#04120c;font-weight:700;border:none;cursor:pointer}
-.kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:14px 20px;flex:1;min-width:150px}
+.kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:16px 20px;flex:1;min-width:150px;transition:border-color .12s}
+.kpi:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .kpi b{font-size:30px}.kpi span{display:block;font-size:13px;color:var(--ink3);font-family:var(--mono);margin-top:2px}
+.kpi-n{font-size:32px;font-weight:800;color:var(--accent);line-height:1.05;letter-spacing:-.01em}
+.kpi-l{font-size:12.5px;color:var(--ink3);margin-top:6px;line-height:1.35}
+.kpi.warn .kpi-n{color:var(--und)}.kpi.bad .kpi-n{color:var(--aff)}
+tr.grp td{padding-top:16px;border-bottom:none}
+tr.grp b{font-size:14px;color:var(--ink);background:color-mix(in srgb,var(--accent) 10%,transparent);border-left:3px solid var(--accent);padding:4px 12px;border-radius:0 6px 6px 0;display:inline-block}
 table{width:100%;border-collapse:collapse;font-size:16px;margin-top:6px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
 th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
 .badge{font-family:var(--mono);font-size:13px;font-weight:700;padding:2px 9px;border-radius:5px}
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.pill-ok{color:var(--safe);background:color-mix(in srgb,var(--safe) 13%,transparent);border-color:color-mix(in srgb,var(--safe) 40%,transparent)}
+.pill-und{color:var(--und);background:color-mix(in srgb,var(--und) 13%,transparent);border-color:color-mix(in srgb,var(--und) 40%,transparent)}
+.pill-aff{color:var(--aff);background:color-mix(in srgb,var(--aff) 13%,transparent);border-color:color-mix(in srgb,var(--aff) 40%,transparent)}
 .err{color:var(--aff);font-size:14px}
 #sa-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
 .chart{margin-bottom:6px}.ct{font-size:15px;font-weight:600;color:var(--ink2);margin-bottom:8px}
@@ -2297,7 +2307,11 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
-                  'Source-available CVEs are judged by the code questions Q2&ndash;Q4 (Q2 by a fine-tuned model); source-uncollectable CVEs stay under_investigation.</p>' + ANALYZER_HTML)
+                  'For a source-collectable CVE the code gates decide: presence (Q2) sets the verdict, '
+                  'Joern reachability (Q3) and Z3 controllability (Q4) grade the evidence, and the patch '
+                  'gate (Q1) clears a fixed build. A source-uncollectable CVE has no code tree, so it '
+                  'falls to the asset-attribute estimate (the asset&rsquo;s attack surface vs the CVE&rsquo;s '
+                  'CVSS Attack Vector), or stays under_investigation.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
 <p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
@@ -2468,16 +2482,16 @@ removed every one of them.</p>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
+      <div class="vm-verd vm-vgreen"><b>Presence (Q2) decides.</b> Vulnerable code present &rarr; <span class="mono">affected</span>; Q3 (reachable) + Q4 (controllable) only grade the <b>evidence tier</b> (verified &gt; reachable &gt; present), never refute. Only Q2 source-absence clears to <span class="mono">not_affected</span>.</div>
     </div>
 
     <div class="vm-lane vm-no">
-      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
-      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>asset-attribute estimate</b></div>
+      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">no located function &rarr; Q2&ndash;Q4 do not apply</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
+      <div class="vm-step"><b>2. Estimate from the asset surface</b><span class="vm-sub">the asset&rsquo;s attack vectors (five NVAS flowcharts) vs the CVE&rsquo;s CVSS Attack Vector &mdash; see <b>Branch 2</b> below</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
+      <div class="vm-verd vm-vamber"><span class="mono">affected</span>/<span class="mono">not_affected</span> when decidable, else <b>under_investigation</b> (unknown never clears)</div>
     </div>
   </div>
 
@@ -2776,7 +2790,7 @@ def _sbom_cve_page():
     ]
     body = ""
     for gid, gname, items in rows:
-        body += ('<tr><td colspan="4" style="padding-top:14px"><b>%s. %s</b></td></tr>'
+        body += ('<tr class="grp"><td colspan="4"><b>%s. %s</b></td></tr>'
                  % (gid, gname))
         for n, title, text, g in items:
             body += ('<tr><td class="mono">%s</td><td><b>%s</b></td>'
@@ -2795,8 +2809,8 @@ stand-in, <b>case</b> shown on instances with the rate unmeasured, or
   <div class="kpi"><div class="kpi-n">__POP__</div><div class="kpi-l">ICSA CVEs</div></div>
   <div class="kpi"><div class="kpi-n">__CPE__</div><div class="kpi-l">carry a CPE in NVD</div></div>
   <div class="kpi"><div class="kpi-n">__PROD__</div><div class="kpi-l">CPE names the product</div></div>
-  <div class="kpi"><div class="kpi-n">__COMP__</div><div class="kpi-l">CPE names an embedded component</div></div>
-  <div class="kpi"><div class="kpi-n">__NONE__</div><div class="kpi-l">no CPE</div></div>
+  <div class="kpi warn"><div class="kpi-n">__COMP__</div><div class="kpi-l">CPE names an embedded component</div></div>
+  <div class="kpi bad"><div class="kpi-n">__NONE__</div><div class="kpi-l">no CPE</div></div>
 </div>
 </div>
 

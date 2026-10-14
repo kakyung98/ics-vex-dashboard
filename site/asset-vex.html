@@ -58,11 +58,21 @@ border:1px solid var(--line);border-radius:8px;padding:12px;font-family:var(--mo
 textarea.dragover{border-color:var(--accent);border-style:dashed;background:color-mix(in srgb,var(--accent) 8%,var(--bg))}
 select,button{font-family:var(--sans);font-size:14px;padding:9px 14px;border-radius:8px;border:1px solid var(--line);
 background:var(--card2);color:var(--ink)}button.primary{background:var(--accent);color:#04120c;font-weight:700;border:none;cursor:pointer}
-.kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:14px 20px;flex:1;min-width:150px}
+.kpis{display:flex;flex-wrap:wrap;gap:12px}.kpi{background:var(--card2);border:1px solid var(--line);border-radius:11px;padding:16px 20px;flex:1;min-width:150px;transition:border-color .12s}
+.kpi:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
 .kpi b{font-size:30px}.kpi span{display:block;font-size:13px;color:var(--ink3);font-family:var(--mono);margin-top:2px}
+.kpi-n{font-size:32px;font-weight:800;color:var(--accent);line-height:1.05;letter-spacing:-.01em}
+.kpi-l{font-size:12.5px;color:var(--ink3);margin-top:6px;line-height:1.35}
+.kpi.warn .kpi-n{color:var(--und)}.kpi.bad .kpi-n{color:var(--aff)}
+tr.grp td{padding-top:16px;border-bottom:none}
+tr.grp b{font-size:14px;color:var(--ink);background:color-mix(in srgb,var(--accent) 10%,transparent);border-left:3px solid var(--accent);padding:4px 12px;border-radius:0 6px 6px 0;display:inline-block}
 table{width:100%;border-collapse:collapse;font-size:16px;margin-top:6px}th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
 th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:var(--mono)}
 .badge{font-family:var(--mono);font-size:13px;font-weight:700;padding:2px 9px;border-radius:5px}
+.pill{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.pill-ok{color:var(--safe);background:color-mix(in srgb,var(--safe) 13%,transparent);border-color:color-mix(in srgb,var(--safe) 40%,transparent)}
+.pill-und{color:var(--und);background:color-mix(in srgb,var(--und) 13%,transparent);border-color:color-mix(in srgb,var(--und) 40%,transparent)}
+.pill-aff{color:var(--aff);background:color-mix(in srgb,var(--aff) 13%,transparent);border-color:color-mix(in srgb,var(--aff) 40%,transparent)}
 .err{color:var(--aff);font-size:14px}
 #sa-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
 .chart{margin-bottom:6px}.ct{font-size:15px;font-weight:600;color:var(--ink2);margin-bottom:8px}
@@ -179,16 +189,16 @@ removed every one of them.</p>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen">All three pass &rarr; <span class="mono">affected</span>. Any one resolves <span class="mono">not_affected</span> with its CISA justification. A reproducer that triggers the flaw on the vulnerable build = tier <b>execution-verified</b> (strongest); a static-only pass stays a candidate.</div>
+      <div class="vm-verd vm-vgreen"><b>Presence (Q2) decides.</b> Vulnerable code present &rarr; <span class="mono">affected</span>; Q3 (reachable) + Q4 (controllable) only grade the <b>evidence tier</b> (verified &gt; reachable &gt; present), never refute. Only Q2 source-absence clears to <span class="mono">not_affected</span>.</div>
     </div>
 
     <div class="vm-lane vm-no">
-      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>under_investigation</b></div>
-      <div class="vm-step"><b>1. Status is held at</b> <span class="mono">under_investigation</span><span class="vm-sub">no code &rarr; no defensible not_affected/affected</span></div>
+      <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>asset-attribute estimate</b></div>
+      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">no located function &rarr; Q2&ndash;Q4 do not apply</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>2. Record what is missing</b><span class="vm-sub">investigation progress &middot; missing evidence &middot; planned update &mdash; no reachability estimate is emitted</span></div>
+      <div class="vm-step"><b>2. Estimate from the asset surface</b><span class="vm-sub">the asset&rsquo;s attack vectors (five NVAS flowcharts) vs the CVE&rsquo;s CVSS Attack Vector &mdash; see <b>Branch 2</b> below</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vamber">Held: <b>under_investigation</b> until source becomes obtainable</div>
+      <div class="vm-verd vm-vamber"><span class="mono">affected</span>/<span class="mono">not_affected</span> when decidable, else <b>under_investigation</b> (unknown never clears)</div>
     </div>
   </div>
 
@@ -220,7 +230,7 @@ topology changes &mdash; so operational context enters only as an SSVC priority,
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">The code questions, as implemented</h2>
 <table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
-<tbody><tr><td class="mono"><b>Q2</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 104 source-collectable CVEs: present 92, component-only 12 (the function could not be located)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">reachable 168, not-reachable 4, unknown 51. Joern refutes almost nothing soundly here: of its 4 not-reachable verdicts, 2 contradict the public-header authority (GENERAL_NAME_cmp, zlib inflate), which is why Q3 only grades the tier and never refutes</td></tr><tr><td class="mono"><b>Q4</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 213, not-controllable 0, environment-dependent 9. The solver refutes NOTHING on this corpus, and that is the honest reading: every refutation it used to report disappeared once the LLM's own `environment_fixed` defaults were unpinned, so those cases are reported as environment-dependent rather than quoted as clearances</td></tr></tbody></table>
+<tbody><tr><td class="mono"><b>Q2</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 267 source-collectable CVEs: present 222, component-only 45 (the function could not be located)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">reachable 168, not-reachable 4, unknown 51. Joern refutes almost nothing soundly here: of its 4 not-reachable verdicts, 2 contradict the public-header authority (GENERAL_NAME_cmp, zlib inflate), which is why Q3 only grades the tier and never refutes</td></tr><tr><td class="mono"><b>Q4</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 213, not-controllable 0, environment-dependent 9. The solver refutes NOTHING on this corpus, and that is the honest reading: every refutation it used to report disappeared once the LLM's own `environment_fixed` defaults were unpinned, so those cases are reported as environment-dependent rather than quoted as clearances</td></tr></tbody></table>
 </div>
 
 <div class="card">
