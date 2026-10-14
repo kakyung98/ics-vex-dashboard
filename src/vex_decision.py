@@ -105,10 +105,14 @@ def _corpus():
                   and (r.get("justification") or "").startswith(
                       ("vulnerable_code_not_in_execute_path",
                        "vulnerable_code_cannot_be_controlled")))
+    _present = sum(1 for v in loc.values() if (v or {}).get("any_function_found"))
     return {
         "snapshots": len(os.listdir(snapdir)) if os.path.isdir(snapdir) else 0,
-        "targets_located": sum(1 for v in loc.values()
-                               if (v or {}).get("any_function_found")),
+        "targets_located": _present,
+        # Q2 split, read from the cache so the page cannot quote the old 104/92/12.
+        "q2_total": len(loc),
+        "q2_present": _present,
+        "q2_component_only": len(loc) - _present,
         "q3_reachable": c2.get("reachable", 0),
         "q3_unreachable": c2.get("not-reachable", 0),
         "q3_unknown": c2.get("unknown", 0),
@@ -132,8 +136,9 @@ QUESTIONS = [
             "(tools/source_locate.py; CTI function names, else the patch-localised "
             "targets, checked against the snapshot function index)",
      "state": "implemented",
-     "result": "over the 104 source-collectable CVEs: present 92, component-only 12 "
-               "(the function could not be located)"},
+     "result": "over the %(q2_total)d source-collectable CVEs: present %(q2_present)d, "
+               "component-only %(q2_component_only)d (the function could not be located)"
+               % CORPUS},
     {"id": "Q3", "ask": "Is it on an executed path?",
      "clears_with": ["vulnerable_code_not_in_execute_path"],
      "how": "Joern CPG call-graph reachability from entry points "
