@@ -131,6 +131,10 @@ the retired synthetic-exposure estimate.</p>
 .av-aff{background:rgba(229,103,92,.15);color:var(--aff)}
 .av-safe{background:rgba(67,190,124,.15);color:var(--safe)}
 .av-und{background:rgba(224,178,76,.15);color:var(--und)}
+.av-lik-aff{background:rgba(229,103,92,.08);color:var(--aff)}
+.av-lik-safe{background:rgba(67,190,124,.08);color:var(--safe)}
+.av-lik-mit{background:rgba(96,165,250,.12);color:var(--accent)}
+.av-lik-cd{background:rgba(224,178,76,.08);color:var(--und)}
 .av-chip{display:inline-block;background:var(--card2);border:1px solid var(--line);
   border-radius:999px;padding:3px 12px;margin:2px 4px 2px 0;font-size:13px;font-family:var(--mono)}
 </style>
@@ -178,8 +182,10 @@ function avAssess(){
   st.textContent=''; avShow(j);
 }
 function avShow(j){
-  var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
+  var cls=(typeof avStatusCls==='function')?avStatusCls(j.status)
+    :({affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und');
   var h='<div class="card"><div class="av-verdict '+cls+'">'+j.status.replace(/_/g,' ').toUpperCase()+'</div>';
+  if(j.estimated)h+='<p class="hint" style="margin:-4px 0 10px">estimate &mdash; the CVE carries no CVSS Attack Vector, so this reads the asset’s attack surface alone</p>';
   h+='<p style="margin:0 0 12px">'+esc(j.reason||'')+'</p>';
   if(j.vectors){
     h+='<div style="margin-bottom:8px"><b>Attack vectors identified on the asset</b></div>';
@@ -236,17 +242,25 @@ ASSET_AV_MODAL_JS = """
 var ASSET_AV_SCHEMA = __SCHEMA__;
 function _avOpts(opts, cur){return opts.map(function(o){
   return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+o[1]+'</option>';}).join('');}
-function _avFieldHtml(f, pfx){
+function _avFieldHtml(f, pfx, vals){
+  var cur=(vals&&vals[f.k])||'';
   return '<label class="av-f"><span>'+f.label+'</span>'
-    +'<select data-avk="'+f.k+'" data-avp="'+pfx+'">'+_avOpts(f.opts,'')+'</select></label>';}
-function avAssetFormHtml(pfx){
+    +'<select data-avk="'+f.k+'" data-avp="'+pfx+'">'+_avOpts(f.opts,cur)+'</select></label>';}
+function avAssetFormHtml(pfx, vals){
   var h='';
   ASSET_AV_SCHEMA.groups.forEach(function(g){
     h+='<div class="av-grp"><h4>'+g.title+'</h4><div class="av-grid">'
-      +g.fields.map(function(f){return _avFieldHtml(f,pfx);}).join('')+'</div></div>';});
+      +g.fields.map(function(f){return _avFieldHtml(f,pfx,vals);}).join('')+'</div></div>';});
   h+='<div class="av-grp"><h4>CVE-derived facts <span class="hint">(optional, from the CVE description)</span></h4>'
-    +'<div class="av-grid">'+ASSET_AV_SCHEMA.extra.map(function(f){return _avFieldHtml(f,pfx);}).join('')+'</div></div>';
+    +'<div class="av-grid">'+ASSET_AV_SCHEMA.extra.map(function(f){return _avFieldHtml(f,pfx,vals);}).join('')+'</div></div>';
   return h;}
+// Snapshot every select's raw value (keyed by data-avk) for a given form prefix,
+// so a caller can stash it and restore the form after it is rebuilt.
+function avSnapshotForm(pfx){
+  var m={};
+  document.querySelectorAll('select[data-avp="'+pfx+'"]').forEach(function(s){
+    if(s.value!=='')m[s.getAttribute('data-avk')]=s.value;});
+  return m;}
 function avCollectForm(pfx){
   var attrs={}, extra={}, extraKeys={};
   ASSET_AV_SCHEMA.extra.forEach(function(f){extraKeys[f.k]=1;});
@@ -265,9 +279,13 @@ function avAssessForm(pfx, cve, av, outId){
   var j=avAssessLocal(av, c.attributes, c.extra); j.cve=cve;
   if(out)out.innerHTML=avVerdictHtml(j);
   return Promise.resolve(j);}
+function avStatusCls(s){return {affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und',
+  likely_affected:'av-lik-aff',likely_not_affected:'av-lik-safe',likely_mitigated:'av-lik-mit',
+  likely_cannot_determine:'av-lik-cd'}[s]||'av-und';}
 function avVerdictHtml(j){
-  var cls={affected:'av-aff',not_affected:'av-safe',under_investigation:'av-und'}[j.status]||'av-und';
+  var cls=avStatusCls(j.status);
   var h='<div class="av-verdict '+cls+'">'+j.status.replace(/_/g,' ').toUpperCase()+'</div>';
+  if(j.estimated)h+='<p class="hint" style="margin:-6px 0 8px">estimate &mdash; the CVE carries no CVSS Attack Vector, so this reads the asset&rsquo;s attack surface alone</p>';
   h+='<p style="margin:0 0 10px">'+(j.reason||'')+'</p>';
   if(j.vectors){h+='<div style="margin-bottom:6px"><b>Attack vectors on the asset</b></div>';
     h+= j.vectors.length ? j.vectors.map(function(v){return '<span class="av-chip">'+v+'</span>';}).join('') : '<span class="hint">none</span>';}
@@ -329,10 +347,32 @@ function avJudge(av, present, extra){
     return {status:'under_investigation',reason:'AV:P - whether the exploit requires a PMMD is unknown (needs the CVE description)'}; }
   return {status:'under_investigation',reason:'unrecognised CVSS Attack Vector: '+av};
 }
+// 4.4 - soft estimate when the CVE has no CVSS AV. Mirror of
+// asset_av_judge.semantic_estimate / active_controls. Keep in sync with the Python.
+var AV_MITIGATING_CONTROLS=[['host_firewall','wired'],['unidirectional','wired'],
+  ['encrypted_comm','wireless'],['maint_port_sealed','pmmd'],['physical_blocked','physical']];
+function avActiveControls(a){ return AV_MITIGATING_CONTROLS.filter(function(c){return a[c[0]]===true;}); }
+function avSemanticEstimate(present, attrs){
+  if(present.length){ var shown=present.join(', ');
+    return {status:'likely_affected',reason:'no CVSS AV for this CVE, but the asset exposes attack vector(s) ('+shown+'); with an open surface it is likely reachable'}; }
+  // No attack vector present - why it is empty decides the estimate.
+  var controls=avActiveControls(attrs);
+  if(controls.length){
+    var closed=controls.map(function(c){return c[1]+' via '+c[0];}).sort().join(', ');
+    return {status:'likely_mitigated',reason:'no CVSS AV, and no attack vector is open because active controls close the paths ('+closed+'); mitigated, but reverts if a control is dropped'};
+  }
+  var latent=(attrs.wireless_capable&&!attrs.wireless_enabled)||(attrs.maint_device_used&&attrs.access_right==='admin');
+  if(latent){
+    return {status:'likely_cannot_determine',reason:'no CVSS AV, and no vector is open now, but the asset has latent capability (wireless present-but-disabled, or an admin-gated maintenance device) that configuration alone could reopen'};
+  }
+  return {status:'likely_not_affected',reason:'no CVSS AV, and the asset exposes no attack vector with no mitigating control or latent capability in force - structurally no reachable surface'};
+}
 function avAssessLocal(av, attrs, extra){
   var miss=avMissing(attrs);
   if(miss.length)return {status:'under_investigation',reason:'asset attributes not fully entered ('+miss.length+' missing)',missing:miss,vectors:null,cvss_av:av};
-  var present=avIdentifyVectors(attrs); var r=avJudge(av,present,extra);
+  var present=avIdentifyVectors(attrs);
+  if(!av){ var e=avSemanticEstimate(present,attrs); e.vectors=present; e.cvss_av=null; e.estimated=true; return e; }
+  var r=avJudge(av,present,extra);
   r.vectors=present; r.cvss_av=av; return r;
 }
 """
