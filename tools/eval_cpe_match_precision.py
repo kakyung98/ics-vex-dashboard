@@ -116,7 +116,7 @@ def load_gt(path):
     pre-enumerated records: for a component whose authoritative product is known,
     any CVE emitted under a different product is a wrong-product mapping.
     """
-    gt, cases, conflicts = {}, {}, 0
+    gt, cases, conflicts, ambiguous = {}, {}, 0, 0
     unreachable = collections.Counter()
     for line in open(path, encoding="utf-8"):
         if not line.strip():
@@ -124,6 +124,12 @@ def load_gt(path):
         r = json.loads(line)
         if r.get("review_status") == "conflict":
             conflicts += 1          # CISA and NVD disagree — not a usable label
+            continue
+        if r.get("_ambiguous_product"):
+            # vendor anchors >1 NVD product, so which one the CVE maps to is not
+            # adjudicated (audit problem 1). Held out, never scored, and never added
+            # to correct_products — otherwise entries[0]'s guess would leak back in.
+            ambiguous += 1
             continue
         c = r["component"]
         fam = r.get("_negative_family")
@@ -163,7 +169,7 @@ def load_gt(path):
         # for CVEs the ground truth actually asserts.
         lab = case.setdefault("cve_label", {})
         lab[r["cve_id"]] = bool(lab.get(r["cve_id"])) or bool(r["applicable"])
-    return gt, [c for c in cases.values() if c["correct_products"]], conflicts, unreachable
+    return gt, [c for c in cases.values() if c["correct_products"]], conflicts, unreachable, ambiguous
 
 
 def score(data=DATA, matcher="string", strict=False, progress=None):
@@ -180,7 +186,7 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     """
     MM = _matcher(matcher)
     identify = MM.identify_product
-    gt, cases, conflicts, unreachable = load_gt(data)
+    gt, cases, conflicts, unreachable, ambiguous = load_gt(data)
     tp = fp = unlabelled = abstained = unadjudicable = 0
     fp_axis = collections.Counter()
     by_path = collections.Counter()
@@ -264,6 +270,11 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
         "sut_mode": "strict (co-listed dropped)" if strict else "recall-safe (default)",
         "ground_truth": os.path.relpath(data, BASE),
         "gt_labels": len(gt), "gt_conflicts_held_out": conflicts,
+        "gt_ambiguous_held_out": ambiguous,
+        "gt_ambiguous_reason": "vendor anchors >1 NVD product for the CVE, so entries[0] "
+                               "is an unverified product pick (audit problem 1); the "
+                               "(component, CVE) is real but its product identity is not "
+                               "adjudicated, so it is held out of scoring",
         "gt_unreachable_for_this_sut": dict(unreachable),
         "unreachable_reason": "co-listed-vendor negatives name a foreign vendor's OWN "
                               "product; the SUT reports (product, vendor-of-that-"
@@ -335,7 +346,8 @@ def main():
     print("=== test item #3 - SBOM-based public vulnerability identification precision ===")
     print("  SUT            : %s" % res["sut"])
     print("  mode           : %s" % res["sut_mode"])
-    print("  GT labels      : %d  (conflict held out: %d)" % (gt_labels, conflicts))
+    print("  GT labels      : %d  (conflict held out: %d, ambiguous-product held out: %d)"
+          % (gt_labels, conflicts, res.get("gt_ambiguous_held_out", 0)))
     print("  SUT runs       : %d components  (abstained: %d)"
           % (res["sut_runs"], abstained))
     if unreachable:

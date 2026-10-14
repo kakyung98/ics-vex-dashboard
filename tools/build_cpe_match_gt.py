@@ -154,6 +154,18 @@ def anchored_cpes(publisher, nvd_entries):
     return out
 
 
+def _anchored_products(entries):
+    """The distinct NVD products the vendor anchors for this CVE.
+
+    More than one means entries[0] is an unverified pick among same-vendor products
+    (memo problem 1): vendor agreement does not establish WHICH product the CVE is
+    filed against, so the (component, CVE) mapping's product identity cannot be
+    adjudicated. Such records are flagged `_ambiguous_product` and the scorer holds
+    them out, rather than asserting entries[0] as ground truth.
+    """
+    return sorted({e.get("product") for e in entries if e.get("product")})
+
+
 def _in_entry(ver, entry):
     """True / False / None(undecidable) for one NVD applicability entry."""
     exact = entry.get("version")
@@ -258,6 +270,8 @@ def to_gt(rec, idx):
     """
     e = rec["entries"][0]
     vm = version_match(rec["version"], rec["entries"])
+    prods = _anchored_products(rec["entries"])
+    ambiguous = len(prods) > 1          # entries[0] is an unverified pick (problem 1)
     return {
         "test_case_id": "SBOM-TC-%04d" % idx,
         "component_id": rec["bom_ref"],
@@ -267,13 +281,20 @@ def to_gt(rec, idx):
         "applicable": True,
         "evidence": {
             "vendor_match": True,
-            "product_match": True,
+            # product identity is adjudicated only when the vendor anchors ONE product;
+            # with several, vendor agreement does not fix which one (held out below).
+            "product_match": not ambiguous,
             "version_match": vm,
             "evidence_source": "CISA" if vm is None else "CISA+NVD",
             "evidence_reference": ADVISORY_URL % rec["asset_id"],
             "nvd_reference": NVD_URL % rec["cve_id"],
         },
         "review_status": "conflict" if vm is False else "verified",
+        # held out of scoring when the vendor anchors >1 product: CISA still asserts
+        # the (component, CVE) is real, but which NVD product the CVE maps to is not
+        # independently verified, so scoring entries[0] would reward a guess.
+        "_ambiguous_product": ambiguous,
+        "_anchored_products": prods,
         # not part of the submitted schema — kept so the eval can feed the SUT the
         # same messy string a real SBOM carries, and so layers stay auditable
         "_sut_input": {"name": rec["name"], "version": rec["version"],
@@ -379,10 +400,15 @@ def version_overrun_negatives(layer_a):
         if not ver or version_match(ver, rec["entries"]) is not False:
             continue                       # NVD does not confirm it is outside
         e = rec["entries"][0]
-        out.append(_negative(
+        neg = _negative(
             rec, e["vendor"], e["product"], ver, "version",
             {"vendor_match": True, "product_match": True, "version_match": False},
-            "CISA+NVD", ADVISORY_URL % rec["asset_id"], why))
+            "CISA+NVD", ADVISORY_URL % rec["asset_id"], why)
+        # same unverified-product caveat as the positive: if the vendor anchors >1
+        # product, this negative's product is also a guess — hold it out so it does
+        # not re-seed correct_products with an unadjudicated identity.
+        neg["_ambiguous_product"] = len(_anchored_products(rec["entries"])) > 1
+        out.append(neg)
     return out
 
 
@@ -512,6 +538,7 @@ def main():
     fam = collections.Counter(r.get("_negative_family") for r in gt if not r["applicable"])
     rs = collections.Counter(r["review_status"] for r in gt)
     n_pos = sum(1 for r in gt if r["applicable"])
+    n_amb = sum(1 for r in gt if r.get("_ambiguous_product"))
 
     # the manifest is what makes the figure reproducible: it records the sampling
     # knobs and, just as importantly, what was EXCLUDED and why
@@ -547,6 +574,10 @@ def main():
             "conflict_reason": "CISA range says affected, NVD applicability says not "
                                "(e.g. CVE-2024-22771: CISA 1.02-4.02 vs NVD 1.03-4.03); "
                                "held out rather than labelled verified",
+            "ambiguous_product": n_amb,
+            "ambiguous_reason": "the component's vendor anchors >1 NVD product for this "
+                                "CVE, so entries[0] is an unverified pick (audit problem "
+                                "1); held out of scoring rather than asserted as GT",
         },
         "scoring_note": "version_match=None means undecidable (CISA publishes upper "
                         "bounds like '<4.3.4', which pin no affected version). It must "
@@ -556,6 +587,7 @@ def main():
               ensure_ascii=False, indent=2)
 
     print("\napplicable    : true=%d  false=%d" % (n_pos, len(gt) - n_pos))
+    print("ambiguous prod: %d  (vendor anchors >1 product -> held out of scoring)" % n_amb)
     print("neg families  : %s" % dict(fam))
     print("version_match : true=%d false=%d undecidable=%d" % (vm[True], vm[False], vm[None]))
     print("review_status : %s" % dict(rs))
