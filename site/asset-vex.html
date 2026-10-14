@@ -175,28 +175,28 @@ removed every one of them.</p>
   <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
   <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
   <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
+  <div class="vm-box vm-dec"><b>Q1</b> &middot; Is the vulnerable component present in this SBOM?</div>
   <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
   <div class="vm-arrow">&darr;</div>
   <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q1&ndash;Q4)</b></div>
-      <div class="vm-step"><b>Q1 &middot; Is this build already patched?</b><span class="vm-sub">the <b>patch gate</b> (<span class="mono">src/patch_gate.py</span>): fix-commit added lines present + removed lines gone, <b>and</b> NVD&rsquo;s range no longer covers the build &rarr; <span class="mono">fixed</span>. Both authorities required.</span></div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>patch gate, then the code questions (Q2&ndash;Q4)</b></div>
+      <div class="vm-step" style="border-left-color:var(--safe)"><b>Patch gate</b> <span class="hint">(before the questions)</span><span class="vm-sub">the fix commit matches the collected code &mdash; added lines present, removed lines gone &mdash; <b>and</b> NVD&rsquo;s range no longer covers the build &rarr; <span class="mono">fixed</span>. Both authorities required (<span class="mono">src/patch_gate.py</span>).</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
+      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback) &mdash; <b>this decides the verdict</b></span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q3 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen"><b>Presence (Q2) decides.</b> Vulnerable code present &rarr; <span class="mono">affected</span>; Q3 (reachable) + Q4 (controllable) only grade the <b>evidence tier</b> (verified &gt; reachable &gt; present), never refute. Only Q2 source-absence clears to <span class="mono">not_affected</span>.</div>
+      <div class="vm-verd vm-vgreen"><b>Code presence (Q2) decides.</b> Vulnerable code present &rarr; <span class="mono">affected</span>; Q3 (reachable) + Q4 (controllable) only grade the <b>evidence tier</b> (verified &gt; reachable &gt; present), never refute. Only Q2 source-absence clears to <span class="mono">not_affected</span>.</div>
     </div>
 
     <div class="vm-lane vm-no">
       <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>asset-attribute estimate</b></div>
-      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">no located function &rarr; Q1&ndash;Q4 do not apply</span></div>
+      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">the component is present (Q1) but its source is not &rarr; the patch gate and Q2&ndash;Q4 do not apply</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>2. Estimate from the asset surface</b><span class="vm-sub">the asset&rsquo;s attack vectors (five NVAS flowcharts) vs the CVE&rsquo;s CVSS Attack Vector &mdash; see <b>Branch 2</b> below</span></div>
       <div class="vm-mini">&darr;</div>
@@ -213,11 +213,11 @@ removed every one of them.</p>
 <table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
 <tr><td class="mono">1</td><td>The vendor or CISA already published a justification</td>
     <td><span class="pill pill-ok">not_affected</span> adopted verbatim, provenance recorded</td></tr>
-<tr><td class="mono">2</td><td>The affected component is absent from this SBOM</td>
+<tr><td class="mono">2</td><td><b>Q1</b> &middot; the affected component is absent from this SBOM</td>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
 <tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
     <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
-<tr><td class="mono">4</td><td><b>Q1</b> &middot; the build is already patched (fix lines present <b>and</b> NVD range no longer covers it)</td>
+<tr><td class="mono">4</td><td><b>Patch gate</b> &middot; the build is already patched (fix commit matches the collected code <b>and</b> NVD range no longer covers it)</td>
     <td><span class="pill pill-ok">fixed</span> <span class="mono">product_status.fixed</span></td></tr>
 <tr><td class="mono">5</td><td><b>Q2</b> &middot; the vulnerable code is absent from the collected source</td>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">vulnerable_code_not_present</span></td></tr>
@@ -234,7 +234,7 @@ topology changes &mdash; so operational context enters only as an SSVC priority,
 <div class="card">
 <h2 style="margin:0 0 10px;font-size:17px">The code questions, as implemented</h2>
 <table class="tbl"><thead><tr><th>Q</th><th>Question</th><th>Clears with</th><th>State</th><th>Result on this corpus</th></tr></thead>
-<tbody><tr><td class="mono"><b>Q1</b></td><td>Is this build already patched?</td><td class="mono" style="font-size:13px">fixed (CSAF product_status.fixed)</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">4 of 267 cleared to fixed (the patched-release snapshots), 0 false clears - every cleared CVE is one the ground truth independently labels not-affected</td></tr><tr><td class="mono"><b>Q2</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">component_not_present<br>vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 267 source-collectable CVEs: present 222, component-only 45 (the function could not be located)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">reachable 168, not-reachable 4, unknown 51. Joern refutes almost nothing soundly here: of its 4 not-reachable verdicts, 2 contradict the public-header authority (GENERAL_NAME_cmp, zlib inflate), which is why Q3 only grades the tier and never refutes</td></tr><tr><td class="mono"><b>Q4</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 213, not-controllable 0, environment-dependent 9. The solver refutes NOTHING on this corpus, and that is the honest reading: every refutation it used to report disappeared once the LLM's own `environment_fixed` defaults were unpinned, so those cases are reported as environment-dependent rather than quoted as clearances</td></tr></tbody></table>
+<tbody><tr><td class="mono"><b>Q1</b></td><td>Is the vulnerable component present?</td><td class="mono" style="font-size:13px">component_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">the SBOM-level gate, decided before any source is read: a CVE whose affected component is not in the asset is not_affected (component_not_present). All 267 source-collected CVEs clear this by construction (their component is present)</td></tr><tr><td class="mono"><b>Q2</b></td><td>Is the vulnerable code present?</td><td class="mono" style="font-size:13px">vulnerable_code_not_present</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">over the 267 source-collectable CVEs: present 222, component-only 45 (the function could not be located)</td></tr><tr><td class="mono"><b>Q3</b></td><td>Is it on an executed path?</td><td class="mono" style="font-size:13px">vulnerable_code_not_in_execute_path</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">reachable 168, not-reachable 4, unknown 51. Joern refutes almost nothing soundly here: of its 4 not-reachable verdicts, 2 contradict the public-header authority (GENERAL_NAME_cmp, zlib inflate), which is why Q3 only grades the tier and never refutes</td></tr><tr><td class="mono"><b>Q4</b></td><td>Can an adversary control it?</td><td class="mono" style="font-size:13px">vulnerable_code_cannot_be_controlled_by_adversary</td><td><span class="pill pill-ok">implemented</span></td><td class="hint" style="font-size:13px">controllable 213, not-controllable 0, environment-dependent 9. The solver refutes NOTHING on this corpus, and that is the honest reading: every refutation it used to report disappeared once the LLM's own `environment_fixed` defaults were unpinned, so those cases are reported as environment-dependent rather than quoted as clearances</td></tr></tbody></table>
 </div>
 
 <div class="card">
