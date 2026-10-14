@@ -1,9 +1,12 @@
 # ICS-VEX — Explainable VEX for Industrial Control Systems
 
 An end-to-end pipeline that takes an **SBOM of an ICS/OT asset** and produces a
-**VEX judgment** (`affected` / `not_affected` / `under_investigation`) with a
+**VEX judgment** (`affected` / `not_affected` / `fixed` / `under_investigation`) with a
 **CISA justification** and a rationale — grounded in code and build evidence,
-never in synthetic deployment context.
+never in synthetic deployment context. When a CVE's source cannot be collected, the
+code-level tree does not apply, so a separate **asset-attribute** branch estimates
+exploitability from the real asset's attack surface instead (see
+[Source-uncollectable CVEs](#source-uncollectable-cves--asset-attribute-estimation)).
 
 > **Dashboard (ICS-VEXForge)** — run it locally with `python src/api_server.py
 > --port 8100`, then open http://127.0.0.1:8100/. Paste/upload an SBOM to get
@@ -96,7 +99,7 @@ emits the verdict itself; "unknown" never clears.
 - **Vulnerable target resolution** — `tools/source_locate.py`: the CTI's function names
   when it named any, else the patch-localised targets (patch → description fallback),
   checked against `func_index`.
-All 107 CVEs have the product source collected, so the analysis is **complete** for each —
+All 267 CVEs have the product source collected, so the analysis is **complete** for each —
 none rests in `under_investigation` (the VEX spec reserves that for "not yet analysed"). VEX
 puts the burden of proof on `not_affected`: **vulnerable code present in the product is
 `affected` by default**, and `not_affected` must be positively *earned*. So the analyzers only
@@ -132,28 +135,30 @@ ever *downgrade* on a **sound** positive refutation; they are evidence, not requ
   **affected** (the basis records the evidence tier: Joern-reachable + Z3-controllable = strongest,
   down to presence-only); only Q2 source-absence → **not_affected**.
 
-Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the 107
-source-collectable CVEs, VEX-v2 gives **103 `affected`**, **4 `fixed`**, **0 `not_affected`**, **0
+Joern is a JVM tool and is not bundled (`deploy/README.md` has the install). Run over the 267
+source-collectable CVEs, VEX-v2 gives **263 `affected`**, **4 `fixed`**, **0 `not_affected`**, **0
 `under_investigation`**. The four are the snapshots the patch gate cleared (CVE-2017-14491,
 CVE-2019-11477, CVE-2023-27533, CVE-2023-27536) — **0 false clears**: every CVE the gate cleared is
 one the ground truth independently labels not-affected, and no CVE labelled affected was cleared.
 Sound source-only `not_affected` still needs the consumer context a library snapshot lacks, so
 outside the patch gate the pipeline confirms exploitability and grades evidence rather than clearing
-CVEs it cannot soundly clear. `--no-patch-gate` reproduces the earlier 107-`affected` baseline
+CVEs it cannot soundly clear. `--no-patch-gate` reproduces the earlier 267-`affected` baseline
 (`data/vex_v2_pregate.json`). Because presence decides the verdict and Q3/Q4 are optional
 enrichment, each verdict carries an **`evidence_tier`** that says how much source evidence backs it:
 
 | tier | count | meaning |
 |---|---|---|
-| `verified` | 64 | present + Joern-reachable + Z3-controllable (strongest) |
-| `reachable` | 3 | present + Joern-reachable |
-| `present` | 27 | present; reachability not confirmable (oversized / library caller external) |
-| `component` | 13 | component present; specific function not located |
+| `verified` | 124 | present + Joern-reachable + Z3-controllable (strongest) |
+| `reachable` | 5 | present + Joern-reachable |
+| `present` | 89 | present; reachability not confirmable (oversized / library caller external) |
+| `component` | 45 | component present; specific function not located |
+| `patch-verified` | 4 | the patch gate cleared the snapshot → `fixed` |
 
-So 67 of the 107 carry positive reachability evidence; the rest rest on confirmed presence.
+So 129 of the 267 carry positive reachability evidence; the rest rest on confirmed presence
+(`component`) or the patch gate (`patch-verified`).
 
 **Sound `fixed` on the other side — the patch gate (`src/patch_gate.py`), now wired in as Q1.** The
-107 are mostly *vulnerable-version* snapshots, which is why the code-level verdict was all
+267 are mostly *vulnerable-version* snapshots, which is why the code-level verdict was all
 `affected`. The sound way to clear a build is not reachability but the **fix itself**: each CVE's fix
 commit turns specific vulnerable lines into fixed ones, so the gate reads that exact code and
 reports `fixed` when the distinctive fix lines are present and the vulnerable ones are gone. Hunks
@@ -169,6 +174,48 @@ The older source-level engines VEX-v2
 replaced — the fine-tuned Q2 judge, the static call-graph Q3 and the taint Q4 — have been
 **removed** now that it is validated; some sections further below still describe that
 earlier approach and are being retired.
+
+### Source-uncollectable CVEs — asset-attribute estimation
+
+Stage 3 needs the product source; much ICS firmware cannot be obtained, so the vulnerable
+function cannot be located and the code tree (Q1–Q4) does not apply. For those CVEs the
+analyzer offers a **separate branch** that reasons about the real asset instead of its code
+(`src/asset_av_judge.py`, UI in `src/asset_vex_page.py`). It replaces the retired synthetic
+`AV × exposure` estimate: every input here is a **fact the asset owner supplies about one
+asset**, not a hashed number.
+
+Three stages (the NVAS spec):
+
+1. **Asset attributes** — the owner fills ~15 attributes (maintenance port sealed? network
+   connected? wireless enabled & encrypted? physical location & isolation? access right?…).
+   Any left blank → `under_investigation` (the attack-vector set cannot be trusted).
+2. **Attack vectors present** — five deterministic flowcharts turn those attributes into the
+   subset of {`wired`, `wireless`, `physical`, `pmmd`, `supply_chain`} that physically exists
+   on the asset (e.g. network-connected + two-way + no host firewall ⇒ `wired` is open; port
+   sealed ⇒ `pmmd` closed).
+3. **Match against the CVE's CVSS Attack Vector** — `AV:N/A` rides {wired, wireless,
+   supply_chain}, `AV:L` any of the five, `AV:P` {physical, pmmd}. Overlap ⇒ `affected`; no
+   overlap ⇒ `not_affected`; genuinely unresolved (e.g. a required protocol/interface whose
+   presence is unknown) ⇒ `under_investigation`, conservatively.
+
+When the CVE carries **no CVSS AV at all** (reserved/rejected/unscored), there is no vector to
+match, so step 3 would stall. Instead a **soft semantic estimate** reads the asset surface
+alone and returns one of four `likely_*` states, prefixed so it is never mistaken for an
+adjudicated verdict (`_canonStatus` still folds them to the four CSAF statuses on export):
+
+| surface | estimate |
+|---|---|
+| some attack vector open | `likely_affected` (the open vectors are shown) |
+| none open, closed by active controls | `likely_mitigated` (posture-dependent — reverts if a control is dropped) |
+| none open, but latent capability (wireless present-but-disabled, admin-gated maintenance device) | `likely_cannot_determine` |
+| none open, no control and no latent surface | `likely_not_affected` |
+
+The judge is deterministic, so a JS port mirrors it exactly (`ASSET_AV_CLIENT_JS`) and the
+whole assessment runs **in the browser with no backend** — which is what lets it work on the
+static GitHub Pages bundle. The analyzer's VEX editor also keeps the entered attributes and the
+verdict per CVE across close/reopen. This branch is still **attack-surface** reasoning, not
+deployment-topology reasoning: it never asserts safety from network position, and an unknown
+input is resolved toward `under_investigation`, never toward `not_affected`.
 
 ## Why this exists — public ICS VEX is essentially absent
 
@@ -262,9 +309,9 @@ deployment — not a synthetic number.
 The source-level judgment is the **VEX-v2** pipeline in
 [Stage 3 — VEX Verification](#stage-3--vex-verification): CTI extraction by an LLM
 agent, the Q1 patch gate, `source_locate`, Joern reachability and Z3 controllability. Because
-all 107 CVEs have the product source collected, the analysis is complete for each, so it gives
-**103 `affected`, 4 `fixed`, 0 `not_affected`, 0 `under_investigation`**
-(`results/vex_v2_summary.json`; `--no-patch-gate` reproduces the earlier all-107-`affected`
+all 267 CVEs have the product source collected, the analysis is complete for each, so it gives
+**263 `affected`, 4 `fixed`, 0 `not_affected`, 0 `under_investigation`**
+(`results/vex_v2_summary.json`; `--no-patch-gate` reproduces the earlier all-267-`affected`
 baseline). VEX makes `affected` the default for present vulnerable code and puts the burden of
 proof on `not_affected`, so the analyzers only *downgrade* on a **sound** refutation — the fix
 being positively present (Q1, corroborated by NVD's product-matched range) or the vulnerable
@@ -345,7 +392,7 @@ sandboxing. All 106 source-available CVEs were run (the 88 that built plus an
 |---|---|---|
 | the **2 execution-verified** CVEs (CVE-2020-8177, CVE-2022-32221, both curl) | `src/vex_batch.py` | the only `affected` verdicts in the corpus resting on a run, not an argument |
 | `results/verify_build_logs/` | — | preserved build output of the closed campaign |
-| `data/source_snapshots/` | Q1–Q4 | the 107 source trees everything below analyses |
+| `data/source_snapshots/` | Q1–Q4 | the 267 source trees everything below analyses |
 
 The campaign's other outcome labels — `exploit-generated 20`, `build-only 70`,
 `failed 14` — are a **historical record of a pipeline this repository can no
@@ -363,8 +410,8 @@ Two of the failures — **CVE-2021-33909 and CVE-2023-32233** — had originally
 in the CVE-processor step before any source was downloaded; they were later
 collected directly from the upstream release tags (linux-5.13.3 / linux-6.3.1),
 along with ntp 4.2.8p13 for CVE-2020-11868, bringing the code-level population to
-**107**. `data/source_snapshots/` holds every CVE whose source was actually
-collected.
+**107** at the time; the collected corpus has since grown to **267**.
+`data/source_snapshots/` holds every CVE whose source was actually collected.
 
 The two execution-verified CVEs are **CVE-2020-8177** and **CVE-2022-32221** (both
 curl) — the first exploits this local harness produced that a run actually
@@ -843,7 +890,7 @@ mix, and every exclusion with its reason.
 
 ```
 ICS-VEX/
-├── src/                          core modules (15)
+├── src/                          core modules (17)
 │   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
 │   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
 │   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
@@ -852,7 +899,9 @@ ICS-VEX/
 │   ├── patch_gate.py             Q1 — already patched? fix signature + NVD range (both required)
 │   ├── cpe_match_ai.py           semantic retrieval behind the string cascade (scaffolded)
 │   ├── vex_batch.py / vex_pipeline.py   corpus-level VEX batch
-│   └── vex_source_unavailable.py decision tree for source-uncollectable CVEs
+│   ├── vex_source_unavailable.py decision tree for source-uncollectable CVEs
+│   ├── asset_av_judge.py         source-less: asset attributes → attack vectors → CVSS AV match (+ likely_* estimate)
+│   └── asset_vex_page.py         the asset-attribute form + JS client port (static-site parity)
 ├── tools/                        67 pipeline scripts, incl. Stage 3 (VEX-v2):
 │   ├── cti_extract.py            CTI → structured info (Ollama)
 │   ├── source_locate.py          Q2 presence — decides the verdict
@@ -871,7 +920,7 @@ ICS-VEX/
 │   ├── build_site.py · build_cpe_index.py · build_sbom_index.py     static site + indexes
 │   └── fetch_*.py · collect_*.py                                     data collection
 ├── data/                         caches, snapshots, indexes (most gitignored, regenerable)
-│   ├── source_snapshots/<CVE>/   107 collected source trees (gitignored)
+│   ├── source_snapshots/<CVE>/   267 collected source trees (gitignored)
 │   ├── code_evidence.json        fix hunks (vuln vs patched) → feeds fixed_check
 │   ├── nvd_cache.json · cisa_advisories.json · vuln_targets.json
 │   └── {cti_extractions,source_locations,reachability,controllability,vex_v2}.json  (VEX-v2 caches, gitignored)
@@ -931,14 +980,17 @@ Steps 3/6/7 must precede 8/9 (they set each statement's evidence tier). Step 14'
 
 ## Web console — ICS-VEXForge
 
-Six pages. The live server (`src/api_server.py`) renders them on the fly; the static export (`tools/build_site.py`) writes the self-contained bundle to `site/` (`site/*.html` + `site/*.json` + `site/adv/`):
+The live server (`src/api_server.py`) renders the pages on the fly; the static export (`tools/build_site.py`) writes the self-contained bundle to `site/` (`site/*.html` + `site/*.json` + `site/adv/`). The nav groups them as **Analyzer / Method / Certification / Dataset**:
 
-- **Analyzer** — SBOM → CVE + VEX, CPE normalization, SSVC priority, OpenVEX/CSAF export
-- **VEX Analysis Method** — the evidence ladder as a diagram
-- **ICS Advisories-based CVE Corpus** — the four axes + per-statement verdicts
-- **Source Code Available CVEs** — the 106-CVE pool and the execution-verification card
-- **ICS-CERT Advisories** — advisory + NVD search
-- **Synthetic SBOM** — the reverse-built SBOM dataset
+- **Analyzer**
+  - **ICS-VEXForge** — SBOM → CVE + VEX, CPE normalization, SSVC priority, OpenVEX/CSAF export
+- **Method**
+  - **ICS-SBOM to CVE** — the nine limits of CPE-based identification, each with its evidence grade
+  - **VEX Decision Logic** — the source-collectable code tree *and* the source-uncollectable asset-attribute estimation on one page
+- **Certification**
+  - **Test items #3 / #4** — run the two precision metrics live, the same `score()` the CLI calls
+- **Dataset**
+  - **CVE Dataset** · **Synthetic SBOM** (reverse-built SBOMs) · **ICS-CERT Advisories (CISA)** (advisory + NVD search) · **Published VEX (CISA)**
 
 Run locally:
 
@@ -1007,9 +1059,12 @@ construction and the scorer prints a `!! CIRCULAR` warning saying so.
 
 ## Limitations
 
-1. Confirmed verdicts are a small fraction — 2 execution-verified + 18
-   upstream-asserted; the rest are `under_investigation`, an honest reflection of
-   the evidence.
+1. Over the 267 source-collected CVEs the VEX-v2 verdict is complete (263 `affected`,
+   4 `fixed`, 0 `under_investigation`), but the **strength** of evidence varies: 129
+   carry positive reachability (`verified`/`reachable`), the rest rest on confirmed
+   presence or the patch gate. Source-uncollectable CVEs have no code verdict at all —
+   they fall to the asset-attribute estimate, which is deliberately conservative
+   (unknown → `under_investigation`).
 2. Independent model-level derivation reaches recall 1.000 but precision 0.291,
    bounded by the public data (CISA does not enumerate the not-affected models).
 3. The 18 public CISA flags are **vendor assertions about proprietary builds** and the
