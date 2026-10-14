@@ -1469,7 +1469,7 @@ async function run(){
     const nextcol = f.v2
       ? '<span class="hint" title="'+_v2Title(f.v2)+'">'+_v2Label(f.v2)+'</span>'
       : f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q2&ndash;Q4</span>'
+      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q4</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -2307,9 +2307,10 @@ TREE_HTML = """<div class="card" id="vextree" style="display:none">
 # CVEs get VEX analysis; source-uncollectable CVEs continue into the decision tree).
 _ANALYZER_PAGE = ('<h1 style="margin:0 0 2px">ICS-VEXForge</h1>'
                   '<p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. '
-                  'For a source-collectable CVE the code gates decide: presence (Q2) sets the verdict, '
-                  'Joern reachability (Q3) and Z3 controllability (Q4) grade the evidence, and the patch '
-                  'gate (Q1) clears a fixed build. A source-uncollectable CVE has no code tree, so it '
+                  'For a source-collectable CVE: the vulnerable component (Q1) and its code (Q2) must be '
+                  'present &mdash; code presence (Q2) decides the verdict; Joern reachability (Q3) and Z3 '
+                  'controllability (Q4) grade the evidence; a patch gate clears an already-fixed build. '
+                  'A source-uncollectable CVE has no code tree, so it '
                   'falls to the asset-attribute estimate (the asset&rsquo;s attack surface vs the CVE&rsquo;s '
                   'CVSS Attack Vector), or stays under_investigation.</p>' + ANALYZER_HTML)
 SOURCE_HTML = """<div class="card">
@@ -2468,26 +2469,28 @@ removed every one of them.</p>
   <div class="vm-box vm-dec">Has the vendor or CISA already published a verdict?</div>
   <div class="vm-verd vm-vgreen" style="max-width:760px">YES &rarr; adopt it verbatim &mdash; tier <b>upstream-asserted</b>, provenance recorded. Never counted as our own derivation.</div>
   <div class="vm-arrow">&darr;</div>
-  <div class="vm-box vm-dec">Is the affected component / model present in this SBOM?</div>
+  <div class="vm-box vm-dec"><b>Q1</b> &middot; Is the vulnerable component present in this SBOM?</div>
   <div class="vm-verd vm-vgreen" style="max-width:760px">NO &rarr; <span class="mono">not_affected</span> + <span class="mono">component_not_present</span> &mdash; tier <b>sbom-evidenced</b>. Needs no version match, so it survives a corpus where every version is <span class="mono">NOASSERTION</span>.</div>
   <div class="vm-arrow">&darr;</div>
   <div class="vm-box vm-dec">Can the vulnerable source code be obtained?</div>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q2&ndash;Q4)</b></div>
-      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>patch gate, then the code questions (Q2&ndash;Q4)</b></div>
+      <div class="vm-step" style="border-left-color:var(--safe)"><b>Patch gate</b> <span class="hint">(before the questions)</span><span class="vm-sub">the fix commit matches the collected code &mdash; added lines present, removed lines gone &mdash; <b>and</b> NVD&rsquo;s range no longer covers the build &rarr; <span class="mono">fixed</span>. Both authorities required (<span class="mono">src/patch_gate.py</span>).</span></div>
+      <div class="vm-mini">&darr;</div>
+      <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback) &mdash; <b>this decides the verdict</b></span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q3 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q4 &middot; Can an adversary control the input that reaches it?</b><span class="vm-sub"><b>Z3</b> decides whether attacker-controlled inputs satisfy the trigger, from an LLM formalisation (<span class="mono">tools/z3_controllability.py</span>) &mdash; the model formalises, the solver decides</span></div>
       <div class="vm-mini">&darr;</div>
-      <div class="vm-verd vm-vgreen"><b>Presence (Q2) decides.</b> Vulnerable code present &rarr; <span class="mono">affected</span>; Q3 (reachable) + Q4 (controllable) only grade the <b>evidence tier</b> (verified &gt; reachable &gt; present), never refute. Only Q2 source-absence clears to <span class="mono">not_affected</span>.</div>
+      <div class="vm-verd vm-vgreen"><b>Code presence (Q2) decides.</b> Vulnerable code present &rarr; <span class="mono">affected</span>; Q3 (reachable) + Q4 (controllable) only grade the <b>evidence tier</b> (verified &gt; reachable &gt; present), never refute. Only Q2 source-absence clears to <span class="mono">not_affected</span>.</div>
     </div>
 
     <div class="vm-lane vm-no">
       <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>asset-attribute estimate</b></div>
-      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">no located function &rarr; Q2&ndash;Q4 do not apply</span></div>
+      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">the component is present (Q1) but its source is not &rarr; the patch gate and Q2&ndash;Q4 do not apply</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>2. Estimate from the asset surface</b><span class="vm-sub">the asset&rsquo;s attack vectors (five NVAS flowcharts) vs the CVE&rsquo;s CVSS Attack Vector &mdash; see <b>Branch 2</b> below</span></div>
       <div class="vm-mini">&darr;</div>
@@ -2504,13 +2507,15 @@ removed every one of them.</p>
 <table class="tbl"><thead><tr><th>#</th><th>Gate</th><th>Outcome</th></tr></thead><tbody>
 <tr><td class="mono">1</td><td>The vendor or CISA already published a justification</td>
     <td><span class="pill pill-ok">not_affected</span> adopted verbatim, provenance recorded</td></tr>
-<tr><td class="mono">2</td><td>The affected component is absent from this SBOM</td>
+<tr><td class="mono">2</td><td><b>Q1</b> &middot; the affected component is absent from this SBOM</td>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
 <tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
     <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
-<tr><td class="mono">4</td><td>A code question (Q2&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
-    <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
-<tr><td class="mono">5</td><td>Q2&ndash;Q4 all evaluated and all still vulnerable</td>
+<tr><td class="mono">4</td><td><b>Patch gate</b> &middot; the build is already patched (fix commit matches the collected code <b>and</b> NVD range no longer covers it)</td>
+    <td><span class="pill pill-ok">fixed</span> <span class="mono">product_status.fixed</span></td></tr>
+<tr><td class="mono">5</td><td><b>Q2</b> &middot; the vulnerable code is absent from the collected source</td>
+    <td><span class="pill pill-ok">not_affected</span> <span class="mono">vulnerable_code_not_present</span></td></tr>
+<tr><td class="mono">6</td><td><b>Q2</b> &middot; vulnerable code present &mdash; Q3 (reach) / Q4 (control) only grade the evidence tier, never refute</td>
     <td><span class="pill pill-aff">affected</span></td></tr>
 <tr><td class="mono">&mdash;</td><td>anything else</td>
     <td><span class="pill pill-und">under_investigation</span></td></tr>
