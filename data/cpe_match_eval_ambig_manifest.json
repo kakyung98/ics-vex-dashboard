@@ -1,0 +1,60 @@
+{
+  "test": "SBOM CVE-identification precision (test item #3) - ground truth",
+  "generated_from": {
+    "corpus": "reverse_sbom/ (CISA CSAF)",
+    "applicability": "data/nvd_cpe_detail.json (NVD)"
+  },
+  "evidence_sources": [
+    "CISA",
+    "NVD"
+  ],
+  "population": "reverse_sbom/ (whole corpus)",
+  "population_cves": null,
+  "seed": 20261007,
+  "per_vendor_cap": "none",
+  "vendor_mix": {
+    "siemens": 17409,
+    "mitsubishielectric": 1910,
+    "rockwellautomation": 1156,
+    "schneider-electric": 1071,
+    "honeywell": 478,
+    "hitachienergy": 477,
+    "moxa": 465,
+    "codesys": 450,
+    "abb": 381,
+    "yokogawa": 363,
+    "ge": 362,
+    "automationdirect": 322
+  },
+  "neg_ratio_requested": 1.0,
+  "neg_ratio_achieved": 0.289,
+  "counts": {
+    "total": 41868,
+    "applicable_true": 32488,
+    "applicable_false": 9380,
+    "negative_families": {
+      "version": 5131,
+      "vendor": 4249
+    }
+  },
+  "version_match": {
+    "true": 907,
+    "false": 5561,
+    "undecidable": 35400
+  },
+  "review_status": {
+    "verified": 41438,
+    "conflict": 430
+  },
+  "exclusions": {
+    "circular_oss_links": 247,
+    "circular_reason": "tools/link_oss_components attached the CVE to a library that the same CVE put in the SBOM (OSS catalog tier A); kept in the SBOM, held out of scoring",
+    "layer_b_embedded_only": 23049,
+    "layer_b_reason": "CISA asserts the ICS product is affected but NVD's CPE is a third-party component (e.g. Schneider ProLeiT -> redis:redis); the ICS name is absent from NVD, so no name-based matcher can reach the answer",
+    "cisa_nvd_conflict": 430,
+    "conflict_reason": "CISA range says affected, NVD applicability says not (e.g. CVE-2024-22771: CISA 1.02-4.02 vs NVD 1.03-4.03); held out rather than labelled verified",
+    "ambiguous_product": 25184,
+    "ambiguous_reason": "the component's vendor anchors >1 NVD product for this CVE, so entries[0] is an unverified pick (audit problem 1); held out of scoring rather than asserted as GT"
+  },
+  "scoring_note": "version_match=None means undecidable (CISA publishes upper bounds like '<4.3.4', which pin no affected version). It must never be read as False."
+}
