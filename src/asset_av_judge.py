@@ -23,8 +23,9 @@ Three stages, from the NVAS spec:
        the exploit needs a PMMD). A match -> AFFECTED; no match -> NOT_AFFECTED;
        genuinely unresolved -> UNDER_INVESTIGATION.
 
-The flowcharts (4.2) are deterministic and implemented in full below. The 4.3
-match is the part with design choices and is left as TODO(human).
+The flowcharts (4.2) and the 4.3 match are implemented in full below. Stage 4.4 -
+the soft estimate for a CVE with no CVSS AV - is where the remaining design choice
+(mitigated vs. not-affected vs. undecidable, from the asset surface alone) lives.
 """
 
 # The five attack vectors an asset can present.
@@ -232,11 +233,83 @@ def judge(cvss_av, present, extra=None):
     return UNDER_INVESTIGATION, "unrecognised CVSS Attack Vector: %r" % cvss_av
 
 
+# --- 4.4  semantic estimate when the CVE carries no CVSS Attack Vector -----------
+# Some CVEs in the corpus have no CVSS vector at all (reserved, rejected, or not
+# yet scored). The hard 4.3 match needs an AV, so judge() returns
+# UNDER_INVESTIGATION for them. That is correct but throws away what stage 4.2
+# already knows: the asset's attack surface. This produces a SOFT estimate from
+# that surface alone, labelled with the "likely_*" prefix so it is never mistaken
+# for a 4.3 verdict. An estimate is what the asset's exposure suggests, not what
+# the (unknown) CVE vector requires.
+
+LIKELY_AFFECTED = "likely_affected"
+LIKELY_NOT_AFFECTED = "likely_not_affected"
+LIKELY_MITIGATED = "likely_mitigated"
+LIKELY_CANNOT_DETERMINE = "likely_cannot_determine"
+
+# A path is "closed by a control" when the attribute that would otherwise open it
+# is set to its guarding value. This lets the estimate tell an actively mitigated
+# asset (paths exist but are blocked) from one with no surface at all.
+#   (control attribute, guarding value, the attack vector it closes)
+MITIGATING_CONTROLS = [
+    ("host_firewall", True, WIRED),       # wired path stands but is firewalled
+    ("unidirectional", True, WIRED),      # wired path is one-way only
+    ("encrypted_comm", True, WIRELESS),   # wireless path is encrypted
+    ("maint_port_sealed", True, PMMD),    # maintenance port physically sealed
+    ("physical_blocked", True, PHYSICAL), # physical path isolated
+]
+
+
+def active_controls(attrs):
+    """The mitigating controls currently active on the asset, as a list of
+    (control_attribute, attack_vector_it_closes) pairs. Empty when none apply."""
+    return [(k, vec) for k, val, vec in MITIGATING_CONTROLS if attrs.get(k) == val]
+
+
+def semantic_estimate(present, attrs):
+    """Soft estimate for a CVE with no CVSS AV, from the asset surface alone.
+
+    Returns (status, reason) with status one of the LIKELY_* labels. `present` is
+    the set identify_vectors() returned; `attrs` is the (complete) attribute dict.
+    """
+    if present:
+        shown = ", ".join(sorted(present))
+        return (LIKELY_AFFECTED,
+                "no CVSS AV for this CVE, but the asset exposes attack vector(s) "
+                "(%s); with an open surface it is likely reachable" % shown)
+    # No attack vector is present. Why it is empty decides the estimate.
+    controls = active_controls(attrs)
+    if controls:
+        # Paths exist but are held shut by explicit security controls. Mitigated,
+        # but posture-dependent: drop a control and the surface can reopen.
+        closed = ", ".join(sorted("%s via %s" % (vec, k) for k, vec in controls))
+        return (LIKELY_MITIGATED,
+                "no CVSS AV, and no attack vector is open because active controls "
+                "close the paths (%s); mitigated, but reverts if a control is dropped"
+                % closed)
+    # Capability that exists on the asset but is currently off by configuration or
+    # privilege, not by a security control, could reopen - too ambiguous to clear.
+    latent = ((attrs.get("wireless_capable") and not attrs.get("wireless_enabled"))
+              or (attrs.get("maint_device_used") and attrs.get("access_right") == "admin"))
+    if latent:
+        return (LIKELY_CANNOT_DETERMINE,
+                "no CVSS AV, and no vector is open now, but the asset has latent "
+                "capability (wireless present-but-disabled, or an admin-gated "
+                "maintenance device) that configuration alone could reopen")
+    return (LIKELY_NOT_AFFECTED,
+            "no CVSS AV, and the asset exposes no attack vector with no mitigating "
+            "control or latent capability in force - structurally no reachable surface")
+
+
 def assess(cvss_av, attrs, extra=None):
-    """End to end over one (CVE, asset): fills 4.1 -> 4.2 -> 4.3.
+    """End to end over one (CVE, asset): fills 4.1 -> 4.2 -> 4.3 (or 4.4).
 
     4.1 gate: if any attribute is unfilled, the attack-vector set cannot be
     trusted, so the whole assessment is UNDER_INVESTIGATION.
+
+    When the CVE has a CVSS AV, stage 4.3 (judge) decides a hard verdict. When it
+    has none, stage 4.4 (semantic_estimate) returns a soft likely_* estimate so the
+    asset's known surface is not wasted.
     """
     missing = missing_attributes(attrs)
     if missing:
@@ -244,6 +317,10 @@ def assess(cvss_av, attrs, extra=None):
                 "reason": "asset attributes not fully entered (%d missing)" % len(missing),
                 "missing": missing, "vectors": None}
     present = identify_vectors(attrs)
+    if cvss_av is None:
+        status, reason = semantic_estimate(present, attrs)
+        return {"status": status, "reason": reason,
+                "vectors": sorted(present), "cvss_av": None, "estimated": True}
     status, reason = judge(cvss_av, present, extra)
     return {"status": status, "reason": reason,
             "vectors": sorted(present), "cvss_av": cvss_av}
