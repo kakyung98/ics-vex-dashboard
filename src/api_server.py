@@ -1315,6 +1315,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .av-f select,.av-f input{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13px;font-family:var(--sans)}
 .av-verdict{font-size:20px;font-weight:800;padding:10px 14px;border-radius:10px;margin-bottom:10px}
 .av-aff{background:rgba(229,103,92,.15);color:var(--aff)}.av-safe{background:rgba(67,190,124,.15);color:var(--safe)}.av-und{background:rgba(224,178,76,.15);color:var(--und)}
+.av-lik-aff{background:rgba(229,103,92,.08);color:var(--aff)}.av-lik-safe{background:rgba(67,190,124,.08);color:var(--safe)}.av-lik-mit{background:rgba(96,165,250,.12);color:var(--accent)}.av-lik-cd{background:rgba(224,178,76,.08);color:var(--und)}
 .av-chip{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:3px 11px;margin:2px 4px 2px 0;font-size:12px;font-family:var(--mono)}
 .btn-go{font-size:15px;padding:9px 20px}
 .vexset .badge{outline:2px solid var(--accent)}.clk:hover{opacity:.8}
@@ -1693,6 +1694,9 @@ function _canonStatus(s){s=String(s||'');
   if(s==='not_affected')return 'not_affected';
   if(s==='route_to_icsvexforge')return 'under_investigation';
   if(s.indexOf('likely_affected')===0)return 'affected';
+  if(s==='likely_not_affected')return 'not_affected';
+  if(s==='likely_mitigated')return 'under_investigation';
+  if(s==='likely_cannot_determine')return 'under_investigation';
   if(s==='under_investigation')return 'under_investigation';
   if(s==='fixed')return 'fixed';
   return 'under_investigation';}
@@ -1801,7 +1805,10 @@ function openVexEditor(cve){
   else{h+='<label class="vexf"><span class="hint">VEX status</span><select id="vf-status" class="srch" onchange="vexStatusChange(\\''+cve+'\\')">'+_opt(VEX_STATUSES,f.status)+'</select></label>';}
   h+='<div id="vf-body">'+_vexEditorBody(cve,f)+'</div>';
   h+='<div style="margin-top:14px;display:flex;gap:10px"><button class="treebtn" onclick="saveVexFields(\\''+cve+'\\')">Save VEX fields</button><button class="xbtn" onclick="closeCves()">Cancel</button></div>';
-  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');}
+  document.getElementById('mbody').innerHTML=h;document.getElementById('ov').classList.add('on');
+  // Restore a verdict computed earlier this session for this source-uncollectable CVE.
+  if(_unc&&_avModalVerdictByCve[cve]){_avModalVerdict=_avModalVerdictByCve[cve];
+    var _o=document.getElementById('av-modal-out');if(_o)_o.innerHTML=avVerdictHtml(_avModalVerdict);}}
 function _vexEditorBody(cve,f){
   f=f||Object.assign({},_autoStatus(cve),_vexFields[cve]||{});
   var row=(((_lastVex&&_lastVex.cves)||[]).find(function(x){return x.cve===cve;})||{});
@@ -1810,9 +1817,10 @@ function _vexEditorBody(cve,f){
     // Source-uncollectable: no function to locate, so run the asset-attribute
     // estimation instead (five NVAS flowcharts -> attack vectors -> match CVSS AV).
     var av=row.av||'';
+    _avModalCve=cve;   // so the delegated change-listener knows which CVE to stash under
     var h='<div class="srch-meta" style="margin-bottom:8px">CVSS AV: <b>'+(av||'—')+'</b> &middot; '
       +'enter the asset attributes to estimate exploitability. Blank fields &rarr; under_investigation.</div>';
-    h+='<div id="av-modal-form">'+avAssetFormHtml('modal')+'</div>';
+    h+='<div id="av-modal-form">'+avAssetFormHtml('modal', _avModalInputs[cve])+'</div>';
     h+='<div style="margin:10px 0"><button class="treebtn" onclick="avModalAssess(\\''+cve+'\\',\\''+av+'\\')">Assess exploitability</button></div>';
     h+='<div id="av-modal-out" style="margin-bottom:10px"></div>';
     h+='<details style="margin-top:4px"><summary class="hint">Investigation notes (optional)</summary>'
@@ -1833,8 +1841,18 @@ function _vexEditorBody(cve,f){
 }
 function vexStatusChange(cve){const st=document.getElementById('vf-status').value;const f=Object.assign({},_autoStatus(cve),_vexFields[cve]||{},{status:st});document.getElementById('vf-body').innerHTML=_vexEditorBody(cve,f);}
 var _avModalVerdict=null;
+// Per-CVE persistence for the asset-attribute form, so closing/reopening the VEX
+// editor keeps the entered attributes and the last verdict (in-memory, this session).
+var _avModalInputs={}; var _avModalVerdictByCve={}; var _avModalCve=null;
+document.addEventListener('change',function(e){
+  var s=e.target;
+  if(s&&s.tagName==='SELECT'&&s.getAttribute&&s.getAttribute('data-avp')==='modal'&&_avModalCve){
+    _avModalInputs[_avModalCve]=avSnapshotForm('modal');
+  }});
 async function avModalAssess(cve,av){
+  _avModalInputs[cve]=avSnapshotForm('modal');          // keep what was typed
   _avModalVerdict=await avAssessForm('modal',cve,av,'av-modal-out');
+  _avModalVerdictByCve[cve]=_avModalVerdict;             // keep the verdict too
 }
 function _v(id){const e=document.getElementById(id);return e?e.value.trim():'';}
 function saveVexFields(cve){
@@ -1960,8 +1978,10 @@ function renderCveTree(cve){
     +'<button class="primary" onclick="treeAnswerFor(\\''+cve+'\\',true)">Yes</button> <button onclick="treeAnswerFor(\\''+cve+'\\',false)">No</button></div>';}
   return h;
 }
-function _statLabel(st){return {affected:'affected',not_affected:'not_affected',under_investigation:'under investigation',fixed:'fixed'}[st]||st;}
-function _statCol(st){return {affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--und)',fixed:'var(--accent)'}[st]||'var(--ink3)';}
+function _statLabel(st){return {affected:'affected',not_affected:'not_affected',under_investigation:'under investigation',fixed:'fixed',
+  likely_affected:'likely affected',likely_not_affected:'likely not affected',likely_mitigated:'likely mitigated',likely_cannot_determine:'likely cannot determine'}[st]||st;}
+function _statCol(st){return {affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--und)',fixed:'var(--accent)',
+  likely_affected:'var(--aff)',likely_not_affected:'var(--safe)',likely_mitigated:'var(--accent)',likely_cannot_determine:'var(--und)'}[st]||'var(--ink3)';}
 function refreshVexRow(cve){
   const auto=_autoStatus(cve); const ov=_vexFields[cve]||{}; const st=ov.status||auto.status;
   const vc=document.getElementById('vexcell-'+cve);

@@ -117,7 +117,7 @@ def measure_resolution(rows):
 def headline(res):
     """The single (n, pct, label) the README quotes for Stage 2 resolution.
 
-    TODO(human): pick the cell and return
+    NOTE (unimplemented, pre-existing): pick the cell and return
         {"n": <int>, "pct": <float>, "label": "<what the number means>"}
 
     The cells available in `res` are, for each layer in res["by_layer"] and for
