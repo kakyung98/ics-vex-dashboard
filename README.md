@@ -44,7 +44,7 @@ ICS Asset SBOM
 ┌ Stage 3 · VEX Verification ──────────────────────────────────┐
 │  CTI extraction (LLM agent) → vulnerable target resolution   │
 │     (patch → description)                                    │
-│  evidence: Q2 present? · Q3 reach? · Q4 control?             │
+│  Q1 component? · Q2 code? · Q3 reach? · Q4 control?          │
 │     → evidence graph → VEX decision                          │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -105,7 +105,7 @@ puts the burden of proof on `not_affected`: **vulnerable code present in the pro
 `affected` by default**, and `not_affected` must be positively *earned*. So the analyzers only
 ever *downgrade* on a **sound** positive refutation; they are evidence, not required upgrade gates.
 
-- **Q1 already patched?** `src/patch_gate.py` → **fixed** (CSAF `product_status.fixed`). Presence
+- **Patch gate — already patched?** (a separate pre-gate, not one of Q1–Q4) `src/patch_gate.py` → **fixed** (CSAF `product_status.fixed`). Presence
   answers "is the vulnerable function here", never "is the fix here", so a snapshot taken at the
   release that *fixed* the CVE still came out `affected` — dnsmasq 2.78 for CVE-2017-14491, curl
   8.0.1 for CVE-2023-27533. The gate clears a CVE only when **two independent authorities agree**:
@@ -117,9 +117,14 @@ ever *downgrade* on a **sound** positive refutation; they are evidence, not requ
   OpenSSH's, which clears an openssh 9.6p1 snapshot that sits inside openssh 8.6–9.8). Requiring
   both keeps the gate sound in the direction that matters: it may fail to clear a patched build
   (costing recall) but does not clear a vulnerable one.
-- **Q2 present?** `tools/source_locate.py` — absent → not_affected / vulnerable_code_not_present.
-  This is the only sound machine refutation *of presence*: if the vulnerable function is not
-  defined in the collected source, the code is not present.
+- **Q1 — vulnerable component present?** The affected component/model the advisory names is listed
+  in this asset's SBOM (the CSAF `product_tree` → component mapping); absent → not_affected /
+  `component_not_present`. SBOM-level, needs no version match, so it holds even where every version
+  is `NOASSERTION`.
+- **Q2 — vulnerable code present?** `tools/source_locate.py` — absent → not_affected /
+  vulnerable_code_not_present. This is the only sound machine refutation *of presence*: if the
+  vulnerable function is not defined in the collected source, the code is not present. **This gate
+  decides the verdict**; Q3/Q4 below only grade the evidence.
 - **Q3 reachable?** `tools/joern_reachability.py` (Joern CPG) only *strengthens* an affected
   verdict — it does **not** refute. A collected library snapshot has no consumer, so its real
   entry points (the exported API) are outside the graph, and Joern's "not reachable from an
@@ -157,7 +162,7 @@ enrichment, each verdict carries an **`evidence_tier`** that says how much sourc
 So 129 of the 267 carry positive reachability evidence; the rest rest on confirmed presence
 (`component`) or the patch gate (`patch-verified`).
 
-**Sound `fixed` on the other side — the patch gate (`src/patch_gate.py`), now wired in as Q1.** The
+**Sound `fixed` on the other side — the patch gate (`src/patch_gate.py`), a separate pre-gate before the code questions.** The
 267 are mostly *vulnerable-version* snapshots, which is why the code-level verdict was all
 `affected`. The sound way to clear a build is not reachability but the **fix itself**: each CVE's fix
 commit turns specific vulnerable lines into fixed ones, so the gate reads that exact code and
@@ -178,7 +183,7 @@ earlier approach and are being retired.
 ### Source-uncollectable CVEs — asset-attribute estimation
 
 Stage 3 needs the product source; much ICS firmware cannot be obtained, so the vulnerable
-function cannot be located and the code tree (Q1–Q4) does not apply. For those CVEs the
+function cannot be located and the source-level code tree (Q2–Q4) does not apply. For those CVEs the
 analyzer offers a **separate branch** that reasons about the real asset instead of its code
 (`src/asset_av_judge.py`, UI in `src/asset_vex_page.py`). It replaces the retired synthetic
 `AV × exposure` estimate: every input here is a **fact the asset owner supplies about one
@@ -308,13 +313,13 @@ deployment — not a synthetic number.
 
 The source-level judgment is the **VEX-v2** pipeline in
 [Stage 3 — VEX Verification](#stage-3--vex-verification): CTI extraction by an LLM
-agent, the Q1 patch gate, `source_locate`, Joern reachability and Z3 controllability. Because
+agent, the patch gate, `source_locate`, Joern reachability and Z3 controllability. Because
 all 267 CVEs have the product source collected, the analysis is complete for each, so it gives
 **263 `affected`, 4 `fixed`, 0 `not_affected`, 0 `under_investigation`**
 (`results/vex_v2_summary.json`; `--no-patch-gate` reproduces the earlier all-267-`affected`
 baseline). VEX makes `affected` the default for present vulnerable code and puts the burden of
 proof on `not_affected`, so the analyzers only *downgrade* on a **sound** refutation — the fix
-being positively present (Q1, corroborated by NVD's product-matched range) or the vulnerable
+being positively present (the patch gate, corroborated by NVD's product-matched range) or the vulnerable
 code being absent (Q2). Joern
 reachability and Z3 controllability only ever *strengthen* an affected verdict: Joern
 "not reachable" false-negatives on a library's own attack-surface functions (its consumer,
@@ -392,7 +397,7 @@ sandboxing. All 106 source-available CVEs were run (the 88 that built plus an
 |---|---|---|
 | the **2 execution-verified** CVEs (CVE-2020-8177, CVE-2022-32221, both curl) | `src/vex_batch.py` | the only `affected` verdicts in the corpus resting on a run, not an argument |
 | `results/verify_build_logs/` | — | preserved build output of the closed campaign |
-| `data/source_snapshots/` | Q1–Q4 | the 267 source trees everything below analyses |
+| `data/source_snapshots/` | Q2–Q4 | the 267 source trees everything below analyses |
 
 The campaign's other outcome labels — `exploit-generated 20`, `build-only 70`,
 `failed 14` — are a **historical record of a pipeline this repository can no
