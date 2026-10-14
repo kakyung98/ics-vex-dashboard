@@ -1469,7 +1469,7 @@ async function run(){
     const nextcol = f.v2
       ? '<span class="hint" title="'+_v2Title(f.v2)+'">'+_v2Label(f.v2)+'</span>'
       : f.source_collectable
-      ? '<span class="hint">source available &middot; judged by Q2&ndash;Q4</span>'
+      ? '<span class="hint">source available &middot; judged by Q1&ndash;Q4</span>'
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
@@ -2475,7 +2475,9 @@ removed every one of them.</p>
 
   <div class="vm-split">
     <div class="vm-lane vm-yes">
-      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q2&ndash;Q4)</b></div>
+      <div class="vm-laneh">YES &middot; source-available &rarr; <b>judge the code questions (Q1&ndash;Q4)</b></div>
+      <div class="vm-step"><b>Q1 &middot; Is this build already patched?</b><span class="vm-sub">the <b>patch gate</b> (<span class="mono">src/patch_gate.py</span>): fix-commit added lines present + removed lines gone, <b>and</b> NVD&rsquo;s range no longer covers the build &rarr; <span class="mono">fixed</span>. Both authorities required.</span></div>
+      <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q2 &middot; Is the vulnerable code present?</b><span class="vm-sub">an <b>LLM agent</b> structures the CTI (vulnerable component + function), then <span class="mono">source_locate</span> confirms the function is defined in the collected source (CTI names, else patch fallback)</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>Q3 &middot; Is it on a path the product executes?</b><span class="vm-sub"><b>Joern</b> CPG call-graph reachability from entry points (<span class="mono">tools/joern_reachability.py</span>, call-graph only, no dataflow)</span></div>
@@ -2487,7 +2489,7 @@ removed every one of them.</p>
 
     <div class="vm-lane vm-no">
       <div class="vm-laneh">NO &middot; source-uncollectable &rarr; <b>asset-attribute estimate</b></div>
-      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">no located function &rarr; Q2&ndash;Q4 do not apply</span></div>
+      <div class="vm-step"><b>1. No code tree</b><span class="vm-sub">no located function &rarr; Q1&ndash;Q4 do not apply</span></div>
       <div class="vm-mini">&darr;</div>
       <div class="vm-step"><b>2. Estimate from the asset surface</b><span class="vm-sub">the asset&rsquo;s attack vectors (five NVAS flowcharts) vs the CVE&rsquo;s CVSS Attack Vector &mdash; see <b>Branch 2</b> below</span></div>
       <div class="vm-mini">&darr;</div>
@@ -2508,9 +2510,11 @@ removed every one of them.</p>
     <td><span class="pill pill-ok">not_affected</span> <span class="mono">component_not_present</span></td></tr>
 <tr><td class="mono">3</td><td><b>Source cannot be obtained</b></td>
     <td><span class="pill pill-und">under_investigation</span> &mdash; deployment context is <b>not</b> a substitute</td></tr>
-<tr><td class="mono">4</td><td>A code question (Q2&ndash;Q4) clears, the target is trustworthy and the graph complete</td>
-    <td><span class="pill pill-ok">not_affected</span> + that question's CISA justification</td></tr>
-<tr><td class="mono">5</td><td>Q2&ndash;Q4 all evaluated and all still vulnerable</td>
+<tr><td class="mono">4</td><td><b>Q1</b> &middot; the build is already patched (fix lines present <b>and</b> NVD range no longer covers it)</td>
+    <td><span class="pill pill-ok">fixed</span> <span class="mono">product_status.fixed</span></td></tr>
+<tr><td class="mono">5</td><td><b>Q2</b> &middot; the vulnerable code is absent from the collected source</td>
+    <td><span class="pill pill-ok">not_affected</span> <span class="mono">vulnerable_code_not_present</span></td></tr>
+<tr><td class="mono">6</td><td><b>Q2</b> &middot; vulnerable code present &mdash; Q3 (reach) / Q4 (control) only grade the evidence tier, never refute</td>
     <td><span class="pill pill-aff">affected</span></td></tr>
 <tr><td class="mono">&mdash;</td><td>anything else</td>
     <td><span class="pill pill-und">under_investigation</span></td></tr>
