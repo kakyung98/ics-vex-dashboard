@@ -212,11 +212,11 @@ html = html.replace(old_q, "  try{const d=queryCves(dim,value,scope);")
 
 # SBOM->VEX: server POST -> client compute
 old_run = ("  const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},\n"
-           "    body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});\n"
+           "    body:JSON.stringify({sbom,exposure:''})});\n"
            "  if(!r.ok){o.innerHTML='<span class=\"err\">error '+r.status+'</span>';return}\n"
            "  const d=await r.json();")
 assert old_run in html, "missing run() fetch block"
-html = html.replace(old_run, "  const d=computeVex(sbom,document.getElementById('exp').value);")
+html = html.replace(old_run, "  const d=computeVex(sbom,'');")
 
 # inject client-side engine right before run()
 assert "async function run(){" in html

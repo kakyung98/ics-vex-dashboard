@@ -300,7 +300,9 @@ async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
-  const d=computeVex(sbom,document.getElementById('exp').value);
+  // Deployment exposure intentionally omitted: it never sets a VEX status (only an
+  // SSVC priority), so the analyzer does not collect it on the main bar.
+  const d=computeVex(sbom,'');
   if(!d.cves_matched){o.innerHTML='<div class="hint">'+d.components+' components, no known CVEs matched.</div>'+_abstainBlock(d);return}
   _lastVex=d;
   const bv=d.summary.by_vex||{};
@@ -334,8 +336,7 @@ function loadFile(f){
   rd.onload=function(){
     try{jsoncParse(rd.result);}catch(err){fn.innerHTML='<span class="err">'+f.name+' is not valid JSON</span>';return;}
     document.getElementById('sbom').value=rd.result;
-    fn.textContent='loaded '+f.name+' — analyzing…';
-    run();
+    fn.textContent='loaded '+f.name+' — press Analyze ▶';
   };
   rd.readAsText(f);
 }

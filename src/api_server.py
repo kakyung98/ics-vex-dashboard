@@ -1381,8 +1381,10 @@ async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
+  // Deployment exposure intentionally omitted: it never sets a VEX status (only an
+  // SSVC priority), so the analyzer does not collect it on the main bar.
   const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({sbom,exposure:document.getElementById('exp').value})});
+    body:JSON.stringify({sbom,exposure:''})});
   if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
   const d=await r.json();
   if(!d.cves_matched){o.innerHTML='<div class="hint">'+d.components+' components, no known CVEs matched.</div>'+_abstainBlock(d);return}
@@ -1418,8 +1420,7 @@ function loadFile(f){
   rd.onload=function(){
     try{jsoncParse(rd.result);}catch(err){fn.innerHTML='<span class="err">'+f.name+' is not valid JSON</span>';return;}
     document.getElementById('sbom').value=rd.result;
-    fn.textContent='loaded '+f.name+' — analyzing…';
-    run();
+    fn.textContent='loaded '+f.name+' — press Analyze ▶';
   };
   rd.readAsText(f);
 }
@@ -2190,10 +2191,7 @@ __ASSET_AV_JS__
 # ---- page content blocks (split across 3 pages) --------------------------
 ANALYZER_HTML = """<div class="card"><div class="row">
   <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
-  <div><label>Deployment exposure</label><br><select id="exp">
-    <option value="isolated-cell">Isolated cell</option><option value="control-network" selected>Control network</option>
-    <option value="dmz-routable">DMZ routable</option><option value="remote-accessible">Remote accessible</option></select>
-    <br><br><input type="file" id="file" accept=".json,application/json" style="display:none">
+  <div><input type="file" id="file" accept=".json,application/json" style="display:none">
     <button class="primary" onclick="run()">Analyze ▶</button>
     <button onclick="document.getElementById('file').click()">Upload JSON</button>
     <button onclick="ex()">Example</button>
