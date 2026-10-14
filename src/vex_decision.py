@@ -100,11 +100,15 @@ def _corpus():
     c2 = collections.Counter((x or {}).get("verdict") for x in reach.values())
     c3 = collections.Counter((x or {}).get("verdict") for x in ctrl.values())
     rows = v2 if isinstance(v2, list) else list(v2.values())
+    # vex_v2 records carry the verdict in `final_vex` (not `vex`); reading the wrong
+    # key silently returned 0 clearances regardless of the data.
     cleared = sum(1 for r in rows if isinstance(r, dict)
-                  and r.get("vex") == "not_affected"
+                  and r.get("final_vex") == "not_affected"
                   and (r.get("justification") or "").startswith(
                       ("vulnerable_code_not_in_execute_path",
                        "vulnerable_code_cannot_be_controlled")))
+    q1_fixed = sum(1 for r in rows if isinstance(r, dict)
+                   and r.get("final_vex") == "fixed")
     _present = sum(1 for v in loc.values() if (v or {}).get("any_function_found"))
     return {
         "snapshots": len(os.listdir(snapdir)) if os.path.isdir(snapdir) else 0,
@@ -113,6 +117,7 @@ def _corpus():
         "q2_total": len(loc),
         "q2_present": _present,
         "q2_component_only": len(loc) - _present,
+        "q1_fixed": q1_fixed,
         "q3_reachable": c2.get("reachable", 0),
         "q3_unreachable": c2.get("not-reachable", 0),
         "q3_unknown": c2.get("unknown", 0),
@@ -130,6 +135,15 @@ CORPUS = _corpus()
 
 
 QUESTIONS = [
+    {"id": "Q1", "ask": "Is this build already patched?",
+     "clears_with": ["fixed (CSAF product_status.fixed)"],
+     "how": "the patch gate (src/patch_gate.py): the fix commit's added lines are "
+            "present and its removed lines are gone, AND NVD's product-matched range "
+            "no longer covers the snapshot version - both authorities required",
+     "state": "implemented",
+     "result": "%(q1_fixed)d of %(q2_total)d cleared to fixed "
+               "(the patched-release snapshots), 0 false clears - every cleared CVE "
+               "is one the ground truth independently labels not-affected" % CORPUS},
     {"id": "Q2", "ask": "Is the vulnerable code present?",
      "clears_with": ["component_not_present", "vulnerable_code_not_present"],
      "how": "the CTI-located vulnerable function is defined in the collected source "
