@@ -138,6 +138,49 @@ def _norm_vendor(v):
     return _VENDOR_CANON.get(v.lower(), v)
 
 
+_UNPINNED_V = {"", "noassertion", "unknown", "none", "n/a", "*"}
+
+
+def _tidy_version(v):
+    """A readable version/range from a CSAF component's trailing constraint.
+    `vers:intdot/<4.3.4` -> `<4.3.4`; `vers:Relion_670/>=2.2.2.0|<2.2.2.6` ->
+    `>=2.2.2.0, <2.2.2.6`; `vers:all/*` -> `all versions`; `<1.04.420` stays."""
+    v = (v or "").strip()
+    if not v:
+        return ""
+    if v.startswith("vers:"):
+        tail = v.split("/", 1)[1] if "/" in v else v[5:]
+        if tail.strip() in ("*", "all", ""):
+            return "all versions"
+        return tail.replace("|", ", ").strip()
+    return v
+
+
+def _split_component(comp):
+    """Separate one SBOM component into (vendor, product, version) for display.
+
+    reverse_sbom mashes all three into `name` (e.g. publisher 'OPCFoundation',
+    name 'OPCFoundation UA-LDS-Installers <1.04.420', version 'NOASSERTION'): the
+    vendor is repeated as a prefix and the affected RANGE is appended, while the
+    `version` field is NOASSERTION. So vendor comes from `publisher`, and product
+    and version are split out of the name at the first `vers:`/comparison token.
+    """
+    vendor = (comp.get("publisher") or "").strip()
+    name = (comp.get("name") or "").strip()
+    core = name
+    if vendor and core.lower().startswith(vendor.lower()):
+        core = core[len(vendor):].strip()
+    m = re.search(r"(vers:|[<>])", core)
+    if m:
+        product = core[:m.start()].strip()
+        version = _tidy_version(core[m.start():].strip())
+    else:
+        product = core
+        v = (comp.get("version") or "").strip()
+        version = "" if v.lower() in _UNPINNED_V else v
+    return (vendor or "—"), (product or core or name or "—"), version
+
+
 def _canon_cwe(rows):
     """A CVE's CWE = the most common non-empty CWE across its findings (the
     worst-VEX row can lack a CWE while another row carries it)."""
@@ -597,8 +640,10 @@ def vex_for_sbom(sbom, exposure=None):
             basis = "no code evidence collected for this component"
             tier = ("static-reasoned" if status in (AFFECTED, NOT_AFFECTED)
                     else "under-investigation")
+            _cvn, _cpr, _cvr = _split_component(comp)
             row = {
                 "cve": cv["id"], "component": comp["name"], "version": ver or "(unpinned)",
+                "vendor": _cvn, "product": _cpr, "version_display": _cvr,
                 "version_pinned": pinned, "version_decided": decided,
                 "identified_by": how, "identified_detail": detail,
                 "severity": cv.get("sev", ""),
@@ -639,8 +684,10 @@ def vex_for_sbom(sbom, exposure=None):
                 if cid in by_cve:
                     continue
                 idx = STORE.cve_index.get(cid, {})
+                _cvn, _cpr, _cvr = _split_component(c)
                 by_cve[cid] = {
                     "cve": cid, "component": _name, "version": _ver or "(unpinned)",
+                    "vendor": _cvn, "product": _cpr, "version_display": _cvr,
                     "version_pinned": bool(m["version_decided"]),
                     "version_decided": bool(m["version_decided"]),
                     "identified_by": "l0-" + m["how"],
@@ -656,6 +703,7 @@ def vex_for_sbom(sbom, exposure=None):
     # Also honor CVEs embedded in the SBOM's own VDR (vulnerabilities[]), e.g. a
     # reverse_sbom SBOM-CVE whose closed-firmware component has no OSS KB match.
     ref2name = {c.get("bom-ref"): (c.get("name") or "") for c in sbom.get("components", [])}
+    ref2comp = {c.get("bom-ref"): c for c in sbom.get("components", [])}
     ref2tier = {}
     for _c in sbom.get("components", []):
         for _p in (_c.get("properties") or []):
@@ -704,8 +752,10 @@ def vex_for_sbom(sbom, exposure=None):
             epss = float(props["signal:epss"]) if props.get("signal:epss") not in (None, "NA", "") else None
         except (TypeError, ValueError):
             epss = None
+        _cvn, _cpr, _cvr = _split_component(ref2comp.get(aff) or _top or {})
         by_cve[cid] = {
             "cve": cid, "component": ref2name.get(aff, aff or _top.get("name") or ""),
+            "vendor": _cvn, "product": _cpr, "version_display": _cvr,
             "version": "NOASSERTION", "version_pinned": False, "severity": sev, "cvss": score,
             "source_collectable": (False if ref2tier.get(aff) == "E"
                                     else True if ref2tier.get(aff) in ("A", "C")
@@ -1377,6 +1427,17 @@ const VEX_TREE=__VEX_TREE__;
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
 const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under investigation'};
 function jsoncParse(txt){var BS=String.fromCharCode(92),NL=String.fromCharCode(10),CR=String.fromCharCode(13);var s='',i=0,n=txt.length,inStr=false,esc=false;while(i<n){var c=txt[i];if(inStr){s+=c;if(esc){esc=false;}else if(c===BS){esc=true;}else if(c==='"'){inStr=false;}i++;continue;}if(c==='"'){inStr=true;s+=c;i++;continue;}if(c==='/'&&txt[i+1]==='/'){while(i<n&&txt[i]!==NL&&txt[i]!==CR){i++;}continue;}if(c==='/'&&txt[i+1]==='*'){i+=2;while(i+1<n&&!(txt[i]==='*'&&txt[i+1]==='/')){i++;}i+=2;continue;}s+=c;i++;}var WS=' '+String.fromCharCode(9)+String.fromCharCode(10)+String.fromCharCode(13);var re=new RegExp(',(['+WS+']*)(}|])','g');return JSON.parse(s.replace(re,'$1$2'));}
+function _compCell(f){
+  // vendor / product / version are split server-side (_split_component); fall back
+  // to the mashed name for any record that predates the split.
+  if(f.product||f.vendor){
+    var ver=f.version_display||'';
+    return '<div>'+esc(f.product||'—')+'</div>'
+      +'<div class="hint" style="font-size:12px">'+esc(f.vendor||'—')
+      +(ver?' &middot; <span class="mono">'+esc(ver)+'</span>':'')+'</div>';
+  }
+  return esc((f.component||'')+' '+(f.version||''));
+}
 async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
@@ -1402,7 +1463,7 @@ async function run(){
       : '<span class="hint">source-uncollectable &middot; under_investigation</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
-      +'<td>'+f.component+' '+f.version+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
+      +'<td>'+_compCell(f)+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
       +'<td class="mono">'+(f.kev?'KEV':'')+'</td><td class="mono">'+f.av+'</td>'
       +'<td>'+nextcol+'</td></tr>';}
   h+='</tbody></table>';
