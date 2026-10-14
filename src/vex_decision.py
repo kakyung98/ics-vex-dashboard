@@ -135,17 +135,19 @@ CORPUS = _corpus()
 
 
 QUESTIONS = [
-    {"id": "Q1", "ask": "Is this build already patched?",
-     "clears_with": ["fixed (CSAF product_status.fixed)"],
-     "how": "the patch gate (src/patch_gate.py): the fix commit's added lines are "
-            "present and its removed lines are gone, AND NVD's product-matched range "
-            "no longer covers the snapshot version - both authorities required",
+    {"id": "Q1", "ask": "Is the vulnerable component present?",
+     "clears_with": ["component_not_present"],
+     "how": "the affected component / model the advisory names is listed in this "
+            "asset's SBOM (the CSAF product_tree -> component mapping); an absent "
+            "component needs no version match, so it holds even where every version "
+            "is NOASSERTION",
      "state": "implemented",
-     "result": "%(q1_fixed)d of %(q2_total)d cleared to fixed "
-               "(the patched-release snapshots), 0 false clears - every cleared CVE "
-               "is one the ground truth independently labels not-affected" % CORPUS},
+     "result": "the SBOM-level gate, decided before any source is read: a CVE whose "
+               "affected component is not in the asset is not_affected "
+               "(component_not_present). All %(q2_total)d source-collected CVEs clear "
+               "this by construction (their component is present)" % CORPUS},
     {"id": "Q2", "ask": "Is the vulnerable code present?",
-     "clears_with": ["component_not_present", "vulnerable_code_not_present"],
+     "clears_with": ["vulnerable_code_not_present"],
      "how": "the CTI-located vulnerable function is defined in the collected source "
             "(tools/source_locate.py; CTI function names, else the patch-localised "
             "targets, checked against the snapshot function index)",
