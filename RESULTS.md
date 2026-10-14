@@ -21,10 +21,16 @@ its output corresponds file-for-file with [cisagov/CSAF](https://github.com/cisa
 
 | axis | count | nature |
 |---|---|---|
-| ICSA advisories (collected) | **3,767** | all of 2010-2026 |
-| -> contains a CVE = SBOM generated | **3,695** | **document axis** — one VEX each |
-| ICSA x CVE = statement | **13,025** | **adjudication axis** — 1:1 with a VEX statement |
-| distinct CVEs | **11,336** | the vulnerability population |
+| ICSA advisories (collected) | **3,847** | all of 2010-2026 |
+| -> SBOM rendered | **3,845** | two advisories fetched as empty stubs (`icsa-14-269-01`, `icsa-14-353-01`) |
+| -> contains a CVE = VEX document generated | **3,775** | **document axis** — one VEX each |
+| ICSA x CVE = statement | **13,262** | **adjudication axis** — 1:1 with a VEX statement |
+| distinct CVEs | **11,550** | the vulnerability population |
+
+> These four counts were last restated after two collection passes; the previous revision
+> read 3,767 / 3,695 / 13,025 / 11,336. They are recounted from `reverse_sbom/` and
+> `results/vex_batch.jsonl` rather than carried forward, because a corpus count written
+> down in prose is the first thing a re-collection falsifies.
 
 Statements per ICSA run to a **median of 1 and a maximum of 490**. The spread is wide
 enough that worst-case aggregation per CVE (if any one asset is affected, the whole CVE
@@ -78,14 +84,14 @@ priority**.
 
 ---
 
-## 4. Results — VEX adjudication (13,025 statements)
+## 4. Results — VEX adjudication (13,262 statements)
 
 ```
-by status   UNDER_INVESTIGATION 13,002 (99.82%)
+by status   UNDER_INVESTIGATION 13,239 (99.83%)
             LIKELY_NOT_AFFECTED     18 ( 0.14%)
             LIKELY_AFFECTED          5 ( 0.04%)
 
-by tier     under-investigation 13,002
+by tier     under-investigation 13,239
             upstream-asserted       18
             execution-verified       5
 ```
@@ -93,18 +99,96 @@ by tier     under-investigation 13,002
 Justifications behind the 18 `not_affected`: `component_not_present` 10,
 `vulnerable_code_not_in_execute_path` 5, `vulnerable_code_not_present` 3.
 
+Read from `results/vex_batch.jsonl` and `results/vex_batch_summary.json`. The conclusive
+counts (18 upstream-asserted, 5 execution-verified) did **not** move when the corpus grew
+by 237 statements, which is the expected shape: both tiers come from evidence that exists
+independently of how many advisories have been collected, so a larger corpus adds
+`under_investigation` and nothing else. This is also the corpus-level batch
+(`src/vex_batch.py`), a different axis from the 267-CVE source-level campaign in §6 —
+the two are not alternative measurements of the same thing.
+
 ### Why 99.8% is undetermined — the source-availability tiers
 
 | tier | statements | share |
 |---|---|---|
-| `source-unavailable` (closed vendor firmware) | 11,129 | 85.4% |
-| `source-pending` (OSS, code not yet collected) | 1,842 | 14.1% |
-| `source-available-unverified` | 31 | 0.24% |
-| `execution-verified` | 5 | 0.04% |
-| `upstream-asserted` | 18 | 0.14% |
+| `vendor-proprietary` (closed vendor firmware) | 11,364 | 85.7% |
+| `oss-attributed` (OSS, code not yet collected) | 1,862 | 14.0% |
+| `code-available` | 36 | 0.27% |
+| → of those, `execution-verified` | 5 | 0.04% |
+| `upstream-asserted` (independent of the source axis) | 18 | 0.14% |
 
-**For 85.4% the source cannot be obtained in principle.** That is not a defect but the
+**For 85.7% the source cannot be obtained in principle.** That is not a defect but the
 actual condition of the ICS domain, and it is the gap this work is aimed at.
+
+The tier names above are the `source_class` values `src/vex_batch.py` actually writes
+(`vendor-proprietary` / `oss-attributed` / `code-available`); the previous revision of
+this table used an earlier vocabulary (`source-unavailable` / `source-pending` /
+`source-available-unverified`) that no longer appears in any artifact, which made the
+table ungreppable against the data it describes.
+
+### 4.1 The two scored certification figures
+
+The §4 batch above is the whole-corpus run and is **not** a scored metric — it has no
+answer key. The two figures that are scored, each against a ground truth built only from
+authorities the system under test does not read, are:
+
+| item | metric | result | acceptance | scored over |
+|---|---|---|---|---|
+| **#3** | SBOM -> CVE identification precision | **0.9490** (TP 10,653 / FP 572) | >= 0.80 | 11,225 labelled predictions of 14,173 components |
+| **#4** | VEX affected-judgment precision | **0.9718** (TP 138 / FP 4) | >= 0.85 | 142 of 152 (CVE, build) cases, population 267 |
+
+Both pass. The figures and their full coverage caveats live in the README; what belongs
+here is the part that is a *result about the measurement* rather than the measurement:
+
+- **#4's quotable figure is the pre-gate one.** With the patch gate live the same scope
+  reads 0.9930, and that number is **circular** — the gate decides from the fix signature
+  plus the NVD range, which are the same two authorities the ground truth's
+  `patch_verified` labels come from. `tools/eval_vex_precision.py` detects the shared
+  oracle and prints `!! CIRCULAR`. Score against `data/vex_v2_pregate.json`.
+- **#4's four false positives are exactly the four the gate clears** (CVE-2017-14491,
+  CVE-2019-11477, CVE-2023-27533, CVE-2023-27536). That is why the gated figure rises and
+  why its rise proves nothing.
+- **#3's number went down when the measurement got honest.** Lifting the per-vendor cap
+  took the ground truth from 7,640 to 41,868 records and the score from 0.9870 to 0.9499
+  (string cascade), because the cap had been holding back the Siemens device names the
+  matcher is weakest on. The headline 0.9490 is the default SUT (cascade + retrieval): the
+  same precision over 359 more answered components, not a drift from 0.9499.
+- **121 of #4's 267 CVEs carry no label**, and 44% of #3's components are abstentions.
+  Neither figure covers its whole population, and §9 states why forcing the remainder in
+  would manufacture a 1.0.
+
+Re-score without running the pipeline from [`benchmark/`](benchmark/), which bundles the
+answer keys, the SUT's predictions and the results; `tools/build_benchmark_bundle.py
+--check` verifies that bundle against the live sources, including the record counts quoted
+in its manifest. `python evaluation/run_eval.py` runs both items end to end — dataset
+check, scoring, reproduction check, HTML report — in one command.
+
+### 4.2 What is inside each figure — the learned components
+
+Each headline contains a trained model whose own error rate it does not reveal. Both are
+now measured; **neither is a certification figure.**
+
+| component | axis | result |
+|---|---|---|
+| #3's encoder (`cpe_match_ai`) | marginal effect vs the cascade alone | **+359 TP / +29 FP**, 392 abstentions recovered, **0.9253** on what it recovers; headline moves **−0.0009** |
+| #4's LLM (`cti_extract`) | agreement with the fix commit's edited functions | **0.5526** exact (21/38), **0.7895** file-level |
+
+Two findings, each uncomfortable in a different way:
+
+- **Item #3's 0.9490 is the string cascade's figure.** Run the cascade alone and it scores
+  0.9499. The encoder touches 5.9% of the components the cascade declines. Its own
+  retrieval metrics are poor (`codebert_rank.json`: top-1 recall **0.056**) and its
+  fine-tuning *regressed* the frozen encoder (0.500 → 0.426 over 34 pairs). The
+  recall-safe gate is not conservatism for its own sake — `cpe_ai_threshold_sweep.json`
+  shows the same retrieval scoring **0.2636** when trusted openly.
+- **Item #4 has a 23.2% LLM dependency that was never measured.** 33 of the 142 scored
+  verdicts rest on a function the model named, and before this axis existed the only check
+  was that the name *exists* in the tree. It names the function the fix edits about half
+  the time — though "the fix edits it" and "it is vulnerable" are not the same claim, and
+  CVE-2020-1967 is the case that proves it: the model named `SSL_check_chain` correctly and
+  the fix edits its helper.
+
+Full records in `results/encoder_contribution.json` and `results/cti_localization.json`.
 
 ---
 
@@ -215,6 +299,17 @@ consumer in it, so "not reachable from an in-snapshot root" false-negatives on t
 surface itself. The shared rule lives in one place, `src/vex_decision.py`, and the
 console's **VEX Flag Decision Logic** page is generated from that module, so the documented
 rule and the executed rule cannot diverge.
+
+**Why this section is Q2-Q4 and not Q1-Q4.** The method's first question — *is the
+vulnerable component in this asset's SBOM at all?* — is answered at the SBOM layer
+(`src/vex_decision.py`, `src/build_reverse_sbom.py`), because answering it requires an
+asset SBOM to look the component up in. `tools/vex_judge_v2.py` takes a collected source
+tree and the caches, with no SBOM anywhere, so it implements the patch pre-gate, Q2, and
+the Q3/Q4 tiers — Q1 does not appear in it, and every CVE in this 267 has already cleared
+Q1 by construction (its source was collected because the component was present). The
+patch gate is likewise **not** a numbered question: it is a separate pre-gate that runs
+before Q2 and can only produce `fixed`. Earlier revisions numbered it Q0 and then Q1,
+which is why that label may still appear in older artifacts.
 
 | Q | engine | result over 267 | decides? |
 |---|---|---|---|
@@ -400,7 +495,7 @@ The one remaining case and the weak targets:
 ## 7. What the data is (stated plainly)
 
 **[real] CISA ICS-CERT data**
-- 3,767 advisories (2010-2026), 11,336 distinct CVEs
+- 3,847 advisories (2010-2026), 11,550 distinct CVEs
 - CVE <-> device (vendor/product) mapping, CWE, CVSS v3/v4 vectors — all official CISA values
 - KEV 149 statements, measured EPSS
 - original CISA CSAF `product_tree` / `product_status` (ground truth and model variants)
@@ -449,8 +544,8 @@ The one remaining case and the weak targets:
 
 ## 9. Limitations
 
-1. **0.18% of verdicts are conclusive** — 5 execution-verified plus 18 upstream-adopted out
-   of 13,025. Everything else is `under_investigation`. That is an honest reflection of the
+1. **0.17% of verdicts are conclusive** — 5 execution-verified plus 18 upstream-adopted out
+   of 13,262. Everything else is `under_investigation`. That is an honest reflection of the
    evidence obtained, and the only way to raise it is to raise the number of CVEs that can
    be execution-verified.
 2. **The own-derivation score covers per-model reproduction only** — §5.3's recall 1.000
@@ -476,7 +571,7 @@ The one remaining case and the weak targets:
 ## 10. Reproducing
 
 ```bash
-python tools/fetch_cisa_advisories.py     # ~25 min (crawls 3,767 advisories)
+python tools/fetch_cisa_advisories.py     # ~25 min (crawls 3,847 advisories)
 python tools/fetch_exploit_signals.py     # ~5 min (KEV, EPSS)
 
 git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF

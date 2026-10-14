@@ -9,6 +9,7 @@ Stage-3 gates, and a per-CVE row with its evidence trail. Run after the pipeline
 vex_judge_v2) has been run over the corpus.
 """
 import collections
+import datetime
 import json
 import os
 
@@ -39,7 +40,10 @@ def main():
                                   "reachability": (reach.get(cve) or {}).get("verdict"),
                                   "controllability": (ctrl.get(cve) or {}).get("verdict")}})
     summary = {
-        "generated": "2026-09-27",
+        # Written, not typed: this roll-up is committed while its inputs are gitignored
+        # caches, so it is the one file that can silently fall behind the pipeline. A
+        # frozen date hid exactly that - it read 2026-09-27 through two solver repairs.
+        "generated": datetime.date.today().isoformat(),
         "test": "VEX-v2 judgment over source-collectable CVEs",
         "method": "CTI(LLM agent) -> source locate (presence, decides) -> optional Joern "
                   "reachability + Z3 controllability (evidence tier only)",

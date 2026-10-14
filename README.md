@@ -121,6 +121,15 @@ ever *downgrade* on a **sound** positive refutation; they are evidence, not requ
   in this asset's SBOM (the CSAF `product_tree` → component mapping); absent → not_affected /
   `component_not_present`. SBOM-level, needs no version match, so it holds even where every version
   is `NOASSERTION`.
+  **Q1 runs in a different module from Q2–Q4, and does not run in the 267-CVE campaign at all.**
+  It is decided at the SBOM layer (`src/vex_decision.py`, `src/build_reverse_sbom.py`, surfaced by
+  `src/api_server.py`), because answering it needs an asset SBOM to look the component up in.
+  `tools/vex_judge_v2.py` is the *source-snapshot* judge: its inputs are a collected source tree
+  and the caches, with no SBOM anywhere, so it implements the patch pre-gate, Q2 and the Q3/Q4
+  tiers and nothing else. Read Q1–Q4 as the decision ladder of the method, not as four gates
+  inside one script — in the numbers below, every CVE has already cleared Q1 by construction
+  (its source was collected because the component was present), which is one reason the campaign
+  yields no `component_not_present`.
 - **Q2 — vulnerable code present?** `tools/source_locate.py` — absent → not_affected /
   vulnerable_code_not_present. This is the only sound machine refutation *of presence*: if the
   vulnerable function is not defined in the collected source, the code is not present. **This gate
@@ -153,22 +162,32 @@ enrichment, each verdict carries an **`evidence_tier`** that says how much sourc
 
 | tier | count | meaning |
 |---|---|---|
-| `verified` | 124 | present + Joern-reachable + Z3-controllable (strongest) |
-| `reachable` | 5 | present + Joern-reachable |
-| `present` | 89 | present; reachability not confirmable (oversized / library caller external) |
+| `verified` | 144 | present + Joern-reachable + Z3-controllable (strongest) |
+| `reachable` | 11 | present + Joern-reachable |
+| `present` | 63 | present; reachability not confirmable (oversized / library caller external) |
 | `component` | 45 | component present; specific function not located |
 | `patch-verified` | 4 | the patch gate cleared the snapshot → `fixed` |
 
-So 129 of the 267 carry positive reachability evidence; the rest rest on confirmed presence
-(`component`) or the patch gate (`patch-verified`).
+So 155 of the 267 carry positive reachability evidence; the rest rest on confirmed presence
+(`present` / `component`) or the patch gate (`patch-verified`).
+
+These counts are the ones the two solver repairs below produced — the Joern in-Scala entry
+fallback and the Z3 bit-vector routing. Before them the same corpus read `verified` 124,
+`reachable` 5, `present` 89, and the figure quoted here was 129. The gate distribution behind
+the table, over the 223 snapshots Q3/Q4 run on: Q3 `reachable` 168 / `not-reachable` 4 /
+`unknown` 51, Q4 `controllable` 213 / `environment-dependent` 9 / `unknown` 1 — **no Z3
+refutation survives on this corpus**, which is why Q4 never clears anything.
+`results/vex_v2_summary.json` carries all of it; regenerate it with
+`tools/summarize_vex_v2.py` after any pipeline run, because it is a committed roll-up of
+gitignored caches and so is the one artifact that can silently fall behind them.
 
 **Sound `fixed` on the other side — the patch gate (`src/patch_gate.py`), a separate pre-gate before the code questions.** The
 267 are mostly *vulnerable-version* snapshots, which is why the code-level verdict was all
 `affected`. The sound way to clear a build is not reachability but the **fix itself**: each CVE's fix
 commit turns specific vulnerable lines into fixed ones, so the gate reads that exact code and
 reports `fixed` when the distinctive fix lines are present and the vulnerable ones are gone. Hunks
-come from the **91 downloaded fix-commit diffs** in `data/patches/`, not the 15 stored in
-`data/code_evidence.json`, which is what makes the coverage usable; the hunk from the file where
+come from the **603 downloaded fix-commit diffs over 226 CVEs** in `data/patches/`, not the 15
+stored in `data/code_evidence.json`, which is what makes the coverage usable; the hunk from the file where
 `source_locations.json` put the vulnerable function is read first, because a fix commit touches more
 than the vulnerability (zlib's CVE-2016-9840 commit also bumps the version string in `zlib.h`, and
 judging from that hunk convicts an unrelated file). Unlike Joern reachability this needs no
@@ -278,10 +297,16 @@ ICSA advisory  ->  reverse-built SBOM (reverse_sbom/<icsa-id>_SBOM-CVE.json)  ->
 
 | Axis | Count | Meaning |
 |---|---|---|
-| ICSA advisories collected | **3,845** | 2010–2026, complete |
-| → SBOMs built (advisories with CVEs) | **3,695** | one VEX document each |
-| ICSA × CVE = statements | **13,025** | the judgment unit (1:1 with a VEX statement) |
+| ICSA advisories collected | **3,847** | 2010–2026, complete (`data/cisa_advisories.json`) |
+| → SBOMs rendered | **3,845** | `icsa-14-269-01` and `icsa-14-353-01` fetched as empty stubs — no title, products or CVEs — so nothing could be built from them |
+| → SBOMs carrying at least one CVE | **3,775** | one VEX document each; the other 70 advisories render as a component inventory with no vulnerability to judge |
+| ICSA × CVE = statements | **13,262** | the judgment unit (1:1 with a VEX statement) |
 | unique CVEs | **11,550** | vulnerability population |
+
+Counted off the artifacts rather than carried forward: `ls reverse_sbom/*_SBOM-CVE.json`
+for the document axis and the `vulnerabilities[]` arrays inside them for the statement
+axis. An earlier revision of this table read 3,695 SBOMs and 13,025 statements, from a
+corpus snapshot two collection passes old.
 
 A VEX statement is **product × vulnerability × status**, so the judgment unit is
 the **statement**, never a bare CVE. Statements per advisory: median 1, max 490.
@@ -462,8 +487,13 @@ exclusions can be read together instead of grepped out of three files.
 **The per-vendor cap is off.** It had held each vendor to 40 positives so Siemens (58% of
 the corpus) could not dominate, but that made the figure describe a sample rather than the
 corpus. Removing it took the ground truth from 7,640 to 41,868 records and the score from
-0.9870 to 0.9499 — the cap had been holding back exactly the Siemens device names the
-matcher is weakest on, so the lower number is the more honest one.
+0.9870 to **0.9499** — the cap had been holding back exactly the Siemens device names the
+matcher is weakest on, so the lower number is the more honest one. Both of those figures are
+the **string cascade** (`cpe_match_l0l3.cves_for`, TP 10,294 / FP 543,
+`results/cpe_match_precision_model.json`), which is the SUT the cap was lifted against. The
+headline 0.9490 is the **default** SUT, the cascade with retrieval behind it (TP 10,653 / FP
+572) — a near-identical precision reached by answering 359 more components, which is the
+point of the retrieval stage. Do not read 0.9490 and 0.9499 as one number drifting.
 
 ### Per-vendor, because the corpus is not uniform
 
@@ -471,7 +501,7 @@ One figure cannot answer "how does it do on OUR equipment" when Siemens alone is
 47.6% of the components. Scoping the test to the largest vendors was considered and
 rejected: the matcher abstains on **43.9%** inside the ten largest and **55.5%** outside
 them, so that scope would raise the number by removing the harder half — the same trap
-the retired per-vendor cap fell into (0.9870 → 0.9499 when it was lifted). The split is
+the retired per-vendor cap fell into (0.9870 → 0.9499 on the string cascade when it was lifted). The split is
 published instead, ordered by corpus share rather than by precision, since a table sorted
 by score invites reading its top as the result.
 
@@ -502,7 +532,7 @@ nothing in the aggregate would have surfaced that.
 
 ### One corpus, two populations — on purpose
 
-Both items come from one corpus: CISA ICS-CERT advisories (3,845 advisories, 11,550 CVEs,
+Both items come from one corpus: CISA ICS-CERT advisories (3,845 SBOMs, 11,550 CVEs,
 rendered as CycloneDX in `reverse_sbom/`). Their populations differ, and that is a design
 constraint rather than an inconsistency.
 
@@ -536,30 +566,50 @@ chain from #3's input to #4's verdict is traceable end to end — `icsa-16-103-0
 ROX II) → the embedded component → CVE-2015-7547 → the glibc snapshot → the VEX verdict.
 
 **Population vs scored count — they are not the same number, in either item.** The
-certification document fixes #4's population at 104 CVEs, and
-`data/vex_population_104.json` holds exactly that set, so the figure above is measured over
-it. But a ground truth earned from evidence cannot label every member: 53 of the 104 are
-patch-signature-inconclusive, 5 are patch/NVD disagreements, 1 execution run did not
-discriminate. Forcing the remaining cases into the score would require assuming unlabelled
-CVEs are `affected` (the SUT answers `affected` for all of them, so FP becomes structurally
-0 and precision is the identity 1.0), filling them from vendor assertions (a claim with no
+certification document fixes #4's population at 104 CVEs and `data/vex_population_104.json`
+holds exactly that set, but **the published figure is no longer measured over it**. The
+population is now **every CVE whose source was collected — all 267** — scored from
+`data/vex_gt_all.jsonl`; the 104-scoped run survives only as
+`results/vex_precision_104.json`, a record of the narrower scope. Widening it was the
+honest move for the same reason lifting #3's per-vendor cap was: the 104 were the CVEs the
+hand catalog happened to cover, so a figure over them described the catalog's reach rather
+than the pipeline's.
+
+A ground truth earned from evidence still cannot label every member of the wider
+population either — 121 of the 267 carry no label, for the reasons tabulated below.
+Forcing them into the score would require assuming unlabelled CVEs are `affected` (the
+pre-gate SUT answers `affected` for all of them, so FP becomes structurally 0 and
+precision is the identity 1.0), filling them from vendor assertions (a claim with no
 source adjudicating a code-level verdict), or counting undecidable as FP (charging the SUT
-for a gap in the answer key). So the claim is **"precision over the evidence-labelled subset
-of a 104 population"**, never "precision over 104".
+for a gap in the answer key). So the claim is **"precision over the evidence-labelled
+subset of a 267 population"**, never "precision over 267".
 
 ```
-267  population — every CVE whose source was collected
- │   all 267 receive a verdict; what narrows below is the answer key, not the judging
- │
- ├─ 56  patch signature inconclusive      (see the breakdown below)
- ├─   5  patch signature vs NVD disagreement -> held out as conflict
- └─   1  execution run did not discriminate
- ↓
-146  CVEs labelled  ->  152 (CVE, build) cases
- └─  10  patched builds — scored separately, they need the gate to be judged at all
- ↓
-142  scored  ->  precision 0.9718
+267  CVEs  population — every CVE whose source was collected
+  │        all 267 receive a verdict; what narrows below is the answer key, not the judging
+  │
+  ├─ 146 CVEs labelled  ->  152 (CVE, build) cases
+  │        └─ 142 vulnerable-build cases  ->  scored  ->  precision 0.9718
+  │        └─  10 patched-build cases     ->  held out of the quotable scope; they
+  │                                          need the patch gate to be judged at all
+  └─ 121 CVEs unlabelled
 ```
+
+The exclusions are counted **per (CVE, build) attempt**, not per CVE, so they sum to more
+than the 121 unlabelled CVEs — a CVE can fail the rule on both of its builds, and a CVE
+labelled on one build can be inconclusive on the other:
+
+| exclusion | attempts |
+|---|---:|
+| patch signature inconclusive (the 4-way breakdown under *Why 124 cases carry no label*) | 124 |
+| patch signature vs NVD disagreement → held out as `conflict` | 5 |
+| execution run did not discriminate | 1 |
+| **total exclusion events over 121 unlabelled CVEs** | **130** |
+
+An earlier revision of this diagram subtracted 56 + 5 + 1 from 267 and printed 146, which
+closes in neither direction: 56 is one row of the inconclusive breakdown rather than its
+total, and the totals cannot be subtracted from a CVE count because they are build-level.
+The counts above are read straight out of `data/vex_gt_all_manifest.json`.
 
 ### Which CVEs get reachability (Q3) and controllability (Q4)
 
@@ -589,6 +639,87 @@ weaker `component` tier. Every exclusion is recorded per CVE in
 
 Current coverage over the 267 collected snapshots: Q2 267/267
 (`present` 222, `component_only` 45), Q3 223, Q4 223.
+
+### The learned components inside each figure
+
+Both headline figures contain a trained model whose own error rate the headline does not
+show. Each is now measured on its own axis, and neither is a certification figure — they
+decompose one. Run both with `python evaluation/run_eval.py`, or singly:
+
+```bash
+python tools/eval_encoder_contribution.py      # what item #3's encoder contributes
+python tools/eval_cti_localization.py          # does item #4's LLM name the right function
+```
+
+#### Item #3's encoder contributes the fourth decimal place
+
+The SUT is "a string cascade with embedding retrieval behind it", which reads as though
+the encoder earns the 0.9490. The subtraction says otherwise:
+
+| variant | TP | FP | abstained | precision |
+|---|---:|---:|---:|---:|
+| string cascade only (ablation) | 10,294 | 543 | 6,633 | 0.9499 |
+| cascade + retrieval (shipped SUT) | 10,653 | 572 | 6,241 | **0.9490** |
+| **→ the encoder's marginal effect** | **+359** | **+29** | −392 | **0.9253** |
+
+The encoder answers **392 of the 6,633** components the cascade declines (5.9%) and is
+right on 92.5% of them, moving the headline by −0.0009. **Item #3's figure is the string
+cascade's**; the encoder buys a little recall at the margin without costing precision.
+
+Its own metrics, measured long before this and never surfaced, say why it is gated that
+tightly:
+
+| source | measures | result | what it is evidence for |
+|---|---|---|---|
+| `results/dapt_metrics.json` | SecureBERT DAPT | perplexity 4.01 → **2.23** (−44.4%) | masked-LM adaptation to security text — **not** a retrieval metric |
+| `results/codebert_rank.json` | ranking recall (n=54) | top1 **0.056**, top5 0.111, top20 0.148 | this *is* the retrieval metric, and it is poor |
+| `results/codebert_finetune_metrics.json` | fine-tuning (n=34 pairs) | frozen 0.500 → finetuned **0.426** | fine-tuning made it **worse** — too small to conclude from, too clear to omit |
+
+`results/cpe_ai_threshold_sweep.json` is the record of the gate being chosen rather than
+an alternative to it: trusted openly (`min_sim` 0.5, no margin) the same retrieval scores
+**0.2636** — three wrong answers for every right one — and its precision-optimal cell
+(`min_sim` 0.95 / margin 0.05, **0.9463**) recovers exactly the 392 the shipped SUT
+recovers. The gate's price is visible in that number: it declines 94% of the components it
+could have answered in order to hold precision.
+
+#### Item #4's LLM names the right function about half the time
+
+`vex_judge_v2` decides at Q2, and Q2 needs a function somebody has to name first. For
+**83 of the 267** collected CVEs that somebody is the LLM (`localization_source: "cti"`),
+not the patch — including **33 of item #4's 142 scored verdicts (23.2%)**. What was
+verified before this was only that the name *exists in the source tree*, and existence is
+not correctness: a model answering `main` names a function that is certainly present and
+certainly not the vulnerable one.
+
+The authority is the fix commit's own diff — the functions its hunks edit, read from git's
+funcname hints. Over the 38 CVEs where that comparison can be made:
+
+| | result |
+|---|---|
+| exact function match | **0.5526** (21 / 38) |
+| file-level (exact + near-miss) | **0.7895** — 9 more named a function defined in a file the fix touches |
+| landed elsewhere entirely | 8 |
+
+**This is agreement with the fix, not ground truth about vulnerability**, and the gap runs
+one way: a fix sometimes lands in the caller or a helper while the function the advisory
+describes is untouched. CVE-2020-1967 is exactly that — the model named `SSL_check_chain`,
+which *is* the documented vulnerable function, and the fix edits its helper
+`tls1_check_sig_alg`. So the disagreements are published individually rather than averaged.
+The clear misses are clear, though: u-boot's CVE-2019-13106 got `memset`.
+
+Unlike the Q3/Q4 axis below, **this key is two-sided** — a named function absent from the
+fix's edited set is a genuine miss — so a precision is reportable here and describes the
+model rather than the key. Held out: 184 not LLM-localised, 24 with no fix diff, 14 whose
+diff exposes no function context, and **7 where the model returned file names rather than
+functions** (`s2_lib.c`, `queue.c`), which is a schema failure rather than a wrong
+function and is counted separately so it cannot flatter the accuracy figure.
+
+Building the key needed three guards, each of which moved the number: a fix commit
+touching 339 files (CVE-2022-0778's cache holds one) is not a signature and yields 179
+"edited functions" that agree with any guess; a fix ships its regression test beside it, so
+test paths are excluded from the authority; and glibc's `getcwd` / `__getcwd` are one
+function under the reserved-identifier convention this repo already treats as an alias axis
+in the Q3 key.
 
 ### Are Joern and Z3 actually measured? Until now, no
 
@@ -848,8 +979,31 @@ product from the same shared-code CVE. What the figure does **not** cover:
   against an embedded third party (Siemens JT2Go ↔ `drawings_software_development_kit`), so the two
   authorities disagree about what the CVE is filed against, not about what the component is.
   Charging those as FPs would penalise the matcher for a gap in the ground truth.
-- **41.9% of the corpus is excluded up front** (`data/cpe_match_eval_layerB.jsonl`): pairs where the
-  ICS name appears nowhere in NVD, so no name-based matcher can reach the answer.
+- **35.5% of the corpus is excluded up front** — 23,049 pairs held in
+  `data/cpe_match_eval_layerB.jsonl` against 41,868 scored ones, so 23,049 of the 64,917
+  CISA-asserted pairs never enter the ground truth: the ICS name appears nowhere in NVD, so no
+  name-based matcher can reach the answer. On the **CVE** axis rather than the pair axis the
+  same exclusion is 42.9%, which is where an earlier revision's "41.9%" came from — both are
+  real, they count different things, so the axis has to be quoted with the share.
+
+**Why the ground truth covers 6,461 CVEs and not all 11,550.** It is not a sample and not a
+cap — it is the subset an **outside authority can actually adjudicate**. A label here requires
+CISA's `affects` assertion *and* an NVD applicability statement naming the same thing, so a CVE
+only qualifies when NVD anchors a CPE under the component's own publisher:
+
+| CVEs | | why |
+|---:|---|---|
+| **6,461** | layer A — **the scored GT** | NVD anchors a CPE under the component's own publisher, so CISA and NVD can be cross-checked |
+| 3,596 | layer B only | NVD's CPE names an embedded third party (Schneider ProLeiT → `redis:redis`); the ICS name is absent from NVD, so no name-based matcher can reach the answer |
+| 720 | **both** layers | a multi-component CVE: one component vendor-anchored, another embedded-only |
+| 1,482 | neither layer | **NVD publishes no CPE for the CVE at all** — no applicability statement exists, so there is nothing for any authority to adjudicate against |
+| 11 | held out | circular OSS links: the same CVE both put the library in the SBOM and is being matched against it |
+| 11,550 | corpus total | |
+
+The layers share 720 CVEs and so do not partition the corpus — 6,461 + 4,316 overshoots the
+10,057 that reach either layer. The scored *unit* is a (component, CVE) pair, not a CVE, which
+is why 6,461 CVEs yield **41,868 records**: the ground truth is uncapped at the record level,
+and the 6,461 is a statement about which CVEs have an adjudicable answer, not about sample size.
 - **6,241 of 14,173 components (44%) are abstentions** under the default matcher (the string cascade alone abstains on 6,633), and they are a defect rather than a
   ceiling. Measured: for **every one of the 6,633** the ground truth's correct product IS a key in
   the index, so the answer was reachable and the matcher failed to reach it — 6,631 of them report
@@ -861,11 +1015,15 @@ product from the same shared-code CVE. What the figure does **not** cover:
   limit of string similarity itself, which is why the retrieval stage exists and why abstaining is
   the safe behaviour in the meantime: guessing at a 0.42 tie is how a Schneider I/O module's CVE
   lands on a VIVOTEK camera.
-- 32 CISA/NVD version-range disagreements are held out as `conflict` rather than labelled verified.
-- The 377 co-listed-vendor negatives are **unreachable for this SUT** and reported as such, not
+- **430 CISA/NVD version-range disagreements** are held out as `conflict` rather than labelled
+  verified (e.g. CVE-2024-22771: CISA says 1.02–4.02, NVD says 1.03–4.03). The scorer reports them
+  as `gt_conflicts_held_out`, so the 35,195 labels it does score exclude them.
+- **The 4,249 co-listed-vendor negatives are unreachable for this SUT** and reported as such, not
   deleted: `cves_for` returns `(product, vendor-of-that-product-entry)`, so it can never emit
   `fedoraproject:fedora` for a Siemens component. A negative has to lie inside the system's output
-  space to ever fire.
+  space to ever fire, so the product axis is scored by a closed-world rule instead. The other
+  negative family — 5,131 version negatives, a version at or past CISA's own fixed boundary — is
+  reachable and does score.
 
 Both ground truths ship a manifest (`*_manifest.json`) recording the seed, sampling caps, evidence
 mix, and every exclusion with its reason.
@@ -874,7 +1032,7 @@ mix, and every exclusion with its reason.
 
 ## Data honesty
 
-- **Real:** device ↔ CVE ↔ CWE ↔ CVSS from CISA ICS-CERT (3,845 advisories,
+- **Real:** device ↔ CVE ↔ CWE ↔ CVSS from CISA ICS-CERT (3,845 SBOMs over 3,847 advisories,
   11,550 CVEs); KEV/EPSS signals; OSS vulnerable/patched code (34 CVEs, GitHub fix
   commits); the CISA CSAF `product_tree` / `product_status` used as ground truth.
 - **Synthetic:** the component inventory around each device, and the
@@ -895,24 +1053,24 @@ mix, and every exclusion with its reason.
 
 ```
 ICS-VEX/
-├── src/                          core modules (17)
+├── src/                          core modules (19)
 │   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
 │   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
 │   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
 │   ├── build_reverse_sbom.py     advisory → CycloneDX 1.7 SBOM (KISA field spec)
 │   ├── sbom_match.py             SBOM → CVE matching
-│   ├── patch_gate.py             Q1 — already patched? fix signature + NVD range (both required)
+│   ├── patch_gate.py             patch PRE-gate — already patched? fix signature + NVD range (both)
 │   ├── cpe_match_ai.py           semantic retrieval behind the string cascade (scaffolded)
 │   ├── vex_batch.py / vex_pipeline.py   corpus-level VEX batch
 │   ├── vex_source_unavailable.py decision tree for source-uncollectable CVEs
 │   ├── asset_av_judge.py         source-less: asset attributes → attack vectors → CVSS AV match (+ likely_* estimate)
 │   └── asset_vex_page.py         the asset-attribute form + JS client port (static-site parity)
-├── tools/                        67 pipeline scripts, incl. Stage 3 (VEX-v2):
+├── tools/                        76 pipeline scripts, incl. Stage 3 (VEX-v2):
 │   ├── cti_extract.py            CTI → structured info (Ollama)
 │   ├── source_locate.py          Q2 presence — decides the verdict
 │   ├── joern_reachability.py     Q3 reachability (optional evidence tier)
 │   ├── z3_controllability.py     Q4 controllability (optional evidence tier)
-│   ├── vex_judge_v2.py           hierarchy verdict + evidence_tier (Q1 patch gate first)
+│   ├── vex_judge_v2.py           hierarchy verdict + evidence_tier (patch pre-gate, then Q2)
 │   ├── fixed_check.py            patch-signature single-CVE CLI
 │   ├── build_cpe_match_gt.py · eval_cpe_match_precision.py   test item #3 GT + scorer
 │   ├── fetch_cpe_dictionary.py   NVD CPE dictionary, --vendors scopes it to the 932 the corpus uses
@@ -920,6 +1078,8 @@ ICS-VEX/
 │   ├── collect_snapshots_nvd.py  snapshots for CVEs the hand catalog never covered
 │   ├── split_benchmark_by_asset.py  benchmark/item3/by_asset/, one file per advisory
 │   ├── build_vex_gt.py · eval_vex_precision.py               test item #4 GT + scorer
+│   ├── eval_encoder_contribution.py  what item #3's encoder actually contributes
+│   ├── eval_cti_localization.py      does item #4's LLM name the function the fix edits
 │   ├── summarize_vex_v2.py       results/vex_v2_summary.json
 │   ├── build_func_index.py · extract_vuln_funcs.py · oss_repos.py   source index / collection map
 │   ├── build_site.py · build_cpe_index.py · build_sbom_index.py     static site + indexes
@@ -931,7 +1091,10 @@ ICS-VEX/
 │   └── {cti_extractions,source_locations,reachability,controllability,vex_v2}.json  (VEX-v2 caches, gitignored)
 ├── reverse_sbom/                 3,845 advisory → CycloneDX SBOMs
 ├── results/                      eval outputs (vex_v2_summary.json, vex_v2_fixed_demo.json, …)
-├── site/                         static dashboard: 10 HTML + JSON, auto-deployed to GitHub Pages
+├── evaluation/                   ONE command for items #3/#4: dataset check ->
+│                                 scoring -> reproduction check -> HTML report
+├── site/                         static dashboard: 11 HTML + JSON, auto-deployed to GitHub Pages
+│                                 (cert.html is deliberately NOT exported - see below)
 ├── deploy/                       Joern / deployment notes
 ├── .github/workflows/pages.yml   deploys site/ on push to main
 └── README.md · RESULTS.md · requirements.txt
@@ -968,6 +1131,9 @@ lives in `src/` and `tools/`, the deployed dashboard in `site/`.
 | **VEX-v2** (opt) Patch-signature CLI | `tools/fixed_check.py --cve X --snapshot D` | `results/vex_v2_fixed_demo.json` |
 | Test item #3 | `tools/build_cpe_match_gt.py`, `tools/eval_cpe_match_precision.py` | `data/cpe_match_eval.jsonl`, `results/cpe_match_precision.json` |
 | Test item #4 | `tools/build_vex_gt.py --out data/vex_gt_all.jsonl`, `tools/eval_vex_precision.py --gt data/vex_gt_all.jsonl --sut data/vex_v2_pregate.json --out results/vex_precision_all.json` | `data/vex_gt_all.jsonl`, `results/vex_precision_all.json` |
+| Component axis — #3's encoder | `tools/eval_encoder_contribution.py` | `results/encoder_contribution.json` |
+| Component axis — #4's LLM | `tools/eval_cti_localization.py` | `results/cti_localization.json` |
+| **All of the above, one command** | `python evaluation/run_eval.py` | `evaluation/out/report.html` + `results.json` |
 | Build site | `tools/build_sbom_index.py`, `tools/build_site.py` | `site/*.html`, `site/*.json` |
 
 In VEX-v2 the **patch gate (Q1) runs first** and the **presence check (Q2) decides the rest**;
@@ -992,10 +1158,18 @@ The live server (`src/api_server.py`) renders the pages on the fly; the static e
 - **Method**
   - **ICS-SBOM to CVE** — the nine limits of CPE-based identification, each with its evidence grade
   - **VEX Decision Logic** — the source-collectable code tree *and* the source-uncollectable asset-attribute estimation on one page
-- **Certification**
-  - **Test items #3 / #4** — run the two precision metrics live, the same `score()` the CLI calls
+- **Certification** — **local server only, not on GitHub Pages**
+  - **Test items #3 / #4** (`/cert.html`) — run the two precision metrics live, the same `score()` the CLI calls
 - **Dataset**
   - **CVE Dataset** · **Synthetic SBOM** (reverse-built SBOMs) · **ICS-CERT Advisories (CISA)** (advisory + NVD search) · **Published VEX (CISA)**
+
+**The certification page is deliberately excluded from the static bundle**
+(`_SITE_EXCLUDE = {"cert"}` in `tools/build_site.py`). It does not display a recorded
+figure — it *runs* the measurement through `/api/cert/run`, `/api/cert/job/{id}` and
+`/api/cert/upload`, which only the local FastAPI process answers. A copy on Pages would
+show buttons that cannot compute anything, so it lives only as a server route: the console
+serves 12 pages, `site/` exports the 11 that are self-contained. Run it with the command
+below and open http://127.0.0.1:8100/cert.html.
 
 Run locally:
 
@@ -1030,7 +1204,7 @@ python tools/cti_extract.py --all
 python tools/source_locate.py --all
 python tools/joern_reachability.py --all
 python tools/z3_controllability.py --all
-python tools/fetch_patch_refs.py && python tools/fetch_patches.py   # Q1 patch gate inputs
+python tools/fetch_patch_refs.py && python tools/fetch_patches.py   # patch pre-gate inputs
 python tools/vex_judge_v2.py --all && python tools/summarize_vex_v2.py
 python tools/vex_judge_v2.py --all --no-patch-gate --out data/vex_v2_pregate.json
 
@@ -1054,7 +1228,7 @@ top evidence tier); it never refutes, because "not reachable from an in-snapshot
 false negative for a library whose caller is external. Where Joern is absent or cannot build a
 CPG, the verdict falls back to the `affected` presence-baseline rather than `under_investigation`.
 
-The Q1 patch gate needs no model — it reads `data/patches/*/*.diff` and the NVD range cache
+The patch pre-gate needs no model — it reads `data/patches/*/*.diff` and the NVD range cache
 (`data/cve_version_ranges.json`) directly. Score test item #4 against
 `data/vex_v2_pregate.json`, not the gated output: the gate and that ground truth's
 `patch_verified` labels rest on the same two authorities, so the gated run reads 1.0000 by

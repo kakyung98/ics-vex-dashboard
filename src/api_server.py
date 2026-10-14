@@ -100,6 +100,13 @@ DATA = os.path.join(BASE, "data")
 KB_PATH = os.path.join(RESULTS, "cve_kb.json")
 
 AFFECTED, NOT_AFFECTED, UNDER_INV = "LIKELY_AFFECTED", "LIKELY_NOT_AFFECTED", "UNDER_INVESTIGATION"
+# The corpus vocabulary is hedged ("LIKELY_") because a corpus-level verdict rests on an
+# argument, not a run. FIXED is the exception and is NOT hedged: it is set only by the
+# patch pre-gate, which requires the fix commit's own lines to be present in the tree AND
+# NVD's product-matched range to have moved past the snapshot. That is a reading of the
+# code, so there is nothing "likely" about it. CSAF has a distinct product_status.fixed,
+# which is why it is not folded into NOT_AFFECTED on export.
+FIXED = "LIKELY_FIXED"
 EXPOSURES = ["isolated-cell", "control-network", "dmz-routable", "remote-accessible"]
 
 
@@ -243,6 +250,12 @@ class Store:
         # keyed by CVE, mapped to the console's vocabulary. Where a matched CVE has one,
         # the analyzer shows it instead of the default under_investigation.
         _vv = _load(os.path.join(RESULTS, "vex_v2_summary.json"), {})
+        # vex_judge_v2 emits four statuses; this map had only three, so `fixed` fell to
+        # the `.get(..., UNDER_INV)` default and the console published the 4 patch-gate
+        # clearances as UNDER_INVESTIGATION - the one status the pipeline claims it never
+        # produces. FIXED and the rank maps are now in place (see the FIXED constant);
+        # what remains is the mapping decision itself.
+        # TODO(human): add the "fixed" entry to _vmap.
         _vmap = {"affected": AFFECTED, "not_affected": NOT_AFFECTED,
                  "under_investigation": UNDER_INV}
         self.vex_v2 = {}
@@ -1762,6 +1775,7 @@ function _remedCsaf(r){return {patch_or_firmware_upgrade:'vendor_fix',temporary_
 function _canonStatus(s){s=String(s||'');
   if(s==='LIKELY_AFFECTED')return 'affected';
   if(s==='LIKELY_NOT_AFFECTED')return 'not_affected';
+  if(s==='LIKELY_FIXED')return 'fixed';
   if(s==='UNDER_INVESTIGATION')return 'under_investigation';
   if(s==='not_affected')return 'not_affected';
   if(s==='route_to_icsvexforge')return 'under_investigation';
@@ -2094,7 +2108,7 @@ function advSearch(){
     h+='<tr class="clk" onclick="openAdvisory(\\''+esc(String(a.id))+'\\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
-function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};
+function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1,LIKELY_FIXED:0};
   let h=CVE_INDEX.filter(r=>r.cve.toLowerCase().includes(ql)||(r.cwe||'').toLowerCase().includes(ql)||(r.vendors||[]).some(v=>v.toLowerCase().includes(ql))||(r.component||'').toLowerCase().includes(ql));
   h.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rk[b.vex]-rk[a.vex])||a.cve.localeCompare(b.cve));
   return h.slice(0,100).map(r=>({cve:r.cve,cvss:r.cvss,severity:r.severity,cwe:r.cwe,kev:r.kev,vex:r.vex,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component}));}

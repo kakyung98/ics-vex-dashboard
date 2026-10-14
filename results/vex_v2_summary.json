@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-27",
+  "generated": "2026-10-14",
   "test": "VEX-v2 judgment over source-collectable CVEs",
   "method": "CTI(LLM agent) -> source locate (presence, decides) -> optional Joern reachability + Z3 controllability (evidence tier only)",
   "population": 267,
@@ -8,30 +8,30 @@
     "fixed": 4
   },
   "evidence_tier": {
-    "verified": 124,
-    "present": 89,
+    "verified": 144,
+    "present": 63,
     "component": 45,
     "patch-verified": 4,
-    "reachable": 5
+    "reachable": 11
   },
   "justifications": {},
   "gates": {
-    "q1_present": {
+    "q2_present": {
       "present": 222,
       "component_only": 45
     },
-    "q2_reachable_joern": {
-      "unknown": 50,
-      "reachable": 131,
+    "q3_reachable_joern": {
+      "unknown": 51,
+      "reachable": 168,
       "not-reachable": 4
     },
-    "q3_controllable_z3": {
-      "controllable": 176,
-      "not-controllable": 8,
+    "q4_controllable_z3": {
+      "controllable": 213,
+      "environment-dependent": 9,
       "unknown": 1
     }
   },
-  "note": "VEX justifications are a hierarchy: presence (Q1) decides (present -> affected, absent -> not_affected). Reachability (Joern) and controllability (Z3) are OPTIONAL - they only raise the evidence_tier, they never refute (a library snapshot has no consumer, so not-reachable false-negatives on the API itself).",
+  "note": "VEX justifications are a hierarchy: presence (Q2) decides (present -> affected, absent -> not_affected). Reachability (Joern) and controllability (Z3) are OPTIONAL - they only raise the evidence_tier, they never refute (a library snapshot has no consumer, so not-reachable false-negatives on the API itself).",
   "cves": [
     {
       "cve": "CVE-2005-2096",
@@ -41,7 +41,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -54,7 +54,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -67,7 +67,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -80,7 +80,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "not-reachable",
         "controllability": null
       }
@@ -93,7 +93,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -106,7 +106,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": "controllable"
       }
@@ -119,7 +119,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -132,7 +132,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -145,7 +145,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -158,7 +158,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -171,7 +171,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -184,7 +184,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -197,7 +197,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -210,7 +210,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -223,7 +223,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -236,7 +236,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -249,7 +249,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -258,13 +258,13 @@
       "cve": "CVE-2015-0291",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -275,7 +275,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -288,7 +288,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -301,7 +301,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -314,7 +314,7 @@
       "evidence_tier": "present",
       "component": "glibc",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -327,7 +327,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -340,7 +340,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -353,9 +353,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -366,7 +366,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -379,7 +379,7 @@
       "evidence_tier": "verified",
       "component": "zlib",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -392,7 +392,7 @@
       "evidence_tier": "component",
       "component": "zlib",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -405,7 +405,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -418,7 +418,7 @@
       "evidence_tier": "verified",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -431,7 +431,7 @@
       "evidence_tier": "verified",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -444,7 +444,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -457,7 +457,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -470,7 +470,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -483,7 +483,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -496,7 +496,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -509,7 +509,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -522,7 +522,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -535,7 +535,7 @@
       "evidence_tier": "component",
       "component": "wi-fi protected access (wpa and wpa2)",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -548,7 +548,7 @@
       "evidence_tier": "patch-verified",
       "component": "dnsmasq",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -561,7 +561,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -574,7 +574,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -583,13 +583,13 @@
       "cve": "CVE-2017-7375",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -600,7 +600,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -613,7 +613,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -626,7 +626,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -639,7 +639,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -652,7 +652,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -665,7 +665,7 @@
       "evidence_tier": "verified",
       "component": "wpa_supplicant",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -678,7 +678,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -691,7 +691,7 @@
       "evidence_tier": "component",
       "component": "openssh",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -700,13 +700,13 @@
       "cve": "CVE-2018-16890",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -717,7 +717,7 @@
       "evidence_tier": "verified",
       "component": "net-snmp",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -730,9 +730,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -743,7 +743,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -756,7 +756,7 @@
       "evidence_tier": "verified",
       "component": "zlib",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -769,7 +769,7 @@
       "evidence_tier": "verified",
       "component": "sqlite",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -782,7 +782,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -795,7 +795,7 @@
       "evidence_tier": "patch-verified",
       "component": "linux kernel",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -808,7 +808,7 @@
       "evidence_tier": "present",
       "component": "u-boot",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -821,9 +821,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -834,7 +834,7 @@
       "evidence_tier": "present",
       "component": "u-boot",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -843,13 +843,13 @@
       "cve": "CVE-2019-1547",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -860,7 +860,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -873,7 +873,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -886,9 +886,9 @@
       "evidence_tier": "reachable",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -899,7 +899,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -912,7 +912,7 @@
       "evidence_tier": "component",
       "component": "libssh2",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -925,7 +925,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -938,7 +938,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -951,7 +951,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "not-reachable",
         "controllability": "controllable"
       }
@@ -964,7 +964,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -977,7 +977,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -990,7 +990,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1003,7 +1003,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1016,7 +1016,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1029,7 +1029,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1042,7 +1042,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1055,7 +1055,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1068,7 +1068,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1077,13 +1077,13 @@
       "cve": "CVE-2019-3822",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1094,7 +1094,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1107,7 +1107,7 @@
       "evidence_tier": "verified",
       "component": "libssh2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1120,7 +1120,7 @@
       "evidence_tier": "verified",
       "component": "libssh2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1129,13 +1129,13 @@
       "cve": "CVE-2019-3857",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1146,9 +1146,9 @@
       "evidence_tier": "reachable",
       "component": "libssh2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -1159,7 +1159,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1168,13 +1168,13 @@
       "cve": "CVE-2019-5436",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1185,7 +1185,7 @@
       "evidence_tier": "verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1198,7 +1198,7 @@
       "evidence_tier": "verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1211,7 +1211,7 @@
       "evidence_tier": "verified",
       "component": "openssh",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1224,7 +1224,7 @@
       "evidence_tier": "verified",
       "component": "sqlite3",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1237,7 +1237,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1250,7 +1250,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1263,7 +1263,7 @@
       "evidence_tier": "present",
       "component": "u-boot",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1276,7 +1276,7 @@
       "evidence_tier": "verified",
       "component": "sqlite",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1289,7 +1289,7 @@
       "evidence_tier": "component",
       "component": "ntp",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1302,7 +1302,7 @@
       "evidence_tier": "verified",
       "component": "sqlite",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1315,7 +1315,7 @@
       "evidence_tier": "verified",
       "component": "sqlite",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1328,7 +1328,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1341,7 +1341,7 @@
       "evidence_tier": "component",
       "component": "openssh",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1354,7 +1354,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1367,7 +1367,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1380,7 +1380,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "not-reachable",
         "controllability": "controllable"
       }
@@ -1393,7 +1393,7 @@
       "evidence_tier": "verified",
       "component": "libssh2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1406,7 +1406,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1419,7 +1419,7 @@
       "evidence_tier": "verified",
       "component": "dnsmasq",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1432,7 +1432,7 @@
       "evidence_tier": "verified",
       "component": "dnsmasq",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1445,35 +1445,35 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
       "cve": "CVE-2020-35525",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "unknown"
       }
     },
     {
       "cve": "CVE-2020-35527",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1484,7 +1484,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1497,8 +1497,8 @@
       "evidence_tier": "present",
       "component": "curl",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -1506,26 +1506,26 @@
       "cve": "CVE-2020-8231",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2020-8285",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -1536,7 +1536,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -1549,7 +1549,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1562,8 +1562,8 @@
       "evidence_tier": "present",
       "component": "sqlite",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -1575,7 +1575,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1584,39 +1584,39 @@
       "cve": "CVE-2021-22890",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2021-22924",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2021-22945",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1627,7 +1627,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -1640,7 +1640,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1653,7 +1653,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1666,7 +1666,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1679,7 +1679,7 @@
       "evidence_tier": "component",
       "component": "busybox",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1688,13 +1688,13 @@
       "cve": "CVE-2021-31239",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1705,7 +1705,7 @@
       "evidence_tier": "component",
       "component": "freertos-kernel",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1718,7 +1718,7 @@
       "evidence_tier": "present",
       "component": "freertos-kernel",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1731,7 +1731,7 @@
       "evidence_tier": "present",
       "component": "glibc",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1744,7 +1744,7 @@
       "evidence_tier": "present",
       "component": "linux kernel",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1753,13 +1753,13 @@
       "cve": "CVE-2021-3449",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -1770,7 +1770,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1783,7 +1783,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1796,7 +1796,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1809,7 +1809,7 @@
       "evidence_tier": "present",
       "component": "glibc",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1822,7 +1822,7 @@
       "evidence_tier": "verified",
       "component": "dropbear",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1835,9 +1835,9 @@
       "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -1848,7 +1848,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1861,7 +1861,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1874,9 +1874,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -1887,7 +1887,7 @@
       "evidence_tier": "component",
       "component": "glibc",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -1900,7 +1900,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1913,7 +1913,7 @@
       "evidence_tier": "verified",
       "component": "openssh",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1926,7 +1926,7 @@
       "evidence_tier": "component",
       "component": "busybox",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1939,7 +1939,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1952,7 +1952,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1965,7 +1965,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -1978,7 +1978,7 @@
       "evidence_tier": "component",
       "component": "busybox",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -1991,7 +1991,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2004,9 +2004,9 @@
       "evidence_tier": "reachable",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -2017,7 +2017,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2030,8 +2030,8 @@
       "evidence_tier": "present",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2043,7 +2043,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2056,7 +2056,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2069,7 +2069,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2082,7 +2082,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2095,8 +2095,8 @@
       "evidence_tier": "present",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2108,7 +2108,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2121,7 +2121,7 @@
       "evidence_tier": "verified",
       "component": "log4j-core",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2134,7 +2134,7 @@
       "evidence_tier": "verified",
       "component": "openvpn",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2147,8 +2147,8 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2160,7 +2160,7 @@
       "evidence_tier": "present",
       "component": "linux kernel",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2173,7 +2173,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2186,7 +2186,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -2199,7 +2199,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -2212,7 +2212,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2225,7 +2225,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2238,7 +2238,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -2251,7 +2251,7 @@
       "evidence_tier": "verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2260,13 +2260,13 @@
       "cve": "CVE-2022-2274",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -2277,7 +2277,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2290,7 +2290,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -2303,7 +2303,7 @@
       "evidence_tier": "present",
       "component": "spring-framework",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2316,7 +2316,7 @@
       "evidence_tier": "verified",
       "component": "hostapd, wpa_supplicant",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2329,9 +2329,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -2342,7 +2342,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2355,7 +2355,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2368,7 +2368,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2381,7 +2381,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2394,7 +2394,7 @@
       "evidence_tier": "verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2407,8 +2407,8 @@
       "evidence_tier": "present",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2420,7 +2420,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2433,7 +2433,7 @@
       "evidence_tier": "verified",
       "component": "busybox",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2446,9 +2446,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -2459,9 +2459,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -2472,7 +2472,7 @@
       "evidence_tier": "component",
       "component": "libcurl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2485,7 +2485,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2498,7 +2498,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -2507,13 +2507,13 @@
       "cve": "CVE-2022-3602",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -2524,7 +2524,7 @@
       "evidence_tier": "present",
       "component": "zlib",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "not-reachable",
         "controllability": "controllable"
       }
@@ -2537,7 +2537,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2550,7 +2550,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2563,7 +2563,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2576,7 +2576,7 @@
       "evidence_tier": "verified",
       "component": "nginx",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2589,7 +2589,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2602,8 +2602,8 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2615,7 +2615,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2628,7 +2628,7 @@
       "evidence_tier": "component",
       "component": "sqlite",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2641,7 +2641,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2654,7 +2654,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2667,7 +2667,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2680,8 +2680,8 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2693,9 +2693,9 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
-        "controllability": "not-controllable"
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -2706,7 +2706,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -2719,7 +2719,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -2732,7 +2732,7 @@
       "evidence_tier": "present",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": null,
         "controllability": null
       }
@@ -2745,7 +2745,7 @@
       "evidence_tier": "component",
       "component": "openssl",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -2758,7 +2758,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -2771,7 +2771,7 @@
       "evidence_tier": "verified",
       "component": "openssl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2784,7 +2784,7 @@
       "evidence_tier": "patch-verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2793,13 +2793,13 @@
       "cve": "CVE-2023-27535",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -2810,8 +2810,8 @@
       "evidence_tier": "patch-verified",
       "component": "libcurl",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -2819,26 +2819,26 @@
       "cve": "CVE-2023-27537",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2023-27538",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -2849,7 +2849,7 @@
       "evidence_tier": "component",
       "component": "dnsmasq",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2862,7 +2862,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2875,7 +2875,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2888,7 +2888,7 @@
       "evidence_tier": "present",
       "component": "linux kernel",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2901,7 +2901,7 @@
       "evidence_tier": "present",
       "component": "spring-framework",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -2914,9 +2914,9 @@
       "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -2927,7 +2927,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2940,7 +2940,7 @@
       "evidence_tier": "verified",
       "component": "ssh-agent",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2953,7 +2953,7 @@
       "evidence_tier": "verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2966,7 +2966,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2979,7 +2979,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -2992,7 +2992,7 @@
       "evidence_tier": "verified",
       "component": "http/2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3005,7 +3005,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3018,7 +3018,7 @@
       "evidence_tier": "verified",
       "component": "libxml2",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3031,7 +3031,7 @@
       "evidence_tier": "verified",
       "component": "curl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3044,7 +3044,7 @@
       "evidence_tier": "verified",
       "component": "openvpn",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3057,9 +3057,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
-        "controllability": "unknown"
+        "controllability": "controllable"
       }
     },
     {
@@ -3070,7 +3070,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -3083,7 +3083,7 @@
       "evidence_tier": "component",
       "component": "openssh",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3096,7 +3096,7 @@
       "evidence_tier": "present",
       "component": "glibc",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3109,9 +3109,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -3122,7 +3122,7 @@
       "evidence_tier": "verified",
       "component": "libexpat",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3135,7 +3135,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3148,7 +3148,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3161,7 +3161,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -3174,7 +3174,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3187,7 +3187,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3200,7 +3200,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3213,7 +3213,7 @@
       "evidence_tier": "verified",
       "component": "sqlite",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3226,8 +3226,8 @@
       "evidence_tier": "present",
       "component": "libpcap",
       "evidence": {
-        "q1": "present",
-        "reachability": "unknown",
+        "q2": "present",
+        "reachability": "reachable",
         "controllability": "controllable"
       }
     },
@@ -3239,7 +3239,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3252,7 +3252,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3265,9 +3265,9 @@
       "evidence_tier": "present",
       "component": "linux kernel",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
-        "controllability": "not-controllable"
+        "controllability": "environment-dependent"
       }
     },
     {
@@ -3278,7 +3278,7 @@
       "evidence_tier": "verified",
       "component": "libcurl",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3291,7 +3291,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -3304,7 +3304,7 @@
       "evidence_tier": "component",
       "component": "",
       "evidence": {
-        "q1": "component_only",
+        "q2": "component_only",
         "reachability": null,
         "controllability": null
       }
@@ -3313,13 +3313,13 @@
       "cve": "CVE-2024-28882",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -3330,7 +3330,7 @@
       "evidence_tier": "present",
       "component": "glibc",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3343,9 +3343,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -3356,9 +3356,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -3369,9 +3369,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -3382,9 +3382,9 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "unknown",
+        "controllability": "controllable"
       }
     },
     {
@@ -3395,7 +3395,7 @@
       "evidence_tier": "present",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "unknown",
         "controllability": "controllable"
       }
@@ -3404,13 +3404,13 @@
       "cve": "CVE-2024-5594",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -3421,7 +3421,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3434,7 +3434,7 @@
       "evidence_tier": "verified",
       "component": "openssh",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3447,7 +3447,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3456,13 +3456,13 @@
       "cve": "CVE-2025-29087",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
@@ -3473,7 +3473,7 @@
       "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
+        "q2": "present",
         "reachability": "reachable",
         "controllability": "controllable"
       }
@@ -3482,26 +3482,26 @@
       "cve": "CVE-2025-3277",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present and reachable (joern); adversary control not confirmed",
+      "evidence_tier": "reachable",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     },
     {
       "cve": "CVE-2026-42945",
       "final_vex": "affected",
       "justification": null,
-      "basis": "vulnerable code present; not refuted (Q2/Q3 optional and not decisive here)",
-      "evidence_tier": "present",
+      "basis": "present, reachable (joern) and adversary-controllable (z3)",
+      "evidence_tier": "verified",
       "component": "",
       "evidence": {
-        "q1": "present",
-        "reachability": null,
-        "controllability": null
+        "q2": "present",
+        "reachability": "reachable",
+        "controllability": "controllable"
       }
     }
   ]

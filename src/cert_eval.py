@@ -62,7 +62,7 @@ ITEMS = {
         "name_en": "VEX affected-judgment precision",
         "metric": "precision = TP / (TP + FP),  positive class = affected",
         "acceptance": 0.85,
-        "sut": "tools/vex_judge_v2 (Q1 patch gate + Q2 presence, Q3/Q4 as tier)",
+        "sut": "tools/vex_judge_v2 (patch pre-gate + Q2 presence, Q3/Q4 as tier)",
         "dataset": {"gt": "data/vex_gt_all.jsonl",
                     "sut": "data/vex_v2_pregate.json",
                     "sut_patched": "data/vex_v2_patched.json",

@@ -1,0 +1,77 @@
+{
+  "test": "Encoder contribution to test item #3 (supplementary disclosure)",
+  "status": "not a certification test item - it decomposes one",
+  "question": "how much of item #3's 0.9490 is the trained encoder?",
+  "variants": {
+    "cascade_only": {
+      "sut": "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)",
+      "TP": 10294,
+      "FP": 543,
+      "abstained": 6633,
+      "precision": 0.9499
+    },
+    "cascade_plus_retrieval": {
+      "sut": "src/cpe_match_ai (retrieval behind the cascade)",
+      "TP": 10653,
+      "FP": 572,
+      "abstained": 6241,
+      "precision": 0.949
+    }
+  },
+  "retrieval_marginal": {
+    "TP_added": 359,
+    "FP_added": 29,
+    "components_recovered_from_abstention": 392,
+    "precision_on_what_it_recovered": 0.9253,
+    "share_of_cascade_abstentions_touched": 0.0591,
+    "headline_delta": -0.0009
+  },
+  "reading": "The encoder answers 392 of the 6633 components the cascade abstains on (5.9%) and is right on 92.5% of them. It moves the headline by -0.0009. So item #3's figure is the string cascade's; the encoder adds recall at the margin without costing precision.",
+  "ungated_sweep": {
+    "considered": 6633,
+    "precision_range": [
+      0.2636,
+      0.9463
+    ],
+    "best_cell": {
+      "min_sim": 0.95,
+      "min_margin": 0.05,
+      "precision": 0.9463,
+      "recovered": 392
+    },
+    "note": "the same retrieval across gate settings, over the components the cascade abstains on. Trusted openly (min_sim 0.5, no margin) it scores 0.2636 - three wrong answers for every right one. The sweep's precision-optimal cell is min_sim 0.95 / margin 0.05 at 0.9463, recovering 392, and that recovery count is exactly what the shipped SUT recovers: this sweep is HOW the recall-safe gate was chosen, not an alternative to it. The gate's price is visible here - it declines 94% of the components it could have answered in order to hold precision."
+  },
+  "component_metrics": [
+    {
+      "source": "results/dapt_metrics.json",
+      "measures": "SecureBERT domain-adaptive pretraining",
+      "values": {
+        "perplexity_before": 4.01,
+        "perplexity_after": 2.23,
+        "perplexity_drop_pct": 44.4
+      },
+      "evidence_for": "masked-LM adaptation to security text. NOT a retrieval metric - a model can adapt its language modelling and still rank products badly, which is what happened."
+    },
+    {
+      "source": "results/codebert_rank.json",
+      "measures": "CodeBERT ranking recall",
+      "values": {
+        "n": 54,
+        "top1_recall": 0.056,
+        "top5_recall": 0.111,
+        "top20_recall": 0.148
+      },
+      "evidence_for": "how often the correct product is ranked first / in the top k. This is the retrieval metric, and it is poor."
+    },
+    {
+      "source": "results/codebert_finetune_metrics.json",
+      "measures": "CodeBERT fine-tuning",
+      "values": {
+        "n_pairs": 34,
+        "vuln_patch_match_frozen": 0.5,
+        "vuln_patch_match_finetuned": 0.426
+      },
+      "evidence_for": "fine-tuning made the vuln/patch matching WORSE than the frozen encoder (0.500 -> 0.426) over 34 pairs - too small to conclude from, too clear to omit."
+    }
+  ]
+}

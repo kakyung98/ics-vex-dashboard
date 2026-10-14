@@ -46,7 +46,7 @@ and is free under a precision-only metric, so it is disclosed here.
 | `input.jsonl` | **what the SUT is fed**: CVE + source/patch evidence |
 | `ground_truth.jsonl` | answer key, affected / not_affected (152 cases) |
 | `predictions.json` | SUT output, pre-gate, vulnerable build — what `result.json` scores |
-| `predictions_gated.json` | SUT output with the Q1 patch gate live |
+| `predictions_gated.json` | SUT output with the patch pre-gate live |
 | `predictions_patched.json` | SUT output for the vendor's remediated releases |
 | `result.json` | **headline**: vulnerable build, gate off |
 | `result_allbuilds.json` | both builds, gate live |
