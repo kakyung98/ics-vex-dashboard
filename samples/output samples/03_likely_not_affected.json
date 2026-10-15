@@ -1,0 +1,224 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.0",
+    "lang": "en-US",
+    "title": "Helios VEX - Stratix 5700 industrial switch (CVE-2021-44228, source not collected)",
+    "publisher": {
+      "category": "other",
+      "name": "Helios Industrial Security Lab",
+      "namespace": "https://vex.example.org/helios",
+      "contact_details": "Helios Industrial Security Lab, 42 Example Way, Springfield / vex@example.org"
+    },
+    "tracking": {
+      "id": "HELIOS-VEX-2026-0003",
+      "status": "interim",
+      "version": "1",
+      "initial_release_date": "2026-10-15T09:00:00+09:00",
+      "current_release_date": "2026-10-15T09:00:00+09:00",
+      "revision_history": [
+        {
+          "date": "2026-10-15T09:00:00+09:00",
+          "number": "1",
+          "summary": "Source collection failed, so the status stays under_investigation; absence of a Java runtime points to likely_not_affected."
+        }
+      ]
+    }
+  },
+  "product_tree": {
+    "full_product_names": [
+      {
+        "name": "Rockwell Automation Stratix 5700 Firmware 15.2(7)E",
+        "product_id": "CSAFPID-0001",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:rockwellautomation:stratix_5700_firmware:15.2\\(7\\)e:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/rockwellautomation/stratix-5700@15.2.7e",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/rockwell-stratix-5700-15.2.7e.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "Apache Log4j 2.14.1 (candidate entry in the SBOM)",
+        "product_id": "CSAFPID-0002",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:a:apache:log4j:2.14.1:*:*:*:*:*:*:*",
+          "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/rockwell-stratix-5700-15.2.7e.cdx.json"
+          ]
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "product_reference": "CSAFPID-0002",
+        "relates_to_product_reference": "CSAFPID-0001",
+        "full_product_name": {
+          "product_id": "CSAFPID-0010",
+          "name": "Apache Log4j 2.14.1 as a candidate component of Rockwell Automation Stratix 5700 Firmware 15.2(7)E"
+        }
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2021-44228",
+      "ids": [
+        {
+          "system_name": "Apache Security Advisory",
+          "text": "CVE-2021-44228 (Log4Shell)"
+        },
+        {
+          "system_name": "CISA ICS Advisory",
+          "text": "ICSA-21-357-01"
+        }
+      ],
+      "title": "Apache Log4j2 JNDI lookup leads to remote code execution (CWE-502)",
+      "notes": [
+        {
+          "category": "description",
+          "title": "Vulnerability summary",
+          "text": "The JNDI lookup feature of Log4j2 evaluates user-controlled input inside log messages, so a crafted string can load a remote class and execute code."
+        },
+        {
+          "category": "details",
+          "title": "Basis for the VEX verdict",
+          "text": "The device firmware could not be obtained, so no source analysis was possible (source_code_available=false) and the official status of CSAFPID-0010 is under_investigation. The semantic estimate and its evidence are recorded in analysis.semantic_estimation. The estimate does not substitute for an official not_affected verdict."
+        },
+        {
+          "category": "other",
+          "title": "Why the source could not be collected",
+          "text": "Vendor firmware not publicly downloadable; no source distribution for the IOS-based switch image."
+        }
+      ],
+      "product_status": {
+        "fixed": [],
+        "known_affected": [],
+        "known_not_affected": [],
+        "under_investigation": [
+          "CSAFPID-0010"
+        ]
+      },
+      "analysis": {
+        "source_code_available": false,
+        "semantic_estimation": {
+          "likely_affected": "none",
+          "likely_not_affected": "high",
+          "likely_mitigated": "low",
+          "likely_cannot_determine": "low",
+          "rationale": "The log4j entry reached the SBOM through name similarity alone, and the target is an IOS-based switch with neither a Java runtime nor the storage budget to hold one, so the component is very likely absent rather than merely unreachable. likely_affected is set to none because the precondition itself fails; likely_mitigated stays low because no mitigation is claimed, only absence.",
+          "evidence": [
+            {
+              "signal": "component_match_confidence",
+              "value": "name-similarity candidate, no package manifest",
+              "supports": "likely_not_affected",
+              "source": "sbom component matcher, low-confidence tier"
+            },
+            {
+              "signal": "runtime_absent",
+              "value": "IOS-based switch image carries no JVM",
+              "supports": "likely_not_affected",
+              "source": "vendor product documentation"
+            },
+            {
+              "signal": "storage_budget",
+              "value": "64 MB flash cannot hold a Java stack",
+              "supports": "likely_not_affected",
+              "source": "hbom/rockwell-stratix-5700-15.2.7e.hbom.json"
+            },
+            {
+              "signal": "vendor_assertion",
+              "value": "vendor declares the product family unaffected",
+              "supports": "likely_not_affected",
+              "source": "vendor security advisory portal"
+            }
+          ]
+        },
+        "epss": "0.94400",
+        "hbom_evidence": [
+          {
+            "bom_ref": "hbom:stratix-5700:soc",
+            "property": "COMP_PART_TYPE",
+            "value": "Network Switch SoC",
+            "relevance": "An embedded switch SoC without the memory or storage budget to run a JVM.",
+            "source": "hbom/rockwell-stratix-5700-15.2.7e.hbom.json"
+          },
+          {
+            "bom_ref": "hbom:stratix-5700:flash",
+            "property": "COMP_PART_SIZE_VAL",
+            "value": "64",
+            "relevance": "64 MB of flash makes it physically impossible to ship a Java stack that includes Log4j2.",
+            "source": "hbom/rockwell-stratix-5700-15.2.7e.hbom.json"
+          }
+        ]
+      },
+      "flags": [],
+      "threats": [
+        {
+          "category": "impact",
+          "details": "Were the impact to hold, it would mean remote code execution through the logging path; on this device the runtime itself has not been confirmed to exist.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        },
+        {
+          "category": "exploit_status",
+          "details": "Listed in CISA KEV, but known exploits do not function against a target with no Java runtime.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "remediations": [
+        {
+          "category": "no_fix_planned",
+          "details": "The vendor states that Log4j2 is not included in this product family. Until source is obtained, Helios treats that only as estimate evidence.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.rockwellautomation.com/en-us/trust-center/security-advisories.html"
+        },
+        {
+          "category": "mitigation",
+          "details": "Keep the management interface inside the control network and block outbound LDAP/RMI to reduce residual risk.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-21-357-01"
+        }
+      ],
+      "scores": [
+        {
+          "cvss": {
+            "version": "3.1",
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+            "baseScore": 10.0,
+            "baseSeverity": "CRITICAL"
+          },
+          "products": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "references": [
+        {
+          "category": "self",
+          "summary": "Helios verdict detail for the low-confidence component candidate",
+          "url": "https://vex.example.org/helios/CVE-2021-44228"
+        },
+        {
+          "category": "external",
+          "summary": "NVD - CVE-2021-44228",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-44228"
+        },
+        {
+          "category": "external",
+          "summary": "CISA ICS Advisory ICSA-21-357-01",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-21-357-01"
+        }
+      ]
+    }
+  ]
+}

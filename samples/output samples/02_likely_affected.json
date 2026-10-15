@@ -1,0 +1,224 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.0",
+    "lang": "en-US",
+    "title": "Helios VEX - SIMATIC NET CP 1543-1 (CVE-2015-7547, source not collected)",
+    "publisher": {
+      "category": "other",
+      "name": "Helios Industrial Security Lab",
+      "namespace": "https://vex.example.org/helios",
+      "contact_details": "Helios Industrial Security Lab, 42 Example Way, Springfield / vex@example.org"
+    },
+    "tracking": {
+      "id": "HELIOS-VEX-2026-0002",
+      "status": "interim",
+      "version": "1",
+      "initial_release_date": "2026-10-15T09:00:00+09:00",
+      "current_release_date": "2026-10-15T09:00:00+09:00",
+      "revision_history": [
+        {
+          "date": "2026-10-15T09:00:00+09:00",
+          "number": "1",
+          "summary": "Source collection failed, so the status stays under_investigation; only a semantic estimate is offered."
+        }
+      ]
+    }
+  },
+  "product_tree": {
+    "full_product_names": [
+      {
+        "name": "Siemens SIMATIC NET CP 1543-1 V2.1",
+        "product_id": "CSAFPID-0001",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:siemens:simatic_net_cp_1543-1_firmware:2.1:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/siemens/simatic-net-cp-1543-1@2.1",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-cp-1543-1-2.1.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "GNU C Library (glibc) 2.21",
+        "product_id": "CSAFPID-0002",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:a:gnu:glibc:2.21:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/gnu/glibc@2.21",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-cp-1543-1-2.1.cdx.json"
+          ]
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "product_reference": "CSAFPID-0002",
+        "relates_to_product_reference": "CSAFPID-0001",
+        "full_product_name": {
+          "product_id": "CSAFPID-0010",
+          "name": "GNU C Library 2.21 as a component of Siemens SIMATIC NET CP 1543-1 V2.1"
+        }
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2015-7547",
+      "ids": [
+        {
+          "system_name": "Siemens ProductCERT Security Advisory",
+          "text": "SSA-301706"
+        },
+        {
+          "system_name": "CISA ICS Advisory",
+          "text": "ICSA-16-103-01C"
+        }
+      ],
+      "title": "glibc getaddrinfo stack-based buffer overflow (CWE-787)",
+      "notes": [
+        {
+          "category": "description",
+          "title": "Vulnerability summary",
+          "text": "Multiple stack-based buffer overflows in the send_dg and send_vc functions of glibc allow remote code execution by way of a crafted DNS response."
+        },
+        {
+          "category": "details",
+          "title": "Basis for the VEX verdict",
+          "text": "The firmware image is vendor-signed and encrypted, extraction failed, and no public build recipe exists, so the source could not be collected (source_code_available=false). The code questions Q2-Q4 cannot be answered, so the official status of CSAFPID-0010 stays under_investigation. The semantic estimate and its evidence are recorded in analysis.semantic_estimation."
+        },
+        {
+          "category": "other",
+          "title": "Why the source could not be collected",
+          "text": "Firmware image encrypted (vendor-signed); no public build recipe; binary-only distribution."
+        }
+      ],
+      "product_status": {
+        "fixed": [],
+        "known_affected": [],
+        "known_not_affected": [],
+        "under_investigation": [
+          "CSAFPID-0010"
+        ]
+      },
+      "analysis": {
+        "source_code_available": false,
+        "semantic_estimation": {
+          "likely_affected": "high",
+          "likely_not_affected": "low",
+          "likely_mitigated": "low",
+          "likely_cannot_determine": "low",
+          "rationale": "The SBOM pins glibc 2.21, which sits inside the NVD affected range, and the module runs a DNS resolver on a routable interface, so the preconditions for the vulnerability are all met on paper. Nothing in the asset surface suggests the fix or a compensating control is present, so likely_affected dominates and the remaining hypotheses stay low rather than none.",
+          "evidence": [
+            {
+              "signal": "component_version_in_affected_range",
+              "value": "glibc 2.21 < 2.23",
+              "supports": "likely_affected",
+              "source": "nvd/CVE-2015-7547 affected range"
+            },
+            {
+              "signal": "vendor_advisory_acknowledges_family",
+              "value": "SSA-301706 lists sibling CP products",
+              "supports": "likely_affected",
+              "source": "vendor advisory SSA-301706"
+            },
+            {
+              "signal": "attack_surface_present",
+              "value": "DNS resolver reachable on the PROFINET/IT interface",
+              "supports": "likely_affected",
+              "source": "hbom/siemens-cp-1543-1-2.1.hbom.json"
+            },
+            {
+              "signal": "no_mitigation_recorded",
+              "value": "no DNS pinning or egress filter in the asset record",
+              "supports": "likely_mitigated",
+              "source": "asset configuration snapshot"
+            }
+          ]
+        },
+        "epss": "0.89557",
+        "hbom_evidence": [
+          {
+            "bom_ref": "hbom:cp-1543-1:eth-controller",
+            "property": "COMP_PART_TYPE",
+            "value": "Ethernet Communication Controller",
+            "relevance": "Hosts the IP stack that goes through the DNS resolver, so the attack surface exists.",
+            "source": "hbom/siemens-cp-1543-1-2.1.hbom.json"
+          },
+          {
+            "bom_ref": "hbom:cp-1543-1:flash",
+            "property": "COMP_DATECODE",
+            "value": "1538",
+            "relevance": "Manufactured before glibc 2.23 shipped, so a patched runtime is unlikely to be present.",
+            "source": "hbom/siemens-cp-1543-1-2.1.hbom.json"
+          }
+        ]
+      },
+      "flags": [],
+      "threats": [
+        {
+          "category": "impact",
+          "details": "An attacker able to tamper with DNS responses on the path could achieve remote code execution on the communication module.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        },
+        {
+          "category": "exploit_status",
+          "details": "EPSS 0.89557 indicates very high exploitation likelihood, and several public exploits exist.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "remediations": [
+        {
+          "category": "mitigation",
+          "details": "Pin the device to a trusted internal DNS resolver and block external DNS responses from reaching the control network at the perimeter.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-301706.html"
+        },
+        {
+          "category": "none_available",
+          "details": "With no source collected, impact is unconfirmed and no definitive fix instruction can be given until the vendor responds.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-16-103-01c"
+        }
+      ],
+      "scores": [
+        {
+          "cvss": {
+            "version": "3.1",
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "baseScore": 8.1,
+            "baseSeverity": "HIGH"
+          },
+          "products": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "references": [
+        {
+          "category": "self",
+          "summary": "Helios verdict detail, including the basis for the semantic estimate",
+          "url": "https://vex.example.org/helios/CVE-2015-7547"
+        },
+        {
+          "category": "external",
+          "summary": "NVD - CVE-2015-7547",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2015-7547"
+        },
+        {
+          "category": "external",
+          "summary": "CISA ICS Advisory ICSA-16-103-01C",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-16-103-01c"
+        }
+      ]
+    }
+  ]
+}

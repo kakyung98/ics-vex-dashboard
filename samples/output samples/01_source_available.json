@@ -1,0 +1,249 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.0",
+    "lang": "en-US",
+    "title": "Helios VEX - SIMATIC S7-1500 CPU 1518-4 PN/DP MFP (CVE-2016-9318)",
+    "publisher": {
+      "category": "other",
+      "name": "Helios Industrial Security Lab",
+      "namespace": "https://vex.example.org/helios",
+      "contact_details": "Helios Industrial Security Lab, 42 Example Way, Springfield / vex@example.org"
+    },
+    "tracking": {
+      "id": "HELIOS-VEX-2026-0001",
+      "status": "final",
+      "version": "1",
+      "initial_release_date": "2026-10-15T09:00:00+09:00",
+      "current_release_date": "2026-10-15T09:00:00+09:00",
+      "revision_history": [
+        {
+          "date": "2026-10-15T09:00:00+09:00",
+          "number": "1",
+          "summary": "Initial release. Source was collected, so the verdict rests on code analysis (Q1-Q4)."
+        }
+      ]
+    }
+  },
+  "product_tree": {
+    "full_product_names": [
+      {
+        "name": "Siemens SIMATIC S7-1500 CPU 1518-4 PN/DP MFP V3.1",
+        "product_id": "CSAFPID-0001",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:siemens:simatic_s7-1500_cpu_1518-4_pn\\/dp_mfp_firmware:3.1:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/siemens/simatic-s7-1500-cpu-1518-4-pn-dp-mfp@3.1",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-s7-1500-cpu-1518-mfp-3.1.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "libxml2 2.9.4",
+        "product_id": "CSAFPID-0002",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:a:xmlsoft:libxml2:2.9.4:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/xmlsoft/libxml2@2.9.4",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-s7-1500-cpu-1518-mfp-3.1.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "Siemens SIMATIC S7-1500 CPU 1513-1 PN V2.9",
+        "product_id": "CSAFPID-0003",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:siemens:simatic_s7-1500_cpu_1513-1_pn_firmware:2.9:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/siemens/simatic-s7-1500-cpu-1513-1-pn@2.9",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-s7-1500-cpu-1513-1-pn-2.9.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "Siemens SIMATIC S7-1500 CPU 1518-4 PN/DP MFP V3.1.5",
+        "product_id": "CSAFPID-0004",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:siemens:simatic_s7-1500_cpu_1518-4_pn\\/dp_mfp_firmware:3.1.5:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/siemens/simatic-s7-1500-cpu-1518-4-pn-dp-mfp@3.1.5",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-s7-1500-cpu-1518-mfp-3.1.5.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "libxml2 2.9.5",
+        "product_id": "CSAFPID-0005",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:a:xmlsoft:libxml2:2.9.5:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/xmlsoft/libxml2@2.9.5",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/siemens-s7-1500-cpu-1518-mfp-3.1.5.cdx.json"
+          ]
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "product_reference": "CSAFPID-0002",
+        "relates_to_product_reference": "CSAFPID-0001",
+        "full_product_name": {
+          "product_id": "CSAFPID-0010",
+          "name": "libxml2 2.9.4 as a component of Siemens SIMATIC S7-1500 CPU 1518-4 PN/DP MFP V3.1"
+        }
+      },
+      {
+        "category": "default_component_of",
+        "product_reference": "CSAFPID-0005",
+        "relates_to_product_reference": "CSAFPID-0004",
+        "full_product_name": {
+          "product_id": "CSAFPID-0011",
+          "name": "libxml2 2.9.5 as a component of Siemens SIMATIC S7-1500 CPU 1518-4 PN/DP MFP V3.1.5"
+        }
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2016-9318",
+      "ids": [
+        {
+          "system_name": "Siemens ProductCERT Security Advisory",
+          "text": "SSA-398330"
+        },
+        {
+          "system_name": "CISA ICS Advisory",
+          "text": "ICSA-23-348-10"
+        }
+      ],
+      "title": "libxml2 does not restrict XML external entity references (CWE-611)",
+      "notes": [
+        {
+          "category": "description",
+          "title": "Vulnerability summary",
+          "text": "libxml2 2.9.4 and earlier do not restrict XML external entity references, so a crafted XML document can disclose file contents or forge server-side requests."
+        },
+        {
+          "category": "details",
+          "title": "Basis for the VEX verdict",
+          "text": "Source collection succeeded (source_code_available=true). Q1 component present: libxml2 2.9.4 is in the SBOM of CSAFPID-0001. Q2 vulnerable code present: the entity-handling code on the xmlParseBalancedChunkMemoryInternal path is present in the collected snapshot and the fix commit is not applied. Q3 reachability: the call graph shows a path from the XML parsing entry point (the configuration upload handler of the embedded web server) to the vulnerable function. Q4 controllability: a constraint solution confirms that external input reaches the entity declaration. The verdict on CSAFPID-0010 is therefore known_affected. CSAFPID-0011 carries libxml2 2.9.5, which contains the fix."
+        }
+      ],
+      "product_status": {
+        "fixed": [
+          "CSAFPID-0011"
+        ],
+        "known_affected": [
+          "CSAFPID-0010"
+        ],
+        "known_not_affected": [
+          "CSAFPID-0003"
+        ],
+        "under_investigation": []
+      },
+      "analysis": {
+        "source_code_available": true,
+        "semantic_estimation": {
+          "likely_affected": "none",
+          "likely_not_affected": "none",
+          "likely_mitigated": "none",
+          "likely_cannot_determine": "none",
+          "rationale": "Source was collected, so the verdict rests on code analysis. No semantic estimate applies.",
+          "evidence": []
+        },
+        "epss": "0.02938",
+        "hbom_evidence": [
+          {
+            "bom_ref": "hbom:cpu-1518-4-mfp:main-board",
+            "property": "COMP_PART_TYPE",
+            "value": "CPU Module",
+            "relevance": "The MFP compute module that loads the vulnerable library and exposes the XML configuration interface.",
+            "source": "hbom/siemens-s7-1500-cpu-1518-mfp-3.1.hbom.json"
+          },
+          {
+            "bom_ref": "hbom:cpu-1518-4-mfp:eth-phy",
+            "property": "COMP_MANUFACTURER_PN",
+            "value": "6ES7518-4AX00-1AC0",
+            "relevance": "The PROFINET port is enabled, so XML input can be delivered over the network.",
+            "source": "hbom/siemens-s7-1500-cpu-1518-mfp-3.1.hbom.json"
+          }
+        ]
+      },
+      "flags": [
+        {
+          "label": "component_not_present",
+          "product_ids": [
+            "CSAFPID-0003"
+          ],
+          "category": "no_component"
+        }
+      ],
+      "threats": [
+        {
+          "category": "impact",
+          "details": "Uploading a crafted XML configuration file can disclose device filesystem contents or forge requests toward the internal network.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        },
+        {
+          "category": "exploit_status",
+          "details": "Not listed in CISA KEV. Public proof-of-concept material is limited to libxml2 upstream test cases.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "remediations": [
+        {
+          "category": "vendor_fix",
+          "details": "Update to firmware V3.1.5 or later, which ships libxml2 2.9.5 or later.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://cert-portal.siemens.com/productcert/html/ssa-398330.html"
+        },
+        {
+          "category": "mitigation",
+          "details": "Until the update is applied, restrict access to the web-based configuration interface to a trusted network and block external XML uploads.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-348-10"
+        }
+      ],
+      "scores": [
+        {
+          "cvss": {
+            "version": "3.1",
+            "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:N/A:N",
+            "baseScore": 5.5,
+            "baseSeverity": "MEDIUM"
+          },
+          "products": [
+            "CSAFPID-0010",
+            "CSAFPID-0011"
+          ]
+        }
+      ],
+      "references": [
+        {
+          "category": "self",
+          "summary": "Helios verdict detail, including the Q1-Q4 evidence chain",
+          "url": "https://vex.example.org/helios/CVE-2016-9318"
+        },
+        {
+          "category": "external",
+          "summary": "NVD - CVE-2016-9318",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2016-9318"
+        },
+        {
+          "category": "external",
+          "summary": "CISA ICS Advisory ICSA-23-348-10",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-348-10"
+        }
+      ]
+    }
+  ]
+}

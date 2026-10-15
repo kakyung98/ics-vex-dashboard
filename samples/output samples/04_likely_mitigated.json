@@ -1,0 +1,224 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.0",
+    "lang": "en-US",
+    "title": "Helios VEX - Modicon M340 controller (CVE-2019-6819, source not collected)",
+    "publisher": {
+      "category": "other",
+      "name": "Helios Industrial Security Lab",
+      "namespace": "https://vex.example.org/helios",
+      "contact_details": "Helios Industrial Security Lab, 42 Example Way, Springfield / vex@example.org"
+    },
+    "tracking": {
+      "id": "HELIOS-VEX-2026-0004",
+      "status": "interim",
+      "version": "1",
+      "initial_release_date": "2026-10-15T09:00:00+09:00",
+      "current_release_date": "2026-10-15T09:00:00+09:00",
+      "revision_history": [
+        {
+          "date": "2026-10-15T09:00:00+09:00",
+          "number": "1",
+          "summary": "Source collection failed, so the status stays under_investigation; applied vendor mitigations point to likely_mitigated."
+        }
+      ]
+    }
+  },
+  "product_tree": {
+    "full_product_names": [
+      {
+        "name": "Schneider Electric Modicon M340 BMXP342020 Firmware V3.20",
+        "product_id": "CSAFPID-0001",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:schneider-electric:modicon_m340_bmxp342020_firmware:3.20:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/schneider-electric/modicon-m340-bmxp342020@3.20",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/schneider-modicon-m340-3.20.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "Embedded Modbus/TCP service module V3.20",
+        "product_id": "CSAFPID-0002",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:a:schneider-electric:modbus_tcp_service:3.20:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/schneider-electric/modbus-tcp-service@3.20",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/schneider-modicon-m340-3.20.cdx.json"
+          ]
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "product_reference": "CSAFPID-0002",
+        "relates_to_product_reference": "CSAFPID-0001",
+        "full_product_name": {
+          "product_id": "CSAFPID-0010",
+          "name": "Embedded Modbus/TCP service module V3.20 as a component of Schneider Electric Modicon M340 BMXP342020 Firmware V3.20"
+        }
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2019-6819",
+      "ids": [
+        {
+          "system_name": "Schneider Electric Security Notification",
+          "text": "SEVD-2019-134-03"
+        },
+        {
+          "system_name": "CISA ICS Advisory",
+          "text": "ICSA-19-192-04"
+        }
+      ],
+      "title": "Improper input validation while handling Modbus requests on Modicon controllers (CWE-20)",
+      "notes": [
+        {
+          "category": "description",
+          "title": "Vulnerability summary",
+          "text": "The Modbus/TCP interface does not sufficiently validate certain crafted requests, so an unauthenticated attacker can drive the controller into a denial-of-service state."
+        },
+        {
+          "category": "details",
+          "title": "Basis for the VEX verdict",
+          "text": "The controller firmware is distributed as binary only, so the source could not be collected (source_code_available=false) and the official status of CSAFPID-0010 is under_investigation. The semantic estimate and its evidence are recorded in analysis.semantic_estimation. Mitigations do not change whether the vulnerable code is present, so the official status is not raised to not_affected."
+        },
+        {
+          "category": "other",
+          "title": "Why the source could not be collected",
+          "text": "Binary-only firmware; the vendor distributes neither source nor a build recipe for the Modicon runtime."
+        }
+      ],
+      "product_status": {
+        "fixed": [],
+        "known_affected": [],
+        "known_not_affected": [],
+        "under_investigation": [
+          "CSAFPID-0010"
+        ]
+      },
+      "analysis": {
+        "source_code_available": false,
+        "semantic_estimation": {
+          "likely_affected": "medium",
+          "likely_not_affected": "low",
+          "likely_mitigated": "high",
+          "likely_cannot_determine": "low",
+          "rationale": "Every compensating control named in the vendor advisory is confirmed applied on this asset, and the IP allowlist removes the unauthenticated network path the vulnerability depends on, so likely_mitigated leads. likely_affected stays medium rather than low because the vulnerable code is presumed present and the mitigations are configuration state that a change could undo.",
+          "evidence": [
+            {
+              "signal": "vendor_mitigation_applied",
+              "value": "application password and Modbus write protection enabled",
+              "supports": "likely_mitigated",
+              "source": "asset configuration snapshot vs SEVD-2019-134-03"
+            },
+            {
+              "signal": "network_path_restricted",
+              "value": "IP allowlist blocks unauthenticated sessions",
+              "supports": "likely_mitigated",
+              "source": "asset configuration snapshot"
+            },
+            {
+              "signal": "low_exploitation_pressure",
+              "value": "EPSS 0.00412, not in KEV",
+              "supports": "likely_mitigated",
+              "source": "epss/kev feed"
+            },
+            {
+              "signal": "vulnerable_code_presumed_present",
+              "value": "firmware V3.20 is inside the advisory range",
+              "supports": "likely_affected",
+              "source": "vendor advisory SEVD-2019-134-03"
+            }
+          ]
+        },
+        "epss": "0.00412",
+        "hbom_evidence": [
+          {
+            "bom_ref": "hbom:bmxp342020:eth-port",
+            "property": "COMP_PART_TYPE",
+            "value": "Ethernet Port Module",
+            "relevance": "The Modbus/TCP exposure point, though the field configuration has an IP allowlist enabled.",
+            "source": "hbom/schneider-modicon-m340-3.20.hbom.json"
+          },
+          {
+            "bom_ref": "hbom:bmxp342020:cpu",
+            "property": "COMP_MANUFACTURER_PN",
+            "value": "BMXP342020",
+            "relevance": "Confirms the model supports the mitigation settings named in the vendor advisory (write protection).",
+            "source": "hbom/schneider-modicon-m340-3.20.hbom.json"
+          }
+        ]
+      },
+      "flags": [],
+      "threats": [
+        {
+          "category": "impact",
+          "details": "Were the impact to hold, the controller would halt and process availability would be lost; the applied access controls sharply narrow the reachable path.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        },
+        {
+          "category": "exploit_status",
+          "details": "Not listed in CISA KEV, and EPSS 0.00412 indicates low exploitation pressure.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "remediations": [
+        {
+          "category": "mitigation",
+          "details": "Keep the mitigations currently in place (application password, Modbus write protection, IP allowlist) and re-evaluate whenever the configuration changes.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.se.com/ww/en/download/document/SEVD-2019-134-03/"
+        },
+        {
+          "category": "vendor_fix",
+          "details": "Updating to the latest vendor firmware applies the underlying fix and removes the dependence on compensating controls.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-19-192-04"
+        }
+      ],
+      "scores": [
+        {
+          "cvss": {
+            "version": "3.1",
+            "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "baseScore": 7.5,
+            "baseSeverity": "HIGH"
+          },
+          "products": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "references": [
+        {
+          "category": "self",
+          "summary": "Helios verdict detail, with the mitigation evidence and re-evaluation triggers",
+          "url": "https://vex.example.org/helios/CVE-2019-6819"
+        },
+        {
+          "category": "external",
+          "summary": "NVD - CVE-2019-6819",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2019-6819"
+        },
+        {
+          "category": "external",
+          "summary": "CISA ICS Advisory ICSA-19-192-04",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-19-192-04"
+        }
+      ]
+    }
+  ]
+}

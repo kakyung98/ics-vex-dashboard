@@ -1,0 +1,229 @@
+{
+  "document": {
+    "category": "csaf_vex",
+    "csaf_version": "2.0",
+    "lang": "en-US",
+    "title": "Helios VEX - MELSEC iQ-R R04CPU (CVE-2021-20599, source not collected)",
+    "publisher": {
+      "category": "other",
+      "name": "Helios Industrial Security Lab",
+      "namespace": "https://vex.example.org/helios",
+      "contact_details": "Helios Industrial Security Lab, 42 Example Way, Springfield / vex@example.org"
+    },
+    "tracking": {
+      "id": "HELIOS-VEX-2026-0005",
+      "status": "draft",
+      "version": "1",
+      "initial_release_date": "2026-10-15T09:00:00+09:00",
+      "current_release_date": "2026-10-15T09:00:00+09:00",
+      "revision_history": [
+        {
+          "date": "2026-10-15T09:00:00+09:00",
+          "number": "1",
+          "summary": "Neither source nor configuration evidence is available; no hypothesis prevails, so likely_cannot_determine."
+        }
+      ]
+    }
+  },
+  "product_tree": {
+    "full_product_names": [
+      {
+        "name": "Mitsubishi Electric MELSEC iQ-R Series R04CPU",
+        "product_id": "CSAFPID-0001",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:o:mitsubishielectric:melsec_iq-r_r04cpu_firmware:*:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/mitsubishielectric/melsec-iq-r-r04cpu",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/mitsubishi-melsec-iq-r-r04cpu.cdx.json"
+          ]
+        }
+      },
+      {
+        "name": "MELSEC authentication service (revision unknown)",
+        "product_id": "CSAFPID-0002",
+        "product_identification_helper": {
+          "cpe": "cpe:2.3:a:mitsubishielectric:melsec_authentication_service:*:*:*:*:*:*:*:*",
+          "purl": "pkg:generic/mitsubishielectric/melsec-authentication-service",
+          "sbom_urls": [
+            "https://sbom.example.org/helios/mitsubishi-melsec-iq-r-r04cpu.cdx.json"
+          ]
+        }
+      }
+    ],
+    "relationships": [
+      {
+        "category": "default_component_of",
+        "product_reference": "CSAFPID-0002",
+        "relates_to_product_reference": "CSAFPID-0001",
+        "full_product_name": {
+          "product_id": "CSAFPID-0010",
+          "name": "MELSEC authentication service as a component of Mitsubishi Electric MELSEC iQ-R Series R04CPU"
+        }
+      }
+    ]
+  },
+  "vulnerabilities": [
+    {
+      "cve": "CVE-2021-20599",
+      "ids": [
+        {
+          "system_name": "Mitsubishi Electric Security Advisory",
+          "text": "2021-002"
+        },
+        {
+          "system_name": "CISA ICS Advisory",
+          "text": "ICSA-21-173-02"
+        }
+      ],
+      "title": "MELSEC series transmits authentication credentials in cleartext (CWE-319)",
+      "notes": [
+        {
+          "category": "description",
+          "title": "Vulnerability summary",
+          "text": "Some MELSEC products transmit authentication information in cleartext, so an attacker able to eavesdrop on the communication path can capture credentials."
+        },
+        {
+          "category": "details",
+          "title": "Basis for the VEX verdict",
+          "text": "The firmware source could not be collected (source_code_available=false) and the identifying evidence is incomplete as well, so the official status of CSAFPID-0010 is under_investigation. The semantic estimate and its evidence are recorded in analysis.semantic_estimation; the evidence still needed is listed in the FAQ note below."
+        },
+        {
+          "category": "other",
+          "title": "Why the source could not be collected",
+          "text": "Binary-only firmware; the device was not physically accessible for extraction during this assessment window."
+        },
+        {
+          "category": "faq",
+          "title": "Evidence needed to resolve this verdict",
+          "text": "(1) the exact firmware revision of the asset, from the nameplate or the engineering tool; (2) a vendor response on impact at model-and-revision granularity; (3) packet evidence of whether the engineering session is encrypted. Items (1) and (2) alone are enough to re-adjudicate the official status."
+        }
+      ],
+      "product_status": {
+        "fixed": [],
+        "known_affected": [],
+        "known_not_affected": [],
+        "under_investigation": [
+          "CSAFPID-0010"
+        ]
+      },
+      "analysis": {
+        "source_code_available": false,
+        "semantic_estimation": {
+          "likely_affected": "low",
+          "likely_not_affected": "low",
+          "likely_mitigated": "low",
+          "likely_cannot_determine": "high",
+          "rationale": "The firmware revision of the asset is unknown, so the NVD affected range cannot be compared at all, and the vendor advisory enumerates impact by model name only. With the deciding attribute missing rather than merely weak, no directional hypothesis can be supported above the others, so likely_cannot_determine leads and the other three stay uniformly low.",
+          "evidence": [
+            {
+              "signal": "version_unknown",
+              "value": "firmware revision field is empty in the SBOM and the HBOM",
+              "supports": "likely_cannot_determine",
+              "source": "hbom/mitsubishi-melsec-iq-r-r04cpu.hbom.json"
+            },
+            {
+              "signal": "advisory_granularity_insufficient",
+              "value": "vendor lists affected products by model name only",
+              "supports": "likely_cannot_determine",
+              "source": "vendor advisory 2021-002"
+            },
+            {
+              "signal": "configuration_evidence_absent",
+              "value": "no packet capture of the engineering session",
+              "supports": "likely_cannot_determine",
+              "source": "assessment scope note"
+            },
+            {
+              "signal": "model_name_matches_advisory",
+              "value": "R04CPU appears in the advisory model list",
+              "supports": "likely_affected",
+              "source": "vendor advisory 2021-002"
+            }
+          ]
+        },
+        "epss": "0.00213",
+        "hbom_evidence": [
+          {
+            "bom_ref": "hbom:melsec-r04cpu:cpu-module",
+            "property": "COMP_PART_CODE",
+            "value": "R04CPU",
+            "relevance": "The model name is confirmed, but the firmware revision field is empty, so the affected range cannot be compared.",
+            "source": "hbom/mitsubishi-melsec-iq-r-r04cpu.hbom.json"
+          },
+          {
+            "bom_ref": "hbom:melsec-r04cpu:datecode",
+            "property": "COMP_DATECODE",
+            "value": "unknown",
+            "relevance": "With no manufacturing date there is not even indirect ground to infer whether a patch is present.",
+            "source": "hbom/mitsubishi-melsec-iq-r-r04cpu.hbom.json"
+          }
+        ]
+      },
+      "flags": [],
+      "threats": [
+        {
+          "category": "impact",
+          "details": "Were the impact to hold, eavesdropping on an engineering session would leak credentials and open the way to logic tampering. The present evidence cannot settle whether it holds.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        },
+        {
+          "category": "exploit_status",
+          "details": "Not listed in KEV, EPSS 0.00213. Low exploitation pressure does not imply absence of impact.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "remediations": [
+        {
+          "category": "none_available",
+          "details": "Impact is unconfirmed, so no definitive action can be prescribed. Re-adjudication is required once the evidence is in hand.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.mitsubishielectric.com/en/psirt/vulnerability/pdf/2021-002.pdf"
+        },
+        {
+          "category": "mitigation",
+          "details": "Until re-adjudication, segregate the engineering network and establish sessions only over an encrypted tunnel such as a VPN.",
+          "product_ids": [
+            "CSAFPID-0010"
+          ],
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-21-173-02"
+        }
+      ],
+      "scores": [
+        {
+          "cvss": {
+            "version": "3.1",
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N",
+            "baseScore": 5.9,
+            "baseSeverity": "MEDIUM"
+          },
+          "products": [
+            "CSAFPID-0010"
+          ]
+        }
+      ],
+      "references": [
+        {
+          "category": "self",
+          "summary": "Helios verdict detail, with the reason for deferral and the evidence needed",
+          "url": "https://vex.example.org/helios/CVE-2021-20599"
+        },
+        {
+          "category": "external",
+          "summary": "NVD - CVE-2021-20599",
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2021-20599"
+        },
+        {
+          "category": "external",
+          "summary": "CISA ICS Advisory ICSA-21-173-02",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-21-173-02"
+        }
+      ]
+    }
+  ]
+}
