@@ -41,13 +41,24 @@ ICS Asset SBOM
 └──────────────────────────────────────────────────────────────┘
       │
       ▼
-┌ Stage 3 · VEX Verification ──────────────────────────────────┐
-│  CTI extraction (LLM agent) → vulnerable target resolution   │
-│     (patch → description)                                    │
-│  Q1 component? · Q2 code? · Q3 reach? · Q4 control?          │
-│     → evidence graph → VEX decision                          │
+┌ Stage 3 · VEX Verification — two arms ───────────────────────┐
+│  PRIMARY · context arm        (95% of CVEs: a CVSS vector)   │
+│     full CVSS vector → environmental preconditions           │
+│     asset operational context → impossible / mitigated /     │
+│        satisfied / unknown, per precondition                 │
+│     structural impossibility ⇒ not_affected; a control ⇒     │
+│        stays affected + CSAF mitigation + lower priority     │
+│  SECONDARY · source arm        (2.3%: source obtainable)     │
+│     CTI extraction → vulnerable target resolution            │
+│     Q1 component? · Q2 code? · Q3 reach? · Q4 control?       │
+│     the only arm that may claim vulnerable_code_not_present  │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+Stage 3's split is decided by a fact, not a preference: a component's
+`component:source-availability` picks the arm, and where both apply the source arm wins.
+See **Methodology v3** below — and `docs/METHODOLOGY_V3.md` for the 6W problem definition
+that forces the split.
 
 ### Stage 1 — Component Resolution
 
@@ -199,7 +210,140 @@ replaced — the fine-tuned Q2 judge, the static call-graph Q3 and the taint Q4 
 **removed** now that it is validated; some sections further below still describe that
 earlier approach and are being retired.
 
-### Source-uncollectable CVEs — asset-attribute estimation
+## Methodology v3 — the 6W identification problems, and VEX from CVSS × operational context
+
+Full write-up: [`docs/METHODOLOGY_V3.md`](docs/METHODOLOGY_V3.md). Live in the console at
+`/context-vex.html`. This section states the change; the sections below it describe the
+source arm, which v3 keeps but demotes.
+
+### Why the method changed — three measured numbers
+
+| measured over the corpus | value |
+|---|---|
+| components whose source is **closed** (of the 3,876 declaring a tier) | **90.87%** |
+| identified CVEs **carrying a CVSS vector** | **95.06%** |
+| assets carrying **any ICS operational property** | **0.00%** |
+
+Every figure is recomputed by `python src/sbom_cve_problems.py`, never written down.
+
+The source-level campaign covers 267 CVEs — **2.3%** of the 11,550 the corpus identifies.
+It is sound, and it cannot be the primary method, because the evidence it needs does not
+exist for the other 97.7%. The complete CVSS vector does exist, for 95%. So v3 inverts the
+default: **the context arm is the primary path and the source arm runs only where source
+exists**; where both apply, source wins, because reading code beats asserting facts about
+hardware.
+
+### The 6W problem map
+
+Identifying a CVE from a bill of materials is six identity questions, failing for different
+reasons with different prospects of repair — **4 solved, 5 partial, 5 unsolvable**
+(`src/sbom_cve_problems.PROBLEMS`).
+
+| axis | the question | the hard case | verdict |
+|---|---|---|---|
+| **WHO** | whose product is this | shared-code CVEs name every vendor that ships them — **15.45%** of CVEs list >1 vendor | solved (vendor evidence grading) |
+| **WHAT** | which product is this | CPE present on **1.58%** of components; and **an SBOM cannot prove it is complete** | partial / **unsolvable** |
+| **WHEN** | which build, as of when | version field is NOASSERTION on **100%**; range recoverable from the name on **52.88%**; **the installed version is simply not in the document** | partial / **unsolvable** |
+| **WHERE** | where does it sit | the vulnerable code is a layer below the product; **operational context is in 0% of assets** | solved / **unsolvable** |
+| **WHY** | why is it vulnerable | **ICS source cannot be obtained (90.87% closed)**; **4.94%** of CVEs have no vector; **AC:H is not an asset fact** | **unsolvable** ×3 |
+| **HOW** | how do we know | a match without provenance cannot be reviewed; a context refutation is a human assertion | solved / partial |
+
+**`unsolvable` does not mean hard** — it means the answer is not in the document, so no
+better algorithm recovers it. Each is handled by *narrowing the claim* (recall is stated
+over the components the SBOM declares, never over the software on the device), *declaring
+an input* (installed version, operational context), or *refusing to answer*
+(`vulnerable_code_not_present` is unreachable from the context arm by construction).
+Guessing is the one option off the table.
+
+### VEX from the full CVSS vector
+
+A CVSS vector is a requirements specification before it is a score. `AV:N/AC:L/PR:H/UI:R`
+says: a network path must exist, the attacker must already hold an admin account, and a
+human must act. The old branch (`src/asset_av_judge.py`) read **AV alone** and discarded
+the other seven metrics. `src/vex_context_judge.py` reads all of them, as preconditions:
+
+| metric | states a requirement? | can an asset fact refute it? |
+|---|---|---|
+| `AV:N/A/L/P` | yes, a channel | **yes** — no NIC fitted, no radio fitted, hardware diode is the sole path, ports potted, nothing executes locally |
+| `PR:L/H` | yes, an account | **yes** — the affected interface has no account model at all |
+| `UI:R` | yes, a human | **yes** — a headless controller has nobody to click |
+| `AC:H` | yes, attacker-side luck | **no, ever** — W12, fixed at `unknown` |
+| `PR:N` `UI:N` `AC:L` | no — they state the *absence* of a requirement | nothing to test |
+| `S`, `C/I/A` | no — impact, not precondition | feeds CR/IR/AR priority |
+
+That last distinction is why an unauthenticated remote RCE cannot be contextualised away:
+its only precondition is the network itself.
+
+### The rule the design turns on — structural ≠ control
+
+> **STRUCTURAL** — the asset cannot supply the requirement because of what it *is*.
+> Changing it means changing hardware or firmware.
+> → a sound refutation; **may set `not_affected`**.
+>
+> **CONTROL** — it is not supplied because of how the asset is *configured*.
+> A change window, a misconfiguration, an engineer with a laptop undoes it.
+> → **never sets `not_affected`**. Stays `affected`, exports as a CSAF
+> `remediation/mitigation`, and lowers the environmental score only.
+
+The v1 branch conflated these: a host firewall and a sealed port both "closed an attack
+vector". Measured effect of separating them — an unauthenticated RCE on an asset segmented
+into a control network now reads **`affected`, base 9.1 → environmental 6.3, three controls
+recorded**, where the old logic cleared it outright.
+
+Three things the context arm is built so it *cannot* do:
+
+- **never emit `inline_mitigations_already_exist`** — CISA defines it as a mitigation the
+  *supplier* built into the product; an operator's firewall is not one, and borrowing the
+  label ships a false claim in a machine-readable document;
+- **never emit `vulnerable_code_not_present`** — closed firmware cannot be looked at, so the
+  justification has no entry in the mapping table at all;
+- **never express an absent operator as `MUI:N`** — `MUI:N` means "no interaction needed" and
+  *raises* the score; "there is no one to interact" is a refutation. A metric value and an
+  impossibility are not interchangeable.
+
+Every refutation carries **`scope: as-scored`**: NVD scores the most severe realistic path,
+not every path, so "the channel this CVE was scored on is absent here" is not "this CVE can
+never be exploited here". Residual open channels are listed on the statement, and an
+unattested structural claim is flagged `UNATTESTED` before publication.
+
+### Priority is the standard's own environmental score
+
+Ranking the `affected` statements uses **CVSS v3.1's environmental metric group computed to
+spec**, not a bespoke heuristic: `MAV` from the network position (`control-network`→`A`,
+`isolated-cell`→`L`, no NIC→`P`), `MPR:N` where the interface enforces no authentication
+(which *raises* the score — an operator reading "PR:L, we're fine" is wrong), `MC:N` where
+the asset holds no sensitive data, `E:H` from KEV (EPSS is capped at `E:P`: it is a
+probability, not a maturity), `RL` from the CSAF remediation category, and CR/IR/AR from the
+asset's mission. Verified by reproducing **all 10,980 NVD-published base scores exactly**
+(`python src/cvss.py`). A refuted statement scores environmental **0** — scoring it anyway
+would claim the CVE both does not apply and applies harder than published.
+
+### Measured reach
+
+The corpus has operational context for 0% of assets, so there is no real context to score
+against; inventing one and calling the result accuracy is the synthetic-estimate mistake the
+old branch was removed for. What *is* measurable is **sensitivity** — how much of the real
+11,550-CVE population a realistic asset profile decides (`tools/eval_context_vex.py`):
+
+| asset archetype | affected | not_affected | under_inv | env ≥ 9.0 |
+|---|---|---|---|---|
+| L1 headless PLC, isolated cell | 5,129 | **5,851** | 570 | 1 |
+| SIS logic solver, potted ports + hardware diode | 328 | **10,652** | 570 | 0 |
+| L2 HMI / engineering workstation | 10,980 | **0** | 570 | 146 |
+| L3.5 DMZ historian, vendor remote access | 10,980 | **0** | 570 | 1,318 |
+| wireless-capable RTU, radio not fitted | 8,691 | **2,289** | 570 | 146 |
+| **context not supplied (control)** | 10,980 | **0** | 570 | 1,318 |
+
+The two zero rows are the point. **A blank context clears nothing** — the intended failure
+mode, reported by `readiness()` rather than left to look like an analysis. And **an HMI
+workstation clears nothing either**: an asset with a human, accounts, local execution and
+open ports gets no relief from context. Clearances concentrate on headless and sealed
+assets, and in the L1 case **3,542 of 5,851 rest on one assertion** ("nothing executes
+locally") — which is exactly why W14's attestation flag is not decoration. The constant 570
+`under_investigation` is precisely the set of CVEs with no CVSS vector (W11): analysis that
+could not *start*, as distinct from analysis that found no refutation.
+
+### Source-uncollectable CVEs — asset-attribute estimation (v1, superseded by the above)
 
 Stage 3 needs the product source; much ICS firmware cannot be obtained, so the vulnerable
 function cannot be located and the source-level code tree (Q2–Q4) does not apply. For those CVEs the
@@ -1053,7 +1197,7 @@ mix, and every exclusion with its reason.
 
 ```
 ICS-VEX/
-├── src/                          core modules (19)
+├── src/                          core modules (24)
 │   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
 │   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
 │   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
@@ -1063,7 +1207,12 @@ ICS-VEX/
 │   ├── cpe_match_ai.py           semantic retrieval behind the string cascade (scaffolded)
 │   ├── vex_batch.py / vex_pipeline.py   corpus-level VEX batch
 │   ├── vex_source_unavailable.py decision tree for source-uncollectable CVEs
-│   ├── asset_av_judge.py         source-less: asset attributes → attack vectors → CVSS AV match (+ likely_* estimate)
+│   ├── sbom_cve_problems.py      v3 — the 6W problem taxonomy; every figure recomputed from the corpus
+│   ├── cvss.py                   v3 — CVSS v3.1/v2 parse, base/threat/environmental score, preconditions
+│   ├── ics_context.py            v3 — asset context schema; structural vs control vs mission
+│   ├── vex_context_judge.py      v3 — PRIMARY VEX arm: full vector × operational context
+│   ├── context_vex_page.py       the /context-vex.html page (6W map + judge + sensitivity)
+│   ├── asset_av_judge.py         v1, SUPERSEDED by vex_context_judge — AV-only match (+ likely_* estimate)
 │   └── asset_vex_page.py         the asset-attribute form + JS client port (static-site parity)
 ├── tools/                        76 pipeline scripts, incl. Stage 3 (VEX-v2):
 │   ├── cti_extract.py            CTI → structured info (Ollama)
@@ -1078,6 +1227,7 @@ ICS-VEX/
 │   ├── collect_snapshots_nvd.py  snapshots for CVEs the hand catalog never covered
 │   ├── split_benchmark_by_asset.py  benchmark/item3/by_asset/, one file per advisory
 │   ├── build_vex_gt.py · eval_vex_precision.py               test item #4 GT + scorer
+│   ├── eval_context_vex.py        v3 — corpus-wide sensitivity of the context arm, per archetype
 │   ├── eval_encoder_contribution.py  what item #3's encoder actually contributes
 │   ├── eval_cti_localization.py      does item #4's LLM name the function the fix edits
 │   ├── summarize_vex_v2.py       results/vex_v2_summary.json
@@ -1184,6 +1334,12 @@ python src/api_server.py --port 8100
 ```bash
 python tools/fetch_cisa_advisories.py
 python tools/fetch_exploit_signals.py
+
+# methodology v3 - the 6W problem map, the CVSS arithmetic, the context arm
+python src/sbom_cve_problems.py      # 6W taxonomy, every figure recomputed from the corpus
+python src/cvss.py                   # reproduces all 10,980 NVD-published base scores
+python src/vex_context_judge.py      # the judge on five worked cases
+python tools/eval_context_vex.py     # corpus-wide sensitivity -> results/context_vex_sensitivity.json
 
 git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF
 python tools/collect_gt_icsa.py --csaf-repo /tmp/CSAF

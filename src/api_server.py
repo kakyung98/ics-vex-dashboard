@@ -33,8 +33,12 @@ import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
 import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
 from cert_page import CERT_PAGE      # the /cert.html markup + client script
+from context_vex_page import CONTEXT_VEX_PAGE  # the /context-vex.html markup + client script
 from asset_vex_page import ASSET_VEX_PAGE, ASSET_AV_MODAL_JS, ASSET_AV_CLIENT_JS  # /asset-vex.html + shared JS
-import asset_av_judge as AV                # source-less exploitability logic
+import asset_av_judge as AV                # source-less exploitability logic (v1: AV only)
+import vex_context_judge as CJ            # v3: full CVSS vector x ICS operational context
+import ics_context as ICTX                # the asset context schema and its evaluation
+import sbom_cve_problems as P6W           # the 6W problem taxonomy, measured from the corpus
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
 except Exception:
@@ -253,11 +257,9 @@ class Store:
         # vex_judge_v2 emits four statuses; this map had only three, so `fixed` fell to
         # the `.get(..., UNDER_INV)` default and the console published the 4 patch-gate
         # clearances as UNDER_INVESTIGATION - the one status the pipeline claims it never
-        # produces. FIXED and the rank maps are now in place (see the FIXED constant);
-        # what remains is the mapping decision itself.
-        # TODO(human): add the "fixed" entry to _vmap.
+        # produces.
         _vmap = {"affected": AFFECTED, "not_affected": NOT_AFFECTED,
-                 "under_investigation": UNDER_INV}
+                 "under_investigation": UNDER_INV, "fixed": FIXED}
         self.vex_v2 = {}
         for _r in (_vv.get("cves") or []):
             _ev = _r.get("evidence") or {}
@@ -1172,6 +1174,78 @@ def build_app():
         res["cve"] = cve
         return res
 
+    # ---- v3: the context arm (full CVSS vector x ICS operational context) ----
+    # The v1 endpoint above reads one metric (AV) and matches it against an
+    # attack-surface set. These read the whole vector, evaluate every precondition
+    # it imposes, and keep a structural impossibility strictly apart from an
+    # operator control - only the former may set not_affected. See
+    # docs/METHODOLOGY_V3.md.
+
+    @app.get("/api/problems-6w")
+    def problems_6w():
+        """The 6W problem taxonomy for S/HBOM -> CVE identification, with every
+        figure recomputed from the corpus rather than read from a constant."""
+        return P6W.report()
+
+    @app.get("/api/context/fields")
+    def context_fields():
+        """The asset context schema, grouped by what each group is allowed to decide."""
+        groups = {"structural": [], "control": [], "mission": []}
+        for key, kind, typ, label, helptext in ICTX.CONTEXT_FIELDS:
+            groups[kind].append({"key": key, "type": typ, "label": label,
+                                 "help": helptext})
+        return {"groups": groups,
+                "rule": {"structural": "a property of the hardware or build; its "
+                                       "absence is a sound refutation and may set "
+                                       "not_affected",
+                         "control": "a configuration or procedure; it lowers the "
+                                    "environmental score and exports as a CSAF "
+                                    "mitigation, but never sets not_affected",
+                         "mission": "what a successful exploit would cost; drives "
+                                    "CR/IR/AR priority only, never the status"}}
+
+    class ContextVexReq(BaseModel):
+        cve: str = ""
+        vector: str | None = None
+        context: dict = {}
+        cve_requirements: dict = {}
+        component_present: bool = True
+        version_in_range: bool = True
+        patched: bool = False
+
+    @app.post("/api/context-vex")
+    def context_vex(req: ContextVexReq):
+        """Judge one (asset, CVE) statement from the full vector and the context."""
+        body = req.dict()
+        cve = (body.get("cve") or "").strip().upper()
+        vector = body.get("vector")
+        if not vector:                                  # fall back to the cache
+            rec = _load(os.path.join(DATA, "nvd_cvss.json"), {}).get(cve)
+            if isinstance(rec, dict):
+                vector = rec.get("vector")
+        sig = _load(os.path.join(DATA, "exploit_signals.json"), {}).get(cve) or {}
+        rem = _load(os.path.join(DATA, "remediations.json"), {}).get(cve) or {}
+        res = CJ.judge(cve, vector, body.get("context") or {},
+                       cve_requirements=body.get("cve_requirements") or {},
+                       signals=sig,
+                       remediation_categories=list(rem.get("categories") or {}),
+                       component_present=body.get("component_present", True),
+                       version_in_range=body.get("version_in_range", True),
+                       patched=body.get("patched", False))
+        res["readiness"] = CJ.readiness(body.get("context") or {})
+        return res
+
+    @app.get("/api/context/sensitivity")
+    def context_sensitivity():
+        """The committed corpus-wide sensitivity measurement, if it has been run."""
+        p = os.path.join(BASE, "results", "context_vex_sensitivity.json")
+        if not os.path.isfile(p):
+            return {"available": False,
+                    "how": "python tools/eval_context_vex.py"}
+        d = _load(p, {})
+        d["available"] = True
+        return d
+
     @app.get("/api/cert/items")
     def cert_items():
         return CERT.items()
@@ -1275,6 +1349,10 @@ def build_app():
     @app.get("/cert.html", response_class=HTMLResponse)
     def cert_page():
         return make_page("cert")
+
+    @app.get("/context-vex.html", response_class=HTMLResponse)
+    def context_vex_html():
+        return make_page("context-vex")
 
     @app.get("/asset-vex.html", response_class=HTMLResponse)
     def asset_vex_page():
@@ -2888,6 +2966,7 @@ PAGES = {
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
     "cert": ("Certification performance metrics", CERT_PAGE),
     "asset-vex": ("Asset-attribute exploitability", ASSET_VEX_PAGE),
+    "context-vex": ("6W problems & CVSS x context VEX", CONTEXT_VEX_PAGE),
 }
 # Two sections: the ANALYZER (interactive tools that take an SBOM and produce a VEX
 # judgement, in pipeline order) and the DATASET (the reference corpus those tools are
@@ -2901,6 +2980,7 @@ _NAV_GROUPS = [
     # asset-attribute estimate). Grouped apart from the analyzer tool.
     ("Method", [
         ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
+        ("context-vex", "context-vex.html", "6W problems & CVSS×context VEX"),
         ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
     ]),
     ("Certification", [

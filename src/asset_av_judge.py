@@ -1,6 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Asset-attribute-based exploitability judgment for source-less CVEs.
+"""Asset-attribute exploitability judgment for source-less CVEs (v1, SUPERSEDED).
+
+SUPERSEDED BY src/vex_context_judge.py. This module reads exactly one CVSS
+metric - the Attack Vector - and discards the other seven, and it treats a host
+firewall and a potted maintenance port as the same kind of fact, so an operator
+control could close an "attack vector" and clear a CVE. The successor reads the
+complete vector as a set of environmental preconditions and keeps a structural
+impossibility strictly apart from a reversible control; only the former may set
+not_affected. See docs/METHODOLOGY_V3.md.
+
+Kept because the certification material and the static Pages bundle reference the
+NVAS five-flowchart form, and because it remains a correct special case: with only
+AV available and the structural/control split collapsed, this is what the
+successor degrades to.
+
 
 This is the "CVE & Asset Context Analysis" branch: when no source can be
 collected, the vulnerable function cannot be located, so the source-level tree
