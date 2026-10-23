@@ -594,3 +594,17 @@ if __name__ == "__main__":
     print("\nthreat:", derive_threat({"kev": True}, {"vendor_fix": 1}))
     print("modified base:", derive_modified_base(headless, {"C": "H", "A": "H"})[0])
     print("mitigations:", [m["control"] for m in active_mitigations(headless)])
+
+    # The context schema is only defensible if every question in it traces to a
+    # requirement family an ICS operator is already assessed against. Checked
+    # here so a field cannot be added without a basis.
+    try:
+        import context_standards as _CS
+        _probs = _CS.check_traceability([f[0] for f in CONTEXT_FIELDS])
+        for _p in _probs:
+            print("TRACEABILITY PROBLEM:", _p)
+        print("standards traceability:",
+              "OK - all %d fields have a basis" % len(CONTEXT_FIELDS)
+              if not _probs else "BROKEN (%d)" % len(_probs))
+    except ImportError:
+        print("standards traceability: context_standards not importable")

@@ -280,6 +280,72 @@ NVD는 **가장 심각한 현실적 경로**를 점수화하며, 모든 경로�
 
 ---
 
+### 3.7 운영맥락 항목의 표준 근거 (traceability)
+
+맥락 항목이 CVE를 해제하는 이상, 심사에서 가장 먼저 나오는 질문은 **"그 24개 항목은 어디서
+왔는가"**다. "저희가 관련 있다고 판단했습니다"는 인증 맥락에서 답이 되지 않는다. 따라서
+모든 항목을 ICS 운영자가 이미 평가받고 있는 요구사항군에 정박시키고, 근거 없는 항목이
+들어오면 자가진단이 깨지게 했다 (`src/context_standards.py`).
+
+```bash
+python src/context_standards.py     # 추적성 매트릭스 + 누락 + 검증상태
+python src/ics_context.py           # 끝줄에 traceability OK/BROKEN
+```
+
+#### 참조 표준과 **검증 상태**
+
+| 키 | 표준 | 상태 | 주의 |
+|---|---|---|---|
+| `NIST-SP800-82r3` | NIST SP 800-82 Rev. 3 — Guide to Operational Technology (OT) Security (2023-09) | **primary** | 제목·개정·발행일을 NIST 발행 페이지에서 확인. **장 번호는 인용하지 않음** — 2차 자료들이 서로 충돌하고 원문을 읽지 않았음 |
+| `IEC62443-3-3` | IEC 62443-3-3 — System security requirements and security levels | secondary | FR1–FR7과 SL1–SL4 체계는 독립된 2차 자료들에서 일치. **SR 세부번호는 검증 못 해 인용하지 않음** |
+| `IEC62443-3-2` | IEC 62443-3-2 — Security risk assessment for system design | secondary | zone·conduit 모델 제공 |
+| `IEC61508-61511` | IEC 61508 / 61511 — 기능안전, SIL | secondary | SIL은 **안전** 무결성 등급이지 보안등급이 아님. 여기서는 "악용 성공 시 비용"으로만 읽음 |
+| `KR-KIIP` | 주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드 (KISA) — 제어시스템 분야 | **unverified** | 아래 분류는 **3자 자료 목차**에서 가져온 것으로 **KISA 원문이 아님.** 분류명·개수·코드가 모두 다를 수 있으므로 실제 평가 전 원문 대조 필수 |
+
+> **절 번호를 인용하지 않는 이유**: 평가 문서에 잘못된 조항번호가 들어가는 것은 조항번호가
+> 없는 것보다 나쁘다. 요구사항군(family) 수준만으로도 추적성 논증은 성립한다.
+
+#### 항목 → 요구사항군 매핑 (요약)
+
+| 맥락 항목 | IEC 62443 | NIST 800-82r3 | KR 제어시스템 |
+|---|---|---|---|
+| `net_interface_present`, `radio_hardware_present` | FR5 RDF | ARCH | 네트워크 접근통제 |
+| `sole_path_hardware_diode` | FR5 RDF, 3-2 ZC | ARCH | — |
+| `network_exposure`, `purdue_level` | 3-2 ZC, FR5 | ARCH | 네트워크 접근통제 |
+| `host_firewall`, `software_unidirectional` | FR5 RDF | ARCH | 네트워크 접근통제 |
+| `account_subsystem`, `auth_enforced` | FR1 IAC | — | 계정 관리 |
+| `interactive_operator` | FR2 UC | — | 계정 관리 |
+| `local_execution_possible`, `app_allowlisting` | FR3 SI, FR2 UC | — | 서비스 관리 |
+| `transport_encrypted`, `data_sensitivity` | FR4 DC | — | 네트워크 접근통제 |
+| `removable_media_blocked` | FR3 SI | PHYS | 물리적 접근통제 |
+| `physical_port_access`, `cabinet_locked` | — | PHYS | 물리적 접근통제 |
+| `vendor_remote_access` | FR1, FR5 | — | 네트워크 접근통제 / 보안 관리 |
+| `work_approval` | — | — | 보안 관리 |
+| `availability_tolerance` | FR7 RA | ARCH | — |
+| `device_class` | 3-2 ZC | ASSET | — |
+| `safety_function`, `sil` | 61508/61511 SIL, 3-2 ZC | — | — |
+| `patch_cadence` | — | PATCH | 패치 관리 |
+
+**커버리지: 24개 항목 전부 근거 보유, 미설명 누락 0건.**
+IEC 62443-3-3은 7개 FR 중 6개, KR 제어시스템은 9개 분류 중 6개를 수집한다.
+
+#### 일부러 수집하지 않는 요구사항군 — 이게 매핑보다 중요하다
+
+맥락 양식이 일반 보안 설문지로 번지지 않게 하는 경계선이다. **VEX는 "악용이 발동될 수 있는가"를
+묻고, 아래 요구사항군은 그 답을 바꾸지 않는다.**
+
+| 제외 | 이유 |
+|---|---|
+| IEC 62443-3-3 **FR6** (Timely Response to Events) | 탐지·대응은 취약 코드의 도달성과 발동 가능성을 바꾸지 않는다. **IDS가 버퍼 오버플로를 도달 불가로 만들지 않는다.** |
+| KR **보안위협 탐지** | FR6과 동일 — 악용을 *관측*할 뿐 전제조건을 제거하지 않는다 |
+| KR **복구대응** | 악용 성공 *이후*에 작동하므로 결과(consequence)의 문제이지 악용 가능성의 문제가 아니다 |
+| KR **교육훈련** | 운영자가 속을 *확률*을 바꾼다. `UI:R`이 묻는 것은 "대화형 운영자가 **존재하는가**"라는 전제조건이고, 그가 얼마나 잘 훈련됐는지는 확률이라 아무것도 반박할 수 없다 |
+
+이 네 건은 `context_standards.EXCLUDED` 에 사유와 함께 기록돼 있고, **사유 없이 빠진
+요구사항군은 `coverage()` 가 `UNEXPLAINED` 로 보고한다** — 누락이 조용히 발생하지 않게 하기
+위해서다(매핑 오류는 지적이라도 받지만, 누락은 아무도 질문하지 않는다).
+
+
 ## 4. 측정 — 이 방법론이 실제로 얼마를 판정하는가
 
 코퍼스의 운영맥락 보유율이 0%이므로(W9) 실제 자산 맥락이 없다. 한 자산의 속성을

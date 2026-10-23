@@ -39,6 +39,7 @@ import asset_av_judge as AV                # source-less exploitability logic (v
 import vex_context_judge as CJ            # v3: full CVSS vector x ICS operational context
 import ics_context as ICTX                # the asset context schema and its evaluation
 import sbom_cve_problems as P6W           # the 6W problem taxonomy, measured from the corpus
+import context_standards as CSTD          # standards basis for the context schema
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
 except Exception:
@@ -1193,7 +1194,8 @@ def build_app():
         groups = {"structural": [], "control": [], "mission": []}
         for key, kind, typ, label, helptext in ICTX.CONTEXT_FIELDS:
             groups[kind].append({"key": key, "type": typ, "label": label,
-                                 "help": helptext})
+                                 "help": helptext,
+                                 "refs": CSTD.refs_for(key)})
         return {"groups": groups,
                 "rule": {"structural": "a property of the hardware or build; its "
                                        "absence is a sound refutation and may set "
@@ -1234,6 +1236,13 @@ def build_app():
                        patched=body.get("patched", False))
         res["readiness"] = CJ.readiness(body.get("context") or {})
         return res
+
+    @app.get("/api/context/standards")
+    def context_standards():
+        """Traceability of the context schema to IEC 62443 / NIST SP 800-82 / the
+        KISA critical-infrastructure guide, with the deliberate omissions and the
+        verification caveats attached."""
+        return CSTD.report([f[0] for f in ICTX.CONTEXT_FIELDS])
 
     @app.get("/api/context/sensitivity")
     def context_sensitivity():
