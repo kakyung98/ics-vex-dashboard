@@ -255,12 +255,38 @@ an input* (installed version, operational context), or *refusing to answer*
 (`vulnerable_code_not_present` is unreachable from the context arm by construction).
 Guessing is the one option off the table.
 
-### VEX from the full CVSS vector
+### VEX from the CVSS Exploitability metrics — and what the rest of the vector is *not* for
 
-A CVSS vector is a requirements specification before it is a score. `AV:N/AC:L/PR:H/UI:R`
-says: a network path must exist, the attacker must already hold an admin account, and a
-human must act. The old branch (`src/asset_av_judge.py`) read **AV alone** and discarded
-the other seven metrics. `src/vex_context_judge.py` reads all of them, as preconditions:
+**VEX answers one question: can an adversary exploit this vulnerability in this product.**
+It is not a severity judgment and has no severity field, so most of what an asset knows
+about itself is irrelevant to the status. CVSS already draws this line, and the pipeline
+follows it exactly: the Base metric group splits into **Exploitability metrics**
+(`AV / AC / PR / UI` — can it be triggered) and **Impact metrics** (`C / I / A` — what is
+lost if it is). The VEX judgment reads the first group and **nothing else**.
+
+| | metric group | used for |
+|---|---|---|
+| **VEX status** | Exploitability (`AV/AC/PR/UI`) + the CTI service requirement | the only inputs that can set `not_affected` |
+| priority score (**not VEX**) | Impact (`C/I/A`) + `CR/IR/AR`, `MAV` from network position | ordering the `affected` pile; cannot touch a status |
+
+Verifiable: hold the exploitability half fixed and swing the impact half from `C:H/I:N/A:N`
+to `C:H/I:H/A:H` — the status stays `affected` in every case and only the score moves
+(0.0 → 8.8). Swing the network position from `remote-accessible` to `isolated-cell` — again
+`affected` throughout, 9.8 → 8.4. What *does* flip a status is an exploitability-half fact:
+no NIC fitted, no account model, no interactive operator.
+
+Network position is the arguable one, because segmentation really is a reachability fact.
+It is barred from setting a status not because it is irrelevant but because it is
+**reversible**: a verdict that one firewall rule overturns does not belong in a published
+document. It is recorded as a mitigation and lowers the score instead.
+
+Why a priority score is produced at all: VEX stops at "exploitable", and one L1 PLC ends up
+with **5,129 `affected` statements**. The asset owner still has to decide what to touch
+first, and that ordering needs the impact half. It is emitted in a separate `score` field,
+never as part of the judgment.
+
+Within the exploitability half, the old branch (`src/asset_av_judge.py`) read **AV alone**
+and discarded the rest. `src/vex_context_judge.py` reads all of them, as preconditions:
 
 | metric | states a requirement? | can an asset fact refute it? |
 |---|---|---|
@@ -313,8 +339,20 @@ spec**, not a bespoke heuristic: `MAV` from the network position (`control-netwo
 `isolated-cell`→`L`, no NIC→`P`), `MPR:N` where the interface enforces no authentication
 (which *raises* the score — an operator reading "PR:L, we're fine" is wrong), `MC:N` where
 the asset holds no sensitive data, `E:H` from KEV (EPSS is capped at `E:P`: it is a
-probability, not a maturity), `RL` from the CSAF remediation category, and CR/IR/AR from the
-asset's mission. Verified by reproducing **all 10,980 NVD-published base scores exactly**
+probability, not a maturity), `RL` from the CSAF remediation category, and **CR/IR/AR from the
+asset's mission** — the one place OT reality rather than topology sets the number.
+
+CR/IR/AR start from what the device class exists to do (a controller's forged command and a
+dead controller are both process events, so `IR`/`AR` lead and `CR` trails; a historian is the
+inverse), are overridden by any stated tolerance or data sensitivity, and are raised on safety
+assets on **both** integrity and availability — a safety function running on forged values
+defeats the protection silently, where a dead one fails visibly. They are **never all three
+High**: CVSS weighting is relative, so raising everything restores the base ordering at a higher
+multiplier and the ranking loses the discrimination the metric exists to add; the dimension the
+asset's mission depends on least is demoted instead. Effect, on three CVEs that all score base
+7.5: on a SIL3 safety PLC the availability and integrity ones rise to **8.3** and the
+confidentiality one falls to **0**; on a DMZ historian the confidentiality one rises to **9.3**
+and the availability one falls to **5.7**. Verified by reproducing **all 10,980 NVD-published base scores exactly**
 (`python src/cvss.py`). A refuted statement scores environmental **0** — scoring it anyway
 would claim the CVE both does not apply and applies harder than published.
 
@@ -327,11 +365,11 @@ old branch was removed for. What *is* measurable is **sensitivity** — how much
 
 | asset archetype | affected | not_affected | under_inv | env ≥ 9.0 |
 |---|---|---|---|---|
-| L1 headless PLC, isolated cell | 5,129 | **5,851** | 570 | 1 |
-| SIS logic solver, potted ports + hardware diode | 328 | **10,652** | 570 | 0 |
-| L2 HMI / engineering workstation | 10,980 | **0** | 570 | 146 |
-| L3.5 DMZ historian, vendor remote access | 10,980 | **0** | 570 | 1,318 |
-| wireless-capable RTU, radio not fitted | 8,691 | **2,289** | 570 | 146 |
+| L1 headless PLC, isolated cell | 5,129 | **5,851** | 570 | 139 |
+| SIS logic solver, potted ports + hardware diode | 328 | **10,652** | 570 | 9 |
+| L2 HMI / engineering workstation | 10,980 | **0** | 570 | 198 |
+| L3.5 DMZ historian, vendor remote access | 10,980 | **0** | 570 | 1,701 |
+| wireless-capable RTU, radio not fitted | 8,691 | **2,289** | 570 | 221 |
 | **context not supplied (control)** | 10,980 | **0** | 570 | 1,318 |
 
 The two zero rows are the point. **A blank context clears nothing** — the intended failure
@@ -339,7 +377,12 @@ mode, reported by `readiness()` rather than left to look like an analysis. And *
 workstation clears nothing either**: an asset with a human, accounts, local execution and
 open ports gets no relief from context. Clearances concentrate on headless and sealed
 assets, and in the L1 case **3,542 of 5,851 rest on one assertion** ("nothing executes
-locally") — which is exactly why W14's attestation flag is not decoration. The constant 570
+locally") — which is exactly why W14's attestation flag is not decoration. A useful control on
+the scoring half: switching CR/IR/AR on changed **no asset's status anywhere** and moved only
+the priorities (L1 PLC `env≥9`: 1→139; DMZ historian 1,318→1,701 while its *mean* fell
+7.08→6.96, because confidentiality-heavy CVEs rose past 9 on an information asset as
+availability-heavy ones sank). The control row did not move at all — it states no mission
+fact, so nothing weights it. The constant 570
 `under_investigation` is precisely the set of CVEs with no CVSS vector (W11): analysis that
 could not *start*, as distinct from analysis that found no refutation.
 

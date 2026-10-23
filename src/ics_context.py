@@ -282,35 +282,150 @@ def derive_modified_base(ctx, impact):
 
 
 # --- environmental metric group: the impact REQUIREMENTS (CR / IR / AR) ------
+# What the asset's MISSION requires of confidentiality, integrity and availability.
+# This is the one place in the environmental group where ICS operating reality -
+# not network topology - sets the number, and the direction is not the IT default:
+# on a protection relay a loss of availability is a trip, while a loss of
+# confidentiality is a nuisance.
+#
+# Starting point per device class, as (CR, IR, AR). Read "what does this box exist
+# to do, and which property of it does the process depend on":
+#   process controllers (plc/rtu/ied/sis) command physical equipment, so a forged
+#     command (IR) and a dead controller (AR) are both process events, while the
+#     setpoints themselves are rarely secret;
+#   hmi / engineering workstation sit between the operator and the controllers -
+#     they WRITE logic, so their integrity is a controller-integrity problem one
+#     step removed, and they hold project files worth something;
+#   a historian is an information asset: its value is the record, so a falsified
+#     or exposed record outranks a few hours of downtime;
+#   a network device carries everyone else's traffic, so availability dominates.
+_CLASS_REQ = {
+    "plc":                     ("L", "H", "H"),
+    "rtu":                     ("L", "H", "H"),
+    "ied":                     ("L", "H", "H"),
+    "sis-logic-solver":        ("L", "H", "H"),
+    "hmi":                     ("M", "H", "M"),
+    "engineering-workstation": ("M", "H", "M"),
+    "historian":               ("H", "M", "L"),
+    "network-device":          ("L", "M", "H"),
+}
+_AVAIL_AR = {"continuous": "H", "scheduled": "M", "interruptible": "L"}
+_SENS_CR = {"high": "H", "low": "M", "none": "L"}
+# Purdue levels where the asset's job is the process rather than information.
+_PROCESS_LEVELS = {"0", "1", "2"}
+_INFORMATION_LEVELS = {"3", "3.5", "4"}
+
+
 def impact_requirements(ctx):
-    """{CR, IR, AR} + reasons: how much this asset's mission cares about each of
-    confidentiality, integrity and availability.
+    """({CR, IR, AR}, reasons) from the asset's mission facts.
 
-    CVSS defines these as the security requirements of the ORGANISATION for the
-    asset, with H = 1.5, M = 1.0, L = 0.5 as multipliers on the matching impact
-    sub-score. They are the one place in the environmental group where the ICS
-    operating reality, rather than the network topology, sets the number - and
-    the direction is not the IT default: on a protection relay a loss of
-    availability is a trip, while a loss of confidentiality is a nuisance.
+    CVSS defines these as the organisation's security requirements for the asset,
+    with H = 1.5, M = 1.0, L = 0.5 multiplying the matching impact sub-score.
 
-    Returns ({}, []) while unimplemented, which makes every requirement "X"
-    (multiplier 1.0) so the environmental score stays well-defined and simply
-    carries no mission weighting yet.
+    Two rules shape the result beyond the per-class table:
+
+      * A SAFETY asset raises INTEGRITY as well as availability. The intuitive
+        move is to raise AR alone - "if it stops, the protection is gone" - but a
+        safety instrumented function that keeps running while reporting a forged
+        process value is worse than one that fails to a safe state. Corrupted
+        trip logic defeats the function silently; a dead logic solver is at least
+        visible.
+      * The three requirements are never all H. CVSS's weighting is RELATIVE, so
+        raising everything raises nothing: it restores the base ordering at a
+        higher multiplier and the ranking loses exactly the discrimination the
+        metric exists to add. When all three would be High, the one the asset's
+        mission depends on least is demoted to Medium - confidentiality on a
+        process asset, availability on an information asset.
+
+    Returns ({}, []) when no mission fact is stated, which leaves every
+    requirement at CVSS "X" (multiplier 1.0) rather than inventing a posture.
     """
-    # TODO(human): map the asset's mission facts to CR / IR / AR.
-    #
-    # Available in `ctx` (see CONTEXT_FIELDS for the exact value sets):
-    #   device_class           plc | rtu | ied | hmi | engineering-workstation |
-    #                          historian | sis-logic-solver | network-device
-    #   safety_function        True / False / None
-    #   sil                    none | SIL1 | SIL2 | SIL3 | SIL4
-    #   availability_tolerance continuous | scheduled | interruptible
-    #   data_sensitivity       none | low | high
-    #   purdue_level           0 | 1 | 2 | 3 | 3.5 | 4
-    #
-    # Return ({"CR": "H"|"M"|"L", "IR": ..., "AR": ...}, ["reason", ...]).
-    # Omit a key (or use "X") to leave that requirement unweighted.
-    return {}, []
+    dev = ctx.get("device_class")
+    sil = (ctx.get("sil") or "").upper()
+    safety = _t(ctx, "safety_function") is True or dev == "sis-logic-solver" \
+        or sil in ("SIL2", "SIL3", "SIL4")
+    avail = ctx.get("availability_tolerance")
+    sens = ctx.get("data_sensitivity")
+    level = str(ctx.get("purdue_level") or "")
+
+    if not any((dev, avail, sens, level)) and not safety:
+        return {}, []
+
+    why = []
+    if dev in _CLASS_REQ:
+        cr, ir, ar = _CLASS_REQ[dev]
+        why.append("CR:%s/IR:%s/AR:%s - starting point for a %s: %s"
+                   % (cr, ir, ar, dev,
+                      "it commands physical equipment, so a forged command and a "
+                      "dead controller are both process events while setpoints are "
+                      "rarely secret"
+                      if dev in ("plc", "rtu", "ied", "sis-logic-solver") else
+                      "it writes controller logic, so its integrity is a controller "
+                      "integrity problem one step removed"
+                      if dev in ("hmi", "engineering-workstation") else
+                      "it is an information asset - the record is the value"
+                      if dev == "historian" else
+                      "it carries other assets' traffic, so availability dominates"))
+    else:
+        # No class stated. Start from the OT default rather than the IT one, and
+        # say so, because an unstated class is not a reason to weight an ICS asset
+        # like a web server.
+        cr, ir, ar = "L", "H", "H"
+        why.append("CR:L/IR:H/AR:H - no device class stated; defaulting to the OT "
+                   "posture (integrity and availability over confidentiality) "
+                   "rather than the IT one")
+
+    # An explicitly stated tolerance or sensitivity is a fact about THIS asset and
+    # outranks the class stereotype it was started from.
+    if avail in _AVAIL_AR and _AVAIL_AR[avail] != ar:
+        why.append("AR:%s - the process tolerates %s downtime, which the stated "
+                   "tolerance settles more directly than the device class (was %s)"
+                   % (_AVAIL_AR[avail], avail, ar))
+        ar = _AVAIL_AR[avail]
+    if sens in _SENS_CR and _SENS_CR[sens] != cr:
+        why.append("CR:%s - data sensitivity on this asset is %s, which settles "
+                   "the confidentiality requirement directly (was %s)"
+                   % (_SENS_CR[sens], sens, cr))
+        cr = _SENS_CR[sens]
+
+    if safety:
+        reason = ("it performs or protects a safety function"
+                  if _t(ctx, "safety_function") is True else
+                  "it is a safety logic solver" if dev == "sis-logic-solver"
+                  else "it carries %s" % sil)
+        if ir != "H" or ar != "H":
+            why.append("IR:H/AR:H - %s. Availability is obvious (no function, no "
+                       "protection); integrity matters as much, because a safety "
+                       "function that keeps running on forged values defeats the "
+                       "protection silently, where a dead one fails visibly."
+                       % reason)
+        ir, ar = "H", "H"
+
+    # Never all three High - see the docstring.
+    if cr == ir == ar == "H":
+        information = (level in _INFORMATION_LEVELS
+                       or (not level and dev in ("historian", "engineering-workstation")))
+        if information:
+            why.append("AR:M - all three requirements came out High, which flattens "
+                       "the ranking back to the base order. This asset's mission is "
+                       "informational, so availability is the one it depends on "
+                       "least and is demoted.")
+            ar = "M"
+        else:
+            why.append("CR:M - all three requirements came out High, which flattens "
+                       "the ranking back to the base order. This is a process asset, "
+                       "so confidentiality is the one its mission depends on least "
+                       "and is demoted.")
+            cr = "M"
+
+    # Purdue level only breaks a tie the stated facts left open; it never
+    # overrides a fact, because a zone is where a thing sits, not what it does.
+    if not avail and not safety and level in _PROCESS_LEVELS and ar == "M":
+        why.append("AR:H - no tolerance was stated, and a Level-%s asset is in the "
+                   "process path where downtime is a process event" % level)
+        ar = "H"
+
+    return {"CR": cr, "IR": ir, "AR": ar}, why
 
 
 # --- evaluating one CVSS precondition against the context --------------------

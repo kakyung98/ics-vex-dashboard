@@ -1,6 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""VEX from the full CVSS vector and the ICS asset's operational context.
+"""VEX from the CVSS Exploitability metrics and the ICS asset's operational context.
+
+Which half of the vector decides a status, and which half may not
+-----------------------------------------------------------------
+VEX answers one question: can an adversary exploit this vulnerability in this
+product. It is not a severity judgment and has no severity field. CVSS already
+splits its Base group along exactly that line, and this module follows it:
+
+  Exploitability metrics  AV / AC / PR / UI   can it be triggered
+  Impact metrics          C / I / A           what is lost if it is
+
+`cvss.preconditions()` returns the first group only, and those - plus the CTI
+service requirement - are the ONLY inputs that can set a status. The Impact
+metrics leave through `cvss.impact_profile()` into the `score` field and can
+never reach the verdict. Hold the exploitability half fixed and swing the impact
+half from C:H/I:N/A:N to C:H/I:H/A:H: the status is `affected` either way and
+only the score moves.
+
+Network position is the one arguable input, because segmentation really is a
+reachability fact. It is barred from setting a status not because it is
+irrelevant but because it is REVERSIBLE - a verdict one firewall rule overturns
+does not belong in a published document - so it is recorded as a mitigation and
+lowers the score instead.
+
+The score exists because VEX stops at "exploitable" and one L1 PLC ends up with
+5,129 affected statements; the owner still has to order them. It is a separate
+output that sits beside the VEX judgment, not part of it.
+
 
 This is the judge for the 93.5% of components whose source cannot be obtained -
 which is to say, for almost the whole problem. It replaces the single-metric
@@ -249,6 +276,7 @@ def _score(cv, ctx, signals, remediation_categories, refuted=False):
         # which RAISES the modified score. Reporting both in one record would
         # claim the CVE both does not apply and applies harder than published.
         out["environmental"] = 0.0
+        out["zero_reason"] = "refuted"
         out["why"].append("environmental score 0: the statement is not_affected, so "
                           "there is no exposure on this asset to rank. The base "
                           "score is kept for reference only.")
@@ -269,9 +297,21 @@ def _score(cv, ctx, signals, remediation_categories, refuted=False):
     out["modifiers"] = mod
     out["why"] = twhy + mwhy + list(rwhy or [])
     if not req:
-        out["why"].append("CR/IR/AR left unweighted (impact_requirements is not "
-                          "yet implemented), so the environmental score reflects "
-                          "exposure but not mission criticality")
+        out["why"].append("CR/IR/AR left unweighted - no mission fact was stated, so "
+                          "the environmental score reflects exposure but not mission "
+                          "criticality")
+    # An environmental 0 on an AFFECTED statement means something different from an
+    # environmental 0 on a refuted one, and a reviewer cannot tell them apart from
+    # the number. It arises when every impact dimension the CVE has was modified
+    # away - e.g. a confidentiality-only CVE on an asset the owner states holds no
+    # sensitive data - so the CVE applies but has nothing to damage here.
+    if out["environmental"] == 0.0:
+        out["zero_reason"] = "no_impact_lands"
+        out["why"].append("environmental score 0 while AFFECTED: every impact "
+                          "dimension this CVE carries was modified away by the "
+                          "asset's own profile, so it applies but has nothing on "
+                          "this asset to damage. This rests on the stated profile, "
+                          "not on a refutation - the statement stays affected.")
     return out
 
 
@@ -288,6 +328,32 @@ def _triage(remediation_categories):
 
 
 # --- readiness report, so a reviewer can see what the context can decide -----
+def impact_cannot_set_status(ctx):
+    """Assert the boundary the module docstring claims, rather than only stating it.
+
+    Severity is not exploitability. If a change confined to the Impact metrics
+    (C/I/A) or to the asset's network position ever moved a VEX status, the
+    pipeline would be publishing a risk opinion as an exploitability claim. This
+    sweeps both and returns the violations, so the self-test can fail loudly
+    instead of the drift being noticed in review - or not at all.
+    """
+    bad = []
+    expl = "AV:N/AC:L/PR:N/UI:N/S:U"
+    impacts = ["C:H/I:N/A:N", "C:N/I:H/A:N", "C:N/I:N/A:H", "C:H/I:H/A:H",
+               "C:L/I:L/A:L"]
+    seen = {judge("X", "CVSS:3.1/%s/%s" % (expl, i), ctx)["status"] for i in impacts}
+    if len(seen) > 1:
+        bad.append("Impact metrics moved the status across %s: %s" % (impacts, seen))
+
+    vec = "CVSS:3.1/%s/C:H/I:H/A:H" % expl
+    seen = {judge("X", vec, dict(ctx, network_exposure=e))["status"]
+            for e in ("remote-accessible", "dmz-routable", "control-network",
+                      "isolated-cell")}
+    if len(seen) > 1:
+        bad.append("Network position moved the status: %s" % seen)
+    return bad
+
+
 def readiness(ctx):
     """Which decisions this context is currently able to support."""
     miss_s = ctxmod.missing(ctx, ctxmod.STRUCTURAL_KEYS)
@@ -338,3 +404,15 @@ if __name__ == "__main__":
         print("     base %s  env %s" % (r["score"].get("base"), r["score"].get("environmental")))
     print("\nreadiness:", readiness(headless_plc)["can_refute"],
           "| missing mission:", readiness(headless_plc)["missing_mission"])
+
+    # The boundary that keeps this a VEX judgment and not a risk opinion:
+    # severity must never move a status. Run on an asset that refutes nothing,
+    # so any status change would have to have come from the impact half.
+    open_asset = dict(headless_plc, interactive_operator=True,
+                      local_execution_possible=True, account_subsystem="multi-user",
+                      physical_port_access="open")
+    violations = impact_cannot_set_status(open_asset)
+    for v in violations:
+        print("BOUNDARY VIOLATION:", v)
+    print("boundary: impact metrics and network position cannot set a status -",
+          "OK" if not violations else "BROKEN")
