@@ -356,6 +356,44 @@ and the availability one falls to **5.7**. Verified by reproducing **all 10,980 
 (`python src/cvss.py`). A refuted statement scores environmental **0** — scoring it anyway
 would claim the CVE both does not apply and applies harder than published.
 
+### The context schema's standards basis — traceability
+
+The 24 context fields are what can clear a CVE, so the first question an assessor asks is
+where those 24 came from. *"We judged these to be the relevant ones"* is not an answer, so
+every field is anchored to a requirement family an ICS operator is **already assessed
+against**, and `src/context_standards.py` fails its self-test if a field has no basis
+(`python src/context_standards.py`, also run at the end of `python src/ics_context.py`).
+Exposed as `GET /api/context/standards`; `/api/context/fields` carries each field's refs.
+Full matrix in [`docs/METHODOLOGY_V3.md` §3.7](docs/METHODOLOGY_V3.md).
+
+| key | standard | verification status |
+|---|---|---|
+| `NIST-SP800-82r3` | NIST SP 800-82 Rev. 3 — Guide to OT Security (2023-09) | **primary** — title/revision/date confirmed at the NIST page; **chapter numbers not cited** |
+| `IEC62443-3-3` | System security requirements and security levels (FR1–FR7) | secondary — FR/SL scheme agrees across independent summaries; **SR numbers not cited** |
+| `IEC62443-3-2` | Security risk assessment for system design (zones / conduits) | secondary |
+| `IEC61508-61511` | Functional safety, SIL | secondary — SIL is a *safety* grade, read here only as cost-if-exploited |
+| `KR-KIIP` | 주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드 (KISA), 제어시스템 분야 | **unverified** — the category list came from a third-party table of contents, **not the KISA document**; check against the original before any assessment relies on it |
+
+Nothing below family level is cited on purpose: **a wrong clause number in an assessment
+document is worse than no clause number**, and family level already carries the argument.
+Coverage: all 24 fields have a basis, 0 unexplained gaps — IEC 62443-3-3 collects 6 of 7 FRs,
+KR control-system 6 of 9 categories.
+
+**What is deliberately *not* collected matters more than the mapping** — it is the line that
+keeps the context form from drifting into a general security questionnaire. VEX asks whether
+an exploit can be *triggered*, and these families do not change that answer:
+
+| excluded | why |
+|---|---|
+| IEC 62443-3-3 **FR6** (Timely Response to Events), KR **보안위협 탐지** | detection observes an exploit; it does not remove a precondition. **An IDS does not make a buffer overflow unreachable.** |
+| KR **복구대응** | acts *after* a successful exploit — a question of consequence, not of exploitability |
+| KR **교육훈련** | changes the *probability* an operator is fooled. `UI:R` asks whether an interactive operator **exists**; how well trained they are refutes nothing |
+
+Each is recorded with its reason in `context_standards.EXCLUDED`, and a family dropped
+*without* a reason is reported by `coverage()` as `UNEXPLAINED` — a silent omission is the
+dangerous one, because a wrong mapping at least gets challenged and a missing family is
+never asked about.
+
 ### Measured reach
 
 The corpus has operational context for 0% of assets, so there is no real context to score
@@ -1240,7 +1278,7 @@ mix, and every exclusion with its reason.
 
 ```
 ICS-VEX/
-├── src/                          core modules (24)
+├── src/                          core modules (25)
 │   ├── api_server.py             FastAPI backend + web console (the FRONTEND string); build_site reuses it
 │   ├── component_resolve.py      Stage 1 — ics-product / variant / embedded-component split
 │   ├── cpe_match_l0l3.py         Stage 2 — NVD CPE L0+L3 identification
@@ -1253,6 +1291,7 @@ ICS-VEX/
 │   ├── sbom_cve_problems.py      v3 — the 6W problem taxonomy; every figure recomputed from the corpus
 │   ├── cvss.py                   v3 — CVSS v3.1/v2 parse, base/threat/environmental score, preconditions
 │   ├── ics_context.py            v3 — asset context schema; structural vs control vs mission
+│   ├── context_standards.py      v3 — each context field traced to IEC 62443 / SP 800-82 / KISA
 │   ├── vex_context_judge.py      v3 — PRIMARY VEX arm: full vector × operational context
 │   ├── context_vex_page.py       the /context-vex.html page (6W map + judge + sensitivity)
 │   ├── asset_av_judge.py         v1, SUPERSEDED by vex_context_judge — AV-only match (+ likely_* estimate)
@@ -1350,19 +1389,23 @@ The live server (`src/api_server.py`) renders the pages on the fly; the static e
   - **ICS-VEXForge** — SBOM → CVE + VEX, CPE normalization, SSVC priority, OpenVEX/CSAF export
 - **Method**
   - **ICS-SBOM to CVE** — the nine limits of CPE-based identification, each with its evidence grade
+  - **6W problems & CVSS×context VEX** (`/context-vex.html`) — **local server only** — the 6W map recomputed from the corpus, the v3 judge run live, and the committed sensitivity table
   - **VEX Decision Logic** — the source-collectable code tree *and* the source-uncollectable asset-attribute estimation on one page
 - **Certification** — **local server only, not on GitHub Pages**
   - **Test items #3 / #4** (`/cert.html`) — run the two precision metrics live, the same `score()` the CLI calls
 - **Dataset**
   - **CVE Dataset** · **Synthetic SBOM** (reverse-built SBOMs) · **ICS-CERT Advisories (CISA)** (advisory + NVD search) · **Published VEX (CISA)**
 
-**The certification page is deliberately excluded from the static bundle**
-(`_SITE_EXCLUDE = {"cert"}` in `tools/build_site.py`). It does not display a recorded
-figure — it *runs* the measurement through `/api/cert/run`, `/api/cert/job/{id}` and
-`/api/cert/upload`, which only the local FastAPI process answers. A copy on Pages would
-show buttons that cannot compute anything, so it lives only as a server route: the console
-serves 12 pages, `site/` exports the 11 that are self-contained. Run it with the command
-below and open http://127.0.0.1:8100/cert.html.
+**Two pages are deliberately excluded from the static bundle**
+(`_SITE_EXCLUDE = {"cert", "context-vex"}` in `tools/build_site.py`), because neither
+displays a recorded figure — both *compute* through routes only the local FastAPI process
+answers: `/api/cert/{run,job,upload}` for the certification page, and `/api/problems-6w`,
+`/api/context/fields`, `/api/context-vex` for the context arm. A copy on Pages would show
+controls that silently do nothing, so the nav drops them from the published build and
+`build_site.py` deletes any stale copy. The console serves **9 nav pages**; `site/` exports
+the **7** that are self-contained (written as 11 files, the extras being aliases that keep
+old URLs — `vex-method.html`, `corpus.html`, `collectable.html`, `asset-vex.html`). Run the
+server and open http://127.0.0.1:8100/cert.html and http://127.0.0.1:8100/context-vex.html.
 
 Run locally:
 
@@ -1382,6 +1425,7 @@ python tools/fetch_exploit_signals.py
 python src/sbom_cve_problems.py      # 6W taxonomy, every figure recomputed from the corpus
 python src/cvss.py                   # reproduces all 10,980 NVD-published base scores
 python src/vex_context_judge.py      # the judge on five worked cases
+python src/context_standards.py      # standards traceability matrix + gaps + verification status
 python tools/eval_context_vex.py     # corpus-wide sensitivity -> results/context_vex_sensitivity.json
 
 git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF

@@ -233,10 +233,12 @@ html = html.replace("async function run(){",
 # Pages this static build does not publish, by key. Both are runtime-only: they
 # POST to the local FastAPI server, so a static copy would be dead controls. See
 # the note below where the stale files are removed.
-# cert stays unpublished (its measurement needs the server). asset-vex is now
+# cert stays unpublished (its measurement needs the server). context-vex joins it:
+# the 6W table comes from /api/problems-6w and every verdict from /api/context-vex,
+# both recomputed server-side, so a static copy would be an empty form. asset-vex is
 # published: its judge is deterministic and runs client-side, reading the CVE's
 # Attack Vector from cve_index.json, so it works with no backend.
-_SITE_EXCLUDE = {"cert"}
+_SITE_EXCLUDE = {"cert", "context-vex"}
 
 # emit one static file per page (same shared shell/script, different nav+content)
 _tree_json = json.dumps(A.VT.TREE, ensure_ascii=False)
@@ -262,7 +264,7 @@ for key, fname in [("analyzer", "index.html"),
 # /api/cert/*, which only the local FastAPI server answers, so a copy on Pages
 # would be a Run button that silently does nothing. It stays on the local
 # server, and the published nav does not advertise it.
-for _name in ("cert.html",):
+for _name in ("cert.html", "context-vex.html"):
     _stale = os.path.join(SITE, _name)
     if os.path.isfile(_stale):
         os.remove(_stale)
