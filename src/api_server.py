@@ -22,7 +22,7 @@ The VEX computation here is the deterministic static leg (component match ->
 evidence tiers); it needs no GPU/models, so the service starts
 instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
 """
-import os, sys, json, argparse, difflib, csv, re
+import os, sys, json, argparse, difflib, csv, re, tempfile, uuid
 from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -39,6 +39,13 @@ import vex_context_judge as CJ            # v3: full CVSS vector x ICS operation
 import ics_context as ICTX                # the asset context schema and its evaluation
 import sbom_cve_problems as P6W           # the 6W problem taxonomy, measured from the corpus
 import context_standards as CSTD          # standards basis for the context schema
+# v4 (docs/ICSVEX.md): the analyzer forks after CVE identification - source uploaded
+# -> CFG arm, no source -> operational-context arm. The two never judge the same CVE.
+import oc_context as OCX                  # v4: the OT operational-context (OC) model
+import oc_vex_judge as OCJ                # v4: OC slots -> VEX status
+import cve_requirements as CREQ           # v4: what a CVE requires of its environment
+import source_intake as SRC               # v4: safe ZIP intake + call graph / CFG index
+import cfg_vex as CFGV                    # v4: VEX from code evidence
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
 except Exception:
@@ -894,6 +901,13 @@ def flagged_products(csaf, cve, label=None):
 CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/develop/"
 
 
+# Uploaded source trees live for the life of the process, keyed by an opaque id.
+# They are analysis scratch, not durable data: a restart drops them and the user
+# re-uploads. Kept out of data/ on purpose - this is somebody else's source code.
+_SRC_SESSIONS = os.path.join(tempfile.gettempdir(), "icsvex_src")
+_SRC_INDEX = {}
+
+
 def build_app():
     from fastapi import FastAPI, HTTPException, File, Form, UploadFile
     from fastapi.responses import HTMLResponse
@@ -1306,6 +1320,143 @@ def build_app():
             return {"ok": False, "valid": valid}
         return {"ok": True, "path": path, "bytes": len(data), "valid": valid}
 
+    def _cve_facts(cve):
+        """CVSS vector + description for one CVE, from the local NVD caches.
+
+        The analyzer's /api/vex rows carry `av` and a score but not the full
+        vector or the description, and both arms need them: the vector states
+        the preconditions, the description names the vulnerable function. Having
+        the server look them up means a client that sends only a CVE id still
+        gets a real judgment instead of an empty requirement set - and an empty
+        requirement set is exactly what used to come back as `affected`.
+        """
+        cve = (cve or "").strip().upper()
+        vec = desc = None
+        rec = _load(os.path.join(DATA, "nvd_cvss.json"), {}).get(cve)
+        if isinstance(rec, dict):
+            vec = rec.get("vector")
+        rec = _load(os.path.join(DATA, "nvd_cache.json"), {}).get(cve)
+        if isinstance(rec, dict):
+            desc = rec.get("description")
+        return vec, desc
+
+    # ---- v4 · the two judgment arms ------------------------------------
+    # The analyzer asks one question after CVE identification: do you have the
+    # source? The answer routes to exactly one of these. Keeping them apart is
+    # the point - a statement must say which kind of evidence set its status.
+
+    @app.get("/api/oc/fields")
+    def oc_fields():
+        """The asset questionnaire for the no-source branch, grouped by OC slot.
+
+        Each field carries its Appendix A provenance (or EXTENDED when the CISA
+        guide has no such field), because "where did these questions come from"
+        is the first thing an assessor asks.
+        """
+        return {"model": OCX.OC_MODEL,
+                "slots": [{"id": i, "label": l, "help": h, "fields": f}
+                          for i, l, h, f in OCX.OC_SLOTS],
+                "groups": OCX.fields_by_group(),
+                "rule": {
+                    "absent": "자산이 갖고 있지 않음 → not_affected 가능",
+                    "disabled": "설정으로 꺼둠 → 완화로만 기록, 상태 불변",
+                    "unknown": "미입력 → 아무것도 해제하지 못함",
+                }}
+
+    class OcJudgeReq(BaseModel):
+        asset: dict = {}
+        cves: list = []          # [{cve, vector?, description?, component_present?}]
+
+    @app.post("/api/oc/judge")
+    def oc_judge(req: OcJudgeReq):
+        """Operational-context VEX for every CVE in one go."""
+        cases = []
+        for c in (req.cves or []):
+            cve = c.get("cve")
+            if not cve:
+                continue
+            vec, desc = c.get("vector"), c.get("description")
+            if not vec or not desc:
+                _v, _d = _cve_facts(cve)
+                vec, desc = vec or _v, desc or _d
+            cases.append({
+                "cve": cve,
+                "requirements": CREQ.extract(cve, vec, desc),
+                "asset": req.asset or {},
+                "component_present": c.get("component_present", True),
+                "version_in_range": c.get("version_in_range", True),
+            })
+        res = OCJ.judge_many(cases)
+        res["arm"] = "operational-context"
+        return res
+
+    @app.post("/api/source/upload")
+    async def source_upload(file: UploadFile = File(...)):
+        """Take a source ZIP, extract it safely, and index it.
+
+        The upload is DATA: it is extracted and parsed, never built or executed.
+        src/source_intake.py handles zip-slip, symlinks and zip bombs; whatever
+        it refuses is reported back rather than silently dropped.
+        """
+        if not (file.filename or "").lower().endswith(".zip"):
+            raise HTTPException(400, "a .zip of the source tree is expected")
+        sid = uuid.uuid4().hex[:16]
+        root = os.path.join(_SRC_SESSIONS, sid)
+        zpath = root + ".zip"
+        os.makedirs(_SRC_SESSIONS, exist_ok=True)
+        data = await file.read()
+        with open(zpath, "wb") as fh:
+            fh.write(data)
+        try:
+            got = SRC.extract_zip(zpath, root)
+            idx = SRC.index_tree(root)
+            ep = SRC.entry_points(idx)
+        finally:
+            try:
+                os.remove(zpath)
+            except OSError:
+                pass
+        _SRC_INDEX[sid] = {"index": idx, "entries": ep["entries"], "root": root}
+        return {"session": sid, "upload": got,
+                "files_indexed": idx["files"],
+                "functions": len(idx["functions"]),
+                "indirect_call_sites": idx["indirect_call_sites"],
+                "entry_points": {"count": len(ep["entries"]), "kind": ep["kind"],
+                                 "approximate": ep["approximate"],
+                                 "sample": ep["entries"][:12]},
+                # Said out loud because it changes what Q1 may claim: without a
+                # complete tree, "not found" and "not uploaded" are the same thing.
+                "note": ("호출그래프는 구문 기반 근사입니다. 간접 호출(%d곳)은 "
+                         "그래프에 나타나지 않으므로 '도달 불가' 판정은 유보됩니다."
+                         % idx["indirect_call_sites"])}
+
+    class SrcJudgeReq(BaseModel):
+        session: str
+        cves: list = []              # [{cve, description?, functions?: [...]}]
+        tree_is_complete: bool = False
+
+    @app.post("/api/source/judge")
+    def source_judge(req: SrcJudgeReq):
+        """CFG-arm VEX for the uploaded tree."""
+        sess = _SRC_INDEX.get(req.session)
+        if not sess:
+            raise HTTPException(404, "unknown or expired source session")
+        targets = {}
+        for c in (req.cves or []):
+            cve = c.get("cve")
+            if not cve:
+                continue
+            fns = c.get("functions")
+            if not fns:
+                desc = c.get("description") or _cve_facts(cve)[1]
+                fns = CREQ.vulnerable_functions(desc)
+            targets[cve] = fns
+        res = CFGV.judge_all(sess["index"], sess["entries"], targets,
+                             tree_is_complete=bool(req.tree_is_complete))
+        res["arm"] = "source-cfg"
+        res["indirect_call_sites"] = sess["index"]["indirect_call_sites"]
+        return res
+
     @app.post("/api/refresh")
     def refresh():
         STORE.refresh()
@@ -1577,8 +1728,152 @@ async function run(){
       +'<td>'+nextcol+'</td></tr>';}
   h+='</tbody></table>';
   h+=_abstainBlock(d);
-  h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
-  o.innerHTML=h;
+  o.innerHTML=h+_armForkHtml();
+}
+
+// ---- 2단계: 판정 근거 분기 (docs/ICSVEX.md) --------------------------------
+// CVE 식별이 끝나면 근거가 두 갈래로 갈린다. 소스가 있으면 코드에서 읽고, 없으면
+// 자산 운영정보로 전제조건을 대조한다. 한 CVE가 두 팔을 동시에 타지 않는다 —
+// 어느 근거가 상태를 정했는지 문서에서 읽을 수 있어야 하기 때문이다.
+let _srcSession=null, _ocFields=null, _armResult=null;
+
+function _armForkHtml(){return '<div class="card" id="armfork" style="margin-top:14px">'
+  +'<h3 style="margin:0 0 6px">2단계 · 판정 근거 선택</h3>'
+  +'<p class="hint" style="margin:0 0 10px">이 자산 소프트웨어의 <b>소스코드</b>를 가지고 계신가요? '
+  +'소스가 있으면 호출그래프·CFG로 판정하고, 없으면 자산 운영정보로 공격 전제조건을 대조합니다.</p>'
+  +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+  +'<button class="primary" onclick="pickArm(&#39;source&#39;)">예 — 소스코드 ZIP 업로드</button>'
+  +'<button class="primary" onclick="pickArm(&#39;oc&#39;)">아니오 — 자산 운영정보 입력</button>'
+  +'</div><div id="armbody" style="margin-top:14px"></div></div>';}
+
+function pickArm(which){
+  const b=document.getElementById('armbody');
+  if(which==='source'){
+    b.innerHTML='<div class="row"><div>'
+      +'<label>소스코드 ZIP — 제품 소스 트리를 통째로 압축해 올려주세요</label>'
+      +'<input type="file" id="srczip" accept=".zip">'
+      +'<div style="margin-top:8px"><label style="font-weight:400">'
+      +'<input type="checkbox" id="srcfull"> 이 ZIP이 <b>제품 소스 전체</b>입니다'
+      +'</label><div class="hint">체크하지 않으면 &ldquo;함수를 찾지 못함&rdquo;이 &ldquo;올리지 않음&rdquo;과 '
+      +'구분되지 않아 해당 판정을 유보합니다.</div></div>'
+      +'<div style="margin-top:10px"><button class="primary" onclick="uploadSource()">업로드 후 분석 ▶</button></div>'
+      +'</div></div><div id="srcout" style="margin-top:12px"></div>';
+  }else{
+    b.innerHTML='<div class="hint">자산 운영정보 양식을 불러오는 중…</div>';
+    renderOcForm(b);
+  }
+}
+
+async function uploadSource(){
+  const f=document.getElementById('srczip').files[0];
+  const out=document.getElementById('srcout');
+  if(!f){out.innerHTML='<span class="err">ZIP 파일을 선택해주세요</span>';return;}
+  out.innerHTML='<span class="hint">업로드·색인 중… (큰 트리는 시간이 걸립니다)</span>';
+  const fd=new FormData();fd.append('file',f);
+  let up;
+  try{const r=await fetch('/api/source/upload',{method:'POST',body:fd});
+      if(!r.ok){out.innerHTML='<span class="err">업로드 실패 '+r.status+'</span>';return;}
+      up=await r.json();}
+  catch(e){out.innerHTML='<span class="err">'+esc(String(e))+'</span>';return;}
+  _srcSession=up.session;
+  let h='<div class="hint">파일 <b>'+up.files_indexed+'</b> · 함수 <b>'+up.functions+'</b>'
+    +' · 진입점 <b>'+up.entry_points.count+'</b> ('+esc(up.entry_points.kind)+')'
+    +' · 간접 호출 자리 <b>'+up.indirect_call_sites+'</b></div>'
+    +'<div class="hint" style="margin-top:6px">'+esc(up.note)+'</div>';
+  if(up.upload.truncated) h+='<div class="err" style="margin-top:6px">상한에 걸려 일부만 처리했습니다: '+esc(up.upload.truncated)+'</div>';
+  out.innerHTML=h+'<div style="margin-top:10px"><button class="primary" onclick="judgeSource()">CFG로 VEX 판정 ▶</button></div><div id="srcverdict" style="margin-top:12px"></div>';
+}
+
+async function judgeSource(){
+  const v=document.getElementById('srcverdict');
+  v.innerHTML='<span class="hint">판정 중…</span>';
+  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {cve:f.cve,description:f.description||f.summary||''};});
+  const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({session:_srcSession,cves:cves,tree_is_complete:document.getElementById('srcfull').checked})});
+  if(!r.ok){v.innerHTML='<span class="err">판정 실패 '+r.status+'</span>';return;}
+  _armResult=await r.json();
+  v.innerHTML=_verdictTable(_armResult,'코드 근거');
+}
+
+async function renderOcForm(box){
+  if(!_ocFields){const r=await fetch('/api/oc/fields');_ocFields=await r.json();}
+  let h='<div class="hint" style="margin-bottom:10px">'
+    +'미입력 항목은 <b>모름</b>으로 처리되어 아무것도 해제하지 않습니다. '
+    +'&ldquo;이 빌드에 아예 없음&rdquo; 항목만 <span class="mono">not_affected</span>의 근거가 됩니다 — '
+    +'설정으로 꺼둔 것은 완화로만 기록됩니다.</div>';
+  for(const g of _ocFields.groups){
+    if(!g.fields.length) continue;
+    h+='<div style="margin:12px 0 4px"><b>'+esc(g.label)+'</b>'
+      +(g.priority_only?' <span class="hint">(상태를 바꾸지 않음)</span>':'')+'</div>';
+    for(const f of g.fields) h+=_ocField(f);
+  }
+  h+='<div style="margin-top:14px"><button class="primary" onclick="judgeOc()">운영맥락으로 VEX 판정 ▶</button></div>'
+    +'<div id="ocverdict" style="margin-top:12px"></div>';
+  box.innerHTML=h;
+}
+
+function _ocField(f){
+  const id='oc_'+f.key;
+  let inp;
+  if(f.type==='tri'){
+    inp='<select id="'+id+'"><option value="">— 미입력 —</option>'
+       +'<option value="true">예</option><option value="false">아니오</option></select>';
+  }else if(f.type.indexOf('enum:')===0){
+    inp='<select id="'+id+'"><option value="">— 미입력 —</option>'
+       +f.type.slice(5).split('|').map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
+  }else if(f.type==='list'){
+    inp='<input id="'+id+'" placeholder="쉼표로 구분 — 비워두면 미입력">';
+  }else if(f.type==='kv'){
+    inp='<input id="'+id+'" placeholder="web_admin=enabled, legacy_auth=off">';
+  }else{
+    inp='<input id="'+id+'">';
+  }
+  return '<div style="margin:6px 0"><label style="font-weight:400">'+esc(f.label)+'</label>'+inp
+    +(f.help?'<div class="hint">'+esc(f.help)+'</div>':'')
+    +'<div class="hint" style="opacity:.65">출처: '+esc(f.source)+'</div></div>';
+}
+
+function _collectOc(){
+  const a={};
+  for(const g of _ocFields.groups) for(const f of g.fields){
+    const el=document.getElementById('oc_'+f.key); if(!el) continue;
+    const v=(el.value||'').trim(); if(!v) continue;   // 빈칸은 보내지 않는다 = 모름
+    a[f.key]= f.type==='list' ? v.split(',').map(function(x){return x.trim();}).filter(Boolean) : v;
+  }
+  return a;
+}
+
+async function judgeOc(){
+  const v=document.getElementById('ocverdict');
+  v.innerHTML='<span class="hint">판정 중…</span>';
+  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){
+    return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||''};});
+  const r=await fetch('/api/oc/judge',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({asset:_collectOc(),cves:cves})});
+  if(!r.ok){v.innerHTML='<span class="err">판정 실패 '+r.status+'</span>';return;}
+  _armResult=await r.json();
+  v.innerHTML=_verdictTable(_armResult,'운영맥락 근거');
+}
+
+function _verdictTable(res,armLabel){
+  const C2={affected:'var(--bad)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
+  // 판정률을 상태 분포와 같은 줄에 놓는다. 유보는 Precision 분모에서 빠지므로
+  // 유보율을 가린 정밀도는 성취가 아니라 회피다 (docs/ICSVEX.md §8).
+  let h='<div class="hint">'+esc(armLabel)+' · 전체 <b>'+res.total+'</b>'
+    +' · 판정 <b>'+Math.round((res.decision_rate||0)*100)+'%</b>'
+    +' · 유보 <b>'+res.deferred+'</b></div>'
+    +'<table style="margin-top:8px"><thead><tr><th>CVE</th><th>VEX</th><th>정당화</th><th>근거</th></tr></thead><tbody>';
+  for(const s of res.statements){
+    const col=C2[s.status]||'var(--ink3)';
+    h+='<tr><td class="mono">'+esc(s.cve)+'</td>'
+      +'<td><span class="badge" style="background:'+col+'22;color:'+col+'">'+esc(s.status)+'</span></td>'
+      +'<td class="mono" style="font-size:12px">'+esc(s.justification||'—')+'</td>'
+      +'<td class="hint">'+esc(s.reason||'')+'</td></tr>';
+  }
+  return h+'</tbody></table>'
+    +'<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">'
+    +'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'
+    +'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
