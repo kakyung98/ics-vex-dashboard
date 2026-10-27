@@ -56,75 +56,6 @@ ITEMS = {
         ],
         "reference": {"ai": 0.949, "string": 0.9499},
     },
-    "4": {
-        "id": "4",
-        "name": "VEX affected-judgment precision",
-        "name_en": "VEX affected-judgment precision",
-        "metric": "precision = TP / (TP + FP),  positive class = affected",
-        "acceptance": 0.85,
-        "sut": "tools/vex_judge_v2 (patch pre-gate + Q2 presence, Q3/Q4 as tier)",
-        "dataset": {"gt": "data/vex_gt_all.jsonl",
-                    "sut": "data/vex_v2_pregate.json",
-                    "sut_patched": "data/vex_v2_patched.json",
-                    "sut_gated": "data/vex_v2.json"},
-        "record_unit": "records ((CVE, build) pairs)",
-        "runtime_hint": "instant (scores the verdict cache) - population = all 267 collected-source CVEs",
-        # Three scopes, because one number cannot carry the whole claim. The
-        # headline is the pre-gate vulnerable-build figure: it is the largest
-        # scope whose ground truth does not share an oracle with the SUT.
-        # An `independent` scope used to sit here, scoring only the GT's four
-        # execution_verified labels. It was RETIRED: those labels came from an
-        # execution-verification loop (results/exec_verification*.json, August
-        # 2025) that the project replaced with the Q1-Q4 solver pipeline, so the
-        # scope published a 0.6667 produced by a methodology the SUT no longer
-        # uses, over 2 CVEs x 2 builds, with no path to growing it - the
-        # collected corpus is overwhelmingly ICS firmware that cannot be built
-        # and triggered. The four labels REMAIN in data/vex_gt_all.jsonl, because
-        # execution is sound evidence and deleting correct labels would be worse;
-        # what is gone is the claim that scoring them is an independent
-        # evaluation. Independence is now carried by the Q3/Q4 axis below, whose
-        # authorities (shipped public headers, NVD CVSS) are outside this
-        # repository's own tooling.
-        "variants": [
-            {"key": "pregate", "label": "vulnerable build, patch gate OFF (headline, non-circular)"},
-            {"key": "allbuilds", "label": "both builds, gate ON (carries a circularity warning)"},
-        ],
-        "reference": {"pregate": 0.9718, "allbuilds": 0.993},
-    },
-    "q34": {
-        "id": "q34",
-        "name": "Q3 reachability / Q4 controllability vs external authorities",
-        "name_en": "Q3 reachability / Q4 controllability agreement",
-        "metric": "contradictions == 0; recall reported, precision withheld (no negative class)",
-        # No acceptance criterion exists for this: it is not one of the two
-        # certification items. It is here because without it Joern and Z3
-        # contribute 0 to every published figure - item #4 scores the `affected`
-        # verdict, which vex_judge_v2 decides at Q2, while Q3/Q4 only set the
-        # evidence tier and no answer key carried a tier.
-        # Not a numeric precision threshold, so `acceptance` stays None and the
-        # page renders `acceptance_label` instead. The bar is on contradictions
-        # because the other candidates cannot carry one: precision has no negative
-        # class to fail against, and a recall threshold is met outright by a system
-        # that answers "yes" to everything. See tools/eval_q34_agreement.py.
-        "acceptance": None,
-        "acceptance_label": "criterion: contradictions = 0 (this repository's own; not a certification test item)",
-        "sut": "tools/joern_reachability (Joern CPG) + tools/z3_controllability (Z3)",
-        "dataset": {"gt": "data/vex_q34_gt.jsonl",
-                    "reach": "data/reachability.json",
-                    "ctrl": "data/controllability.json"},
-        # 285 labels over a 267-CVE population: a CVE carries up to two labels,
-        # one per question, and 249 of the 534 possible pairs are held out.
-        "record_unit": "labels ((CVE, question) pairs over a 267-CVE population)",
-        "runtime_hint": "instant (scores the verdict cache) - authorities = shipped public headers, NVD CVSS AV/UI",
-        "variants": [{"key": "both", "label": "Q3 + Q4 (supplementary; criterion contradictions = 0)"}],
-        # Recalls, not precisions: Q4's answer key has no negative class, so a
-        # precision there is 1.0000 by construction. Q3's two misses are Joern
-        # refuting `GENERAL_NAME_cmp` (CVE-2020-1971) and zlib's `inflate`
-        # (CVE-2022-37434) - both declared in a shipped public header, which is
-        # exactly the false negative the module docstring predicted.
-        "reference": {"both": {"Q3_recall": 0.9655, "Q4_recall": 1.0,
-                               "Q3_contradictions": 2, "Q4_contradictions": 0}},
-    },
 }
 
 _JOBS = {}
@@ -174,23 +105,7 @@ def _score_item3(gt, variant, progress):
     return E3.score(gt, matcher=variant, progress=progress)
 
 
-def _score_item4(gt, variant, progress):
-    import eval_vex_precision as E4
-    d = ITEMS["4"]["dataset"]
-    if variant == "pregate":
-        return E4.score(gt, _abs(d["sut"]), None, build="vulnerable")
-    if variant == "allbuilds":
-        return E4.score(gt, _abs(d["sut_gated"]), _abs(d["sut_patched"]), build="all")
-    raise ValueError("unknown variant for item #4: %r" % variant)
-
-
-def _score_q34(gt, variant, progress):
-    import eval_q34_agreement as EQ
-    d = ITEMS["q34"]["dataset"]
-    return EQ.score(gt, _abs(d["reach"]), _abs(d["ctrl"]))
-
-
-_SCORERS = {"3": _score_item3, "4": _score_item4, "q34": _score_q34}
+_SCORERS = {"3": _score_item3}
 
 
 def _reproduces(res, ref, dataset):

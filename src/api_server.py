@@ -28,7 +28,6 @@ from collections import defaultdict, Counter
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(BASE, "src"))
 import build_ground_truth as G  # exposure_for(), CWE_NAME
-import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
 import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
@@ -1120,13 +1119,13 @@ def build_app():
 
     @app.get("/api/vex_tree")
     def vex_tree_def():
-        """The source-uncollectable-CVE decision tree definition (for the walker)."""
-        return VT.TREE
+        """Retired with the VEX-v2 source arm. Kept so the old URL answers."""
+        return {"retired": True, "reason": "the source-uncollectable decision tree was retired with the VEX-v2 source arm; the replacement is the OC operational-context model (docs/ICSVEX.md)"}
 
     @app.post("/api/vex_tree")
     def vex_tree(req: TreeReq):
-        """Walk the source-uncollectable decision tree with the given answers."""
-        return VT.classify(req.av, req.answers or {})
+        """Retired with the VEX-v2 source arm. Kept so the old URL answers."""
+        return {"retired": True, "reason": "the source-uncollectable decision tree was retired with the VEX-v2 source arm; the replacement is the OC operational-context model (docs/ICSVEX.md)"}
 
     # ---- certification test items #3 / #4 -------------------------------
     # The page can run the measurement itself, so a reviewer does not have to take
@@ -3032,7 +3031,7 @@ def nav_html(active, exclude=()):
 def make_page(active):
     _sub, content = PAGES[active]
     return (FRONTEND_TEMPLATE
-            .replace("__VEX_TREE__", json.dumps(VT.TREE, ensure_ascii=False))
+            .replace("__VEX_TREE__", "{}")
             .replace("__NAV__", nav_html(active))
             .replace("__CONTENT__", content)
             .replace("__ASSET_AV_JS__",

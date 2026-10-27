@@ -61,10 +61,6 @@ OUT = os.path.join(HERE, "out")
 PLAN = {
     "3": {"variant": "ai", "reuse": "results/cpe_match_precision.json",
           "title": "Item #3 — SBOM → CVE identification"},
-    "4": {"variant": "pregate", "reuse": "results/vex_precision_all.json",
-          "title": "Item #4 — VEX affected-judgment"},
-    "q34": {"variant": None, "reuse": "results/q34_agreement.json",
-            "title": "Q3 / Q4 solver agreement"},
 }
 
 # Component axes: they measure a PART of an item rather than the item, so they carry
@@ -76,9 +72,6 @@ COMPONENTS = [
     {"key": "encoder", "module": "eval_encoder_contribution",
      "title": "Item #3's encoder — what does it contribute?",
      "of": "3"},
-    {"key": "cti", "module": "eval_cti_localization",
-     "title": "Item #4's LLM — does it name the function the fix edits?",
-     "of": "4"},
 ]
 
 
