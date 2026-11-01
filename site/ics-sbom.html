@@ -243,6 +243,10 @@ function pickArm(which){
     b.innerHTML='<div class="row"><div>'
       +'<label>Source ZIP — Upload the product source tree</label>'
       +'<input type="file" id="srczip" accept=".zip">'
+      +'<label style="margin-top:10px">Analysis scope</label><select id="srcscope">'
+      +'<option value="library">Component / library source</option><option value="product">Product source with build configuration</option><option value="partial">Partial source</option></select>'
+      +'<label>Product entry points (comma-separated; include callbacks, interrupts and initialization roots)</label><input id="srcentries" value="main">'
+      +'<label style="display:block;margin-top:8px"><input type="checkbox" id="srccomplete"> I supplied complete source/dependencies and the complete entry-point set for this selected product build.</label>'
       +'<div class="hint" style="margin-top:8px">Include compile_commands.json and build manifests from the build being reviewed. '
       +'The backend compares locally cached CVE patch hunks with your files and records declared compilation units. '
       +'Source paths and patch matches support review; they do not prove exploitability or a fixed deployed binary.</div>'
@@ -280,10 +284,15 @@ async function judgeSource(){
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
   const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({session:_srcSession,cves:cves})});
+    body:JSON.stringify({session:_srcSession,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
+      entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
   _armResult=await r.json();
-  let details='<div class="hint">Source review · Absent vulnerable functions or CFG-confirmed unreachable functions are not_affected. Unresolved dispatch or analysis gaps remain under investigation.</div>';
+  let details='<div class="hint">Clang/LLVM source review · Conclusions apply to the selected build and declared roots. Missing build/entry coverage, indirect calls or compiler failures block negative decisions. A path does not prove attacker control or exploitation.</div>';
+  details+='<div class="card"><b>'+esc(_armResult.cfg.tool?.version||_armResult.cfg.engine)+'</b><p>Scope: '+esc(_armResult.cfg.scope)
+    +' · Analysis run: '+esc(_armResult.cfg.execution_status||'unknown')
+    +' · Translation units: '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
+    +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
   for(const s of _armResult.statements){
     const e=s.evidence;
     const priority=_armResult.tix.statements.find(t=>t.vulnerability===s.cve).priority;
@@ -294,6 +303,11 @@ async function judgeSource(){
       +'<p>CFG paths: '+e.cfg.reachable_paths.length+' · Unreachable: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
       +'<p>Review priority: '+priority.lower_bound+'–'+priority.upper_bound+' / 10 (unknown signals retained)</p>'
       +'<p>Missing evidence: '+esc(e.missing_evidence.join(', '))+'</p>'
+      +'<p><b>Explanation:</b> '+esc(e.explanation?.reason||s.reason)+'</p>'
+      +'<p>Claim boundary: '+esc(e.cfg.claim_boundary||e.cfg.scope)+'</p>'
+      +(e.cfg.reachable_paths||[]).map(p=>'<p><b>Observed path:</b> '+esc(p.path.join(' → '))+'</p>'
+        +'<ul>'+(p.call_sites||[]).map(c=>'<li>'+esc(c.file||'')+':'+esc(String(c.line||'?'))+' · '+esc(c.from)+' → '+esc(c.to)+'</li>').join('')+'</ul>').join('')
+      +'<ul>'+(e.cfg.blockers||[]).slice(0,30).map(b=>'<li>'+esc(b.reason)+(b.file?' · '+esc(b.file):'')+'</li>').join('')+'</ul>'
       +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
   }
   details+='<button class="primary" onclick="downloadSourceTix()">Download TIX review JSON</button>';
@@ -358,13 +372,28 @@ async function judgeOc(){
   const v=document.getElementById('ocverdict');
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
   const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){
-    return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||''};});
+    return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||'',cwe:f.cwe};});
   const url=_candidateJobId?'/api/cve-match/jobs/'+encodeURIComponent(_candidateJobId)+'/oc':'/api/oc/judge';
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({asset:_collectOc(),cves:cves})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
   _armResult=await r.json();
   v.innerHTML=_verdictTable(_armResult,'Operational context evidence');
+  for(const statement of _armResult.statements){
+    const cwe=statement.cwe_context;
+    if(!cwe)continue;
+    v.innerHTML+='<details class="card" style="margin-top:10px"><summary>'+esc(statement.cve)+' · CWE weakness context</summary>'
+      +'<p>'+esc(cwe.note)+'</p>'+(cwe.entries||[]).map(e=>'<h4><a href="'+esc(e.definition_url)+'" target="_blank" rel="noopener">'+esc(e.id)+'</a> · '+esc(e.name)+'</h4>'
+      +'<p class="hint">Classification source: '+esc(e.sources.map(s=>s.source).join(', '))+' · Can clear a CVE: false</p>'
+      +'<ul>'+e.review_questions.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>').join('')
+      +(cwe.status==='unknown'?'<p>No supported CWE classification is available.</p>':'')+'</details>';
+  }
+  v.innerHTML+='<button class="primary" style="margin-top:12px" onclick="downloadOcReview()">Download contextual review JSON</button>';
+}
+
+function downloadOcReview(){
+  const url=URL.createObjectURL(new Blob([JSON.stringify({schema:'ics-vex-context-review/1',..._armResult},null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='ics-vex-context-review.json';a.click();URL.revokeObjectURL(url);
 }
 
 function _verdictTable(res,armLabel){
