@@ -157,6 +157,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <h1>VEX Decision Logic</h1>
 <div class="card"><h2>1. Identify candidate CVEs</h2>
 <p>SBOM name, version and CPE evidence produce candidates. An advisory match is not an exploitability finding. Unknown installed versions remain unresolved.</p></div>
+<div class="card"><h2>Shared extraction and VEX authoring</h2><p>Both source and operational-context branches use the trained Description condition/function extractor, validate its quoted evidence, assemble branch-specific facts and a rule-based decision, then invoke the trained VEX writer. The writer must preserve the assigned decision and cite supplied evidence IDs. Invalid outputs remain visible and are not accepted as model-generated documents. Case IDs and evidence packets connect all stages.</p></div>
 <div class="card"><h2>2. Source available: Clang/LLVM build and path review</h2>
 <p>ICS-VEXForge combines CVE evidence with the selected product build, compiler-derived paths and explicit analysis scope.</p>
 <ol><li>Extract the source ZIP safely and hash its files. No uploaded command is executed.</li>
@@ -173,7 +174,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <p>Review the compiler arguments and match the source inventory to your actual build and deployment records before signing a final VEX statement. This backend currently inspects supplied build configuration; it does not independently reproduce the build or attest the deployed binary.</p></div>
 <div class="card"><h2>4. Explain the VEX decision</h2>
 <p>The VEX result retains vulnerability details, patch hashes and references, source locations, paths, build observations and missing evidence.</p>
-<p><b>How to read a result:</b> inspect the analysis scope and unit coverage, target definition locations, the entry-to-target path with call-site line numbers, the decision rule, and unresolved blockers/assumptions. Analysis completion and a conclusive VEX judgment are separate. A path such as main → handler → candidate_target is possible code execution, not proof of attacker control or CVE exploitation. Explanations are assembled from recorded evidence rather than unconstrained LLM text.</p>
+<p><b>How to read a result:</b> inspect scope and unit coverage, target locations, entry-to-target paths and call-site lines, the decision rule, and unresolved blockers. Deterministic evidence observations feed the shared LLM drafting step; its output must preserve the decision and evidence IDs. A path is not proof of attacker control or exploitation. A generated explanation is a review draft, not an independently validated answer key.</p>
 </div>
 <div class="card"><h2>5. Source unavailable: operational context</h2>
 <p>The separate operational-context branch compares asset evidence with attack prerequisites. Missing input remains unknown. Candidate identity and version uncertainty still gate final conclusions; this branch does not claim source or patch verification.</p></div>
