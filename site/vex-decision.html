@@ -158,23 +158,23 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <div class="card"><h2>1. Identify candidate CVEs</h2>
 <p>SBOM name, version and CPE evidence produce candidates. An advisory match is not an exploitability finding. Unknown installed versions remain unresolved.</p></div>
 <div class="card"><h2>2. Source available: Clang/LLVM build and path review</h2>
-<p>This branch follows VEXGen's evidence and review workflow, with patch-pattern and build-configuration inspection added for ICS projects.</p>
+<p>ICS-VEXForge combines CVE evidence with the selected product build, compiler-derived paths and explicit analysis scope.</p>
 <ol><li>Extract the source ZIP safely and hash its files. No uploaded command is executed.</li>
 <li>Load CVE fixing-patch references from the local cache. Compare both sides of each code hunk against matching source paths. Record missing, ambiguous and diverged files.</li>
 <li>Read compile_commands.json and build manifests. Map translation units to uploaded files and retain compiler arguments, macros and include flags for review.</li>
 <li>Use the server's Clang driver with allowed macros, local includes and language flags. Emit and verify LLVM IR for each selected C/C++ translation unit, then traverse its basic-block CFG and direct call edges. No generated program, uploaded compiler command, linker or plugin is executed.</li>
 <li>Distinguish C++ overloads and file-local functions by symbol and translation unit. Retain unused static definitions so compiler omission does not masquerade as source absence.</li>
-<li>Absent targets or unreachable present targets can support scoped not_affected only for declared complete product/root scope with no blockers. A compiler error, unknown target or missing path alone is not a negative verdict. Export the graphs, dependency/IR hashes and decision evidence in TIX JSON.</li></ol>
+<li>Absent targets or unreachable present targets can support scoped not_affected only for declared complete product/root scope with no blockers. A compiler error, unknown target or missing path alone is not a negative verdict. Preserve dependency/IR hashes and decision evidence alongside the VEX result.</li></ol>
 <p><b>A reachable artefact is not automatically affected.</b> Attacker control, runtime conditions and applicability still require verification.</p>
 <p>Preprocessor directives and local headers are analysed under the accepted configuration. Missing headers, unsupported options/targets, compile errors/timeouts, unresolved indirect/external calls and ambiguous definitions block negative decisions. Library mode uses compiled public functions as roots and reports API paths; it cannot establish product-level unreachability without consumer integration. Partial source cannot establish product absence.</p>
 <p>Function absence and CFG decisions are scoped to the uploaded source and identified entry points. A missing CVE-to-function mapping is not function absence. Supply the complete product source, including bundled dependencies and all runtime entry points, for a product-level assessment. The backend does not independently attest source completeness or deployment identity.</p></div>
 <div class="card"><h2>3. Patch and actual-build evidence</h2>
 <p>A fixed-pattern match means a patch hunk resembles the uploaded source. It does not prove that every fix is present or applicable. Successful IR generation confirms that the selected units compiled under the recorded analysis flags; it does not prove final link inclusion, loaded libraries or deployed binary identity. Unlisted files are not automatically excluded.</p>
 <p>Review the compiler arguments and match the source inventory to your actual build and deployment records before signing a final VEX statement. This backend currently inspects supplied build configuration; it does not independently reproduce the build or attest the deployed binary.</p></div>
-<div class="card"><h2>4. TIX and review priority</h2>
-<p>The review JSON contains vulnerability details, patch hashes and references, source locations, static paths, build observations and missing evidence. It uses the local ics-vex-tix/1 schema and does not claim conformance to VEXGen's native TIX format.</p>
+<div class="card"><h2>4. Explain the VEX decision</h2>
+<p>The VEX result retains vulnerability details, patch hashes and references, source locations, paths, build observations and missing evidence.</p>
 <p><b>How to read a result:</b> inspect the analysis scope and unit coverage, target definition locations, the entry-to-target path with call-site line numbers, the decision rule, and unresolved blockers/assumptions. Analysis completion and a conclusive VEX judgment are separate. A path such as main → handler → candidate_target is possible code execution, not proof of attacker control or CVE exploitation. Explanations are assembled from recorded evidence rather than unconstrained LLM text.</p>
-<p>Priority uses equal 0.25 weights for CVSS impact, code reachability, exploit references and CWE evidence. Unknown signals remain unknown and produce a score range. Priority never changes VEX status.</p></div>
+</div>
 <div class="card"><h2>5. Source unavailable: operational context</h2>
 <p>The separate operational-context branch compares asset evidence with attack prerequisites. Missing input remains unknown. Candidate identity and version uncertainty still gate final conclusions; this branch does not claim source or patch verification.</p></div>
 <div class="card"><h2>6. CWE classification and review questions</h2>
@@ -305,7 +305,8 @@ async function judgeSource(){
   const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({session:_srcSession,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
-      entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked})});
+      entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
+      product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
   _armResult=await r.json();
   let details='<div class="hint">Clang/LLVM source review · Conclusions apply to the selected build and declared roots. Missing build/entry coverage, indirect calls or compiler failures block negative decisions. A path does not prove attacker control or exploitation.</div>';
@@ -315,13 +316,11 @@ async function judgeSource(){
     +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
   for(const s of _armResult.statements){
     const e=s.evidence;
-    const priority=_armResult.tix.statements.find(t=>t.vulnerability===s.cve).priority;
     const hunks=e.patch.patches.flatMap(p=>p.hunks);
     details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
       +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
       +' · Vulnerable-pattern hunks: '+hunks.filter(h=>h.status==='vulnerable_pattern').length+' · Static paths: '+e.reachable_paths.length+'</p>'
       +'<p>CFG paths: '+e.cfg.reachable_paths.length+' · Unreachable: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
-      +'<p>Review priority: '+priority.lower_bound+'–'+priority.upper_bound+' / 10 (unknown signals retained)</p>'
       +'<p>Missing evidence: '+esc(e.missing_evidence.join(', '))+'</p>'
       +'<p><b>Explanation:</b> '+esc(e.explanation?.reason||s.reason)+'</p>'
       +'<p>Claim boundary: '+esc(e.cfg.claim_boundary||e.cfg.scope)+'</p>'
@@ -330,14 +329,7 @@ async function judgeSource(){
       +'<ul>'+(e.cfg.blockers||[]).slice(0,30).map(b=>'<li>'+esc(b.reason)+(b.file?' · '+esc(b.file):'')+'</li>').join('')+'</ul>'
       +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
   }
-  details+='<button class="primary" onclick="downloadSourceTix()">Download TIX review JSON</button>';
-  v.innerHTML=_verdictTable(_armResult,'Source evidence')+details;
-}
-
-function downloadSourceTix(){
-  const payload={..._armResult.tix,build:_armResult.build,cfg:_armResult.cfg,inventory:_armResult.inventory,inventory_sha256:_armResult.inventory_sha256,limitations:_armResult.limitations};
-  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
-  const a=document.createElement('a');a.href=url;a.download='ics-vex-source-tix.json';a.click();URL.revokeObjectURL(url);
+  v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
 }
 
 async function renderOcForm(box){
@@ -395,10 +387,10 @@ async function judgeOc(){
     return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||'',cwe:f.cwe};});
   const url=_candidateJobId?'/api/cve-match/jobs/'+encodeURIComponent(_candidateJobId)+'/oc':'/api/oc/judge';
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({asset:_collectOc(),cves:cves})});
+    body:JSON.stringify({asset:_collectOc(),cves:cves,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
   _armResult=await r.json();
-  v.innerHTML=_verdictTable(_armResult,'Operational context evidence');
+  v.innerHTML=_verdictTable(_armResult,'Operational context evidence')+_groundedPipelineHtml(_armResult);
   for(const statement of _armResult.statements){
     const cwe=statement.cwe_context;
     if(!cwe)continue;
@@ -414,6 +406,27 @@ async function judgeOc(){
 function downloadOcReview(){
   const url=URL.createObjectURL(new Blob([JSON.stringify({schema:'ics-vex-context-review/1',..._armResult},null,2)],{type:'application/json'}));
   const a=document.createElement('a');a.href=url;a.download='ics-vex-context-review.json';a.click();URL.revokeObjectURL(url);
+}
+
+function _groundedPipelineHtml(result){
+  if(!result.pipeline)return '';
+  let html='<div class="card"><h3>Shared LLM pipeline</h3><p>Condition / function extraction → evidence decision → VEX authoring</p>'
+    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+result.pipeline.case_count+'. Generated text is a draft for review.</p></div>';
+  for(const s of result.statements){
+    const x=s.extraction||{},w=s.authoring||{},draft=s.document_draft;
+    html+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Extraction: '+esc(x.status||'unknown')+' · Authoring: '+esc(w.status||'unknown')+'</summary>'
+      +'<p class="hint">Case: '+esc(s.case_id||'')+'</p>';
+    if(x.usable){
+      html+='<h4>Quoted condition candidates</h4><ul>'+(x.prediction.conditions||[]).map(c=>'<li>'+esc(c.kind)+': '+esc(c.evidence)+'</li>').join('')+'</ul>'
+        +'<h4>Mentioned function candidates</h4><ul>'+(x.prediction.function_candidates||[]).map(f=>'<li>'+esc(f.name)+' · '+esc(f.evidence)+'</li>').join('')+'</ul>';
+    }else html+='<p>Extraction was not accepted. '+esc(x.reason||'Schema, literal quotation or policy checks failed.')+'</p>';
+    if(draft)html+='<h4>Generated VEX explanation (draft)</h4><p>'+esc(draft.impact_statement)+'</p>'
+      +(draft.action_statement?'<p>'+esc(draft.action_statement)+'</p>':'')+'<p>Evidence IDs: '+esc(draft.evidence_refs.join(', '))+'</p>';
+    else html+='<p>Generated explanation was not accepted. '+esc(w.reason||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
+    html+='<details><summary>Model outputs and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify({extraction:x,authoring:w},null,2))+'</pre></details>'
+      +'<details><summary>Evidence supplied to the VEX writer</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.evidence_packet,null,2))+'</pre></details></details>';
+  }
+  return html;
 }
 
 function _verdictTable(res,armLabel){
@@ -789,7 +802,13 @@ function _v2Label(v){
     return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
   return 'VEX-v2: under investigation';}
 function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \u2014 '):'')+'VEX-v2 evidence \u2014 Q2 present: '+(v.q2||'?')+' \u00b7 Q3 reach (Joern): '+(v.q3||'?')+' \u00b7 Q4 control (Z3): '+(v.q4||'?');}
-function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
+function _applyGroundedVex(row){
+  const s=(_armResult?.statements||[]).find(s=>s.cve===row.cve);if(!s)return row;
+  const d=s.document_draft;
+  return Object.assign({},row,{status:s.status,justification:s.justification||'',impact_statement:d?.impact_statement||s.reason||'',
+    action_statement:d?.action_statement||null,evidence_refs:d?.evidence_refs||[],model_authoring_status:s.authoring?.status||'unavailable',review_required:true});
+}
+function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(_applyGroundedVex(r));}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
@@ -917,7 +936,7 @@ function saveVexFields(cve){
     const sn=[];
     if(r.status==='not_affected'&&st.status==='not_affected'){
       st.justification=_justOrNull(r);
-      if(r.action_statement)st.impact_statement=r.action_statement;}
+      if(r.impact_statement||r.action_statement)st.impact_statement=r.impact_statement||r.action_statement;}
     else if(st.status==='affected'){
       st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||('Apply vendor update or mitigation for '+r.component+'.'));}
     else if(st.status==='fixed'){
@@ -928,6 +947,9 @@ function saveVexFields(cve){
       if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
       if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
       if(r.planned_update)sn.push('planned: '+r.planned_update);}
+    if(r.impact_statement&&_effStatus(r)!=='not_affected')sn.push('Explanation: '+r.impact_statement);
+    if(r.evidence_refs?.length)sn.push('Evidence IDs: '+r.evidence_refs.join(', '));
+    if(r.review_required)sn.push('Draft for review; model authoring: '+r.model_authoring_status);
     if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
   const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/"+_docId(p.name),
@@ -946,6 +968,9 @@ function exportCsaf(){
     const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
     const notes=[{category:'other',title:'ICS-VEXForge assessment',
       text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
+    if(r.impact_statement)notes.push({category:'description',title:'Evidence-based explanation (draft)',text:r.impact_statement});
+    if(r.evidence_refs?.length)notes.push({category:'other',title:'Evidence IDs',text:r.evidence_refs.join(', ')});
+    if(r.review_required)notes.push({category:'other',title:'Review required',text:'Draft; model authoring: '+r.model_authoring_status});
     if(st==='not_affected'){
       // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
@@ -975,7 +1000,7 @@ function exportCsaf(){
       publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
         namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
         issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
-      tracking:{id:_docId(p.name),status:'final',version:'1',initial_release_date:now,current_release_date:now,
+      tracking:{id:_docId(p.name),status:rows.some(r=>r.review_required)?'draft':'final',version:'1',initial_release_date:now,current_release_date:now,
         revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.08'}}}},
     product_tree:{full_product_names:fpn},
     vulnerabilities:vulns};
