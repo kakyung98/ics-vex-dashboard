@@ -285,7 +285,8 @@ async function judgeSource(){
   const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({session:_srcSession,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
-      entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked})});
+      entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
+      product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
   _armResult=await r.json();
   let details='<div class="hint">Clang/LLVM source review · Conclusions apply to the selected build and declared roots. Missing build/entry coverage, indirect calls or compiler failures block negative decisions. A path does not prove attacker control or exploitation.</div>';
@@ -295,13 +296,11 @@ async function judgeSource(){
     +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
   for(const s of _armResult.statements){
     const e=s.evidence;
-    const priority=_armResult.tix.statements.find(t=>t.vulnerability===s.cve).priority;
     const hunks=e.patch.patches.flatMap(p=>p.hunks);
     details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
       +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
       +' · Vulnerable-pattern hunks: '+hunks.filter(h=>h.status==='vulnerable_pattern').length+' · Static paths: '+e.reachable_paths.length+'</p>'
       +'<p>CFG paths: '+e.cfg.reachable_paths.length+' · Unreachable: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
-      +'<p>Review priority: '+priority.lower_bound+'–'+priority.upper_bound+' / 10 (unknown signals retained)</p>'
       +'<p>Missing evidence: '+esc(e.missing_evidence.join(', '))+'</p>'
       +'<p><b>Explanation:</b> '+esc(e.explanation?.reason||s.reason)+'</p>'
       +'<p>Claim boundary: '+esc(e.cfg.claim_boundary||e.cfg.scope)+'</p>'
@@ -310,14 +309,7 @@ async function judgeSource(){
       +'<ul>'+(e.cfg.blockers||[]).slice(0,30).map(b=>'<li>'+esc(b.reason)+(b.file?' · '+esc(b.file):'')+'</li>').join('')+'</ul>'
       +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
   }
-  details+='<button class="primary" onclick="downloadSourceTix()">Download TIX review JSON</button>';
-  v.innerHTML=_verdictTable(_armResult,'Source evidence')+details;
-}
-
-function downloadSourceTix(){
-  const payload={..._armResult.tix,build:_armResult.build,cfg:_armResult.cfg,inventory:_armResult.inventory,inventory_sha256:_armResult.inventory_sha256,limitations:_armResult.limitations};
-  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
-  const a=document.createElement('a');a.href=url;a.download='ics-vex-source-tix.json';a.click();URL.revokeObjectURL(url);
+  v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
 }
 
 async function renderOcForm(box){
@@ -375,10 +367,10 @@ async function judgeOc(){
     return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||'',cwe:f.cwe};});
   const url=_candidateJobId?'/api/cve-match/jobs/'+encodeURIComponent(_candidateJobId)+'/oc':'/api/oc/judge';
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({asset:_collectOc(),cves:cves})});
+    body:JSON.stringify({asset:_collectOc(),cves:cves,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
   _armResult=await r.json();
-  v.innerHTML=_verdictTable(_armResult,'Operational context evidence');
+  v.innerHTML=_verdictTable(_armResult,'Operational context evidence')+_groundedPipelineHtml(_armResult);
   for(const statement of _armResult.statements){
     const cwe=statement.cwe_context;
     if(!cwe)continue;
@@ -394,6 +386,27 @@ async function judgeOc(){
 function downloadOcReview(){
   const url=URL.createObjectURL(new Blob([JSON.stringify({schema:'ics-vex-context-review/1',..._armResult},null,2)],{type:'application/json'}));
   const a=document.createElement('a');a.href=url;a.download='ics-vex-context-review.json';a.click();URL.revokeObjectURL(url);
+}
+
+function _groundedPipelineHtml(result){
+  if(!result.pipeline)return '';
+  let html='<div class="card"><h3>Shared LLM pipeline</h3><p>Condition / function extraction → evidence decision → VEX authoring</p>'
+    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+result.pipeline.case_count+'. Generated text is a draft for review.</p></div>';
+  for(const s of result.statements){
+    const x=s.extraction||{},w=s.authoring||{},draft=s.document_draft;
+    html+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Extraction: '+esc(x.status||'unknown')+' · Authoring: '+esc(w.status||'unknown')+'</summary>'
+      +'<p class="hint">Case: '+esc(s.case_id||'')+'</p>';
+    if(x.usable){
+      html+='<h4>Quoted condition candidates</h4><ul>'+(x.prediction.conditions||[]).map(c=>'<li>'+esc(c.kind)+': '+esc(c.evidence)+'</li>').join('')+'</ul>'
+        +'<h4>Mentioned function candidates</h4><ul>'+(x.prediction.function_candidates||[]).map(f=>'<li>'+esc(f.name)+' · '+esc(f.evidence)+'</li>').join('')+'</ul>';
+    }else html+='<p>Extraction was not accepted. '+esc(x.reason||'Schema, literal quotation or policy checks failed.')+'</p>';
+    if(draft)html+='<h4>Generated VEX explanation (draft)</h4><p>'+esc(draft.impact_statement)+'</p>'
+      +(draft.action_statement?'<p>'+esc(draft.action_statement)+'</p>':'')+'<p>Evidence IDs: '+esc(draft.evidence_refs.join(', '))+'</p>';
+    else html+='<p>Generated explanation was not accepted. '+esc(w.reason||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
+    html+='<details><summary>Model outputs and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify({extraction:x,authoring:w},null,2))+'</pre></details>'
+      +'<details><summary>Evidence supplied to the VEX writer</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.evidence_packet,null,2))+'</pre></details></details>';
+  }
+  return html;
 }
 
 function _verdictTable(res,armLabel){
@@ -769,7 +782,13 @@ function _v2Label(v){
     return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
   return 'VEX-v2: under investigation';}
 function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \u2014 '):'')+'VEX-v2 evidence \u2014 Q2 present: '+(v.q2||'?')+' \u00b7 Q3 reach (Joern): '+(v.q3||'?')+' \u00b7 Q4 control (Z3): '+(v.q4||'?');}
-function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
+function _applyGroundedVex(row){
+  const s=(_armResult?.statements||[]).find(s=>s.cve===row.cve);if(!s)return row;
+  const d=s.document_draft;
+  return Object.assign({},row,{status:s.status,justification:s.justification||'',impact_statement:d?.impact_statement||s.reason||'',
+    action_statement:d?.action_statement||null,evidence_refs:d?.evidence_refs||[],model_authoring_status:s.authoring?.status||'unavailable',review_required:true});
+}
+function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(_applyGroundedVex(r));}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
@@ -897,7 +916,7 @@ function saveVexFields(cve){
     const sn=[];
     if(r.status==='not_affected'&&st.status==='not_affected'){
       st.justification=_justOrNull(r);
-      if(r.action_statement)st.impact_statement=r.action_statement;}
+      if(r.impact_statement||r.action_statement)st.impact_statement=r.impact_statement||r.action_statement;}
     else if(st.status==='affected'){
       st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||('Apply vendor update or mitigation for '+r.component+'.'));}
     else if(st.status==='fixed'){
@@ -908,6 +927,9 @@ function saveVexFields(cve){
       if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
       if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
       if(r.planned_update)sn.push('planned: '+r.planned_update);}
+    if(r.impact_statement&&_effStatus(r)!=='not_affected')sn.push('Explanation: '+r.impact_statement);
+    if(r.evidence_refs?.length)sn.push('Evidence IDs: '+r.evidence_refs.join(', '));
+    if(r.review_required)sn.push('Draft for review; model authoring: '+r.model_authoring_status);
     if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
   const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/"+_docId(p.name),
@@ -926,6 +948,9 @@ function exportCsaf(){
     const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
     const notes=[{category:'other',title:'ICS-VEXForge assessment',
       text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
+    if(r.impact_statement)notes.push({category:'description',title:'Evidence-based explanation (draft)',text:r.impact_statement});
+    if(r.evidence_refs?.length)notes.push({category:'other',title:'Evidence IDs',text:r.evidence_refs.join(', ')});
+    if(r.review_required)notes.push({category:'other',title:'Review required',text:'Draft; model authoring: '+r.model_authoring_status});
     if(st==='not_affected'){
       // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
@@ -955,7 +980,7 @@ function exportCsaf(){
       publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
         namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
         issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
-      tracking:{id:_docId(p.name),status:'final',version:'1',initial_release_date:now,current_release_date:now,
+      tracking:{id:_docId(p.name),status:rows.some(r=>r.review_required)?'draft':'final',version:'1',initial_release_date:now,current_release_date:now,
         revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.08'}}}},
     product_tree:{full_product_names:fpn},
     vulnerabilities:vulns};
