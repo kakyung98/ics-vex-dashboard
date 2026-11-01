@@ -336,75 +336,43 @@ async function judgeSource(){
   v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
 }
 
+let _operationPlan=null;
 async function renderOcForm(box){
-  if(!_ocFields){const r=await fetch('/api/oc/fields');_ocFields=await r.json();}
-  let h='<div class="hint" style="margin-bottom:10px">'
-    +'Missing values are treated as <b>unknown</b> and cannot clear a vulnerability. '
-    +'Only structural absence can support <span class="mono">not_affected</span>. '
-    +'A disabled setting is recorded as mitigation only.</div>';
-  for(const g of _ocFields.groups){
-    if(!g.fields.length) continue;
-    h+='<div style="margin:12px 0 4px"><b>'+esc(g.label)+'</b>'
-      +(g.priority_only?' <span class="hint">(does not change applicability)</span>':'')+'</div>';
-    for(const f of g.fields) h+=_ocField(f);
-  }
-  h+='<div style="margin-top:14px"><button class="primary" onclick="judgeOc()">Evaluate VEX using operational context ▶</button></div>'
-    +'<div id="ocverdict" style="margin-top:12px"></div>';
-  box.innerHTML=h;
+  _operationPlan=null;
+  box.innerHTML='<h3>CVE-specific operational review</h3><p>No source code: the LLM will generate questions about the exploitation conditions of each CVE. Provide actual asset facts and their records. Unanswered items remain unknown.</p>'
+    +'<p class="hint">Question generation and answer assessment use the shared Qwen3-8B base model; these two roles have not been fine-tuned. Likelihoods are advisory; operator reports do not establish verified code absence.</p>'
+    +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
-
-function _ocField(f){
-  const id='oc_'+f.key;
-  let inp;
-  if(f.type==='tri'){
-    inp='<select id="'+id+'"><option value="">— Unknown / not provided —</option>'
-       +'<option value="true">Yes</option><option value="false">No</option></select>';
-  }else if(f.type.indexOf('enum:')===0){
-    inp='<select id="'+id+'"><option value="">— Unknown / not provided —</option>'
-       +f.type.slice(5).split('|').map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
-  }else if(f.type==='list'){
-    inp='<input id="'+id+'" placeholder="Comma-separated values; leave blank when unknown">';
-  }else if(f.type==='kv'){
-    inp='<input id="'+id+'" placeholder="web_admin=enabled, legacy_auth=off">';
-  }else{
-    inp='<input id="'+id+'">';
-  }
-  return '<div style="margin:6px 0"><label style="font-weight:400">'+esc(f.label)+'</label>'+inp
-    +(f.help?'<div class="hint">'+esc(f.help)+'</div>':'')
-    +'<div class="hint" style="opacity:.65">Source: '+esc(f.source)+'</div></div>';
+async function generateOperationQuestions(){
+  const box=document.getElementById('operation-questions'),button=document.getElementById('generate-operation-questions');
+  button.disabled=true;box.innerHTML='<p>Generating CVE-specific questions locally. This may take several minutes.</p>';
+  try{
+    const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
+    const r=await fetch('/api/oc/questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cves,identification_job:_candidateJobId||null,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+    if(!r.ok)throw new Error(await r.text());
+    _operationPlan=await r.json();
+    box.innerHTML=_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status)+'</p>'
+      +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
+      +c.questions.map((q,qi)=>'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.origin)+'</p>'
+        +(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')
+        +(q.answer_type==='text'?'<input id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Exact installed build, or leave unknown">':'<select id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
+        +'<input id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Evidence: configuration record, vendor bulletin, build ID, inspection date"></div>').join('')
+      +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></section>').join('')
+      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Analyze answers and draft VEX</button><p class="hint">The questionnaire expires after 24 hours or a backend restart. Download the review JSON to retain questions, answers and evidence.</p>';
+  }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
-
-function _collectOc(){
-  const a={};
-  for(const g of _ocFields.groups) for(const f of g.fields){
-    const el=document.getElementById('oc_'+f.key); if(!el) continue;
-    const v=(el.value||'').trim(); if(!v) continue;   // 빈칸은 보내지 않는다 = 모름
-    a[f.key]= f.type==='list' ? v.split(',').map(function(x){return x.trim();}).filter(Boolean) : v;
-  }
-  return a;
-}
-
 async function judgeOc(){
-  const v=document.getElementById('ocverdict');
-  v.innerHTML='<span class="hint">Evaluating evidence…</span>';
-  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){
-    return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||'',cwe:f.cwe};});
-  const url=_candidateJobId?'/api/cve-match/jobs/'+encodeURIComponent(_candidateJobId)+'/oc':'/api/oc/judge';
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({asset:_collectOc(),cves:cves,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
-  if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
-  _armResult=await r.json();
-  v.innerHTML=_verdictTable(_armResult,'Operational context evidence')+_groundedPipelineHtml(_armResult);
-  for(const statement of _armResult.statements){
-    const cwe=statement.cwe_context;
-    if(!cwe)continue;
-    v.innerHTML+='<details class="card" style="margin-top:10px"><summary>'+esc(statement.cve)+' · CWE weakness context</summary>'
-      +'<p>'+esc(cwe.note)+'</p>'+(cwe.entries||[]).map(e=>'<h4><a href="'+esc(e.definition_url)+'" target="_blank" rel="noopener">'+esc(e.id)+'</a> · '+esc(e.name)+'</h4>'
-      +'<p class="hint">Classification source: '+esc(e.sources.map(s=>s.source).join(', '))+' · Can clear a CVE: false</p>'
-      +'<ul>'+e.review_questions.map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>').join('')
-      +(cwe.status==='unknown'?'<p>No supported CWE classification is available.</p>':'')+'</details>';
-  }
-  v.innerHTML+='<button class="primary" style="margin-top:12px" onclick="downloadOcReview()">Download contextual review JSON</button>';
+  if(!_operationPlan)return;
+  const v=document.getElementById('ocverdict'),button=document.getElementById('submit-operation-answers'),answers={};
+  _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
+  button.disabled=true;v.innerHTML='<p>Comparing operator reports with CVE evidence and writing VEX drafts locally...</p>';
+  try{
+    const r=await fetch('/api/oc/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers})});
+    if(!r.ok)throw new Error(await r.text());
+    _armResult=await r.json();
+    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.assessment.status==='validated_draft'?(s.operational_review.assessment.prediction.explanation+' Advisory text requires review; the effective assessment above applies.'):'No accepted model assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
+      +'<button onclick="downloadOcReview()">Download contextual review JSON</button>';
+  }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
 
 function downloadOcReview(){
