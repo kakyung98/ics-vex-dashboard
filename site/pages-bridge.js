@@ -22,6 +22,18 @@
   };
   const asJson=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   let index;
+  let sboms;
+  async function sbomDocument(path){
+    if(!sboms)sboms=net(new URL('sbom_index.json',location.href)).then(r=>r.json());
+    const name=decodeURIComponent(path.split('/').pop());
+    const asset=((await sboms).assets||[]).find(a=>a.file===name);
+    if(!asset)return asJson({detail:'SBOM not found'},404);
+    if(!asset.public_bundle)return net(new URL('reverse_sbom/'+encodeURIComponent(name),location.href));
+    const response=await net(new URL(asset.public_bundle,location.href));
+    if(!response.ok)return response;
+    const documents=await response.json();
+    return documents[name]?asJson(documents[name]):asJson({detail:'SBOM not found'},404);
+  }
   async function cves(){if(!index)index=net(new URL('cve_index.json',location.href)).then(r=>r.json());return index}
   function project(r){return {...r,vendor:(r.vendors||[]).slice(0,2).join(', ')}}
   async function snapshot(u){
@@ -53,13 +65,14 @@
   window.fetch=async function(input,options){
     const u=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
     const assetPath=u.pathname.match(/\/(reverse_sbom\/[^/]+|results\/verify_evidence\/.*)$/);
-    if(u.origin!==location.origin||(!u.pathname.startsWith('/api/')&&!(backend&&assetPath)))return net(input,options);
+    if(u.origin!==location.origin||(!u.pathname.startsWith('/api/')&&!assetPath))return net(input,options);
     if(backend){
       const local=loopback(new URL(backend));
       const opts={credentials:'omit',mode:'cors',...(options||{}),...(local?{targetAddressSpace:'local'}:{})};
       const url=backend+(assetPath?'/'+assetPath[1]:u.pathname)+u.search;
       return net(input instanceof Request?new Request(url,input):url,opts);
     }
+    if(assetPath)return assetPath[1].startsWith('reverse_sbom/')?sbomDocument(assetPath[1]):net(input,options);
     const method=(options?.method||(input instanceof Request?input.method:'GET')).toUpperCase();
     return method==='GET'?snapshot(u):asJson({detail:'Connect your local backend before submitting files or starting a job.'},503);
   };
