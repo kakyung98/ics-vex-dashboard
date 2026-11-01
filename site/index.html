@@ -139,21 +139,129 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 .vm-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 .vm-list{margin:0;padding-left:18px}.vm-list li{margin:5px 0;font-size:14.5px}
 @media(max-width:820px){.vm-split,.vm-cols{grid-template-columns:1fr}}
-</style></head><body><div class="layout">
+</style><script src="pages-bridge.js"></script></head><body><div class="layout">
 <aside class="side">
   <div class="side-brand"><a href="index.html" title="Go to ICS-VEXForge" aria-label="ICS-VEXForge"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="52" text-anchor="middle" font-weight="800" font-size="30" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="72" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="87" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg></a></div>
-  <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main on" href="index.html">ICS-VEXForge</a><div class="navlabel navlabel-sep">Method</div><a class="navtab" href="sbom-to-cve.html">ICS-SBOM to CVE</a><a class="navtab" href="vex-decision.html">VEX Decision Logic</a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a></nav>
+  <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main on" href="index.html">ICS-VEXForge</a><div class="navlabel navlabel-sep">Method</div><a class="navtab" href="sbom-to-cve.html">SBOM → CVE Method</a><a class="navtab" href="vex-decision.html">VEX Decision Logic</a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html">CVE Dataset</a><a class="navtab" href="ics-sbom.html">Synthetic SBOM</a><a class="navtab" href="source.html">ICS-CERT Advisories (CISA)</a><a class="navtab" href="published-vex.html">Published VEX (CISA)</a></nav>
 </aside>
-<main class="main">
-<h1 style="margin:0 0 2px">ICS-VEXForge</h1><p class="sub" style="margin:0 0 18px">Paste / upload / drag a CycloneDX SBOM. For a source-collectable CVE: the vulnerable component (Q1) and its code (Q2) must be present &mdash; code presence (Q2) decides the verdict; Joern reachability (Q3) and Z3 controllability (Q4) grade the evidence; a patch gate clears an already-fixed build. A source-uncollectable CVE has no code tree, so it falls to the asset-attribute estimate (the asset&rsquo;s attack surface vs the CVE&rsquo;s CVSS Attack Vector), or stays under_investigation.</p><div class="card"><div class="row">
-  <div><label>CycloneDX SBOM (JSON) — paste, upload, or drag a .json file here</label><textarea id="sbom" placeholder='Drag a .json SBOM file here, or paste: {"components":[{"name":"OpenSSL","version":"1.1.1k"}]}'></textarea></div>
-  <div><input type="file" id="file" accept=".json,application/json" style="display:none">
-    <button class="primary" onclick="run()">Analyze ▶</button>
-    <button onclick="document.getElementById('file').click()">Upload JSON</button>
-    <button onclick="ex()">Example</button>
-    <div id="fname" class="hint" style="margin-top:6px"></div></div>
-</div><div id="out" style="margin-top:12px"></div></div>
-<div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">시스템보안연구센터</div><div class="be">System Security Research Center</div></div></div>
+<main class="main"><section class="card" id="pages-backend" style="margin-bottom:22px">
+<h2 style="font-size:18px;margin:0 0 8px">Connect local backend</h2>
+<p class="hint" id="pages-backend-status">Public data is available. Connect the local backend for analysis.</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+<label for="pages-backend-url">Backend URL</label><input id="pages-backend-url" type="url" value="http://127.0.0.1:8100" style="flex:1;min-width:220px" autocomplete="off">
+<button class="primary" id="pages-backend-connect">Connect</button>
+<button id="pages-backend-disconnect" hidden>Disconnect</button>
+<a id="pages-open-local" href="http://127.0.0.1:8100" target="_blank" rel="noopener">Open local app ↗</a></div>
+<p class="hint" style="margin:8px 0 0">Uploaded files are sent to the connected backend. Your browser may ask for local-network permission.</p></section>
+<style>#candidate-workspace *{box-sizing:border-box}
+#candidate-workspace{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 system-ui,-apple-system,'Segoe UI',sans-serif}
+#candidate-workspace a{color:var(--accent);text-decoration:none}
+#candidate-workspace button,#candidate-workspace select,#candidate-workspace textarea,#candidate-workspace input{font:inherit}
+#candidate-workspace button,#candidate-workspace a,#candidate-workspace summary,#candidate-workspace select{touch-action:manipulation}
+#candidate-workspace button{cursor:pointer;border:1px solid var(--line);border-radius:9px;padding:10px 16px;background:var(--card2);color:var(--ink);font-weight:600}
+#candidate-workspace button:hover{border-color:var(--accent)}
+#candidate-workspace button:disabled{opacity:.45;cursor:default}
+#candidate-workspace button.primary{background:var(--accent);border-color:var(--accent);color:var(--bg);min-width:180px}
+#candidate-workspace button.small{padding:5px 11px;font-size:12px}
+#candidate-workspace select{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--card2);color:var(--ink)}
+#candidate-workspace textarea{width:100%;height:260px;resize:vertical;border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--bg);color:var(--ink);line-height:1.6;font:13px/1.7 Consolas,monospace}
+#candidate-workspace textarea:focus,#candidate-workspace select:focus{outline:2px solid var(--accent);outline-offset:2px}
+#candidate-workspace aside{width:228px;position:fixed;inset:0 auto 0 0;border-right:1px solid var(--line);padding:27px 20px;background:#101725}
+#candidate-workspace aside .brand{color:var(--ink);font-size:19px;font-weight:800;letter-spacing:-.6px}
+#candidate-workspace aside .sub{font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:35px}
+#candidate-workspace aside nav a{display:block;color:var(--muted);padding:10px 12px;border-radius:8px;margin:5px 0;font-size:14px}
+#candidate-workspace aside nav a.active{background:var(--card2);color:#cbc9ff}
+#candidate-workspace aside .foot{position:absolute;bottom:22px;font-size:12px;color:var(--muted)}
+#candidate-workspace main{margin-left:228px;padding:38px 40px 70px;max-width:1510px}
+#candidate-workspace .eyebrow{font-size:11px;letter-spacing:2px;color:var(--green);font-weight:700}
+#candidate-workspace h1{font-size:32px;letter-spacing:-1.3px;margin:7px 0 8px;line-height:1.3}
+#candidate-workspace h2{font-size:17px;margin:0}
+#candidate-workspace p{margin:8px 0}
+#candidate-workspace .muted{color:var(--muted)}
+#candidate-workspace .top{display:flex;justify-content:space-between;gap:20px;align-items:center}
+#candidate-workspace .badge{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);padding:3px 10px;border-radius:30px;font-size:12px;white-space:nowrap;color:var(--muted)}
+#candidate-workspace .good{color:var(--green)}
+#candidate-workspace .warn{color:var(--amber)}
+#candidate-workspace .bad{color:var(--aff)}
+#candidate-workspace .notice{border:1px solid var(--und);background:var(--card2);border-radius:10px;padding:12px 16px;color:var(--ink2);font-size:13px;margin:22px 0}
+#candidate-workspace .grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:18px}
+#candidate-workspace .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:22px}
+#candidate-workspace .panelhead{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}
+#candidate-workspace .upload{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px dashed var(--line);background:var(--card2);padding:14px;border-radius:9px;margin-bottom:12px}
+#candidate-workspace .upload.drag{border-color:var(--accent);background:var(--card2)}
+#candidate-workspace .upload label{cursor:pointer;color:var(--accent);font-weight:600}
+#candidate-workspace .upload input{max-width:230px;font-size:12px}
+#candidate-workspace .field{margin-bottom:18px}
+#candidate-workspace .field label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+#candidate-workspace .hint{font-size:12px;line-height:1.65;color:var(--muted);margin-top:7px}
+#candidate-workspace .modelrow{display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:13px}
+#candidate-workspace .actions{display:flex;gap:10px;margin-top:16px;align-items:center;flex-wrap:wrap}
+#candidate-workspace .stages{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0}
+#candidate-workspace .stage{padding:12px;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+#candidate-workspace .stage span{font:11px Consolas,monospace;color:var(--accent)}
+#candidate-workspace .stage strong{display:block;font-size:13px;margin-top:3px}
+#candidate-workspace .stage.active{border-color:var(--accent);background:var(--card2)}
+#candidate-workspace .progress{margin:20px 0}
+#candidate-workspace .track{height:5px;border-radius:5px;background:var(--line);overflow:hidden}
+#candidate-workspace .track i{display:block;height:100%;background:var(--green);transition:width .3s}
+#candidate-workspace .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+#candidate-workspace .stat{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:15px 20px}
+#candidate-workspace .stat strong{display:block;font-size:27px;font-weight:650}
+#candidate-workspace .stat span{font-size:12px;color:var(--muted)}
+#candidate-workspace .component{border:1px solid var(--line);background:var(--panel);border-radius:12px;margin:12px 0;overflow:hidden}
+#candidate-workspace .component>summary{cursor:pointer;padding:17px 20px;font-weight:600}
+#candidate-workspace .component>summary .badge{float:right}
+#candidate-workspace .componentbody{padding:0 20px 20px}
+#candidate-workspace .evidence{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:5px 0 18px}
+#candidate-workspace .evidence>div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-wrap:anywhere}
+#candidate-workspace .evidence h3{font-size:12px;color:var(--muted);font-weight:500;margin:0 0 6px}
+#candidate-workspace .evidence code{display:block;font-size:13px}
+#candidate-workspace .tablewrap{overflow:auto}
+#candidate-workspace table{width:100%;border-collapse:collapse;font-size:13px}
+#candidate-workspace th,#candidate-workspace td{text-align:left;padding:10px;border-bottom:1px solid var(--line)}
+#candidate-workspace th{color:var(--muted);font-weight:500}
+#candidate-workspace pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 Consolas,monospace;background:var(--bg);padding:14px;border-radius:8px;max-height:450px;overflow:auto}
+#candidate-workspace details.raw{margin-top:16px;color:var(--muted);font-size:12px}
+#candidate-workspace .empty{padding:24px;text-align:center;border:1px dashed var(--line);border-radius:10px;color:var(--muted)}
+#candidate-workspace [hidden]{display:none!important}
+#candidate-workspace .stats{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1100px){#candidate-workspace main{padding:26px 24px}
+#candidate-workspace .grid{grid-template-columns:1fr}
+#candidate-workspace .settings{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+#candidate-workspace .modelinfo{grid-column:1/-1}}
+@media(max-width:760px){#candidate-workspace aside{position:static;width:auto;padding:16px 20px;border-right:0;border-bottom:1px solid var(--line)}
+#candidate-workspace aside .sub,#candidate-workspace aside .foot{display:none}
+#candidate-workspace aside nav{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#candidate-workspace aside nav a{font-size:12px;padding:6px}
+#candidate-workspace main{margin:0;padding:24px 16px}
+#candidate-workspace .top{display:block}
+#candidate-workspace h1{font-size:27px}
+#candidate-workspace .top .badge{margin-top:12px}
+#candidate-workspace .settings{display:block}
+#candidate-workspace .stats{grid-template-columns:1fr 1fr}
+#candidate-workspace .stages{grid-template-columns:1fr 1fr}
+#candidate-workspace .evidence{grid-template-columns:1fr}
+#candidate-workspace .upload{align-items:start;flex-direction:column}
+#candidate-workspace .component>summary .badge{float:none;margin-left:8px}}
+#candidate-workspace{--panel:var(--card);--muted:var(--ink2);--green:var(--safe);--amber:var(--und);font:inherit;background:transparent;margin:0} 
+#candidate-workspace .panel,#candidate-workspace .component{border-radius:12px} 
+#candidate-workspace textarea,#candidate-workspace select{font-family:var(--sans);font-size:14px} 
+#candidate-workspace textarea,#candidate-workspace pre,#candidate-workspace code{font-family:var(--mono)} 
+#candidate-workspace button,#candidate-workspace select{min-height:42px;border-radius:8px} </style><h1>ICS-VEXForge</h1><p class="sub">SBOM → L2/L3/L4 identification → CVE candidates → Evidence-based VEX review</p><section id="candidate-workspace"><header class="top"><div><div class="eyebrow">IDENTIFICATION WORKSPACE</div><h2 style="font-size:27px;margin:7px 0">Step 1 · SBOM → CVE candidates</h2><p class="muted">Resolve component names, preserve versions, and retrieve candidates from NVD and CISA evidence.</p></div><span class="badge" id="cm-modelBadge">Checking model availability</span></header>
+<div class="notice"><strong>Experimental model · Candidate identification</strong>　v2 was trained on NVD-derived synthetic data. Generalization to real SBOMs is unverified. Candidate retrieval is not a final VEX judgment, and an empty result does not establish safety.</div>
+<div class="grid"><section class="panel"><div class="panelhead"><h2>01  SBOM input</h2><button class="small" id="cm-sample" type="button">Load sample</button></div>
+<div class="upload" id="cm-drop"><div><strong>Upload or drop a JSON file</strong><div class="hint" id="cm-fileLabel">CycloneDX · SPDX / Up to 100 components</div></div><input id="cm-file" type="file" accept=".json,application/json" aria-label="Choose an SBOM file"></div>
+<textarea id="cm-sbom" aria-label="SBOM JSON" spellcheck="false" placeholder='{"bomFormat":"CycloneDX","components":[...]}'></textarea>
+<div class="hint">Upload an SBOM from your asset or paste JSON below. The sample is synthetic and intended only to check the workflow.</div>
+<div class="actions"><button class="primary" id="cm-run">Identify CVE candidates →</button><button id="cm-download" disabled>Download results JSON</button><span class="hint" id="cm-inputCount"></span></div></section>
+<section class="panel settings"><div class="field"><label for="cm-mode">02  Identification method</label><select id="cm-mode"><option value="tuned" selected>Qwen v2 · Fine-tuned agents (experimental)</option><option value="base">Qwen base model</option><option value="rules">Rule-based baseline</option></select><p class="hint">Models run on the local GPU. The first request includes model loading time.</p></div>
+<div class="field"><label for="cm-lookup">03  Evidence source</label><select id="cm-lookup"><option value="local">Local NVD + CISA snapshots</option><option value="live">Live NVD + local CISA snapshot</option><option value="none">No lookup · Defer identification</option></select><p class="hint" id="cm-lookupHint">Look up product CPEs and CISA advisories with matching vendor and product phrases. Unknown versions allow candidate retrieval, but applicability remains unconfirmed.</p></div>
+<div class="modelinfo"><div style="border-top:1px solid var(--line);padding-top:12px"><strong style="font-size:13px">Agent availability</strong><div id="cm-models"><p class="hint">Checking saved adapter weights.</p></div><p class="hint" id="cm-modelDataset"></p></div></div></section></div>
+<section class="progress" aria-label="Analysis progress"><div class="stages"><div class="stage" data-stage="l2_name"><span>L2 / NAME</span><strong>Name normalization</strong></div><div class="stage" data-stage="l3_version"><span>L3 / VERSION</span><strong>Version preservation</strong></div><div class="stage" data-stage="l4_identifier"><span>L4 / IDENTIFIER</span><strong>CPE dictionary verification</strong></div><div class="stage" data-stage="cve_matching"><span>NVD / CANDIDATES</span><strong>CVE candidate retrieval</strong></div></div>
+<div class="track"><i id="cm-bar" style="width:0%"></i></div><p class="hint" id="cm-status" role="status" aria-live="polite">Provide an SBOM to begin identification.</p></section>
+<section id="cm-results" hidden><div class="panelhead"><h2>Identification results</h2><span class="hint" id="cm-resultMeta"></span></div><div class="stats" id="cm-stats"></div><div id="cm-resultNotice" class="notice" hidden></div><div id="cm-components"></div><details class="raw"><summary>View full result JSON</summary><pre id="cm-raw"></pre></details></section>
+</section><section id="candidate-vex" class="card" hidden></section>
+<div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">SSRC</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
 </main>
 </div>
@@ -164,7 +272,7 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 </div></div>
 
 <script>
-const VEX_TREE={"start": "affected_range", "nodes": {"affected_range": {"q": "Is the component within the CVE's affected range?", "no": ["not_affected", "code_not_reachable"], "yes": "source_check"}, "source_check": {"q": "Can the vulnerable source code be obtained?", "yes": ["route_to_icsvexforge", "Switch to the ICS-VEXForge (code-based) methodology"], "no": "av_split"}, "av_split": {"q": "CVE attack vector (CVSS AV)", "branch": {"network": "net_reach", "local": "loc_priv", "physical": "phy_access"}}, "net_reach": {"q": "Reachability: is the service reachable via an observed exposure path?", "no": ["not_affected", "protected_at_perimeter"], "yes": "net_exec"}, "net_exec": {"q": "Execution active: is the service running the vulnerable code active?", "no": ["not_affected", "code_not_reachable"], "yes": "net_mit"}, "net_mit": {"q": "Mitigating control: is the path blocked? (segmentation, firewall, auth)", "no": ["not_affected", "protected_by_mitigating_control"], "yes": "net_impact"}, "net_impact": {"q": "High-impact asset? (safety function / process impact)", "no": ["under_investigation", "likely_affected_medium"], "yes": ["under_investigation", "likely_affected_high"]}, "loc_priv": {"q": "Privilege/interaction: can local access and the required privilege be obtained?", "no": ["not_affected", "requires_environment"], "yes": "loc_exec"}, "loc_exec": {"q": "Execution active: is the vulnerable code path active?", "no": ["not_affected", "code_not_reachable"], "yes": "loc_mit"}, "loc_mit": {"q": "Mitigating control: account/interaction controls? (least privilege, signing)", "no": ["not_affected", "protected_by_mitigating_control"], "yes": "loc_impact"}, "loc_impact": {"q": "High-impact asset? (safety function / process impact)", "no": ["under_investigation", "likely_affected_medium"], "yes": ["under_investigation", "likely_affected_high"]}, "phy_access": {"q": "Physical access control: are ports/media blocked?", "no": ["not_affected", "protected_at_perimeter"], "yes": "phy_config"}, "phy_config": {"q": "Configuration: are removable media / maintenance ports enabled?", "no": ["not_affected", "requires_configuration"], "yes": "phy_impact"}, "phy_impact": {"q": "High-impact asset? (safety function / process impact)", "no": ["under_investigation", "likely_affected_medium"], "yes": ["under_investigation", "likely_affected_high"]}}};
+const VEX_TREE={};
 const C={LIKELY_AFFECTED:'var(--aff)',LIKELY_NOT_AFFECTED:'var(--safe)',UNDER_INVESTIGATION:'var(--und)'};
 const L={LIKELY_AFFECTED:'Affected',LIKELY_NOT_AFFECTED:'Not affected',UNDER_INVESTIGATION:'Under investigation'};
 function jsoncParse(txt){var BS=String.fromCharCode(92),NL=String.fromCharCode(10),CR=String.fromCharCode(13);var s='',i=0,n=txt.length,inStr=false,esc=false;while(i<n){var c=txt[i];if(inStr){s+=c;if(esc){esc=false;}else if(c===BS){esc=true;}else if(c==='"'){inStr=false;}i++;continue;}if(c==='"'){inStr=true;s+=c;i++;continue;}if(c==='/'&&txt[i+1]==='/'){while(i<n&&txt[i]!==NL&&txt[i]!==CR){i++;}continue;}if(c==='/'&&txt[i+1]==='*'){i+=2;while(i+1<n&&!(txt[i]==='*'&&txt[i+1]==='/')){i++;}i+=2;continue;}s+=c;i++;}var WS=' '+String.fromCharCode(9)+String.fromCharCode(10)+String.fromCharCode(13);var re=new RegExp(',(['+WS+']*)(}|])','g');return JSON.parse(s.replace(re,'$1$2'));}
@@ -179,83 +287,17 @@ function _compCell(f){
   }
   return esc((f.component||'')+' '+(f.version||''));
 }
-
-let CVE_INDEX=[], CVE_KB={}, KB_COMPS=[], SRC_OK=new Set(), VEX_V2={};
-fetch('vex_v2.json').then(r=>r.json()).then(d=>{VEX_V2=d;}).catch(()=>{});
-fetch('cve_index.json').then(r=>r.json()).then(d=>{CVE_INDEX=d;for(const r of d)if(r.source_available||r.has_code_pair)SRC_OK.add(r.cve);}).catch(()=>{});
-fetch('cve_kb.json').then(r=>r.json()).then(d=>{const idx={};KB_COMPS=(d.components||[]);for(const c of KB_COMPS){for(const k of new Set([c.key,(c.name||'').toLowerCase(),c.cpe_product||''])){if(k)idx[String(k).toLowerCase()]=c;}}CVE_KB=idx;}).catch(()=>{});
-function roMatches(a,b){let bi=0,bj=0,bs=0;for(let i=0;i<a.length;i++){for(let j=0;j<b.length;j++){let k=0;while(i+k<a.length&&j+k<b.length&&a[i+k]===b[j+k])k++;if(k>bs){bs=k;bi=i;bj=j;}}}if(bs===0)return 0;return bs+roMatches(a.slice(0,bi),b.slice(0,bj))+roMatches(a.slice(bi+bs),b.slice(bj+bs));}
-function roRatio(a,b){a=(a||'').toLowerCase();b=(b||'').toLowerCase();const t=a.length+b.length;return t?2*roMatches(a,b)/t:0;}
-function cveIdsFor(comp,ver){if(!comp)return [];const vmap=comp.versions||{};let cves=vmap[ver];if(cves==null){const seen=new Set();cves=[];for(const k in vmap)for(const cv of vmap[k])if(!seen.has(cv.id)){seen.add(cv.id);cves.push(cv);}}return cves.map(cv=>cv.id);}
-// returns [component, bestRatio, matchedString, runnerUpRatio] - the runner-up
-// is what makes ambiguity detectable; without it `openssl` silently wins over
-// `openssh` at 0.857.
-function roBest(name){const n=(name||'').toLowerCase();let best=null,br=0,bs=null,second=0;for(const c of KB_COMPS){let cr=0,cs=null;for(const s of [c.name,c.cpe_product,c.key].filter(Boolean)){const r=roRatio(n,s);if(r>cr){cr=r;cs=s;}}if(cr>br){second=br;br=cr;best=c;bs=cs;}else if(cr>second){second=cr;}}return [best,Math.round(br*1000)/1000,bs,Math.round(second*1000)/1000];}
-
-// --- component identity and version ranges (mirrors src/sbom_match.py) -------
-// Name similarity must not decide identity: RO scores `openssl` against
-// `openssh` at 0.857 and they share no CVEs. Identifiers first; a name only
-// when it is exact, or fuzzy AND unambiguous.
-var VRANGES={};
-function _normPkg(x){return String(x||'').toLowerCase().replace(/^lib/,'');}
-function _parseVer(s){if(!s)return null;var t=String(s).match(/\d+|[A-Za-z]+/g);if(!t)return null;
-  return t.map(function(x){if(/^\d+$/.test(x))return parseInt(x,10);var n=0;
-    x.toLowerCase().split('').forEach(function(c){var o=c.charCodeAt(0)-96;if(o>=1&&o<=26)n=n*26+o;});return n;});}
-function _cmpVer(a,b){var ta=_parseVer(a),tb=_parseVer(b);if(!ta||!tb)return null;
-  var n=Math.max(ta.length,tb.length);for(var i=0;i<n;i++){var x=ta[i]||0,y=tb[i]||0;if(x!==y)return x<y?-1:1;}return 0;}
-var UNPINNED={'':1,'noassertion':1,'unknown':1,'none':1,'n/a':1,'*':1};
-// true / false / null, where null means undecidable - never read null as false
-function inAffectedRange(cve,product,version){
-  if(!version||UNPINNED[String(version).toLowerCase()])return null;
-  var rs=VRANGES[cve];if(!rs||!rs.length)return null;
-  var pkg=_normPkg(product),cand=null;
-  for(var i=0;i<rs.length;i++){var r=rs[i];
-    if(!(r.startIncl||r.endExcl||r.endIncl))continue;
-    var p=_normPkg(r.product);
-    if(pkg&&(pkg===p||pkg.indexOf(p)>=0||p.indexOf(pkg)>=0)){cand=r;break;}
-    if(!cand)cand=r;}
-  if(!cand)return null;
-  var c;
-  if(cand.startIncl){c=_cmpVer(version,cand.startIncl);if(c===null)return null;if(c<0)return false;}
-  if(cand.endExcl){c=_cmpVer(version,cand.endExcl);if(c===null)return null;if(c>=0)return false;}
-  if(cand.endIncl){c=_cmpVer(version,cand.endIncl);if(c===null)return null;if(c>0)return false;}
-  return true;}
-function cvesForVersion(comp,ver){var out=[],seen={};var vmap=comp.versions||{};
-  for(var k in vmap)for(var i=0;i<vmap[k].length;i++){var cv=vmap[k][i];
-    if(seen[cv.id])continue;seen[cv.id]=1;
-    var v=inAffectedRange(cv.id,comp.cpe_product||comp.key,ver);
-    if(v===false)continue;            // version is outside the affected range
-    cv=Object.assign({},cv,{_decided:v===true});out.push(cv);}
-  return out;}
-function identifyComp(c){
-  var purl=String(c.purl||'').toLowerCase();
-  if(purl){var m=purl.match(/^pkg:[^/]+\/(?:[^/@]+\/)?([^@?#]+)/);
-    if(m&&CVE_KB[m[1]])return CVE_KB[m[1]];}
-  var cpe=String(c.cpe||'').toLowerCase();
-  if(cpe){var p=cpe.split(':');if(p.length>=5&&CVE_KB[p[4]])return CVE_KB[p[4]];}
-  var name=String(c.name||'').trim();
-  if(!name)return null;
-  if(CVE_KB[name.toLowerCase()])return CVE_KB[name.toLowerCase()];
-  var rb=roBest(name);
-  // 0.90 absolute and 0.05 clear of the runner-up, else unidentified
-  if(rb[0]&&rb[1]>=0.90&&(rb[1]-(rb[3]||0))>=0.05)return rb[0];
-  return null;}
-
-var _UNPIN=new Set(['','noassertion','unknown','none','n/a','*']);
-function _tidyVer(v){v=(v||'').trim();if(!v)return '';if(v.indexOf('vers:')===0){var t=v.indexOf('/')>=0?v.split('/').slice(1).join('/'):v.slice(5);t=t.trim();if(t==='*'||t==='all'||t==='')return 'all versions';return t.replace(/\|/g,', ').trim();}return v;}
-function _splitComp(comp){comp=comp||{};var vendor=String(comp.publisher||'').trim();var name=String(comp.name||'').trim();var core=name;if(vendor&&core.toLowerCase().indexOf(vendor.toLowerCase())===0)core=core.slice(vendor.length).trim();var m=/(vers:|[<>])/.exec(core);var product,version;if(m){product=core.slice(0,m.index).trim();version=_tidyVer(core.slice(m.index).trim());}else{product=core;var v=String(comp.version||'').trim();version=_UNPIN.has(v.toLowerCase())?'':v;}return [vendor||'—',product||core||name||'—',version];}
-function computeVex(sbom,exp){const rawComps=(sbom.components||[]).filter(c=>c&&c.name);const comps=rawComps.map(c=>[String(c.name).trim(),String(c.version||'').trim()]);const rank={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const byCve={};for(let ci=0;ci<comps.length;ci++){const name=comps[ci][0],ver=comps[ci][1];const comp=identifyComp(rawComps[ci]);if(!comp)continue;const _sp=_splitComp(rawComps[ci]);const cves=cvesForVersion(comp,ver);for(const cv of cves){const av=cv.av||'N';const status='UNDER_INVESTIGATION';const row={cve:cv.id,justification:null,component:comp.name,version:ver||'(unpinned)',vendor:_sp[0],product:_sp[1],version_display:_sp[2],severity:cv.sev||'',cvss:(cv.cvss!=null?cv.cvss:null),source_collectable:SRC_OK.has(cv.id),av:av,kev:!!cv.kev,final_vex:status,evidence_tier:'under-investigation'};const prev=byCve[cv.id];if(!prev||rank[status]>rank[prev.final_vex])byCve[cv.id]=row;}}var ref2name={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2name[c['bom-ref']]=c.name||'';});var ref2comp={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref'])ref2comp[c['bom-ref']]=c;});var ref2tier={};(sbom.components||[]).forEach(c=>{if(c&&c['bom-ref']){var t=null;(c.properties||[]).forEach(p=>{if(p.name==='component:source-availability')t=p.value;});ref2tier[c['bom-ref']]=t;}});var _top=((sbom.metadata||{}).component)||{};if(_top['bom-ref'])ref2name[_top['bom-ref']]=_top.name||'';for(const v of (sbom.vulnerabilities||[])){const cid=v.id;if(!cid||byCve[cid])continue;const props={};for(const p of (v.properties||[]))props[p.name]=p.value;let score=null,sev='';for(const r of (v.ratings||[])){if(r.score!=null)score=r.score;if(r.severity)sev=String(r.severity).toLowerCase();}let av='';const mm=/AV:([NALP])/.exec(props['cisa:cvss-v3-vector']||'');if(mm)av=mm[1];const aff=((v.affects||[])[0]||{}).ref;const absent=(aff&&!(aff in ref2name));const status=absent?'LIKELY_NOT_AFFECTED':'UNDER_INVESTIGATION';const just=absent?'component_not_present':null;var _sp2=_splitComp(ref2comp[aff]||_top||{});byCve[cid]={cve:cid,justification:just,component:ref2name[aff]||aff||_top.name||'',version:'NOASSERTION',vendor:_sp2[0],product:_sp2[1],version_display:_sp2[2],severity:sev,cvss:score,source_collectable:(ref2tier[aff]==='E'?false:(ref2tier[aff]==='A'||ref2tier[aff]==='C')?true:SRC_OK.has(cid)),av:av,kev:String(props['signal:kev']||'').toLowerCase()==='true',final_vex:status,evidence_tier:(absent?'sbom-evidenced':'under-investigation'),from_vdr:true};}for(const _cid in byCve){const _vv=VEX_V2[_cid];if(_vv){byCve[_cid].final_vex=_vv.vex;byCve[_cid].justification=_vv.justification||byCve[_cid].justification;byCve[_cid].v2={vex:_vv.vex,justification:_vv.justification,basis:_vv.basis,q2:_vv.q2,q3:_vv.q3,q4:_vv.q4};}}const cves=Object.values(byCve).sort((a,b)=>rank[b.final_vex]-rank[a.final_vex]||a.cve.localeCompare(b.cve));const by={};for(const r of cves)by[r.final_vex]=(by[r.final_vex]||0)+1;return {components:comps.length,cves_matched:cves.length,summary:{by_vex:by},cves:cves};}
-function queryCves(dim,value,scope){const rv={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};const rs={critical:4,high:3,medium:2,low:1,unrated:0};let hits=CVE_INDEX.filter(r=>{if(scope==='source_available'&&!r.source_available)return false;if(dim==='cwe')return r.cwe===value;if(dim==='vendor')return (r.vendors||[]).includes(value);if(dim==='device_type')return (r.device_types||[]).includes(value);if(dim==='year')return String(r.year)===String(value);if(dim==='vex')return r.vex===value;if(dim==='severity')return r.severity===value;return false;});hits.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rv[b.vex]-rv[a.vex])||(rs[b.severity]-rs[a.severity])||a.cve.localeCompare(b.cve));return {count:hits.length,cves:hits.slice(0,400).map(r=>({cve:r.cve,vex:r.vex,severity:r.severity,kev:r.kev,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component,cwe:r.cwe,has_code_pair:r.has_code_pair,repo_url:r.repo_url,v2:r.v2}))};}
-
 async function run(){
-  if(!Object.keys(VRANGES).length){try{VRANGES=await(await fetch('cve_version_ranges.json')).json();}catch(e){}}
-
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
+  _lastSbom=sbom;_pidMap=null;
   // Deployment exposure intentionally omitted: it never sets a VEX status (only an
   // SSVC priority), so the analyzer does not collect it on the main bar.
-  const d=computeVex(sbom,'');
+  const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({sbom,exposure:''})});
+  if(!r.ok){o.innerHTML='<span class="err">error '+r.status+'</span>';return}
+  const d=await r.json();
   if(!d.cves_matched){o.innerHTML='<div class="hint">'+d.components+' components, no known CVEs matched.</div>'+_abstainBlock(d);return}
   _lastVex=d;
   const bv=d.summary.by_vex||{};
@@ -276,8 +318,174 @@ async function run(){
       +'<td>'+nextcol+'</td></tr>';}
   h+='</tbody></table>';
   h+=_abstainBlock(d);
-  h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
-  o.innerHTML=h;
+  o.innerHTML=h+_armForkHtml();
+}
+
+// ---- 2단계: 판정 Evidence 분기 (docs/ICSVEX.md) --------------------------------
+// CVE 식별이 끝나면 Evidence가 두 갈래로 갈린다. 소스가 있으면 코드에서 읽고, 없으면
+// 자산 운영정보로 전제조건을 대조한다. 한 CVE가 두 팔을 동시에 타지 않는다 —
+// 어느 Evidence가 상태를 정했는지 문서에서 읽을 수 있어야 하기 때문이다.
+let _srcSession=null, _ocFields=null, _armResult=null;
+let _candidateJobId=null, _lastSbom=null;
+
+function _armForkHtml(){return '<div class="card" id="armfork" style="margin-top:14px">'
+  +'<h3 style="margin:0 0 6px">Step 2 · Select VEX evidence</h3>'
+  +'<p class="hint" style="margin:0 0 10px">Do you have the <b>source code</b> for this asset? '
+  +'Review patch, build and source evidence when source is available, or compare attack prerequisites with asset operational context.</p>'
+  +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+  +'<button class="primary" onclick="pickArm(&#39;source&#39;)">Yes — Upload source ZIP</button>'
+  +'<button class="primary" onclick="pickArm(&#39;oc&#39;)">No — Enter operational context</button>'
+  +'</div><div id="armbody" style="margin-top:14px"></div></div>';}
+
+function pickArm(which){
+  const b=document.getElementById('armbody');
+  if(which==='source'){
+    b.innerHTML='<div class="row"><div>'
+      +'<label>Source ZIP — Upload the product source tree</label>'
+      +'<input type="file" id="srczip" accept=".zip">'
+      +'<div class="hint" style="margin-top:8px">Include compile_commands.json and build manifests from the build being reviewed. '
+      +'The backend compares locally cached CVE patch hunks with your files and records declared compilation units. '
+      +'Source paths and patch matches support review; they do not prove exploitability or a fixed deployed binary.</div>'
+      +'<div style="margin-top:10px"><button class="primary" onclick="uploadSource()">Upload and index source ▶</button></div>'
+      +'</div></div><div id="srcout" style="margin-top:12px"></div>';
+  }else{
+    b.innerHTML='<div class="hint">Loading the operational context form…</div>';
+    renderOcForm(b);
+  }
+}
+
+async function uploadSource(){
+  const f=document.getElementById('srczip').files[0];
+  const out=document.getElementById('srcout');
+  if(!f){out.innerHTML='<span class="err">Choose a ZIP file first</span>';return;}
+  out.innerHTML='<span class="hint">Uploading and indexing… Large source trees may take longer.</span>';
+  const fd=new FormData();fd.append('file',f);
+  let up;
+  try{const r=await fetch('/api/source/upload',{method:'POST',body:fd});
+      if(!r.ok){out.innerHTML='<span class="err">Upload failed: '+r.status+'</span>';return;}
+      up=await r.json();}
+  catch(e){out.innerHTML='<span class="err">'+esc(String(e))+'</span>';return;}
+  _srcSession=up.session;
+  let h='<div class="hint">Files: <b>'+up.files_indexed+'</b> · Functions: <b>'+up.functions+'</b>'
+    +' · Entry points: <b>'+up.entry_points.count+'</b> ('+esc(up.entry_points.kind)+')'
+    +' · Indirect call sites: <b>'+up.indirect_call_sites+'</b></div>'
+    +'<div class="hint" style="margin-top:6px">'+esc(up.note)+'</div>';
+  if(up.upload.truncated) h+='<div class="err" style="margin-top:6px">Processing limit reached; some files were not indexed: '+esc(up.upload.truncated)+'</div>';
+  h+='<div class="hint">Build databases: '+up.build.compilation_databases.length+' · Mapped translation units: '+up.build.translation_units.length+' · Unresolved entries: '+up.build.unresolved_entries.length+'</div>';
+  out.innerHTML=h+'<div style="margin-top:10px"><button class="primary" onclick="judgeSource()">Review patches, build and source →</button></div><div id="srcverdict" style="margin-top:12px"></div>';
+}
+
+async function judgeSource(){
+  const v=document.getElementById('srcverdict');
+  v.innerHTML='<span class="hint">Evaluating evidence…</span>';
+  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
+  const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({session:_srcSession,cves:cves})});
+  if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
+  _armResult=await r.json();
+  let details='<div class="hint">Source review · Absent vulnerable functions or CFG-confirmed unreachable functions are not_affected. Unresolved dispatch or analysis gaps remain under investigation.</div>';
+  for(const s of _armResult.statements){
+    const e=s.evidence;
+    const priority=_armResult.tix.statements.find(t=>t.vulnerability===s.cve).priority;
+    const hunks=e.patch.patches.flatMap(p=>p.hunks);
+    details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
+      +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
+      +' · Vulnerable-pattern hunks: '+hunks.filter(h=>h.status==='vulnerable_pattern').length+' · Static paths: '+e.reachable_paths.length+'</p>'
+      +'<p>CFG paths: '+e.cfg.reachable_paths.length+' · Unreachable: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
+      +'<p>Review priority: '+priority.lower_bound+'–'+priority.upper_bound+' / 10 (unknown signals retained)</p>'
+      +'<p>Missing evidence: '+esc(e.missing_evidence.join(', '))+'</p>'
+      +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
+  }
+  details+='<button class="primary" onclick="downloadSourceTix()">Download TIX review JSON</button>';
+  v.innerHTML=_verdictTable(_armResult,'Source evidence')+details;
+}
+
+function downloadSourceTix(){
+  const payload={..._armResult.tix,build:_armResult.build,cfg:_armResult.cfg,inventory:_armResult.inventory,inventory_sha256:_armResult.inventory_sha256,limitations:_armResult.limitations};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='ics-vex-source-tix.json';a.click();URL.revokeObjectURL(url);
+}
+
+async function renderOcForm(box){
+  if(!_ocFields){const r=await fetch('/api/oc/fields');_ocFields=await r.json();}
+  let h='<div class="hint" style="margin-bottom:10px">'
+    +'Missing values are treated as <b>unknown</b> and cannot clear a vulnerability. '
+    +'Only structural absence can support <span class="mono">not_affected</span>. '
+    +'A disabled setting is recorded as mitigation only.</div>';
+  for(const g of _ocFields.groups){
+    if(!g.fields.length) continue;
+    h+='<div style="margin:12px 0 4px"><b>'+esc(g.label)+'</b>'
+      +(g.priority_only?' <span class="hint">(does not change applicability)</span>':'')+'</div>';
+    for(const f of g.fields) h+=_ocField(f);
+  }
+  h+='<div style="margin-top:14px"><button class="primary" onclick="judgeOc()">Evaluate VEX using operational context ▶</button></div>'
+    +'<div id="ocverdict" style="margin-top:12px"></div>';
+  box.innerHTML=h;
+}
+
+function _ocField(f){
+  const id='oc_'+f.key;
+  let inp;
+  if(f.type==='tri'){
+    inp='<select id="'+id+'"><option value="">— Unknown / not provided —</option>'
+       +'<option value="true">Yes</option><option value="false">No</option></select>';
+  }else if(f.type.indexOf('enum:')===0){
+    inp='<select id="'+id+'"><option value="">— Unknown / not provided —</option>'
+       +f.type.slice(5).split('|').map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('')+'</select>';
+  }else if(f.type==='list'){
+    inp='<input id="'+id+'" placeholder="Comma-separated values; leave blank when unknown">';
+  }else if(f.type==='kv'){
+    inp='<input id="'+id+'" placeholder="web_admin=enabled, legacy_auth=off">';
+  }else{
+    inp='<input id="'+id+'">';
+  }
+  return '<div style="margin:6px 0"><label style="font-weight:400">'+esc(f.label)+'</label>'+inp
+    +(f.help?'<div class="hint">'+esc(f.help)+'</div>':'')
+    +'<div class="hint" style="opacity:.65">Source: '+esc(f.source)+'</div></div>';
+}
+
+function _collectOc(){
+  const a={};
+  for(const g of _ocFields.groups) for(const f of g.fields){
+    const el=document.getElementById('oc_'+f.key); if(!el) continue;
+    const v=(el.value||'').trim(); if(!v) continue;   // 빈칸은 보내지 않는다 = 모름
+    a[f.key]= f.type==='list' ? v.split(',').map(function(x){return x.trim();}).filter(Boolean) : v;
+  }
+  return a;
+}
+
+async function judgeOc(){
+  const v=document.getElementById('ocverdict');
+  v.innerHTML='<span class="hint">Evaluating evidence…</span>';
+  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){
+    return {cve:f.cve,vector:f.vector||f.cvss_vector||'',description:f.description||f.summary||''};});
+  const url=_candidateJobId?'/api/cve-match/jobs/'+encodeURIComponent(_candidateJobId)+'/oc':'/api/oc/judge';
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({asset:_collectOc(),cves:cves})});
+  if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
+  _armResult=await r.json();
+  v.innerHTML=_verdictTable(_armResult,'Operational context evidence');
+}
+
+function _verdictTable(res,armLabel){
+  const C2={affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
+  // 판정률을 상태 분포와 같은 줄에 놓는다. 유보는 Precision 분모에서 빠지므로
+  // 유보율을 가린 정밀도는 성취가 아니라 회피다 (docs/ICSVEX.md §8).
+  let h='<div class="hint">'+esc(armLabel)+' · Total <b>'+res.total+'</b>'
+    +' · Decided <b>'+Math.round((res.decision_rate||0)*100)+'%</b>'
+    +' · Deferred <b>'+res.deferred+'</b></div>'
+    +'<table style="margin-top:8px"><thead><tr><th>CVE</th><th>VEX</th><th>Justification</th><th>Evidence</th></tr></thead><tbody>';
+  for(const s of res.statements){
+    const col=C2[s.status]||'var(--ink3)';
+    h+='<tr><td class="mono">'+esc(s.cve)+'</td>'
+      +'<td><span class="badge" style="background:'+col+'22;color:'+col+'">'+esc(s.status)+'</span></td>'
+      +'<td class="mono" style="font-size:12px">'+esc(s.justification||'—')+'</td>'
+      +'<td class="hint">'+esc(s.reason||'')+'</td></tr>';
+  }
+  return h+'</tbody></table>'
+    +'<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">'
+    +'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'
+    +'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
@@ -304,7 +512,7 @@ if(_ta){   // analyzer page only
   window.addEventListener('drop',e=>e.preventDefault());
 }
 async function stats(){
-  try{const s=await(await fetch('cve_level.json')).json();
+  try{const s=await(await fetch('/api/summary')).json();
     const v=s.by_vex||{}, ax=s.axes||{};
     // Axis cards - the CVE is the unit a VEX verdict is about. Product and statement axes are not shown.
     const ak=document.getElementById('kpis-axes');
@@ -329,7 +537,7 @@ async function openCves(dim,value,scope,label){
   document.getElementById('mtitle').textContent=label;
   document.getElementById('mbody').innerHTML='loading…';
   document.getElementById('ov').classList.add('on');
-  try{const d=queryCves(dim,value,scope);
+  try{const d=await(await fetch('/api/cves?dim='+encodeURIComponent(dim)+'&value='+encodeURIComponent(value)+'&scope='+scope)).json();
     if(!d.count){document.getElementById('mbody').innerHTML='<span class="hint">no CVEs.</span>';return;}
     let h='<div class="srch-meta"><b>'+d.count+'</b> CVEs <span class="hint">· click a row for the VEX-v2 reason</span></div>'+
       '<div class="srch-wrap"><table><thead><tr><th>CVE</th><th>VEX</th><th style="text-align:center">CVSS</th><th style="text-align:center">KEV</th><th>Reach</th><th>Vendor</th><th>Component</th><th>Code</th></tr></thead><tbody>';
@@ -400,7 +608,7 @@ function bar(counts,order,cmap,total,dim,scope,lmap){
   return '<div class="mb">'+segs+'</div><div class="legend">'+leg+'</div>';
 }
 async function sourceAvail(){
-  try{const s=await(await fetch('source_available.json')).json();
+  try{const s=await(await fetch('/api/source_available')).json();
     const t=s.total_cves;
     document.getElementById('sa-kpis').innerHTML=
       '<div class="kpi"><b>'+t+'</b><span>collectable CVEs</span></div>'+
@@ -503,14 +711,14 @@ function yearBars(y,noteTotal,noteLabel){
     +(pre?' · '+pre+' before 2010 (not shown)':'')+' · click a bar for its CVEs</div>';
 }
 async function yearChart(){
-  try{const s=await(await fetch('by_year.json')).json();
+  try{const s=await(await fetch('/api/by_year')).json();
     document.getElementById('year').innerHTML=yearBars(s.by_year,s.total_cves,'CVEs total');
     const yt=document.getElementById('year-total');
     if(yt)yt.textContent='all '+Number(s.total_cves).toLocaleString()+' · by CVE-ID year';
   }catch(e){document.getElementById('year').innerHTML='<span class="err">unavailable — run src/vex_batch.py</span>';}
 }
 async function advisories(){
-  try{const s=await(await fetch('advisories.json')).json();
+  try{const s=await(await fetch('/api/advisories')).json();
     document.getElementById('adv-kpis').innerHTML=
       '<div class="kpi"><b>'+s.total.toLocaleString()+'</b><span>advisories</span></div>'+
       '<div class="kpi"><b>'+s.vendors.toLocaleString()+'</b><span>vendors</span></div>'+
@@ -560,6 +768,7 @@ function _remedCsaf(r){return {patch_or_firmware_upgrade:'vendor_fix',temporary_
 function _canonStatus(s){s=String(s||'');
   if(s==='LIKELY_AFFECTED')return 'affected';
   if(s==='LIKELY_NOT_AFFECTED')return 'not_affected';
+  if(s==='LIKELY_FIXED')return 'fixed';
   if(s==='UNDER_INVESTIGATION')return 'under_investigation';
   if(s==='not_affected')return 'not_affected';
   if(s==='route_to_icsvexforge')return 'under_investigation';
@@ -892,7 +1101,7 @@ function advSearch(){
     h+='<tr class="clk" onclick="openAdvisory(\''+esc(String(a.id))+'\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
-function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};
+function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1,LIKELY_FIXED:0};
   let h=CVE_INDEX.filter(r=>r.cve.toLowerCase().includes(ql)||(r.cwe||'').toLowerCase().includes(ql)||(r.vendors||[]).some(v=>v.toLowerCase().includes(ql))||(r.component||'').toLowerCase().includes(ql));
   h.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rk[b.vex]-rk[a.vex])||a.cve.localeCompare(b.cve));
   return h.slice(0,100).map(r=>({cve:r.cve,cvss:r.cvss,severity:r.severity,cwe:r.cwe,kev:r.kev,vex:r.vex,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component}));}
@@ -1054,6 +1263,7 @@ async function openAdvisory(id){await loadSbomIndex();let a=ADV_LIST.find(x=>Str
 if(document.getElementById('sbom-q'))initIcsSbom();
 
 if(document.getElementById('adv-q'))initSource();
+window.__ICSVEX_RUNTIME=true;
 
 // Mirror of src/asset_av_judge.py. Keep in sync with the Python.
 var AV_VECTORS={N:['wired','wireless','supply_chain'],A:['wired','wireless','supply_chain'],
@@ -1132,7 +1342,7 @@ function avAssessLocal(av, attrs, extra){
 
 // Asset-attribute exploitability form, shared by /asset-vex.html and the analyzer's
 // source-uncollectable VEX editor. Schema generated from src/asset_vex_page.py.
-var ASSET_AV_SCHEMA = {"groups": [{"title": "Mobile / maintenance device (PMMD)", "fields": [{"k": "maint_port_sealed", "label": "Maintenance-port physically sealed", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "maint_device_used", "label": "Maintenance device in use", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Communication", "fields": [{"k": "comm_connected", "label": "Asset is network-connected", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "unidirectional", "label": "Communication is one-way only", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "wireless_capable", "label": "Has wireless capability", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "wireless_enabled", "label": "Wireless is enabled", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "encrypted_comm", "label": "Communication is encrypted", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Supply chain / system environment", "fields": [{"k": "sys_env_configured", "label": "System environment is configured (apps/firmware/OS)", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "vendor_remote_access", "label": "Vendor remote access is possible", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "account_mgmt", "label": "Account management is supported", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Location & physical", "fields": [{"k": "physical_location", "label": "Physical location", "type": "enum:VA|OCA|PA", "opts": [["", "—"], ["VA", "VA &mdash; visitor-accessible area"], ["OCA", "OCA &mdash; operation-controlled area"], ["PA", "PA &mdash; protected area"]]}, {"k": "physical_blocked", "label": "Physically blocked / isolated", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Security policy", "fields": [{"k": "host_firewall", "label": "Host firewall applied", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "work_approval", "label": "Work approval required", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "access_right", "label": "Asset access right", "type": "enum:admin|operator|none", "opts": [["", "—"], ["admin", "admin (관리자)"], ["operator", "operator (취급자)"], ["none", "none (없음)"]]}]}], "extra": [{"k": "protocol_required", "label": "AV:N/A &mdash; exploit requires a specific protocol/interface", "type": "tri", "opts": [["", "unknown"], ["y", "Yes"], ["n", "No"]]}, {"k": "protocol_match", "label": "&nbsp;&nbsp;&mdash; the asset carries a matching protocol/interface", "type": "tri", "opts": [["", "unknown"], ["y", "Yes"], ["n", "No"]]}, {"k": "pmmd_required", "label": "AV:P &mdash; exploit must use a portable maintenance device (PMMD)", "type": "tri", "opts": [["", "unknown"], ["y", "Yes"], ["n", "No"]]}]};
+var ASSET_AV_SCHEMA = {"groups": [{"title": "Mobile / maintenance device (PMMD)", "fields": [{"k": "maint_port_sealed", "label": "Maintenance-port physically sealed", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "maint_device_used", "label": "Maintenance device in use", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Communication", "fields": [{"k": "comm_connected", "label": "Asset is network-connected", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "unidirectional", "label": "Communication is one-way only", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "wireless_capable", "label": "Has wireless capability", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "wireless_enabled", "label": "Wireless is enabled", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "encrypted_comm", "label": "Communication is encrypted", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Supply chain / system environment", "fields": [{"k": "sys_env_configured", "label": "System environment is configured (apps/firmware/OS)", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "vendor_remote_access", "label": "Vendor remote access is possible", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "account_mgmt", "label": "Account management is supported", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Location & physical", "fields": [{"k": "physical_location", "label": "Physical location", "type": "enum:VA|OCA|PA", "opts": [["", "—"], ["VA", "VA &mdash; visitor-accessible area"], ["OCA", "OCA &mdash; operation-controlled area"], ["PA", "PA &mdash; protected area"]]}, {"k": "physical_blocked", "label": "Physically blocked / isolated", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}]}, {"title": "Security policy", "fields": [{"k": "host_firewall", "label": "Host firewall applied", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "work_approval", "label": "Work approval required", "type": "bool", "opts": [["", "—"], ["y", "Yes"], ["n", "No"]]}, {"k": "access_right", "label": "Asset access right", "type": "enum:admin|operator|none", "opts": [["", "—"], ["admin", "Administrator"], ["operator", "Operator"], ["none", "None"]]}]}], "extra": [{"k": "protocol_required", "label": "AV:N/A &mdash; exploit requires a specific protocol/interface", "type": "tri", "opts": [["", "unknown"], ["y", "Yes"], ["n", "No"]]}, {"k": "protocol_match", "label": "&nbsp;&nbsp;&mdash; the asset carries a matching protocol/interface", "type": "tri", "opts": [["", "unknown"], ["y", "Yes"], ["n", "No"]]}, {"k": "pmmd_required", "label": "AV:P &mdash; exploit must use a portable maintenance device (PMMD)", "type": "tri", "opts": [["", "unknown"], ["y", "Yes"], ["n", "No"]]}]};
 function _avOpts(opts, cur){return opts.map(function(o){
   return '<option value="'+o[0]+'"'+(o[0]===cur?' selected':'')+'>'+o[1]+'</option>';}).join('');}
 function _avFieldHtml(f, pfx, vals){
@@ -1185,4 +1395,90 @@ function avVerdictHtml(j){
   if(j.missing&&j.missing.length)h+='<div class="hint" style="margin-top:8px">missing: '+j.missing.join(', ')+'</div>';
   return h;}
 
+</script><script>(()=>{
+const el=id=>document.getElementById('cm-'+id);let output=null,activeJob=null;
+const hints={local:'Look up product CPEs and CISA advisories with matching vendor and product phrases. Unknown versions allow candidate retrieval, but applicability remains unconfirmed.',live:'Query the NVD API and the local CISA advisory snapshot. Rate limits may add several minutes. Lookup failures are not evidence.',none:'Skip evidence lookup. Model suggestions alone cannot establish product identity.'};
+const labels={component_start:'Preparing model / Processing component',orchestrator:'Checking workflow / Preparing model',l2_name:'L2 name normalization completed',l3_version:'L3 version normalization completed',l4_identifier:'L4 CPE verification completed',decision_validator:'Identity evidence checked',cve_matching:'CVE condition evaluation completed',component_complete:'Component processed',queued:'Waiting for the current task to finish'};
+function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
+function busy(value){['run','sample','file','mode','lookup','sbom'].forEach(id=>el(id).disabled=value);el('run').textContent=value?'Analysis in progress…':'Identify CVE candidates →'}
+function count(){try{const d=JSON.parse(el('sbom').value);const a=d.components||d.packages||[];el('inputCount').textContent=`${a.length} components`}catch{el('inputCount').textContent=''}}
+el('sbom').oninput=count;el('lookup').onchange=()=>el('lookupHint').textContent=hints[el('lookup').value];
+el('sample').onclick=()=>{el('sbom').value=JSON.stringify({bomFormat:'CycloneDX',specVersion:'1.5',components:[{'bom-ref':'curl-1',type:'library',name:'curl',version:'7.23.1'}]},null,2);el('fileLabel').textContent='Synthetic workflow sample · One curl component';count()};
+async function readFile(file){if(!file)return;el('sbom').value=(await file.text()).replace(/^\uFEFF/,'');el('fileLabel').textContent=file.name;count()}
+el('file').onchange=()=>readFile(el('file').files[0]).catch(e=>el('status').textContent=e.message);
+el('drop').ondragover=e=>{e.preventDefault();if(!el('file').disabled)el('drop').classList.add('drag')};el('drop').ondragleave=()=>el('drop').classList.remove('drag');el('drop').ondrop=e=>{e.preventDefault();el('drop').classList.remove('drag');if(!el('file').disabled)readFile(e.dataTransfer.files[0]).catch(e=>el('status').textContent=e.message)};
+async function request(url,options){const r=await fetch(url,options);const d=await r.json();if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:JSON.stringify(d.detail));return d}
+async function loadModels(){try{const d=await request('/api/cve-match/models');el('modelBadge').textContent=`${d.model} · ${d.version} · ${d.ready?'Weights available':'Weights unavailable'}`;el('modelBadge').classList.toggle('good',d.ready);el('models').replaceChildren();const names={L2:'Name normalization',L3:'Version normalization',L4:'CPE identification'};d.tasks.forEach(t=>{const row=node('div',undefined,'modelrow');row.append(node('span',`${t.task}  ${names[t.task]}`),node('span',t.ready?'Ready':'Unavailable',t.ready?'good':'warn'));el('models').append(row)});const first=d.tasks[0];if(first.train_examples)el('modelDataset').textContent=`Training per agent: ${first.train_examples.toLocaleString()} examples · ${first.evaluation_split==='val'?'Synthetic validation':'Synthetic test'} ${first.evaluation_examples.toLocaleString()} examples. These results do not measure real-SBOM performance.`;if(!d.local_snapshot_available){el('lookup').value='live';el('lookup').onchange()}if(!d.ready){el('mode').value='rules';el('mode').options[0].disabled=true;el('mode').options[1].disabled=true}}catch(e){el('modelBadge').textContent='Could not retrieve model status';el('status').textContent=e.message}}
+function renderComponent(row,index){
+ const details=node('details',undefined,'component');details.open=index===0;
+ const summary=node('summary',`${row.component.name||'Unnamed component'}  ·  ${row.component.version||'Version not provided'}`);
+ const valid=row.validation?.status==='validated',advisory=(row.advisory_evidence||[]).length>0;
+ summary.append(node('span',row.error?'Analysis error':valid?'NVD product identified':advisory?'CISA advisory linked · CPE unconfirmed':'Identification deferred',`badge ${row.error?'bad':valid?'good':'warn'}`));details.append(summary);
+ const body=node('div',undefined,'componentbody'),evidence=node('div',undefined,'evidence');
+ [['L2 · Name suggestion',row.l2?.normalized,row.l2,'l2'],['L3 · Installed version',row.l3?.normalized,row.l3,'l3'],['L4 · NVD CPE identity',valid?`${row.validation.vendor} / ${row.validation.product}`:null,row.l4,'l4']].forEach(([title,value,stage,key])=>{
+  const box=node('div');box.append(node('h3',title),node('code',value||'Unconfirmed / Deferred'));
+  const execution=row.execution?.[key];let stateText=execution?.executed===false?'Not executed · Upstream stage unresolved':stage?'Executed':'No execution record';
+  if(stage&&key==='l3'&&!stage.normalized)stateText+=' · Deferred: installed version unknown';
+  if(stage&&key==='l4')stateText+=` · NVD candidates: ${execution?.dictionary_candidates??stage.agent?.dictionary_records??stage.candidates?.length??0}${!valid?' · Identity deferred':''}`;
+  box.append(node('div',stateText,'hint'));
+  if(stage?.agent){box.append(node('div',stage.agent.guard_accepted===false?'Model output not accepted as conclusive evidence':'Model response available','hint'));const raw=node('details',undefined,'raw');raw.append(node('summary','View model response'),node('pre',stage.agent.error||stage.agent.raw||JSON.stringify(stage.agent.prediction,null,2)));box.append(raw)}
+  evidence.append(box)
+ });body.append(evidence);
+ if(row.error)body.append(node('p',row.error,'bad'));
+ if(row.validation?.version_status==='unknown')body.append(node('p','Installed version is unknown. Product/advisory candidates are retrieved without confirming applicability.','hint'));
+ if(row.validation?.reasons?.length)body.append(node('p',`CPE deferral reason: ${row.validation.reasons.join(', ')}`,'hint'));
+ if(advisory){body.append(node('p','CISA vendor/product phrase evidence (separate from NVD CPE verification)','warn'));const seen=new Set();row.advisory_evidence.forEach(e=>{if(seen.has(e.advisory_id))return;seen.add(e.advisory_id);const p=node('p',undefined,'hint'),a=node('a',e.advisory_id);if((e.url||'').startsWith('https://www.cisa.gov/')){a.href=e.url;a.target='_blank';a.rel='noopener noreferrer'}p.append(a,node('span',` · ${e.matched_product_phrase}`));body.append(p)})}
+ const records=row.cves||[];
+ if(!records.length)body.append(node('div','No CVE candidates were retrieved through this path. Review unresolved identities and source coverage. This is not a finding of no vulnerabilities.','empty'));
+ else{const wrap=node('div',undefined,'tablewrap'),table=node('table'),head=node('tr');['CVE','Condition assessment','Evidence source'].forEach(x=>head.append(node('th',x)));const thead=node('thead');thead.append(head);table.append(thead);const tbody=node('tbody');table.append(tbody);wrap.append(table);body.append(wrap);let shown=0;const more=node('button','Show more candidates','small');
+  const draw=()=>{records.slice(shown,shown+100).forEach(r=>{const tr=node('tr'),td=node('td'),link=node('a',r.cve_id||'Identifier unavailable');if(/^CVE-\d{4}-\d+$/.test(r.cve_id||'')){link.href='https://nvd.nist.gov/vuln/detail/'+encodeURIComponent(r.cve_id);link.target='_blank';link.rel='noopener noreferrer'}td.append(link);const text={match:'Product/version conditions match',no_match:'Outside condition range',unknown:'Applicability unconfirmed'}[r.match_status]||r.match_status;const source=node('td'),e=r.evidence||{};if((e.url||'').startsWith('https://www.cisa.gov/')){const a=node('a',`CISA · ${e.advisory_id}`);a.href=e.url;a.target='_blank';a.rel='noopener noreferrer';source.append(a)}else source.textContent=e.source||'NVD';tr.append(td,node('td',text,r.match_status==='match'?'good':'muted'),source);tbody.append(tr)});shown=Math.min(shown+100,records.length);more.textContent=`Show more candidates (${shown} / ${records.length})`;more.hidden=shown>=records.length};
+  more.onclick=draw;draw();body.append(node('p',`${records.length} component–CVE candidates`,'hint'),more)
+ }details.append(body);return details
+}
+function render(data,job){
+ output=JSON.stringify(data,null,2);el('raw').textContent=output;el('download').disabled=false;el('results').hidden=false;const s=data.summary;el('stats').replaceChildren();
+ [['Components',s.components],['NVD product identified',s.validated],['CISA advisory links',s.advisory_linked||0],['Unique CVE candidates',s.unique_cves||0],['Component–CVE links',s.candidate_records]].forEach(([name,value])=>{const box=node('div',undefined,'stat');box.append(node('strong',value.toLocaleString()),node('span',name));el('stats').append(box)});
+ el('components').replaceChildren(...data.components.map(renderComponent));
+ const notices=[data.lookup_notice,data.input_notice,s.advisory_linked?'CISA links are candidates based on vendor/product phrases. They do not confirm installed-version applicability or NVD CPE identity.':'',s.errors?'Some components could not be processed. Review their individual errors.':''].filter(Boolean);
+ el('resultNotice').hidden=!notices.length;el('resultNotice').textContent=notices.join(' ');
+ const modes={rules:'Rules',base:'Qwen base',tuned:'Fine-tuned Qwen'};el('resultMeta').textContent=`${modes[data.agent_mode]} · ${data.model_version||''} · ${job.finished&&job.started?Math.round(job.finished-job.started)+'s':''}`
+ window.dispatchEvent(new CustomEvent('icsvex:candidates',{detail:{jobId:job.id,result:data}}));
+}
+async function poll(id){if(activeJob!==id)return;try{const j=await request('/api/cve-match/jobs/'+id);const p=j.progress;el('status').textContent=`${labels[p.stage]||p.stage} · ${p.done}/${p.total} processed${p.component?' · '+p.component:''}`;el('bar').style.width=(p.total?100*p.done/p.total:0)+'%';document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.toggle('active',n.dataset.stage===p.stage));if(j.status==='completed'||j.status==='failed'){activeJob=null;sessionStorage.removeItem('cve-job');busy(false);document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.remove('active'));if(j.status==='failed'){el('status').textContent='Analysis failed: '+j.error;return}render(j.result,j);el('bar').style.width='100%';el('status').textContent=`Analysis completed · ${p.total} processed${j.result.summary.errors?' · Errors: '+j.result.summary.errors+'':''}`;return}}catch(e){el('status').textContent='Could not retrieve task status: '+e.message;activeJob=null;busy(false);return}setTimeout(()=>poll(id),1400)}
+el('run').onclick=async()=>{try{const sbom=JSON.parse(el('sbom').value.replace(/^\uFEFF/,''));if(!sbom||Array.isArray(sbom)||typeof sbom!=='object')throw new Error('The SBOM must be a JSON object.');busy(true);output=null;el('download').disabled=true;el('results').hidden=true;el('bar').style.width='0%';el('status').textContent='Submitting identification task…';const job=await request('/api/cve-match/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,agent_mode:el('mode').value,lookup_mode:el('lookup').value})});activeJob=job.id;sessionStorage.setItem('cve-job',job.id);poll(job.id)}catch(e){busy(false);el('status').textContent='Check your input: '+e.message}};
+el('download').onclick=()=>{if(!output)return;const url=URL.createObjectURL(new Blob([output],{type:'application/json'}));const a=node('a');a.href=url;a.download='ics-vex-cve-candidates.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+el('run').addEventListener('click',()=>window.dispatchEvent(new CustomEvent('icsvex:candidates-reset')));
+loadModels();const saved=sessionStorage.getItem('cve-job');if(saved){activeJob=saved;busy(true);poll(saved)}
+
+})();</script><script>
+window.addEventListener('icsvex:candidates-reset',()=>{
+ _candidateJobId=null;_lastVex=null;_lastSbom=null;_pidMap=null;_vexFields={};_treeState={};_armResult=null;_srcSession=null;
+ const target=document.getElementById('candidate-vex');if(target){target.hidden=true;target.replaceChildren()}
+});
+window.addEventListener('icsvex:candidates',async event=>{
+ const target=document.getElementById('candidate-vex');if(!target)return;
+ const id=event.detail.jobId;_candidateJobId=id;target.hidden=false;target.textContent='Preparing candidate evidence for Step 2 · VEX review…';
+ try{
+  const response=await fetch('/api/cve-match/jobs/'+encodeURIComponent(id)+'/vex');
+  const data=await response.json();if(!response.ok)throw new Error(data.detail||'Candidate handoff failed');if(_candidateJobId!==id)return;
+  _lastVex=data;_lastSbom=data.sbom;_pidMap=null;_vexFields={};_treeState={};_armResult=null;_srcSession=null;
+  let html='<h2>Step 2 · CVE candidates → VEX review</h2><p class="hint">This step uses only the candidates identified above. It does not rerun the legacy matcher or import vulnerability answers from the input SBOM.</p>';
+  if(!data.cves.length){target.innerHTML=html+'<p class="hint">No candidates are available for VEX review. Check the identification evidence and deferral reasons above.</p>';return}
+  html+='<p class="hint">Unique CVEs: '+data.cves.length+' · Component links: '+data.mapping_count+'. Initial VEX status is under_investigation for every candidate.</p>';
+  html+='<table><thead><tr><th>CVE</th><th>Installed-version evidence</th><th>Initial VEX</th></tr></thead><tbody>';
+  for(const row of data.cves)html+='<tr><td>'+esc(row.cve)+'</td><td>'+esc(row.version_decided?'NVD product/version conditions verified':'Unconfirmed — more evidence required')+'</td><td>under_investigation</td></tr>';
+  html+='</tbody></table>'+_armForkHtml();target.innerHTML=html;
+ }catch(error){target.textContent='VEX handoff failed: '+error.message}
+});
+// Preserve all identified component mappings when using the existing exporters.
+const _candidateOriginalRows=_vexRows;
+_vexRows=function(){
+ const rows=_candidateOriginalRows();if(!_candidateJobId)return rows;
+ return rows.flatMap(row=>{
+  const original=(_lastVex.cves||[]).find(r=>r.cve===row.cve)||{};
+  const judgment=(_armResult?.statements||[]).find(s=>s.cve===row.cve);
+  const updated=judgment?Object.assign({},row,{status:judgment.status,justification:judgment.justification||'',impact_statement:judgment.reason||''}):row;
+  return (original.mappings||[{component:row.component}]).map(mapping=>Object.assign({},updated,{component:mapping.component,version:mapping.version}));
+ });
+};
 </script></body></html>
