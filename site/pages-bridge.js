@@ -26,7 +26,14 @@
   function project(r){return {...r,vendor:(r.vendors||[]).slice(0,2).join(', ')}}
   async function snapshot(u){
     if(files[u.pathname])return net(new URL(files[u.pathname],location.href));
-    if(u.pathname.startsWith('/api/advisory/'))return net(new URL('adv/'+encodeURIComponent(decodeURIComponent(u.pathname.split('/').pop()))+'.json',location.href));
+    if(u.pathname.startsWith('/api/advisory/')){
+      const aid=decodeURIComponent(u.pathname.split('/').pop());
+      if(!/^icsa?-\d{2}-\d{3}-\d{2}[a-z]?$/.test(aid))return asJson({detail:'Advisory not found'},404);
+      const response=await net(new URL('advisory_details_'+aid.split('-')[1]+'.json',location.href));
+      if(!response.ok)return response;
+      const data=await response.json();
+      return data[aid]?asJson(data[aid]):asJson({detail:'Advisory not found'},404);
+    }
     if(u.pathname==='/api/cve_search'){
       const q=(u.searchParams.get('q')||'').toLowerCase();
       return asJson({cves:(await cves()).filter(r=>JSON.stringify([r.cve,r.component,r.vendors]).toLowerCase().includes(q)).slice(0,100).map(project)});
