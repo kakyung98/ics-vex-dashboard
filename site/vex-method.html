@@ -214,26 +214,26 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
  .method-flow .mf-step{min-height:96px}.method-flow .mf-join{display:none}
 }
 @media(max-width:480px){.method-flow .mf-title{font-size:17px}.method-flow .mf-step{padding:14px}.method-flow .mf-foot{display:block}.method-flow .mf-foot a{display:inline-block;margin-top:10px}}
-</style><figure class="method-flow" id="vex-review-flow" aria-labelledby="vex-review-flow-title"><figcaption><h2 id="vex-review-flow-title">CVE to VEX at a glance</h2><p>Extract evidence → analyze the asset → decide the status → write the explanation.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>CODE</b> processing &amp; checks</span><span><b>USER</b> asset facts</span></div><div class="mf-rail"><div class="mf-step" data-role="data"><span class="mf-kind">INPUT</span><strong class="mf-title">CVE cases</strong><span class="mf-sub">Component-linked candidates</span></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · TUNED</span><strong class="mf-title">Extract conditions</strong><span class="mf-sub">Function-name candidates included</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Check extraction evidence</strong><span class="mf-sub">Quotes · schema · source references</span></div></div><aside class="mf-side-note"><strong>If extraction is rejected:</strong><span class="mf-inline-llm" data-role="llm">LLM · Select source IDs</span><span aria-hidden="true">→</span><span>Code validates IDs and restores quotations.</span></aside><details class="mf-explanation"><summary>What does the extraction check do?</summary><p>It checks that cited text exists in the supplied source. If a generated quote is invalid, a separate attempt selects a source ID such as <code>E12</code>; the server copies the corresponding text. A valid citation is not proof that the inferred condition is correct. Failed attempts stay unresolved.</p></details><div class="mf-fork-title">Is source code available?</div><div class="mf-lanes"><section class="mf-lane"><h3>Yes <small>Source analysis</small></h3><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Patch &amp; build evidence</strong><span class="mf-sub">Source files · patch hunks · build flags</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Clang / LLVM paths</strong><span class="mf-sub">CFG + direct call graph</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Scope &amp; reachability</strong><span class="mf-sub">Target presence · entry paths · blockers</span></div></section><section class="mf-lane"><h3>No <small>Operational review</small></h3><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE</span><strong class="mf-title">Generate operating questions</strong><span class="mf-sub">CVE-specific, source-linked questions</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="human"><span class="mf-kind">USER + CODE</span><strong class="mf-title">Asset facts &amp; version checks</strong><span class="mf-sub">Answers · installed build · vendor records</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE</span><strong class="mf-title">Assess operational context</strong><span class="mf-sub">Advisory likelihood, not a VEX verdict</span></div></section></div><div class="mf-join" aria-hidden="true"></div><div class="mf-down" aria-hidden="true"></div><div class="mf-gate"><span class="mf-kind">CODE · EVIDENCE GATES</span><strong class="mf-title">Decide status &amp; scope</strong><span class="mf-sub">Unsupported conclusions remain under investigation.</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · TUNED</span><strong class="mf-title">Write the VEX explanation</strong><span class="mf-sub">Preserve the assigned status and evidence IDs</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Validate the draft</strong><span class="mf-sub">JSON · IDs · citations · repetition</span></div><div class="mf-step" data-role="data"><span class="mf-kind">OUTPUT · SCHEMA CHECKS</span><strong class="mf-title">Merge &amp; export</strong><span class="mf-sub">SBOM + VEX · OpenVEX · CSAF</span></div></div><details class="mf-explanation"><summary>Who decides the status, and what if writing fails?</summary><p>Code sets the status from the evidence rules. The LLM writes the explanation and cannot change that status. For example, <code>under_investigation</code> cannot become <code>not_affected</code> during writing. A rejected draft is excluded; source findings, operating records and the rule-based rationale are retained.</p></details><div class="mf-foot"><p>Code decides the status. The LLM writes a review draft; a rejected explanation does not erase the evidence.</p><a href="sbom-to-cve.html#sbom-cve-flow">← SBOM → CVE workflow</a></div></figure>
+</style><figure class="method-flow" id="vex-review-flow" aria-labelledby="vex-review-flow-title"><figcaption><h2 id="vex-review-flow-title">CWE-first CVE to VEX</h2><p>Choose the required evidence before running source or operational analysis.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>CODE</b> processing &amp; checks</span><span><b>USER</b> asset facts</span></div><div class="mf-rail"><div class="mf-step" data-role="data"><span class="mf-kind">INPUT</span><strong class="mf-title">CVE cases</strong><span class="mf-sub">Component-linked candidates</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Resolve CWE → Pillars</strong><span class="mf-sub">Pinned official hierarchy; keep every path</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Determine analysis need</strong><span class="mf-sub">Specific CWE + CVE / advisory evidence</span></div></div><aside class="mf-side-note"><strong>Unresolved routing → under_investigation.</strong><span>Project policy predictions; independent adjudication pending.</span></aside><div class="mf-fork-title">Does this CVE require source analysis?</div><div class="mf-lanes"><section class="mf-lane"><h3>Yes <small>Source required</small></h3><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Is the required source supplied?</strong><span class="mf-sub">No → under_investigation immediately</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM + CODE</span><strong class="mf-title">Extract targets &amp; inspect builds</strong><span class="mf-sub">LLM extraction + patch / build checks</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Clang / LLVM analysis</strong><span class="mf-sub">Target presence · CFG / call paths · scope blockers</span></div></section><section class="mf-lane"><h3>No <small>Operator review</small></h3><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · TUNED + CHECKS</span><strong class="mf-title">Extract supported conditions</strong><span class="mf-sub">CVE / advisory evidence; retain unknowns</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE</span><strong class="mf-title">Common + specific questions</strong><span class="mf-sub">Operator-checkable facts; source-linked</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="human"><span class="mf-kind">USER + LLM + CODE</span><strong class="mf-title">Answers &amp; assessment</strong><span class="mf-sub">Operator records + advisory model assessment</span></div></section></div><div class="mf-join" aria-hidden="true"></div><div class="mf-down" aria-hidden="true"></div><div class="mf-gate"><span class="mf-kind">CODE · EVIDENCE GATES</span><strong class="mf-title">Lock status, evidence &amp; scope</strong><span class="mf-sub">Source-required cases cannot bypass missing source through operator answers.</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · TUNED</span><strong class="mf-title">Write the explanation</strong><span class="mf-sub">After evidence analysis; keep assigned status</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Validate the draft</strong><span class="mf-sub">JSON · IDs · citations · repetition</span></div><div class="mf-step" data-role="data"><span class="mf-kind">OUTPUT</span><strong class="mf-title">Merge &amp; export</strong><span class="mf-sub">Original SBOM + VEX · OpenVEX · CSAF</span></div></div><details class="mf-explanation"><summary>What happens when evidence is missing?</summary><p>Missing required source or unresolved routing produces a code-only under_investigation statement. No extraction, operator questionnaire or writer is run for that case. Operator questions collect observable facts; unknown answers remain unknown. In mixed reviews, each CVE retains its own route and result.</p></details><div class="mf-foot"><p>Code assigns the standard status. LLM output remains a review draft. A rejected explanation does not erase the evidence.</p><a href="sbom-to-cve.html#sbom-cve-flow">← SBOM → CVE workflow</a></div></figure>
 <section class="method-notes" aria-label="VEX evidence and decision rules">
 <h2>Decision and writing are separate</h2>
 <dl><dt>Status</dt><dd>Code applies evidence rules and fixes the status and scope.</dd>
 <dt>Explanation</dt><dd>The LLM writes a draft. It cannot change the assigned status.</dd></dl>
 <section class="method-topic">
-<h3>1 · Check extraction evidence</h3>
-<dl><dt>Input</dt><dd>CVE Description and the supplied evidence catalog.</dd>
-<dt>Check</dt><dd>Verify the output format and whether each quoted passage exists in its source.</dd>
-<dt>If it fails</dt><dd>A separate base-model attempt selects source IDs. The server copies the corresponding passages.</dd>
-<dt>If unresolved</dt><dd>Keep extraction unresolved. Do not treat a missing mapping as an absent function.</dd></dl>
-<div class="method-example"><b>Example</b><p>The model selects <code>E12</code>. The server returns the stored text for <code>E12</code>.</p></div>
-<p class="method-boundary">A valid quotation confirms its source, not the correctness of the inferred condition.</p>
+<h3>1 · Decide which evidence is required</h3>
+<dl><dt>Input</dt><dd>The CVE's published CWE, its Pillar ancestry and specific CVE/advisory evidence.</dd>
+<dt>Source required</dt><dd>Review source and build evidence. If source is unavailable, immediately retain under_investigation.</dd>
+<dt>Operator review</dt><dd>Use only evidence-supported weaknesses with operator-observable configuration or protocol facts.</dd>
+<dt>Unresolved</dt><dd>Missing CWE or insufficient routing evidence remains under_investigation.</dd></dl>
+<p class="method-boundary">The CWE hierarchy is official. The analysis-routing policy is a separate project policy awaiting independent validation. Pillar alone does not determine the method.</p>
 </section>
 <section class="method-topic">
-<h3>2 · Analyze the asset</h3>
-<dl><dt>With source</dt><dd>Inspect patches and build flags. Use Clang/LLVM to locate targets and analyze paths.</dd>
-<dt>Without source</dt><dd>Generate questions. Collect real operating facts, installed versions and supporting records.</dd>
-<dt>LLM assessment</dt><dd>Compare operating answers with CVE conditions. Treat likely_* labels as advisory hypotheses.</dd></dl>
-<p class="method-boundary">The LLM never supplies asset facts. Unanswered questions remain unknown.</p>
+<h3>2 · Analyze each eligible CVE</h3>
+<dl><dt>Source branch</dt><dd>Extract supported function candidates. Inspect patches and build flags; use Clang/LLVM for targets and paths.</dd>
+<dt>Operational branch</dt><dd>The LLM generates common weakness-type and CVE-specific questions that an operator can answer using configuration and operating records.</dd>
+<dt>Answers</dt><dd>Collect yes / no / unknown, installed-build facts and supporting records. The LLM never invents asset facts.</dd>
+<dt>Evidence checks</dt><dd>Validate source references and output format. A valid reference does not establish semantic correctness.</dd></dl>
+<p class="method-boundary">Source-required cases never enter the operational questionnaire. In mixed reviews, results from both branches are preserved per CVE.</p>
 </section>
 <section class="method-topic">
 <h3>3 · Decide the status</h3>
@@ -266,7 +266,7 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
 <details class="method-extra"><summary>Models, CWE and stored records</summary>
 <ul><li>Extraction and authoring use trained adapters on the shared Qwen3-8B base.</li>
 <li>Deployed operational question and assessment roles use base inference. Experimental curricula are not activated.</li>
-<li>CWE provides classification context, not a CVE-specific exploit prerequisite or a clearance rule.</li>
+<li>Pinned CWE v5.0 ancestry supports routing. The project policy combines Pillar, specific CWE and advisory evidence; classification is not an exploit prerequisite or clearance rule.</li>
 <li>Independent Claude/Gemini verification and expanded vector RAG are not connected.</li>
 <li>Local SQLite retains questionnaires/reviews for 24 hours and completed identification jobs for seven days.</li></ul>
 </details>
@@ -339,16 +339,28 @@ async function run(){
 let _srcSession=null, _ocFields=null, _armResult=null;
 let _candidateJobId=null, _lastSbom=null;
 
-function _armForkHtml(){return '<div class="card" id="armfork" style="margin-top:14px">'
-  +'<h3 style="margin:0 0 6px">Step 2 · Select VEX evidence</h3>'
-  +'<p class="hint" style="margin:0 0 10px">Do you have the <b>source code</b> for this asset? '
-  +'Review patch, build and source evidence when source is available, or compare attack prerequisites with asset operational context.</p>'
-  +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
-  +'<button class="primary" onclick="pickArm(&#39;source&#39;)">Yes — Upload source ZIP</button>'
-  +'<button class="primary" onclick="pickArm(&#39;oc&#39;)">No — Enter operational context</button>'
-  +'</div><div id="armbody" style="margin-top:14px"></div></div>';}
+let _item4ReviewId=null;
+function _armForkHtml(){_item4ReviewId=null;return '<div class="card" id="armfork" style="margin-top:14px">'
+ +'<h3>Step 2 · CWE-first VEX review</h3><p>Check the CWE Pillar, specific weakness and CVE/advisory evidence before selecting the analysis method.</p>'
+ +'<button class="primary" onclick="startItem4Review()">Determine required evidence →</button><div id="item4routes"></div><div id="armbody" style="margin-top:14px"></div></div>';}
+async function startItem4Review(){
+ const box=document.getElementById('item4routes');box.innerHTML='<p>Checking weakness ancestry and advisory evidence…</p>';
+ try{
+  const r=await fetch('/api/item4/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:_lastVex?.cves||[],product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+  if(!r.ok)throw new Error(await r.text());
+  _armResult=await r.json();_item4ReviewId=_armResult.review_id;
+  const routes=Object.entries(_armResult.routes);let html='<table><thead><tr><th>CVE / CWE / Pillar</th><th>Required evidence</th><th>Reason</th></tr></thead><tbody>';
+  for(const [cve,q] of routes)html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(q.requirement.replaceAll('_',' '))+'</td><td>'+esc(q.reason)+'</td></tr>';
+  html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
+  if(routes.some(([_,q])=>q.requirement==='source_required'))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
+  if(routes.some(([_,q])=>q.requirement==='operational_review'))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operator-answerable cases</button>';
+  html+='</div>'+_verdictTable(_armResult,'Initial evidence routing')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
+  box.innerHTML=html;
+ }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}
+}
 
 function pickArm(which){
+  if(!_item4ReviewId)return;
   const b=document.getElementById('armbody');
   if(which==='source'){
     b.innerHTML='<div class="row"><div>'
@@ -393,9 +405,9 @@ async function uploadSource(){
 async function judgeSource(){
   const v=document.getElementById('srcverdict');
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
-  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
+  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.requirement==='source_required').map(f=>({cve:f.cve}));
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({session:_srcSession,identification_job:_candidateJobId||null,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
+    body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
       entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
       product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
@@ -406,7 +418,7 @@ async function judgeSource(){
     +' · Translation units: '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
     +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
   for(const s of _armResult.statements){
-    const e=s.evidence;
+    const e=s.evidence;if(!e?.patch)continue;
     const hunks=e.patch.patches.flatMap(p=>p.hunks);
     details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
       +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
@@ -426,7 +438,7 @@ async function judgeSource(){
 let _operationPlan=null;
 async function renderOcForm(box){
   _operationPlan=null;
-  box.innerHTML='<h3>CVE-specific operational review</h3><p>No source code: the LLM will generate questions about the exploitation conditions of each CVE. Provide actual asset facts and their records. Unanswered items remain unknown.</p>'
+  box.innerHTML='<h3>Operator-answerable review</h3><p>Only CVEs routed to operational review enter this form. The LLM generates common weakness-type and CVE-specific questions about facts an operator can check. Required-source cases stay under investigation until source analysis is completed.</p>'
     +'<p class="hint">Deployed question and assessment roles use Qwen3-8B base inference with source IDs. Experimental curriculum adapters exist but are not activated. Source linkage is not semantic validation. Enter product/version facts once per component below.</p>'
     +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
@@ -435,13 +447,13 @@ async function generateOperationQuestions(){
   button.disabled=true;box.innerHTML='<p>Generating CVE-specific questions locally. This may take several minutes.</p>';
   try{
     const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
-    const r=await fetch('/api/oc/questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cves,identification_job:_candidateJobId||null,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
     if(!r.ok)throw new Error(await r.text());
     _operationPlan=await r.json();
     box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status==='validated'?'Source-linked draft; semantic review required':c.generation.status)+'</p>'
       +((c.generation.normalizations||[]).length?'<p class="hint">Identical duplicate questions were consolidated. Original model output is retained below.</p>':'')
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
-      +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.origin)+'</p>'
+      +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.scope||q.origin)+'</p>'
         +(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')
         +(q.answer_type==='text'?'<input class="op-control" type="text" id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Enter the operational fact, or leave unknown">':'<select class="op-control" id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
         +'<input class="op-control" type="text" id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Evidence: configuration record, vendor bulletin, build ID, inspection date"></div>').join('')
@@ -478,10 +490,10 @@ async function judgeOc(){
   _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{if(q.deprecated_version_field)return;answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
   button.disabled=true;v.innerHTML='<p>Comparing operator reports with CVE evidence and writing VEX drafts locally...</p>';
   try{
-    const r=await fetch('/api/oc/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
     if(!r.ok)throw new Error(await r.text());
     _armResult=await r.json();
-    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
+    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.filter(s=>s.operational_review).map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
       +'<button onclick="downloadOcReview()">Download review log (JSON)</button>';
   }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
@@ -510,8 +522,9 @@ function _versionEvidenceHtml(result){
 function _groundedPipelineHtml(result){
   if(!result.pipeline)return '';
   let html='<div class="card"><h3>Shared LLM pipeline</h3><p>Condition / function extraction → evidence decision → VEX authoring</p>'
-    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+result.pipeline.case_count+'. Generated text is a draft for review.</p></div>';
+    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+(result.pipeline.model_eligible_cases??result.pipeline.case_count)+'. Generated text is a draft for review.</p></div>';
   for(const s of result.statements){
+    if(s.extraction?.status==='not_run' && s.authoring?.status==='not_run')continue;
     const x=s.extraction||{},w=s.authoring||{},draft=s.document_draft;
     html+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Extraction: '+esc(x.status||'unknown')+' · Authoring: '+esc(w.status||'unknown')+'</summary>'
       +'<p class="hint">Case: '+esc(s.case_id||'')+'</p>';
