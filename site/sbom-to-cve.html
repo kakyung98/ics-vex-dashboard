@@ -216,29 +216,29 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
  .method-flow .mf-step{min-height:96px}.method-flow .mf-join{display:none}
 }
 @media(max-width:480px){.method-flow .mf-title{font-size:17px}.method-flow .mf-step{padding:14px}.method-flow .mf-foot{display:block}.method-flow .mf-foot a{display:inline-block;margin-top:10px}}
-</style><figure class="method-flow" id="sbom-cve-flow" aria-labelledby="sbom-cve-flow-title"><figcaption><h2 id="sbom-cve-flow-title">Identification at a glance</h2><p>Select an identification path, then retrieve component-linked CVE candidates.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>CODE</b> processing &amp; checks</span><span><b>USER</b> asset facts</span></div><div class="mf-entry"><div class="mf-step" data-role="data"><span class="mf-kind">INPUT</span><strong class="mf-title">SBOM</strong><span class="mf-sub">CycloneDX / SPDX JSON</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-fork-title">Choose an identification mode</div><div class="mf-lanes"><section class="mf-lane"><h3>Evidence v3 <small>Default</small></h3><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Retrieve product candidates</strong><span class="mf-sub">CPE · BM25 · character trigrams</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Preserve version evidence</strong><span class="mf-sub">Raw versions · revisions · conflicts</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Check product identity</strong><span class="mf-sub">Dictionary · vendor evidence · ambiguity</span></div></section><section class="mf-lane"><h3>L2 / L3 / L4 <small>Comparison</small></h3><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE / TUNED</span><strong class="mf-title">L2 · Normalize names</strong><span class="mf-sub">Vendor-scoped product-name proposal</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE / TUNED</span><strong class="mf-title">L3 · Preserve versions</strong><span class="mf-sub">Keep the original vendor revision</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE / TUNED</span><strong class="mf-title">L4 · Select a CPE</strong><span class="mf-sub">Choose from dictionary candidates</span></div></section></div><div class="mf-join" aria-hidden="true"></div><aside class="mf-side-note"><span class="mf-inline-llm" data-role="llm">LLM · Optional reranking</span><span>Evidence v3 only; cannot override identity checks.</span></aside><aside class="mf-side-note"><strong>Rules mode:</strong><span>Deterministic processing replaces the legacy LLM stages.</span></aside><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Query NVD &amp; CISA</strong><span class="mf-sub">Keep sources and applicability uncertainty</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Link CVEs to components</strong><span class="mf-sub">Retain case IDs and identity evidence</span></div><div class="mf-step" data-role="data"><span class="mf-kind">HANDOFF</span><strong class="mf-title">Continue to VEX review</strong><span class="mf-sub">Candidates are not exploitability findings</span></div></div><div class="mf-foot"><p>One Qwen3-8B runtime. LLM labels identify roles, not separate models.</p><a href="vex-decision.html#vex-review-flow">CVE → VEX workflow →</a></div></figure>
+</style><figure class="method-flow" id="sbom-cve-flow" aria-labelledby="sbom-cve-flow-title"><figcaption><h2 id="sbom-cve-flow-title">One identification pipeline</h2><p>Trained L2 / L3 / L4 agents work inside dictionary retrieval and original-evidence checks.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>CODE</b> processing &amp; checks</span><span><b>USER</b> asset facts</span></div><div class="mf-entry"><div class="mf-step" data-role="data"><span class="mf-kind">INPUT</span><strong class="mf-title">SBOM</strong><span class="mf-sub">Original names, identifiers and versions</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="llm"><span class="mf-kind">LLM + CODE</span><strong class="mf-title">L2 · Find product candidates</strong><span class="mf-sub">Tuned name proposal + CPE retrieval</span></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM + CODE</span><strong class="mf-title">L3 · Preserve the version</strong><span class="mf-sub">Tuned output + source / revision checks</span></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM + CODE</span><strong class="mf-title">L4 · Verify the product</strong><span class="mf-sub">Tuned selection + original evidence</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-gate"><span class="mf-kind">CODE · SHARED EVIDENCE GATES</span><strong class="mf-title">Require model and evidence agreement</strong><span class="mf-sub">Keep competing identities, version conflicts and unsupported claims unresolved.</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Query NVD &amp; CISA</strong><span class="mf-sub">Product-level candidates; version checks remain explicit</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Link CVEs to components</strong><span class="mf-sub">Retain case IDs and all stage checks</span></div><div class="mf-step" data-role="data"><span class="mf-kind">HANDOFF</span><strong class="mf-title">Continue to VEX review</strong><span class="mf-sub">Candidate matches are not exploitability findings</span></div></div><div class="mf-foot"><p>One Qwen3-8B base, three trained adapters. Old task scores do not measure the new unified pipeline.</p><a href="vex-decision.html#vex-review-flow">CVE → VEX workflow →</a></div></figure>
 <section class="method-notes" aria-label="Identification rules">
 <h2>What each stage does</h2>
 <section class="method-topic">
 <h3>L2 · Find the product</h3>
 <dl><dt>Input</dt><dd>Component name, manufacturer, PURL and supplied CPE.</dd>
-<dt>Processing</dt><dd>Search the CPE dictionary with BM25 and character trigrams. Combine the candidate ranks.</dd>
+<dt>Processing</dt><dd>The tuned L2 adapter proposes a name. Expand dictionary retrieval with BM25, character trigrams and rank fusion.</dd>
 <dt>Result</dt><dd>Product candidates with their supporting evidence.</dd></dl>
 <p class="method-boundary">A device stays a device. Do not replace it with an embedded library.</p>
 </section>
 <section class="method-topic">
 <h3>L3 · Preserve the version</h3>
 <dl><dt>Input</dt><dd>Version values from the SBOM, PURL, CPE and component name.</dd>
-<dt>Processing</dt><dd>Retain vendor revisions. Flag conflicting values and provisional name-only versions.</dd>
+<dt>Processing</dt><dd>The tuned L3 adapter preserves a supplied version. Code checks exact revisions, source conflicts and synthetic inventory limits.</dd>
 <dt>Result</dt><dd>A version observation, a conflict, or an unknown version.</dd></dl>
 <p class="method-boundary">An advisory's affected range is not the installed version. Unsupported version ordering stays unknown.</p>
 </section>
 <section class="method-topic">
 <h3>L4 · Verify the identity</h3>
 <dl><dt>Input</dt><dd>Product candidates, vendor evidence and supplied identifiers.</dd>
-<dt>Processing</dt><dd>Check dictionary membership and conflicting evidence. Require a unique supported identity.</dd>
+<dt>Processing</dt><dd>The tuned L4 adapter selects a supplied CPE. Code requires agreement with a unique identity supported by original evidence.</dd>
 <dt>Result</dt><dd>Accepted identity, ambiguity, conflicting evidence, or insufficient evidence.</dd></dl>
-<p class="method-boundary">A fuzzy score or LLM ranking cannot authorize identity acceptance.</p>
+<p class="method-boundary">The L2 proposal is a search hint, not identity proof. L4 cannot discard competing vendors or override conflicts.</p>
 </section>
 <section class="method-topic">
 <h3>Retrieve CVE candidates</h3>
@@ -247,12 +247,12 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
 <dt>Handoff</dt><dd>Pass CVE IDs, component links and unresolved evidence into VEX review.</dd></dl>
 <p class="method-boundary">A candidate match does not prove applicability. An empty result does not establish safety.</p>
 </section>
-<details class="method-extra"><summary>Which steps use an LLM?</summary>
-<ul><li><b>Evidence v3:</b> the default path runs in code.</li>
-<li><b>Evidence v3 + Qwen:</b> the base model optionally reranks supplied candidates.</li>
-<li><b>Legacy base / tuned:</b> L2, L3 and L4 use the selected model or adapters.</li>
-<li><b>Rules mode:</b> deterministic processing replaces those legacy model calls.</li></ul>
-<p>All deployed LLM roles share Qwen3-8B. The optional ranking contract is not independently calibrated.</p>
+<details class="method-extra"><summary>How do the models and code work together?</summary>
+<ul><li><b>L2:</b> trained name proposal + dictionary candidate retrieval.</li>
+<li><b>L3:</b> trained version preservation + original-value checks.</li>
+<li><b>L4:</b> trained CPE selection + vendor, identity and conflict checks.</li>
+<li><b>Model failure:</b> retain raw output and evidence; never silently accept an unsupported identity.</li></ul>
+<p>All three roles share Qwen3-8B with separate saved adapters. The adapter input contracts are preserved. The combined pipeline has not been independently evaluated.</p>
 </details>
 <details class="method-extra"><summary>Evidence and evaluation limits</summary>
 <ul><li>Manufacturer and supplier are different fields. Do not infer ownership relationships without evidence.</li>
