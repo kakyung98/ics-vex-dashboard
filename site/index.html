@@ -328,16 +328,28 @@ async function run(){
 let _srcSession=null, _ocFields=null, _armResult=null;
 let _candidateJobId=null, _lastSbom=null;
 
-function _armForkHtml(){return '<div class="card" id="armfork" style="margin-top:14px">'
-  +'<h3 style="margin:0 0 6px">Step 2 · Select VEX evidence</h3>'
-  +'<p class="hint" style="margin:0 0 10px">Do you have the <b>source code</b> for this asset? '
-  +'Review patch, build and source evidence when source is available, or compare attack prerequisites with asset operational context.</p>'
-  +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
-  +'<button class="primary" onclick="pickArm(&#39;source&#39;)">Yes — Upload source ZIP</button>'
-  +'<button class="primary" onclick="pickArm(&#39;oc&#39;)">No — Enter operational context</button>'
-  +'</div><div id="armbody" style="margin-top:14px"></div></div>';}
+let _item4ReviewId=null;
+function _armForkHtml(){_item4ReviewId=null;return '<div class="card" id="armfork" style="margin-top:14px">'
+ +'<h3>Step 2 · CWE-first VEX review</h3><p>Check the CWE Pillar, specific weakness and CVE/advisory evidence before selecting the analysis method.</p>'
+ +'<button class="primary" onclick="startItem4Review()">Determine required evidence →</button><div id="item4routes"></div><div id="armbody" style="margin-top:14px"></div></div>';}
+async function startItem4Review(){
+ const box=document.getElementById('item4routes');box.innerHTML='<p>Checking weakness ancestry and advisory evidence…</p>';
+ try{
+  const r=await fetch('/api/item4/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:_lastVex?.cves||[],product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+  if(!r.ok)throw new Error(await r.text());
+  _armResult=await r.json();_item4ReviewId=_armResult.review_id;
+  const routes=Object.entries(_armResult.routes);let html='<table><thead><tr><th>CVE / CWE / Pillar</th><th>Required evidence</th><th>Reason</th></tr></thead><tbody>';
+  for(const [cve,q] of routes)html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(q.requirement.replaceAll('_',' '))+'</td><td>'+esc(q.reason)+'</td></tr>';
+  html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
+  if(routes.some(([_,q])=>q.requirement==='source_required'))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
+  if(routes.some(([_,q])=>q.requirement==='operational_review'))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operator-answerable cases</button>';
+  html+='</div>'+_verdictTable(_armResult,'Initial evidence routing')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
+  box.innerHTML=html;
+ }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}
+}
 
 function pickArm(which){
+  if(!_item4ReviewId)return;
   const b=document.getElementById('armbody');
   if(which==='source'){
     b.innerHTML='<div class="row"><div>'
@@ -382,9 +394,9 @@ async function uploadSource(){
 async function judgeSource(){
   const v=document.getElementById('srcverdict');
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
-  const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
+  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.requirement==='source_required').map(f=>({cve:f.cve}));
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({session:_srcSession,identification_job:_candidateJobId||null,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
+    body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
       entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
       product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
@@ -395,7 +407,7 @@ async function judgeSource(){
     +' · Translation units: '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
     +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
   for(const s of _armResult.statements){
-    const e=s.evidence;
+    const e=s.evidence;if(!e?.patch)continue;
     const hunks=e.patch.patches.flatMap(p=>p.hunks);
     details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
       +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
@@ -415,7 +427,7 @@ async function judgeSource(){
 let _operationPlan=null;
 async function renderOcForm(box){
   _operationPlan=null;
-  box.innerHTML='<h3>CVE-specific operational review</h3><p>No source code: the LLM will generate questions about the exploitation conditions of each CVE. Provide actual asset facts and their records. Unanswered items remain unknown.</p>'
+  box.innerHTML='<h3>Operator-answerable review</h3><p>Only CVEs routed to operational review enter this form. The LLM generates common weakness-type and CVE-specific questions about facts an operator can check. Required-source cases stay under investigation until source analysis is completed.</p>'
     +'<p class="hint">Deployed question and assessment roles use Qwen3-8B base inference with source IDs. Experimental curriculum adapters exist but are not activated. Source linkage is not semantic validation. Enter product/version facts once per component below.</p>'
     +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
@@ -424,13 +436,13 @@ async function generateOperationQuestions(){
   button.disabled=true;box.innerHTML='<p>Generating CVE-specific questions locally. This may take several minutes.</p>';
   try{
     const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
-    const r=await fetch('/api/oc/questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cves,identification_job:_candidateJobId||null,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
     if(!r.ok)throw new Error(await r.text());
     _operationPlan=await r.json();
     box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status==='validated'?'Source-linked draft; semantic review required':c.generation.status)+'</p>'
       +((c.generation.normalizations||[]).length?'<p class="hint">Identical duplicate questions were consolidated. Original model output is retained below.</p>':'')
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
-      +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.origin)+'</p>'
+      +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.scope||q.origin)+'</p>'
         +(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')
         +(q.answer_type==='text'?'<input class="op-control" type="text" id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Enter the operational fact, or leave unknown">':'<select class="op-control" id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
         +'<input class="op-control" type="text" id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Evidence: configuration record, vendor bulletin, build ID, inspection date"></div>').join('')
@@ -467,10 +479,10 @@ async function judgeOc(){
   _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{if(q.deprecated_version_field)return;answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
   button.disabled=true;v.innerHTML='<p>Comparing operator reports with CVE evidence and writing VEX drafts locally...</p>';
   try{
-    const r=await fetch('/api/oc/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
     if(!r.ok)throw new Error(await r.text());
     _armResult=await r.json();
-    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
+    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.filter(s=>s.operational_review).map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
       +'<button onclick="downloadOcReview()">Download review log (JSON)</button>';
   }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
@@ -499,8 +511,9 @@ function _versionEvidenceHtml(result){
 function _groundedPipelineHtml(result){
   if(!result.pipeline)return '';
   let html='<div class="card"><h3>Shared LLM pipeline</h3><p>Condition / function extraction → evidence decision → VEX authoring</p>'
-    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+result.pipeline.case_count+'. Generated text is a draft for review.</p></div>';
+    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+(result.pipeline.model_eligible_cases??result.pipeline.case_count)+'. Generated text is a draft for review.</p></div>';
   for(const s of result.statements){
+    if(s.extraction?.status==='not_run' && s.authoring?.status==='not_run')continue;
     const x=s.extraction||{},w=s.authoring||{},draft=s.document_draft;
     html+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Extraction: '+esc(x.status||'unknown')+' · Authoring: '+esc(w.status||'unknown')+'</summary>'
       +'<p class="hint">Case: '+esc(s.case_id||'')+'</p>';
@@ -1533,7 +1546,7 @@ loadModels();const saved=sessionStorage.getItem('cve-job');if(saved){activeJob=s
 
 })();</script><script>
 window.addEventListener('icsvex:candidates-reset',()=>{
- _candidateJobId=null;_lastVex=null;_lastSbom=null;_pidMap=null;_vexFields={};_treeState={};_armResult=null;_srcSession=null;
+ _item4ReviewId=null;_candidateJobId=null;_lastVex=null;_lastSbom=null;_pidMap=null;_vexFields={};_treeState={};_armResult=null;_srcSession=null;
  const target=document.getElementById('candidate-vex');if(target){target.hidden=true;target.replaceChildren()}
 });
 window.addEventListener('icsvex:candidates',async event=>{
