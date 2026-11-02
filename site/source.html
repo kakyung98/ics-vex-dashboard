@@ -331,6 +331,7 @@ async function generateOperationQuestions(){
     if(!r.ok)throw new Error(await r.text());
     _operationPlan=await r.json();
     box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status==='validated'?'Source-linked draft; semantic review required':c.generation.status)+'</p>'
+      +((c.generation.normalizations||[]).length?'<p class="hint">Identical duplicate questions were consolidated. Original model output is retained below.</p>':'')
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
       +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.origin)+'</p>'
         +(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')
@@ -412,7 +413,7 @@ function _groundedPipelineHtml(result){
     }else html+='<p>Extraction was not accepted. '+esc(x.reason||'Schema, literal quotation or policy checks failed.')+'</p>';
     if(draft)html+='<h4>Generated VEX explanation (draft)</h4><p>'+esc(draft.impact_statement)+'</p>'
       +(draft.action_statement?'<p>'+esc(draft.action_statement)+'</p>':'')+'<p>Evidence IDs: '+esc(draft.evidence_refs.join(', '))+'</p>';
-    else html+='<p>Generated explanation was not accepted. '+esc(w.reason||JSON.stringify(w.diagnostics||{})||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
+    else html+='<p>Generated explanation was not accepted. '+esc(w.error==='output_token_limit'?'The response reached the output limit before completing JSON.':w.error==='invalid_json_output'?'The model did not return a complete JSON object.':w.reason||JSON.stringify(w.diagnostics||{})||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
     html+='<details><summary>Model outputs and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify({extraction:x,authoring:w},null,2))+'</pre></details>'
       +'<details><summary>Evidence supplied to the VEX writer</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.evidence_packet,null,2))+'</pre></details></details>';
   }
