@@ -154,8 +154,9 @@ th{font-size:13px;color:var(--ink3);text-transform:uppercase}.mono{font-family:v
 <a id="pages-open-local" href="http://127.0.0.1:8100" target="_blank" rel="noopener">Open local app ↗</a></div>
 <p class="hint" style="margin:8px 0 0">Uploaded files are sent to the connected backend. Your browser may ask for local-network permission.</p></section>
 
-<div class="eyebrow">Method / Evidence v3</div><h1>SBOM to CVE Identification</h1>
-<p class="sub">Evidence collection → candidate retrieval → version observations → dictionary identity checks → CVE applicability review.</p>
+<div class="eyebrow">Method / Identification</div>
+<h1>SBOM → CVE Method</h1>
+<p class="sub">Identify the product. Preserve its version. Retrieve candidate CVEs.</p>
 <style>
 .method-flow{container:methodFlow / inline-size;max-width:1120px;margin:24px 0 30px;font-family:var(--sans);color:var(--ink)}
 .method-flow figcaption{margin-bottom:18px}.method-flow figcaption h2{font-size:22px;margin:0 0 8px}
@@ -195,6 +196,19 @@ details.method-details .method-detail-body{max-width:88ch}
 details.method-details .card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:22px 0;margin:0}
 details.method-details h2{font-size:21px;line-height:1.4;margin:0 0 10px}details.method-details h3{font-size:19px;margin:0 0 10px}
 details.method-details p,details.method-details li{font-size:16px;line-height:1.7;color:var(--ink2)}
+.method-notes{max-width:76ch;margin:36px 0;font-family:var(--sans)}
+.method-notes h2{font-size:24px;margin:0 0 18px;line-height:1.35}.method-notes h3{font-size:21px;margin:0 0 14px;line-height:1.35}
+.method-notes .method-topic{padding:26px 0;border-top:1px solid var(--line)}
+.method-notes dl{display:grid;grid-template-columns:160px minmax(0,1fr);gap:12px 24px;margin:14px 0}
+.method-notes dt{font-size:14px;font-weight:600;color:var(--ink2);line-height:1.6;overflow-wrap:anywhere}
+.method-notes dd{font-size:17px;line-height:1.6;color:var(--ink);margin:0;overflow-wrap:anywhere}
+.method-notes p,.method-notes li{font-size:16px;line-height:1.65;color:var(--ink2)}
+.method-notes code{font-family:var(--mono);font-size:13px;overflow-wrap:anywhere;color:var(--ink)}
+.method-notes .method-boundary{border-left:2px solid var(--line);padding-left:14px;margin:18px 0 0}
+.method-notes .method-example{padding:12px 0;font-size:14px}.method-notes .method-example b{color:var(--accent)}.method-notes .method-example p{margin:6px 0}
+.method-notes .method-extra{border-top:1px solid var(--line);padding:16px 0}.method-notes .method-extra summary{font-size:17px;font-weight:600;cursor:pointer;color:var(--ink)}
+.method-notes .method-extra li{margin:10px 0}.method-notes .method-extra ul{padding-left:22px}
+@media(max-width:580px){.method-notes dl{grid-template-columns:1fr;gap:5px}.method-notes dd{margin-bottom:12px}.method-notes h3{font-size:20px}}
 @container methodFlow (max-width:640px){
  .method-flow .mf-rail,.method-flow .mf-lanes{grid-template-columns:1fr}
  .method-flow .mf-rail{gap:26px}.method-flow .mf-lanes{gap:24px}
@@ -203,16 +217,51 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
 }
 @media(max-width:480px){.method-flow .mf-title{font-size:17px}.method-flow .mf-step{padding:14px}.method-flow .mf-foot{display:block}.method-flow .mf-foot a{display:inline-block;margin-top:10px}}
 </style><figure class="method-flow" id="sbom-cve-flow" aria-labelledby="sbom-cve-flow-title"><figcaption><h2 id="sbom-cve-flow-title">Identification at a glance</h2><p>Select an identification path, then retrieve component-linked CVE candidates.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>CODE</b> processing &amp; checks</span><span><b>USER</b> asset facts</span></div><div class="mf-entry"><div class="mf-step" data-role="data"><span class="mf-kind">INPUT</span><strong class="mf-title">SBOM</strong><span class="mf-sub">CycloneDX / SPDX JSON</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-fork-title">Choose an identification mode</div><div class="mf-lanes"><section class="mf-lane"><h3>Evidence v3 <small>Default</small></h3><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Retrieve product candidates</strong><span class="mf-sub">CPE · BM25 · character trigrams</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Preserve version evidence</strong><span class="mf-sub">Raw versions · revisions · conflicts</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Check product identity</strong><span class="mf-sub">Dictionary · vendor evidence · ambiguity</span></div></section><section class="mf-lane"><h3>L2 / L3 / L4 <small>Comparison</small></h3><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE / TUNED</span><strong class="mf-title">L2 · Normalize names</strong><span class="mf-sub">Vendor-scoped product-name proposal</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE / TUNED</span><strong class="mf-title">L3 · Preserve versions</strong><span class="mf-sub">Keep the original vendor revision</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE / TUNED</span><strong class="mf-title">L4 · Select a CPE</strong><span class="mf-sub">Choose from dictionary candidates</span></div></section></div><div class="mf-join" aria-hidden="true"></div><aside class="mf-side-note"><span class="mf-inline-llm" data-role="llm">LLM · Optional reranking</span><span>Evidence v3 only; cannot override identity checks.</span></aside><aside class="mf-side-note"><strong>Rules mode:</strong><span>Deterministic processing replaces the legacy LLM stages.</span></aside><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Query NVD &amp; CISA</strong><span class="mf-sub">Keep sources and applicability uncertainty</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Link CVEs to components</strong><span class="mf-sub">Retain case IDs and identity evidence</span></div><div class="mf-step" data-role="data"><span class="mf-kind">HANDOFF</span><strong class="mf-title">Continue to VEX review</strong><span class="mf-sub">Candidates are not exploitability findings</span></div></div><div class="mf-foot"><p>One Qwen3-8B runtime. LLM labels identify roles, not separate models.</p><a href="vex-decision.html#vex-review-flow">CVE → VEX workflow →</a></div></figure>
-<details class="method-details"><summary>Read identification rules, model roles and limitations</summary><div class="method-detail-body">
-<div class="card"><h3>Separate identity, version and exploitability</h3><p>A dictionary match establishes a reported product identity under the recorded evidence. It does not attest deployment, a fixed build or runtime exploitability. Missing CPE coverage and missing evidence remain visible.</p></div>
-<div class="card"><h3>L2 · Vendor-scoped product candidates</h3><p>Build a local index of actual CPE identities, grouping releases by part/vendor/product. Search product names and dictionary titles using BM25 and character trigrams, then combine retrieval ranks using reciprocal-rank fusion. Preserve competing identities and show scores as ranking signals, never probabilities.</p><p>Supplier and manufacturer remain separate. PURL namespace is not automatically a CPE vendor. A source-linked alias registry supports reviewed vendor/product mappings; its initial registry is empty, so brand/ownership relationships are not invented.</p></div>
-<div class="card"><h3>L3 · Version provenance and conflicts</h3><p>Collect observations from the version field, PURL, supplied CPE and name, retaining raw values, spans and vendor revisions. Name-only versions are provisional. Affected ranges are not installed versions. Contradictory sources block version confirmation; advisory-derived synthetic inventories cannot attest an installed version.</p><p>Version comparison uses an explicit scheme: PEP 440, SemVer, Debian or RPM. Unknown/custom schemes remain unknown when ordering is required. Product-level queries avoid prematurely dropping candidates based on a guessed version spelling.</p></div>
-<div class="card"><h3>L4 · Grounding and acceptance</h3><p>Verify dictionary existence, component type, manufacturer evidence, reviewed aliases and conflicts between names and identifiers. Repeated releases do not create new product identities. A verified CPE alone does not prove that an unknown component name belongs to that product. Supplier alone cannot resolve competing vendors.</p><p>Uncalibrated fuzzy scores and LLM rankings cannot authorize identity acceptance. Only a unique supported dictionary identity passes the strong-evidence rule. Otherwise return ambiguous, conflicting evidence or insufficient evidence. A missing version does not block product-level candidate lookup.</p></div>
-<div class="card"><h3>Optional local LLM review</h3><p>Evidence v3 + Qwen base review sends only supplied candidate IDs and evidence references to the shared local Qwen3-8B base, with adapters disabled. Validate returned IDs and literal version spans. Ranking cannot remove competitors or override acceptance checks. This new contract has not been fine-tuned or independently calibrated; old v2 scores do not apply.</p></div>
-<div class="card"><h3>NVD + CISA evidence</h3><p>Query CVEs for an accepted product identity, then evaluate version/platform conditions separately using three-valued logic. Unknown platforms and unsupported ordering remain unknown. The flattened local NVD index cannot establish complete applicability. CISA vendor/product phrase links are a separately attributed candidate source and do not establish a CPE or affected installed version.</p></div>
-<div class="card"><h3>Evaluation and limitations</h3><p>The CPU evidence path is the default. Legacy rules, Qwen base and tuned v2 adapters remain selectable for comparison. A reference audit covers 14,326 legacy input variants, but its references include missing/conflicting product axes; reference agreement is not independent real-SBOM accuracy.</p><p>Measure retrieval Recall@K, ranking agreement, identity precision/coverage, version extraction/conflicts, and downstream CVE precision/recall separately. Validation-threshold tooling rejects weak/model/test labels, uses a confidence-bound requirement, and requires independent held-out confirmation before fuzzy acceptance. That calibration is pending, so fuzzy acceptance stays disabled.</p></div>
-<div class="card"><h3>Read the evidence</h3><p>The analyzer exposes candidate scores and conflicts, version spans and sources, the acceptance rule, snapshot hashes, raw model outputs and errors. Candidate-to-VEX handoff retains identification evidence. An error is not a successful identification, and unknown is not safe.</p><a href="index.html">Open ICS-VEXForge →</a></div>
-</div></details>
+<section class="method-notes" aria-label="Identification rules">
+<h2>What each stage does</h2>
+<section class="method-topic">
+<h3>L2 · Find the product</h3>
+<dl><dt>Input</dt><dd>Component name, manufacturer, PURL and supplied CPE.</dd>
+<dt>Processing</dt><dd>Search the CPE dictionary with BM25 and character trigrams. Combine the candidate ranks.</dd>
+<dt>Result</dt><dd>Product candidates with their supporting evidence.</dd></dl>
+<p class="method-boundary">A device stays a device. Do not replace it with an embedded library.</p>
+</section>
+<section class="method-topic">
+<h3>L3 · Preserve the version</h3>
+<dl><dt>Input</dt><dd>Version values from the SBOM, PURL, CPE and component name.</dd>
+<dt>Processing</dt><dd>Retain vendor revisions. Flag conflicting values and provisional name-only versions.</dd>
+<dt>Result</dt><dd>A version observation, a conflict, or an unknown version.</dd></dl>
+<p class="method-boundary">An advisory's affected range is not the installed version. Unsupported version ordering stays unknown.</p>
+</section>
+<section class="method-topic">
+<h3>L4 · Verify the identity</h3>
+<dl><dt>Input</dt><dd>Product candidates, vendor evidence and supplied identifiers.</dd>
+<dt>Processing</dt><dd>Check dictionary membership and conflicting evidence. Require a unique supported identity.</dd>
+<dt>Result</dt><dd>Accepted identity, ambiguity, conflicting evidence, or insufficient evidence.</dd></dl>
+<p class="method-boundary">A fuzzy score or LLM ranking cannot authorize identity acceptance.</p>
+</section>
+<section class="method-topic">
+<h3>Retrieve CVE candidates</h3>
+<dl><dt>NVD</dt><dd>Query the product. Assess version and platform conditions separately.</dd>
+<dt>CISA</dt><dd>Keep vendor/product advisory links as a separately attributed source.</dd>
+<dt>Handoff</dt><dd>Pass CVE IDs, component links and unresolved evidence into VEX review.</dd></dl>
+<p class="method-boundary">A candidate match does not prove applicability. An empty result does not establish safety.</p>
+</section>
+<details class="method-extra"><summary>Which steps use an LLM?</summary>
+<ul><li><b>Evidence v3:</b> the default path runs in code.</li>
+<li><b>Evidence v3 + Qwen:</b> the base model optionally reranks supplied candidates.</li>
+<li><b>Legacy base / tuned:</b> L2, L3 and L4 use the selected model or adapters.</li>
+<li><b>Rules mode:</b> deterministic processing replaces those legacy model calls.</li></ul>
+<p>All deployed LLM roles share Qwen3-8B. The optional ranking contract is not independently calibrated.</p>
+</details>
+<details class="method-extra"><summary>Evidence and evaluation limits</summary>
+<ul><li>Manufacturer and supplier are different fields. Do not infer ownership relationships without evidence.</li>
+<li>Use only a supported version scheme: PEP 440, SemVer, Debian or RPM.</li>
+<li>The flattened local NVD cache cannot prove complete platform applicability.</li>
+<li>Synthetic reference agreement is not independently measured real-SBOM accuracy.</li>
+<li>Fuzzy acceptance remains disabled pending independent calibration.</li></ul>
+</details>
+</section>
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">SSRC</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
