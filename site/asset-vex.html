@@ -194,6 +194,19 @@ details.method-details .method-detail-body{max-width:88ch}
 details.method-details .card{background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;padding:22px 0;margin:0}
 details.method-details h2{font-size:21px;line-height:1.4;margin:0 0 10px}details.method-details h3{font-size:19px;margin:0 0 10px}
 details.method-details p,details.method-details li{font-size:16px;line-height:1.7;color:var(--ink2)}
+.method-notes{max-width:76ch;margin:36px 0;font-family:var(--sans)}
+.method-notes h2{font-size:24px;margin:0 0 18px;line-height:1.35}.method-notes h3{font-size:21px;margin:0 0 14px;line-height:1.35}
+.method-notes .method-topic{padding:26px 0;border-top:1px solid var(--line)}
+.method-notes dl{display:grid;grid-template-columns:160px minmax(0,1fr);gap:12px 24px;margin:14px 0}
+.method-notes dt{font-size:14px;font-weight:600;color:var(--ink2);line-height:1.6;overflow-wrap:anywhere}
+.method-notes dd{font-size:17px;line-height:1.6;color:var(--ink);margin:0;overflow-wrap:anywhere}
+.method-notes p,.method-notes li{font-size:16px;line-height:1.65;color:var(--ink2)}
+.method-notes code{font-family:var(--mono);font-size:13px;overflow-wrap:anywhere;color:var(--ink)}
+.method-notes .method-boundary{border-left:2px solid var(--line);padding-left:14px;margin:18px 0 0}
+.method-notes .method-example{padding:12px 0;font-size:14px}.method-notes .method-example b{color:var(--accent)}.method-notes .method-example p{margin:6px 0}
+.method-notes .method-extra{border-top:1px solid var(--line);padding:16px 0}.method-notes .method-extra summary{font-size:17px;font-weight:600;cursor:pointer;color:var(--ink)}
+.method-notes .method-extra li{margin:10px 0}.method-notes .method-extra ul{padding-left:22px}
+@media(max-width:580px){.method-notes dl{grid-template-columns:1fr;gap:5px}.method-notes dd{margin-bottom:12px}.method-notes h3{font-size:20px}}
 @container methodFlow (max-width:640px){
  .method-flow .mf-rail,.method-flow .mf-lanes{grid-template-columns:1fr}
  .method-flow .mf-rail{gap:26px}.method-flow .mf-lanes{gap:24px}
@@ -202,35 +215,62 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
 }
 @media(max-width:480px){.method-flow .mf-title{font-size:17px}.method-flow .mf-step{padding:14px}.method-flow .mf-foot{display:block}.method-flow .mf-foot a{display:inline-block;margin-top:10px}}
 </style><figure class="method-flow" id="vex-review-flow" aria-labelledby="vex-review-flow-title"><figcaption><h2 id="vex-review-flow-title">CVE to VEX at a glance</h2><p>Extract evidence → analyze the asset → decide the status → write the explanation.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>CODE</b> processing &amp; checks</span><span><b>USER</b> asset facts</span></div><div class="mf-rail"><div class="mf-step" data-role="data"><span class="mf-kind">INPUT</span><strong class="mf-title">CVE cases</strong><span class="mf-sub">Component-linked candidates</span></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · TUNED</span><strong class="mf-title">Extract conditions</strong><span class="mf-sub">Function-name candidates included</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Check extraction evidence</strong><span class="mf-sub">Quotes · schema · source references</span></div></div><aside class="mf-side-note"><strong>If extraction is rejected:</strong><span class="mf-inline-llm" data-role="llm">LLM · Select source IDs</span><span aria-hidden="true">→</span><span>Code validates IDs and restores quotations.</span></aside><details class="mf-explanation"><summary>What does the extraction check do?</summary><p>It checks that cited text exists in the supplied source. If a generated quote is invalid, a separate attempt selects a source ID such as <code>E12</code>; the server copies the corresponding text. A valid citation is not proof that the inferred condition is correct. Failed attempts stay unresolved.</p></details><div class="mf-fork-title">Is source code available?</div><div class="mf-lanes"><section class="mf-lane"><h3>Yes <small>Source analysis</small></h3><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Patch &amp; build evidence</strong><span class="mf-sub">Source files · patch hunks · build flags</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Clang / LLVM paths</strong><span class="mf-sub">CFG + direct call graph</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Scope &amp; reachability</strong><span class="mf-sub">Target presence · entry paths · blockers</span></div></section><section class="mf-lane"><h3>No <small>Operational review</small></h3><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE</span><strong class="mf-title">Generate operating questions</strong><span class="mf-sub">CVE-specific, source-linked questions</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="human"><span class="mf-kind">USER + CODE</span><strong class="mf-title">Asset facts &amp; version checks</strong><span class="mf-sub">Answers · installed build · vendor records</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · BASE</span><strong class="mf-title">Assess operational context</strong><span class="mf-sub">Advisory likelihood, not a VEX verdict</span></div></section></div><div class="mf-join" aria-hidden="true"></div><div class="mf-down" aria-hidden="true"></div><div class="mf-gate"><span class="mf-kind">CODE · EVIDENCE GATES</span><strong class="mf-title">Decide status &amp; scope</strong><span class="mf-sub">Unsupported conclusions remain under investigation.</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="llm"><span class="mf-kind">LLM · TUNED</span><strong class="mf-title">Write the VEX explanation</strong><span class="mf-sub">Preserve the assigned status and evidence IDs</span></div><div class="mf-step" data-role="code"><span class="mf-kind">CODE</span><strong class="mf-title">Validate the draft</strong><span class="mf-sub">JSON · IDs · citations · repetition</span></div><div class="mf-step" data-role="data"><span class="mf-kind">OUTPUT · SCHEMA CHECKS</span><strong class="mf-title">Merge &amp; export</strong><span class="mf-sub">SBOM + VEX · OpenVEX · CSAF</span></div></div><details class="mf-explanation"><summary>Who decides the status, and what if writing fails?</summary><p>Code sets the status from the evidence rules. The LLM writes the explanation and cannot change that status. For example, <code>under_investigation</code> cannot become <code>not_affected</code> during writing. A rejected draft is excluded; source findings, operating records and the rule-based rationale are retained.</p></details><div class="mf-foot"><p>Code decides the status. The LLM writes a review draft; a rejected explanation does not erase the evidence.</p><a href="sbom-to-cve.html#sbom-cve-flow">← SBOM → CVE workflow</a></div></figure>
-<details class="method-details"><summary>Read extraction checks, decision rules and output validation</summary><div class="method-detail-body">
-<div class="card"><h2>1. Identify candidate CVEs</h2>
-<p>SBOM name, version and CPE evidence produce candidates. An advisory match is not an exploitability finding. Unknown installed versions remain unresolved.</p></div>
-<div class="card"><h2>Shared extraction and VEX authoring</h2><p>Both source and operational-context branches attempt the trained Description condition/function extractor, validate its quoted evidence, retain a separately validated source-ID fallback when needed, assemble branch-specific facts and a rule-based decision, then invoke the trained VEX writer. The writer must preserve the assigned decision and cite supplied evidence IDs. Invalid outputs remain visible and are not accepted as model-generated documents. Case IDs and evidence packets connect all stages.</p></div>
-<div class="card"><h2>2. Source available: Clang/LLVM build and path review</h2>
-<p>ICS-VEXForge combines CVE evidence with the selected product build, compiler-derived paths and explicit analysis scope.</p>
-<ol><li>Extract the source ZIP safely and hash its files. No uploaded command is executed.</li>
-<li>Load CVE fixing-patch references from the local cache. Compare both sides of each code hunk against matching source paths. Record missing, ambiguous and diverged files.</li>
-<li>Read compile_commands.json and build manifests. Map translation units to uploaded files and retain compiler arguments, macros and include flags for review.</li>
-<li>Use the server's Clang driver with allowed macros, local includes and language flags. Emit and verify LLVM IR for each selected C/C++ translation unit, then traverse its basic-block CFG and direct call edges. No generated program, uploaded compiler command, linker or plugin is executed.</li>
-<li>Distinguish C++ overloads and file-local functions by symbol and translation unit. Retain unused static definitions so compiler omission does not masquerade as source absence.</li>
-<li>Absent targets or unreachable present targets can support scoped not_affected only for declared complete product/root scope with no blockers. A compiler error, unknown target or missing path alone is not a negative verdict. Preserve dependency/IR hashes and decision evidence alongside the VEX result.</li></ol>
-<p><b>A reachable artefact is not automatically affected.</b> Attacker control, runtime conditions and applicability still require verification.</p>
-<p>Preprocessor directives and local headers are analysed under the accepted configuration. Missing headers, unsupported options/targets, compile errors/timeouts, unresolved indirect/external calls and ambiguous definitions block negative decisions. Library mode uses compiled public functions as roots and reports API paths; it cannot establish product-level unreachability without consumer integration. Partial source cannot establish product absence.</p>
-<p>Function absence and CFG decisions are scoped to the uploaded source and identified entry points. A missing CVE-to-function mapping is not function absence. Supply the complete product source, including bundled dependencies and all runtime entry points, for a product-level assessment. The backend does not independently attest source completeness or deployment identity.</p></div>
-<div class="card"><h2>3. Patch and actual-build evidence</h2>
-<p>A fixed-pattern match means a patch hunk resembles the uploaded source. It does not prove that every fix is present or applicable. Successful IR generation confirms that the selected units compiled under the recorded analysis flags; it does not prove final link inclusion, loaded libraries or deployed binary identity. Unlisted files are not automatically excluded.</p>
-<p>Review the compiler arguments and match the source inventory to your actual build and deployment records before signing a final VEX statement. This backend currently inspects supplied build configuration; it does not independently reproduce the build or attest the deployed binary.</p></div>
-<div class="card"><h2>4. Explain the VEX decision</h2>
-<p>The VEX result retains vulnerability details, patch hashes and references, source locations, paths, build observations and missing evidence.</p>
-<p><b>How to read a result:</b> inspect scope and unit coverage, target locations, entry-to-target paths and call-site lines, the decision rule, and unresolved blockers. Deterministic evidence observations feed the shared LLM drafting step; its output must preserve the decision and evidence IDs. A path is not proof of attacker control or exploitation. A generated explanation is a review draft, not an independently validated answer key.</p>
-</div>
-<div class="card"><h2>5. Source unavailable: operational context</h2>
-<ol><li>Run the Description condition/function extractor and retain its grounding checks.</li><li>The shared Qwen3-8B base generates up to six source-linked questions for each CVE. The server resolves evidence IDs. Product family, installed version and supporting records are collected once per component; vendor-fix confirmation is a separate system question.</li><li>The user supplies yes/no/unknown answers and configuration, build or vendor records. The model never supplies the operating facts.</li><li>The base model compares this CVE's questions and answers with its evidence and produces an advisory likely_affected, likely_not_affected, likely_mitigated or likely_cannot_determine assessment.</li><li>The trained VEX writer receives the same case's decision, answer evidence IDs and unresolved facts. Download the review log to retain the full chain, or export the original CycloneDX inventory with component-specific VEX decisions.</li></ol>
-<p>Deployed question and operational-assessment roles use base inference. Separate experimental curriculum adapters completed training but are not activated. Unsupported quotes and foreign answer references are rejected; unanswered fields remain unknown. LLM question coverage and semantic conclusions require review.</p><p><b>Advisory likelihood is separate from standard VEX status.</b> Unverified findings remain under_investigation. An exact product-scoped vendor fix plus an operator-attested installed-build record can support scoped fixed status; deployment identity is still not independently verified. A disabled feature or unsupported patch assertion does not establish code absence or a fixed build.</p></div>
-<div class="card"><h2>6. CWE classification and review questions</h2>
-<p>NVD, corpus and caller-supplied CWE IDs retain their individual provenance and MITRE definition links. Weakness-specific questions help reviewers identify the affected interface, trigger and vendor evidence. Unknown classifications remain unknown; broad classes are labelled broad.</p>
-<p><b>CWE is not a CVE-specific exploitation condition.</b> CWE-derived questions are kept outside the prerequisite rules and always carry can_refute=false. Adding CWE alone cannot change VEX status. Download contextual review JSON to preserve the classification, questions and decision evidence.</p></div>
-</div></details>
+<section class="method-notes" aria-label="VEX evidence and decision rules">
+<h2>Decision and writing are separate</h2>
+<dl><dt>Status</dt><dd>Code applies evidence rules and fixes the status and scope.</dd>
+<dt>Explanation</dt><dd>The LLM writes a draft. It cannot change the assigned status.</dd></dl>
+<section class="method-topic">
+<h3>1 · Check extraction evidence</h3>
+<dl><dt>Input</dt><dd>CVE Description and the supplied evidence catalog.</dd>
+<dt>Check</dt><dd>Verify the output format and whether each quoted passage exists in its source.</dd>
+<dt>If it fails</dt><dd>A separate base-model attempt selects source IDs. The server copies the corresponding passages.</dd>
+<dt>If unresolved</dt><dd>Keep extraction unresolved. Do not treat a missing mapping as an absent function.</dd></dl>
+<div class="method-example"><b>Example</b><p>The model selects <code>E12</code>. The server returns the stored text for <code>E12</code>.</p></div>
+<p class="method-boundary">A valid quotation confirms its source, not the correctness of the inferred condition.</p>
+</section>
+<section class="method-topic">
+<h3>2 · Analyze the asset</h3>
+<dl><dt>With source</dt><dd>Inspect patches and build flags. Use Clang/LLVM to locate targets and analyze paths.</dd>
+<dt>Without source</dt><dd>Generate questions. Collect real operating facts, installed versions and supporting records.</dd>
+<dt>LLM assessment</dt><dd>Compare operating answers with CVE conditions. Treat likely_* labels as advisory hypotheses.</dd></dl>
+<p class="method-boundary">The LLM never supplies asset facts. Unanswered questions remain unknown.</p>
+</section>
+<section class="method-topic">
+<h3>3 · Decide the status</h3>
+<dl><dt><code>not_affected</code></dt><dd>Supported targets are absent or unreachable within the required complete scope, with no analysis blockers.</dd>
+<dt><code>fixed</code></dt><dd>An explicit vendor-fixed version matches a scoped, operator-attested installation record.</dd>
+<dt><code>under_investigation</code></dt><dd>Required version, mapping, path, operating or installation evidence is missing.</dd></dl>
+<p class="method-boundary">A reachable function is not automatically affected. A disabled feature is not proof of code absence.</p>
+</section>
+<section class="method-topic">
+<h3>4 · Write and validate the explanation</h3>
+<dl><dt>Writer input</dt><dd>The assigned status, product/CVE IDs, evidence references and missing facts.</dd>
+<dt>LLM output</dt><dd>Impact and action text for review.</dd>
+<dt>Validation</dt><dd>Check complete JSON, locked IDs/status, evidence references and repetition.</dd>
+<dt>If writing fails</dt><dd>Reject the generated text. Keep the status, evidence and rule-based rationale.</dd></dl>
+<div class="method-example"><b>Example</b><p>If code assigns <code>under_investigation</code>, the writer cannot promote it to <code>not_affected</code>.</p></div>
+</section>
+<details class="method-extra"><summary>What is exported?</summary>
+<ul><li><b>CycloneDX:</b> a copy of the original SBOM with component-specific VEX analysis and schema checks.</li>
+<li><b>OpenVEX / CSAF:</b> standalone review documents. SPDX input currently uses standalone VEX export.</li>
+<li><b>Review log:</b> questions, answers, evidence, model outputs, rejected attempts and validation results.</li></ul>
+<p>A rejected LLM explanation does not prevent export of the supported rule-based assessment.</p>
+</details>
+<details class="method-extra"><summary>Source analysis limits</summary>
+<ul><li>Inspect compile_commands.json and build manifests; do not execute uploaded build commands.</li>
+<li>Compiler errors, missing units and unresolved calls can block negative conclusions.</li>
+<li>Patch-hunk similarity does not prove that every fix is present.</li>
+<li>Partial source cannot establish whole-product absence or unreachability.</li>
+<li>Source completeness and deployed binary identity are not independently attested.</li></ul>
+</details>
+<details class="method-extra"><summary>Models, CWE and stored records</summary>
+<ul><li>Extraction and authoring use trained adapters on the shared Qwen3-8B base.</li>
+<li>Deployed operational question and assessment roles use base inference. Experimental curricula are not activated.</li>
+<li>CWE provides classification context, not a CVE-specific exploit prerequisite or a clearance rule.</li>
+<li>Independent Claude/Gemini verification and expanded vector RAG are not connected.</li>
+<li>Local SQLite retains questionnaires/reviews for 24 hours and completed identification jobs for seven days.</li></ul>
+</details>
+</section>
 
 <div class="foot"><div class="brand brand-sm"><svg class="ssrc" viewBox="0 0 120 120"><circle cx="60" cy="60" r="55" fill="none" stroke="#37b24d" stroke-width="3"/><circle cx="60" cy="60" r="47" fill="none" stroke="#37b24d" stroke-width="1.5"/><text x="60" y="55" text-anchor="middle" font-weight="800" font-size="31" fill="#37b24d" font-family="Arial,sans-serif">SSRC</text><text x="60" y="74" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="#37b24d" font-weight="700">SYSTEM SECURITY</text><text x="60" y="89" text-anchor="middle" font-size="8" letter-spacing="1" fill="#69db7c" font-weight="600">★ EST. 2000 ★</text></svg><div class="btxt"><div class="bk">SSRC</div><div class="be">System Security Research Center</div></div></div>
 <div class="cright">© 2026 System Security Research Center, Chonnam National University. All rights reserved.</div></div>
