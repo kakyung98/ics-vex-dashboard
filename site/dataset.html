@@ -296,7 +296,7 @@ async function judgeSource(){
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
   const cves=(_lastVex&&_lastVex.cves||[]).map(function(f){return {...f,cve:f.cve,description:f.description||f.summary||''};});
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({session:_srcSession,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
+    body:JSON.stringify({session:_srcSession,identification_job:_candidateJobId||null,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
       entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
       product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
@@ -328,7 +328,7 @@ let _operationPlan=null;
 async function renderOcForm(box){
   _operationPlan=null;
   box.innerHTML='<h3>CVE-specific operational review</h3><p>No source code: the LLM will generate questions about the exploitation conditions of each CVE. Provide actual asset facts and their records. Unanswered items remain unknown.</p>'
-    +'<p class="hint">Question generation and answer assessment use the shared Qwen3-8B base model; these two roles have not been fine-tuned. Likelihoods are advisory; operator reports do not establish verified code absence.</p>'
+    +'<p class="hint">Deployed question and assessment roles use Qwen3-8B base inference with source IDs. Experimental curriculum adapters exist but are not activated. Source linkage is not semantic validation. Enter product/version facts once per component below.</p>'
     +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
 async function generateOperationQuestions(){
@@ -339,33 +339,72 @@ async function generateOperationQuestions(){
     const r=await fetch('/api/oc/questions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cves,identification_job:_candidateJobId||null,product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
     if(!r.ok)throw new Error(await r.text());
     _operationPlan=await r.json();
-    box.innerHTML=_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status)+'</p>'
+    box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status==='validated'?'Source-linked draft; semantic review required':c.generation.status)+'</p>'
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
-      +c.questions.map((q,qi)=>'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.origin)+'</p>'
+      +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.origin)+'</p>'
         +(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')
-        +(q.answer_type==='text'?'<input id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Exact installed build, or leave unknown">':'<select id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
-        +'<input id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Evidence: configuration record, vendor bulletin, build ID, inspection date"></div>').join('')
+        +(q.answer_type==='text'?'<input class="op-control" type="text" id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Enter the operational fact, or leave unknown">':'<select class="op-control" id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
+        +'<input class="op-control" type="text" id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Evidence: configuration record, vendor bulletin, build ID, inspection date"></div>').join('')
       +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></section>').join('')
-      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Analyze answers and draft VEX</button><p class="hint">The questionnaire expires after 24 hours or a backend restart. Download the review JSON to retain questions, answers and evidence.</p>';
+      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Analyze answers and draft VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
   }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
+function renderComponentFacts(plan){
+ let html='<style>.op-control{display:block;width:100%;box-sizing:border-box;margin:6px 0 10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card2);color:var(--ink);font:inherit}.op-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}</style>'
+  +'<section class="card"><h3>Shared component and installed-version facts</h3><p>Complete each actual component once. These facts are reused across its CVEs. Do not copy advisory versions as installed versions. Unselected or unknown components remain unresolved.</p>';
+ (plan.assets||[]).forEach((a,i)=>{
+  html+='<article class="card"><h4>'+esc(a.name)+'</h4><p class="hint">Component ref: '+esc(a.ref)+' · Original SBOM version: '+esc(a.reported_sbom_version||'unknown')+'</p><div class="op-facts">'
+   +'<label>Present in the reviewed asset?<select class="op-control" id="of_present_'+i+'"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No / not selected for this asset</option></select></label>'
+   +'<label>Actual manufacturer / product family<input type="text" class="op-control" id="of_product_'+i+'" list="of_options_'+i+'" maxlength="500" placeholder="Select the actual product family"><datalist id="of_options_'+i+'">'+(a.product_options||[]).map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist></label>'
+   +'<label>Observed installed firmware / build<input type="text" class="op-control" id="of_version_'+i+'" maxlength="160" placeholder="Read from device or inventory record"></label>'
+   +'<label>Supporting record and inspection date<input type="text" class="op-control" id="of_evidence_'+i+'" maxlength="1500" placeholder="Device record, inventory ID or update record"></label></div>'
+   +'<label><input type="checkbox" id="of_attest_'+i+'"> I checked this product and installed version against the stated record. This is an operator attestation, not independent machine verification.</label></article>';
+ });
+ return html+'</section>';
+}
+function collectComponentFacts(){
+ const out={};(_operationPlan.assets||[]).forEach((a,i)=>{out[a.ref]={present:document.getElementById('of_present_'+i).value,
+ product_name:document.getElementById('of_product_'+i).value,installed_version:document.getElementById('of_version_'+i).value,
+ evidence:document.getElementById('of_evidence_'+i).value,attested:document.getElementById('of_attest_'+i).checked};});return out;
+}
+function downloadSbomVex(){
+ if(!_armResult?.sbom_vex){alert('No original CycloneDX SBOM was linked to this review.');return;}
+ _dl('ics-sbom-with-vex.cdx.json',_armResult.sbom_vex);
+}
+
 async function judgeOc(){
   if(!_operationPlan)return;
   const v=document.getElementById('ocverdict'),button=document.getElementById('submit-operation-answers'),answers={};
-  _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
+  _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{if(q.deprecated_version_field)return;answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
   button.disabled=true;v.innerHTML='<p>Comparing operator reports with CVE evidence and writing VEX drafts locally...</p>';
   try{
-    const r=await fetch('/api/oc/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers})});
+    const r=await fetch('/api/oc/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
     if(!r.ok)throw new Error(await r.text());
     _armResult=await r.json();
-    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.assessment.status==='validated_draft'?(s.operational_review.assessment.prediction.explanation+' Advisory text requires review; the effective assessment above applies.'):'No accepted model assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
-      +'<button onclick="downloadOcReview()">Download contextual review JSON</button>';
+    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.map(s=>'<section class="card"><h3>'+esc(s.cve)+' · '+esc(s.operational_assessment)+'</h3><p>Standard VEX: '+esc(s.status)+'</p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
+      +'<button onclick="downloadOcReview()">Download review log (JSON)</button>';
   }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
 
 function downloadOcReview(){
   const url=URL.createObjectURL(new Blob([JSON.stringify({schema:'ics-vex-context-review/1',..._armResult},null,2)],{type:'application/json'}));
   const a=document.createElement('a');a.href=url;a.download='ics-vex-context-review.json';a.click();URL.revokeObjectURL(url);
+}
+
+function _versionEvidenceHtml(result){
+ let h='';
+ for(const s of result.statements||[]){
+  const evaluation=s.operational_review?.version_evaluation;
+  if(!evaluation)continue;
+  h+='<section class="card"><h3>'+esc(s.cve)+' · Installed-version comparison</h3><table><thead><tr><th>Component</th><th>Reported product / version</th><th>Vendor evidence</th><th>Installation record</th></tr></thead><tbody>';
+  for(const row of evaluation.components||[]){
+   h+='<tr><td>'+esc(row.component_ref)+'</td><td>'+esc(row.product_name||'Unknown product')+' / '+esc(row.installed_version||'Unknown version')+'</td><td>'+esc(row.state)+'</td><td>'+esc(row.operator_attested&&row.operator_evidence?'Operator-attested record; not independently verified':'Missing or unattested')+'</td></tr>';
+  }
+  h+='</tbody></table><p class="hint">'+esc(evaluation.comparison_policy)+'</p></section>';
+ }
+ const schema=result.sbom_vex_validation;
+ if(schema)h+='<p class="hint">SBOM export schema: '+esc(schema.status)+'. '+esc(schema.reason||'Schema validation checks document structure, not the accuracy of an asset assessment.')+'</p>';
+ return h;
 }
 
 function _groundedPipelineHtml(result){
@@ -382,11 +421,11 @@ function _groundedPipelineHtml(result){
     }else html+='<p>Extraction was not accepted. '+esc(x.reason||'Schema, literal quotation or policy checks failed.')+'</p>';
     if(draft)html+='<h4>Generated VEX explanation (draft)</h4><p>'+esc(draft.impact_statement)+'</p>'
       +(draft.action_statement?'<p>'+esc(draft.action_statement)+'</p>':'')+'<p>Evidence IDs: '+esc(draft.evidence_refs.join(', '))+'</p>';
-    else html+='<p>Generated explanation was not accepted. '+esc(w.reason||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
+    else html+='<p>Generated explanation was not accepted. '+esc(w.reason||JSON.stringify(w.diagnostics||{})||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
     html+='<details><summary>Model outputs and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify({extraction:x,authoring:w},null,2))+'</pre></details>'
       +'<details><summary>Evidence supplied to the VEX writer</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.evidence_packet,null,2))+'</pre></details></details>';
   }
-  return html;
+  return html+_versionEvidenceHtml(result);
 }
 
 function _verdictTable(res,armLabel){
@@ -407,7 +446,7 @@ function _verdictTable(res,armLabel){
   return h+'</tbody></table>'
     +'<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">'
     +'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'
-    +'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
+    +'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button>'+(res.sbom_vex?'<button class="primary" onclick="downloadSbomVex()">Download SBOM + VEX (CycloneDX)</button>':'')+'</div>';
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
