@@ -442,7 +442,7 @@ async function generateOperationQuestions(){
     if(!r.ok)throw new Error(await r.text());
     _operationPlan=await r.json();
     box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card" style="margin-top:14px"><h3>'+esc(c.cve)+'</h3><p>Question generation: '+esc(c.generation.status==='validated'?'Source-linked draft; semantic review required':c.generation.status)+'</p>'
-      +((c.generation.normalizations||[]).length?'<p class="hint">Identical duplicate questions were consolidated. Original model output is retained below.</p>':'')
+      +((c.generation.normalizations||[]).length?'<p class="hint">Presentation normalization was applied. Original model output and exact changes are retained below.</p>':'')
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
       +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div style="margin:16px 0"><label for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label><p class="hint">'+esc(q.purpose)+' · '+esc(q.scope||q.origin)+'</p>'
         +(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')
