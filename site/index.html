@@ -285,7 +285,8 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 #candidate-workspace .panel,#candidate-workspace .component{border-radius:12px} 
 #candidate-workspace textarea,#candidate-workspace select{font-family:var(--sans);font-size:14px} 
 #candidate-workspace textarea,#candidate-workspace pre,#candidate-workspace code{font-family:var(--mono)} 
-#candidate-workspace button,#candidate-workspace select{min-height:42px;border-radius:8px} </style><h1>Vulnerability review</h1><p class="sub">Upload an SBOM, review the evidence, and export a VEX assessment.</p><section id="candidate-workspace"><header class="top"><div><div class="eyebrow">Step 1 · Identify</div><h2>Find CVE candidates</h2><p class="muted">Resolve component names, preserve versions, and retrieve candidates from NVD and CISA evidence.</p></div><span class="badge" id="cm-modelBadge">Checking model availability</span></header>
+#candidate-workspace button,#candidate-workspace select{min-height:42px;border-radius:8px} 
+#candidate-workspace .identity-diagnostics{border-top:1px solid var(--line);margin:18px 0;padding-top:16px} #candidate-workspace .identity-diagnostics h3,#candidate-workspace .analysis-scope h3{font-size:19px;margin:0 0 12px} #candidate-workspace .diagnostic-stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0} #candidate-workspace .diagnostic-stage,#candidate-workspace .diagnostic-input{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0;overflow-wrap:anywhere} #candidate-workspace .diagnostic-stage h4{font-size:16px;color:var(--purple);margin:0 0 10px} #candidate-workspace .identity-diagnostics p,#candidate-workspace .analysis-scope p{font-size:15px;line-height:1.65} #candidate-workspace .diagnostic-input{margin:10px 0} #candidate-workspace .diagnostic-input code,#candidate-workspace .analysis-scope code{display:block;white-space:normal;overflow-wrap:anywhere;font-size:14px;margin:9px 0} #candidate-workspace .analysis-scope{padding:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;margin:18px 0} @media(max-width:1100px){#candidate-workspace .diagnostic-stages{grid-template-columns:1fr}} </style><h1>Vulnerability review</h1><p class="sub">Upload an SBOM, review the evidence, and export a VEX assessment.</p><section id="candidate-workspace"><header class="top"><div><div class="eyebrow">Step 1 · Identify</div><h2>Find CVE candidates</h2><p class="muted">Resolve component names, preserve versions, and retrieve candidates from NVD and CISA evidence.</p></div><span class="badge" id="cm-modelBadge">Checking model availability</span></header>
 <div class="notice" role="note"><strong>Experimental identification — review candidates before making a VEX decision.</strong><details><summary>Model limitations</summary><p>　v2 was trained on NVD-derived synthetic data. Generalization to real SBOMs is unverified. Candidate retrieval is not a final VEX judgment, and an empty result does not establish safety.</p></details></div>
 <div class="grid"><section class="panel"><div class="panelhead"><h2>01  SBOM input</h2><button class="small" id="cm-sample" type="button">Load sample</button></div>
 <div class="upload" id="cm-drop"><div><strong>Upload or drop a JSON file</strong><div class="hint" id="cm-fileLabel">CycloneDX · SPDX / Up to 100 components</div></div><span class="file-picker"><span aria-hidden="true">Choose JSON</span><input id="cm-file" type="file" accept=".json,application/json" aria-label="Choose an SBOM file"></span></div>
@@ -1544,6 +1545,24 @@ async function loadModels(){try{
  if(!modelInfo.local_snapshot_available){el('lookup').value='live';el('lookup').onchange()}
  if(!modelInfo.ready)el('status').textContent='One or more trained adapters are unavailable.';
 }catch(e){el('modelBadge').textContent='Metadata unavailable';el('status').textContent=e.message}}
+function renderDiagnostics(row){
+ const d=row.diagnostics;if(!d)return null;
+ const section=node('section',undefined,'identity-diagnostics');
+ section.append(node('h3','Why this identification result?'));
+ const input=node('div',undefined,'diagnostic-input');
+ input.append(node('strong','Input CPE: '+(d.input_cpes.length?'Supplied':'Not supplied')),node('p',d.cpe_check));
+ d.input_cpes.forEach(c=>input.append(node('code',c)));
+ input.append(node('p',`Reported type: ${d.input_type||'Unknown'} · Manufacturer / supplier: ${d.input_manufacturer||'Unknown'}`));
+ if(d.input_purl)input.append(node('p','Reported PURL: '+d.input_purl));section.append(input);
+ const stages=node('div',undefined,'diagnostic-stages');
+ d.stages.forEach(s=>{const box=node('div',undefined,'diagnostic-stage');box.append(node('h4',s.title),node('strong',s.observed),node('p',s.meaning),node('p','Next: '+s.next_step));stages.append(box)});section.append(stages);
+ if(d.candidate_comparisons.length){
+  const more=node('details',undefined,'review-disclosure');more.append(node('summary','Compare input with top dictionary candidates (not accepted identities)'));
+  const conflicts={explicit_manufacturer_differs:'Reported manufacturer differs from the dictionary vendor key. A reviewed vendor alias may be required.',name_and_reported_cpe_disagree:'The name and supplied CPE point to different dictionary identities.',purl_name_and_component_name_disagree:'The PURL name and component name point to different dictionary identities.',component_type_differs_from_dictionary_part:'The reported component type does not match this dictionary CPE part.'};
+  d.candidate_comparisons.forEach(c=>{const box=node('div',undefined,'diagnostic-input');box.append(node('strong',`${c.vendor} / ${c.product} · ${c.part}`));if(c.cpe)box.append(node('code',c.cpe));c.conflicts.forEach(x=>box.append(node('p',conflicts[x]||x)));if(!c.conflicts.length)box.append(node('p',c.accepted?'Accepted by the recorded identity checks.':'No listed conflict for this candidate; this alone does not establish identity.'));more.append(box)});section.append(more);
+ }
+ section.append(node('p',d.candidate_scope,'hint'),node('p',d.conclusion,'warn'));return section;
+}
 function renderComponent(row,index){
  const details=node('details',undefined,'component');details.open=index===0;
  const summary=node('summary',`${row.component.name||'Unnamed component'}  ·  ${row.component.version||'Version not provided'}`);
@@ -1554,6 +1573,7 @@ function renderComponent(row,index){
  const candidateCount=new Set((row.cves||[]).filter(r=>r.match_status!=='no_match').map(r=>r.cve_id).filter(Boolean)).size;
  overview.append(node('strong',`${candidateCount} CVE candidates`),node('p',valid?'NVD product identity verified. Review version applicability below.':advisory?'Advisory-based candidates; NVD product identity remains unresolved.':'Product identity remains unresolved. Review the missing evidence below.','hint'));
  body.append(overview);
+ const diagnostics=renderDiagnostics(row);if(diagnostics)body.append(diagnostics);
  [['L2 · Name suggestion',row.l2?.normalized,row.l2,'l2'],['L3 · Installed version',row.l3?.normalized,row.l3,'l3'],['L4 · NVD CPE identity',valid?`${row.validation.vendor} / ${row.validation.product}`:null,row.l4,'l4']].forEach(([title,value,stage,key])=>{
   const box=node('div');box.append(node('h3',title),node('code',value||'Unconfirmed / Deferred'));
   const execution=row.execution?.[key];let stateText=execution?.executed===false?'Not executed · Upstream stage unresolved':stage?'Executed':'No execution record';
@@ -1582,8 +1602,9 @@ function renderComponent(row,index){
 }
 function render(data,job){
  output=JSON.stringify(data,null,2);el('raw').textContent=output;el('download').disabled=false;el('results').hidden=false;const s=data.summary;el('stats').replaceChildren();
- [['Components',s.components],['NVD product identified',s.validated],['CISA advisory links',s.advisory_linked||0],['Unique CVE candidates',s.unique_cves||0],['Component–CVE links',s.candidate_records]].forEach(([name,value])=>{const box=node('div',undefined,'stat');box.append(node('strong',value.toLocaleString()),node('span',name));el('stats').append(box)});
+ [['Components analyzed',s.components,'Entries in components; the representative asset is excluded.'],['NVD identities accepted',s.validated,'Components that passed dictionary identity checks; not a vulnerability count.'],['Components linked to CISA',s.advisory_linked||0,'Components with advisory-based candidates; not the number of advisories.'],['Unique CVE candidates',s.unique_cves||0,'Distinct CVE IDs across components; not confirmed affected CVEs.'],['Component–CVE links',s.candidate_records,'Candidate associations including repeated CVEs across components.']].forEach(([name,value,meaning])=>{const box=node('div',undefined,'stat');box.append(node('strong',value.toLocaleString()),node('span',name),node('p',meaning,'hint'));el('stats').append(box)});
  el('components').replaceChildren(...data.components.map(renderComponent));
+ if(data.analysis_scope){const scope=data.analysis_scope,box=node('section',undefined,'analysis-scope');box.append(node('h3','Analysis scope and representative asset'),node('p',scope.explanation),node('strong',scope.asset_name));if(scope.asset_cpe)box.append(node('code',scope.asset_cpe),node('p','Asset CPE supplied · Not independently analyzed in this run','warn'));else box.append(node('p','No representative-asset CPE supplied.'));el('components').prepend(box)}
  const notices=[s.model_stage_errors?'Model stage errors: '+s.model_stage_errors+'. Inspect the retained outputs and original evidence.':'',s.optional_ranking_errors?'Optional LLM ranking failed or was rejected for '+s.optional_ranking_errors+' component(s); inspect the model output.':'',data.lookup_notice,data.identity_notice,data.input_notice,s.advisory_linked?'CISA links are candidates based on vendor/product phrases. They do not confirm installed-version applicability or NVD CPE identity.':'',s.errors?'Some components could not be processed. Review their individual errors.':''].filter(Boolean);
  el('resultNotice').hidden=!notices.length;el('resultNotice').replaceChildren();
  if(notices.length){
