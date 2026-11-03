@@ -479,19 +479,26 @@ async function stats(){
     // Axis cards - the CVE is the unit a VEX verdict is about. Product and statement axes are not shown.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
-      const AX=[['cves','unique CVEs','the VEX judgement unit'],
+      const AX=[['cves','unique CVEs','vulnerability identifiers'],
                 ['advisories_collected','ICS advisories','source, 2010–2026'],
-                ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
+                ['advisories_with_cves','advisories with CVEs','not a unique-product count']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
     // The 'VEX verdict - per CVE' card was removed; only the source-code reachability axis is shown.
     const sk=document.getElementById('kpis-src');
-    if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
-      const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
-      const SC={'code-available':C.LIKELY_AFFECTED,'oss-attributed':C.UNDER_INVESTIGATION,'vendor-proprietary':'var(--ink3)'};
-      for(const key of ['code-available','oss-attributed','vendor-proprietary'])
-        sk.innerHTML+='<div class="kpi"><b style="color:'+SC[key]+'">'+(sc[key]||0).toLocaleString()+'</b><span>'+SL[key]+'</span></div>';}
-  }catch(e){const sk=document.getElementById('kpis-src');if(sk)sk.innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
+    if(sk){
+      const si=s.source_inventory;
+      if(!si)throw new Error('Source inventory is unavailable. Refresh the public snapshot.');
+      const cards=[['snapshots_in_corpus','source snapshots in this CVE corpus'],
+                   ['no_local_snapshot','no local snapshot recorded'],
+                   ['analysis_attempted_in_corpus','compiler analysis attempted'],
+                   ['snapshots_total','snapshots stored across all CVEs']];
+      sk.innerHTML=cards.map(([key,label])=>'<div class="kpi"><b>'+(si[key]||0).toLocaleString()+'</b><span>'+label+'</span></div>').join('');
+      const states=Object.entries(si.analysis_state_in_corpus||{}).map(([state,n])=>state+': '+Number(n).toLocaleString()).join(' · ');
+      const note=document.getElementById('source-inventory-note');
+      if(note)note.textContent=(si.snapshots_outside_corpus||0)+' stored snapshots are outside this advisory CVE corpus. Compiler attempt states: '+(states||'no records')+'. Collection and analysis counts overlap; they must not be added.';
+    }
+  }catch(e){const sk=document.getElementById('kpis-src');if(sk)sk.innerHTML='<span class="err">Source inventory unavailable — refresh the backend or public snapshot</span>';}
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -617,7 +624,7 @@ async function coverage(){
       '<div class="kpi"><b style="color:var(--safe)">'+d.attemptable+'</b><span>engine-attemptable</span></div>'+
       '<div class="kpi"><b style="color:var(--und)">'+d.not_doable+'</b><span>not doable</span></div>';
     const by=d.by_reason||{};
-    let h='<div class="ct">Why '+d.not_doable+' cannot run <span class="hint">(source unobtainable / build infeasible)</span></div>';
+    let h='<div class="ct">Why '+d.not_doable+' cannot run <span class="hint">(collection or build blockers)</span></div>';
     const mx=Math.max(1,...Object.values(by));
     h+='<div class="cwe" style="margin-bottom:10px">';
     for(const k of Object.keys(by))
