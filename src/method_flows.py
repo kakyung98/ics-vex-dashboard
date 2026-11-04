@@ -115,8 +115,8 @@ def identification_flow():
 def vex_flow():
     source=chain(
         node('Is the required source supplied?', 'No → under_investigation immediately'),
-        node('Extract targets & inspect builds', 'Literal source spans + patch / build checks', 'code', 'RULES'),
-        node('Clang / LLVM analysis', 'Target presence · CFG / call paths · scope blockers'))
+        node('Parse multilingual source', 'C/C++ · Python · Java · SQL · JavaScript · Go · R · Ruby', 'code', 'SOURCE AST'),
+        node('Inspect targets & call evidence', 'Tree-sitter syntax candidates; Clang CFG for configured C/C++ builds'))
     operational=chain(
         node('Extract supported conditions', 'Pattern matches with original source spans', 'code', 'RULES'),
         node('Common + specific questions', 'CWE-specific source-linked templates', 'code', 'RULE TEMPLATES'),

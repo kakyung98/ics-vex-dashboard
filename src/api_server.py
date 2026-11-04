@@ -1656,8 +1656,10 @@ def build_app():
             fh.write(data)
         try:
             got = SRC.extract_zip(zpath, root)
-            idx = SRC.index_tree(root)
+            idx = SRC.index_source_tree(root)
             ep = SRC.entry_points(idx)
+            ep['approximate']=True
+            ep['kind']='syntax-'+ep['kind']
         finally:
             try:
                 os.remove(zpath)
@@ -1669,6 +1671,8 @@ def build_app():
         return {"session": sid, "upload": got,
                 "build": build,
                 "files_indexed": idx["files"],
+                "languages":idx.get('languages',{}),
+                "parser_diagnostics":idx.get('parser_diagnostics',[]),
                 "functions": len(idx["functions"]),
                 "indirect_call_sites": idx["indirect_call_sites"],
                 "entry_points": {"count": len(ep["entries"]), "kind": ep["kind"],
@@ -1684,7 +1688,7 @@ def build_app():
         session: str
         cves: list = []              # [{cve, description?, functions?: [...]}]
         tree_is_complete: bool = False
-        engine: str = 'clang'
+        engine: str = 'auto'
         analysis_scope: str = 'partial'
         entry_points: list[str] = []
         product: str = 'uploaded-source'
@@ -1696,7 +1700,7 @@ def build_app():
     def source_judge(req: SrcJudgeReq):
         """Patch/build/source review; static reachability is not exploitability."""
         sess = _SRC_INDEX.get(req.session)
-        if req.engine not in {'clang','legacy'} or req.analysis_scope not in {'product','library','partial'}:
+        if req.engine not in {'auto','syntax','clang','legacy'} or req.analysis_scope not in {'product','library','partial'}:
             raise HTTPException(400,'Invalid source engine or analysis scope')
         if not sess:
             raise HTTPException(404, "unknown or expired source session")
@@ -1705,7 +1709,7 @@ def build_app():
             from src import item4_review as I4
             try:master=I4.get(req.item4_review_id)
             except KeyError as e:raise HTTPException(404,str(e))
-            if req.engine!='clang':raise HTTPException(400,'CWE-first source review requires Clang/LLVM.')
+            if req.engine=='legacy':raise HTTPException(400,'CWE-first review requires AST source parsing or Clang/LLVM.')
             allowed=[c for c in master['cases'] if c['analysis_route'].get('source_required')]
             if not allowed:raise HTTPException(400,'No CVEs in this review require source analysis.')
             if set(c.get('cve') for c in req.cves)-{c['cve'] for c in allowed}:
@@ -2081,14 +2085,15 @@ function pickArm(which){
   const b=document.getElementById('armbody');
   if(which==='source'){
     b.innerHTML='<div class="row"><div>'
-      +'<label>소스코드 ZIP — 제품 소스 트리를 통째로 압축해 올려주세요</label>'
+      +'<label>Source code ZIP — C, C++, Python, Java, SQL, JavaScript, Go, R or Ruby</label>'
       +'<input type="file" id="srczip" accept=".zip">'
+      +'<label>Source analyzer</label><select id="srcengine"><option value="auto">Automatic — source AST; Clang for configured C/C++ builds</option><option value="syntax">Source AST only — no compilation</option><option value="clang">Clang/LLVM — C/C++ build evidence</option></select>'
       +'<label style="margin-top:10px">Analysis scope</label><select id="srcscope">'
       +'<option value="library">Component / library source</option><option value="product">Product source with build configuration</option><option value="partial">Partial source</option></select>'
-      +'<label>Product entry points (comma-separated; include callbacks, interrupts and initialization roots)</label><input id="srcentries" value="main">'
+      +'<label>Entry functions (optional for syntax analysis; comma-separated)</label><input id="srcentries" placeholder="main, handler, process_request">'
       +'<label style="display:block;margin-top:8px"><input type="checkbox" id="srccomplete"> I supplied complete source/dependencies and the complete entry-point set for this selected product build.</label>'
       +'<div class="hint" style="margin-top:8px">Include compile_commands.json and build manifests from the build being reviewed. '
-      +'The backend compares locally cached CVE patch hunks with your files and records declared compilation units. '
+      +'Upload source text, not firmware images or executables. The backend parses functions and call candidates without running your code. C/C++ uses Clang/LLVM when a compilation database is supplied; other source uses Tree-sitter. '
       +'Source paths and patch matches support review; they do not prove exploitability or a fixed deployed binary.</div>'
       +'<div style="margin-top:10px"><button class="primary" onclick="uploadSource()">업로드 후 분석 ▶</button></div>'
       +'</div></div><div id="srcout" style="margin-top:12px"></div>';
@@ -2113,7 +2118,7 @@ async function uploadSource(){
   let h='<div class="hint">파일 <b>'+up.files_indexed+'</b> · 함수 <b>'+up.functions+'</b>'
     +' · 진입점 <b>'+up.entry_points.count+'</b> ('+esc(up.entry_points.kind)+')'
     +' · 간접 호출 자리 <b>'+up.indirect_call_sites+'</b></div>'
-    +'<div class="hint" style="margin-top:6px">'+esc(up.note)+'</div>';
+    +'<div class="hint" style="margin-top:6px">Languages: '+esc(Object.entries(up.languages||{}).map(([l,n])=>l+' ('+n+')').join(', ')||'None detected')+'<br>'+esc(up.note)+'</div>';
   if(up.upload.truncated) h+='<div class="err" style="margin-top:6px">상한에 걸려 일부만 처리했습니다: '+esc(up.upload.truncated)+'</div>';
   h+='<div class="hint">Build databases: '+up.build.compilation_databases.length+' · Mapped translation units: '+up.build.translation_units.length+' · Unresolved entries: '+up.build.unresolved_entries.length+'</div>';
   out.innerHTML=h+'<div style="margin-top:10px"><button class="primary" onclick="judgeSource()">Review patches, build and source →</button></div><div id="srcverdict" style="margin-top:12px"></div>';
@@ -2124,15 +2129,16 @@ async function judgeSource(){
   v.innerHTML='<span class="hint">판정 중…</span>';
   const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.source_required).map(f=>({cve:f.cve}));
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
+    body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:document.getElementById('srcengine').value,analysis_scope:document.getElementById('srcscope').value,
       entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
       product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok){v.innerHTML='<span class="err">판정 실패 '+r.status+'</span>';return;}
   _armResult=await r.json();
-  let details='<div class="hint">Clang/LLVM source review · Conclusions apply to the selected build and declared roots. Missing build/entry coverage, indirect calls or compiler failures block negative decisions. A path does not prove attacker control or exploitation.</div>';
+  const compilerBacked=_armResult.cfg.engine==='clang-llvm-ir/1';
+  let details='<div class="hint">'+(compilerBacked?'Clang/LLVM source review · Selected build and declared roots.':'Multilingual source AST review · Syntax-derived call candidates; no runtime CFG or unreachability proof.')+' Missing coverage or unresolved calls block negative decisions. A path does not prove attacker control or exploitation.</div>';
   details+='<div class="card"><b>'+esc(_armResult.cfg.tool?.version||_armResult.cfg.engine)+'</b><p>Scope: '+esc(_armResult.cfg.scope)
     +' · Analysis run: '+esc(_armResult.cfg.execution_status||'unknown')
-    +' · Translation units: '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
+    +' · '+(compilerBacked?'Translation units':'Source files')+': '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
     +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
   for(const s of _armResult.statements){
     const e=s.evidence;if(!e?.patch)continue;
@@ -2140,7 +2146,7 @@ async function judgeSource(){
     details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
       +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
       +' · Vulnerable-pattern hunks: '+hunks.filter(h=>h.status==='vulnerable_pattern').length+' · Static paths: '+e.reachable_paths.length+'</p>'
-      +'<p>CFG paths: '+e.cfg.reachable_paths.length+' · Unreachable: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
+      +'<p>'+(compilerBacked?'CFG/call paths':'Syntax call candidates')+': '+e.cfg.reachable_paths.length+' · Unreachable proven: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
       +'<p>Missing evidence: '+esc(e.missing_evidence.join(', '))+'</p>'
       +'<p><b>Explanation:</b> '+esc(e.explanation?.reason||s.reason)+'</p>'
       +'<p>Claim boundary: '+esc(e.cfg.claim_boundary||e.cfg.scope)+'</p>'
@@ -2150,6 +2156,7 @@ async function judgeSource(){
       +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
   }
   renderItem4Routes();
+  if(_armResult.cfg.limitations)details+='<div class="card"><h3>Analysis limits</h3><ul>'+_armResult.cfg.limitations.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
   v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
 }
 

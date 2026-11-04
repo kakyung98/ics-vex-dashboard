@@ -30,7 +30,7 @@ Identification and operational review do not require analysis adapters or a GPU.
 For a fresh GitHub checkout, first build the generated CPE dictionary with
 `python tools/refresh_cpe_feed.py`. The current 156 MiB dictionary is kept locally
 and is not distributed as a Git blob; its importer and provenance are included.
-For source analysis, run `python tools/setup_clang.py` (requires 7-Zip), or set
+For optional C/C++ compiler-backed analysis, run `python tools/setup_clang.py` (requires 7-Zip), or set
 `ICSVEX_CLANG`.
 
 [GitHub Pages](https://kakyung98.github.io/ics-vex-dashboard/) serves the English
@@ -78,8 +78,8 @@ queues are disabled. Existing model files and historical reports are retained.
 2. Combine **Pillar + specific CWE + CVE/advisory evidence** using the versioned
    project policy. This is not an official MITRE analysis requirement.
 3. Follow four evidence workflows (corrected 2026-11-05):
-   - **Source only:** supplied source → patch/build checks → Clang/LLVM CFG/direct calls.
-   - **Source → operating context:** source analysis, then required operator facts.
+   - **Source only:** supplied source → language-aware AST/patch checks; optionally Clang/LLVM for configured C/C++ builds.
+   - **Source + operating context:** source analysis, then required operator facts.
      Explicit CVE/advisory references to network/remote access, authentication,
      privileges, configuration, enabled features or user/physical interaction trigger this conservative context requirement.
    - **Required source missing:** `under_investigation`; no questionnaire or writer bypass.
@@ -104,8 +104,8 @@ replaced the current list/keyword routing rules in `src/vex_routing.py`.
 
 | Evidence | Permitted conclusion |
 | --- | --- |
-| Supported targets absent in declared complete product/build scope, no blockers | Scoped `not_affected / vulnerable_code_not_present` |
-| Present targets unreachable from complete declared roots, no blockers | Scoped `not_affected / vulnerable_code_not_in_execute_path` |
+| Compiler-backed supported targets absent in declared complete product/build scope, no blockers | Scoped `not_affected / vulnerable_code_not_present` |
+| Compiler-backed targets unreachable from complete declared roots, no blockers | Scoped `not_affected / vulnerable_code_not_in_execute_path` |
 | Exact vendor-fixed build + scoped operator-attested installation record | `fixed`, retaining deployment-verification limits |
 | Required mapping, source/build, routing or facts unresolved | `under_investigation` |
 
@@ -113,6 +113,32 @@ Reachability does not establish attacker control/exploitation. Disabled features
 or network controls are not code absence. Advisory `likely_*` labels are separate
 from standard VEX. Source completeness/deployed binary identity are not independently
 attested. Joern, CodeQL, taint and symbolic feasibility are not implemented.
+
+### Source text analysis (not firmware binaries)
+
+Upload a ZIP containing **C, C++, Python, Java, SQL, JavaScript, Go, R or Ruby**
+source. No executable, interpreter runtime or build database is required for
+source parsing. `src/multilang_source.py` uses the pinned
+[Tree-sitter language pack](https://github.com/xberg-io/tree-sitter-language-pack/tree/v0.13.0)
+to record function/routine definitions, byte spans, file/line locations, control
+constructs and syntax-derived call candidates. Comments and string literals are
+not treated as executable calls. Parser errors, unresolved/ambiguous calls and
+file/language coverage remain visible. No uploaded code or build script runs.
+
+The source analyzer selector supports `auto` (default), `syntax` (no compilation)
+and `clang` (C/C++ build evidence). Auto uses Clang/LLVM for C/C++-only projects
+with supplied compilation settings; otherwise it parses source directly. A
+blocked compiler attempt falls back to syntax evidence and retains its diagnostics.
+Mixed-language projects use source AST analysis so non-C/C++ files are not silently
+excluded. Explicit Clang on a mixed project blocks negative verdicts.
+
+**AST support is not complete semantic analysis for every language.** Name-based
+same-file call candidates are not a CFG/runtime reachability proof. Dynamic
+dispatch, import linking, framework entry points, taint and cross-language FFI
+are unresolved; SQL dialects, quoted procedure bodies and dynamic SQL have
+additional coverage limits. Syntax analysis never clears missing/unreachable
+targets as `not_affected`. Scoped negative source decisions remain restricted to
+the guarded compiler-backed path.
 
 Default APIs: `/api/item4/start`, `/api/item4/{review_id}/questions`,
 `/api/item4/{review_id}/answers`, `/api/item4/reviews/{review_id}` and guarded
@@ -237,7 +263,7 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- Four-workflow and writer-only regression on 2026-11-05: **242 passed**, including
+- Multilingual-source, four-workflow and writer-only regression on 2026-11-05: **258 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
   Software tests are not independently labelled CVEs or model accuracy.
@@ -316,7 +342,7 @@ optional live NVD lookup reads the server-side `NVD_API_KEY`.
 | `src/item4_review.py` | Durable #4 review and mixed-branch aggregation |
 | `src/rule_analysis.py`, `src/cve_source_evidence.py` | Literal source-span extraction, rule questions and answer summaries |
 | `src/vex_roles.py` | Evidence packets, locked-decision authoring and writer validation |
-| `src/source_evidence.py`, `src/clang_source.py` | Patch/build/source/CFG analysis |
+| `src/source_evidence.py`, `src/multilang_source.py`, `src/clang_source.py` | Source AST, patch evidence and optional C/C++ build/CFG analysis |
 | `src/operational_questions.py`, `src/operational_versions.py` | Rule questionnaire lifecycle, answers and scoped version evidence |
 | `src/inference_policy.py`, `src/identification_agents.py`, `src/llm_output_schema.py` | Writer-only model boundary, lazy writer loading and output constraints |
 | `src/sbom_vex.py`, `src/sbom_schema.py`, `src/review_store.py` | Export, schema validation and persistence |

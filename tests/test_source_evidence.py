@@ -148,8 +148,8 @@ def test_upload_api_review_and_input_errors():
                          "tree_is_complete": True, "cves": [{"cve": "CVE-2099-99999", "functions": ["absent"]}]})
     assert result.status_code == 200, result.text
     assert result.json()["statements"][0]["status"] == "under_investigation"
-    assert result.json()['cfg']['engine']=='clang-llvm-ir/1'
-    assert any(b['reason']=='compilation_database_missing' for b in result.json()['cfg']['blockers'])
+    assert result.json()['cfg']['engine']=='tree-sitter-source/1'
+    assert any(b['reason']=='syntax_analysis_cannot_authorize_absence_or_unreachability' for b in result.json()['cfg']['blockers'])
     assert 'tix' not in result.json()
     assert client.post("/api/source/judge", json={"session": sid, "cves": [42]}).status_code == 400
     assert client.post("/api/source/judge", json={"session": sid, "cves": [{"cve": "CVE-2099-99999", "functions": "bad"}]}).status_code == 400
