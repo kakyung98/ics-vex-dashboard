@@ -9,12 +9,11 @@ SOURCE_HINT=re.compile(r'buffer.{0,24}overflow|out.of.bounds|use.after.free|doub
 OPERATIONAL_HINT=re.compile(r'\b(?:remote|network|authenticated|unauthenticated|privileges?|configuration|enabled|disabled|user interaction|local attacker|physical access)\b',re.I)
 
 
-def workflow(route, *, source_available=False, operational_to_source=False):
-    """Two evidence axes; five ordered workflows, never five verdicts."""
-    source = route['requirement'] == 'source_required' or operational_to_source
+def workflow(route, *, source_available=False):
+    """Source availability and context needs form four workflows, not verdicts."""
+    source = route['requirement'] == 'source_required'
     operating = route.get('operational_required', route['requirement'] == 'operational_review')
     branch = ('source_missing' if source and not source_available else
-              'operational_to_source' if operational_to_source else
               'source_to_operational' if source and operating else
               'source_only' if source else
               'operational_only' if operating else 'routing_unknown')
@@ -22,14 +21,12 @@ def workflow(route, *, source_available=False, operational_to_source=False):
         'source_missing':'Source analysis is required, but no source analysis result has been supplied.',
         'source_only':'Review source/build/path evidence for the declared product scope.',
         'source_to_operational':'Source analysis is recorded; operating context is also required by CVE/advisory evidence.',
-        'operational_to_source':'Operational discovery requires source follow-up; retain both evidence branches.',
         'operational_only':'Use common and CVE-specific operator-answerable rule questions.',
         'routing_unknown':'CWE / advisory evidence is insufficient to determine the analysis requirement.'}[branch]
     return {**route, 'source_required': source, 'operational_required': operating, 'reason':reason,
-            'workflow_policy_version':'five-branch-v1',
+            'workflow_policy_version':'four-branch-v1',
             'source_available': bool(source_available), 'workflow_branch': branch,
-            'entry_direction': 'operational_to_source' if operational_to_source else
-                'source_to_operational' if source and operating else 'source' if source else 'operational',
+            'entry_direction': 'source_to_operational' if source and operating else 'source' if source else 'operational',
             'route': 'defer_missing_source' if source and not source_available else
                 'source_analysis' if source else 'operational_questions' if operating else 'defer_routing_unknown'}
 

@@ -1,6 +1,6 @@
 # #4 CWE-first evidence routing
 
-Updated 2026-11-05 with five evidence workflows. User-selected basis: **Pillar + specific CWE + CVE / advisory evidence**.
+Updated 2026-11-05 with four evidence workflows. User-selected basis: **Pillar + specific CWE + CVE / advisory evidence**.
 The previous question “Do you have source?” no longer selects the default method.
 No VEXGen attribution or TIX output is used.
 
@@ -32,23 +32,24 @@ No VEXGen attribution or TIX output is used.
    hashes and per-CVE results. CycloneDX export merges every reviewed CVE into a
    copy of the original inventory. SPDX retains standalone VEX export.
 
-## Five workflows and one decision
+## Four workflows and one decision
 
 | Workflow | Ordered evidence | Missing evidence behavior |
 | --- | --- | --- |
 | 1. Source only | Source/build/path result | Retain analysis blockers |
 | 2. Source → operating context | Source result, then operator records | No final authoring until both results exist |
 | 3. Required source missing | No source result | `under_investigation`, no operator-answer bypass |
-| 4. Operating context → source | Operator reports a custom/modified implementation, then source review | Preserve answers; use workflow 3 until source arrives |
-| 5. Operating context only | Rule questionnaire and installed-build records | Unknown facts remain unresolved |
+| 4. Operating context only | Rule questionnaire and installed-build records | Unknown facts remain unresolved |
 
 Route schema 2 records separate `source_required` and `operational_required` axes,
-`workflow_branch`, `entry_direction` and `workflow_policy_version=five-branch-v1`.
-Unresolved routing remains an additional deferral, not a sixth evidence workflow.
+`workflow_branch`, `entry_direction` and `workflow_policy_version=four-branch-v1`.
+Unresolved routing remains an additional deferral, not a fifth evidence workflow.
 Review schema 4 retains per-CVE `branch_evidence`, `evidence_progress` and an
 append-only evidence hash/history. The original case ID is shared across stages.
 Reopening an unchanged questionnaire retains IDs and restores submitted answers.
-The original CWE routing requirement remains available when workflow 4 escalates.
+Operating-only questionnaires do not change the source requirement. There is no
+custom-implementation escalation question or separate operating-to-source route.
+Existing five-path reviews require a new review; their historical evidence is retained.
 
 One deterministic combination step locks the status. Missing required results or
 conflicting non-deferred branch statuses keep `under_investigation`; neither the
@@ -60,7 +61,7 @@ submission of identical evidence reuses the prior authoring result.
 
 These changes do not introduce an `affected` classifier, independent operator
 verification, exhaustive prerequisite coverage or a reviewed 944-CWE policy matrix.
-The dataset counts below describe the earlier routing snapshot, not new five-path
+The dataset counts below describe the earlier routing snapshot, not new four-path
 ground truth or a revalidated benchmark.
 
 The official hierarchy classifies weaknesses; **MITRE does not prescribe this
