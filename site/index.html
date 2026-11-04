@@ -293,7 +293,7 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 <textarea id="cm-sbom" aria-label="SBOM JSON" spellcheck="false" placeholder='{"bomFormat":"CycloneDX","components":[...]}'></textarea>
 <div class="hint">Upload an SBOM from your asset or paste JSON below. The sample is synthetic and intended only to check the workflow.</div>
 <div class="actions"><button class="primary" id="cm-run">Identify CVE candidates →</button><button id="cm-download" disabled>Download results JSON</button><span class="hint" id="cm-inputCount"></span></div></section>
-<section class="panel settings"><h2 class="setup-title">Analysis setup</h2><p class="hint">Keep the defaults to begin. Open settings to compare methods or change the evidence source.</p><details class="advanced-settings"><summary>Model and evidence settings</summary><div class="field"><label for="cm-mode">02  Identification method</label><input type="hidden" id="cm-mode" value="unified"><p><strong>Unified L2 / L3 / L4</strong></p><p class="hint">L2 candidate-ID ranking + trained L3/L4 + dictionary evidence checks.</p></div>
+<section class="panel settings"><h2 class="setup-title">Analysis setup</h2><p class="hint">Keep the defaults to begin. Open settings to compare methods or change the evidence source.</p><details class="advanced-settings"><summary>Evidence settings</summary><div class="field"><label for="cm-mode">02  Identification method</label><input type="hidden" id="cm-mode" value="unified"><p><strong>Unified L2 / L3 / L4</strong></p><p class="hint">Rule-based product retrieval, version preservation and CPE validation. No model inference.</p></div>
 <div class="field"><label for="cm-lookup">03  Evidence source</label><select id="cm-lookup"><option value="local">Local NVD + CISA snapshots</option><option value="live">Live NVD + local CISA snapshot</option><option value="none">No lookup · Defer identification</option></select><p class="hint" id="cm-lookupHint">Look up product CPEs and CISA advisories with matching vendor and product phrases. Unknown versions allow candidate retrieval, but applicability remains unconfirmed.</p></div>
 </details><div class="modelinfo"><div style="border-top:1px solid var(--line);padding-top:12px"><strong>Agent availability</strong><div id="cm-models"><p class="hint">Checking saved adapter weights.</p></div><p class="hint" id="cm-modelDataset"></p></div></div></section></div>
 <section class="progress" aria-label="Analysis progress"><div class="stages"><div class="stage" data-stage="l2_name"><span>L2 / NAME</span><strong>Name normalization</strong></div><div class="stage" data-stage="l3_version"><span>L3 / VERSION</span><strong>Version preservation</strong></div><div class="stage" data-stage="l4_identifier"><span>L4 / IDENTIFIER</span><strong>CPE dictionary verification</strong></div><div class="stage" data-stage="cve_matching"><span>NVD / CANDIDATES</span><strong>CVE candidate retrieval</strong></div></div>
@@ -468,7 +468,7 @@ async function renderOcForm(box){
   _operationPlan=null;
   box.innerHTML='<h3>Tell us how the asset is used</h3><p>Generate questions for each CVE, then answer using actual configuration and operating records. Choose unknown when you cannot confirm a fact. Enter the installed product and version once per component.</p>'
     +'<p class="hint">These answers support a review; they do not establish verified code absence.</p>'
-    +'<details class="review-help"><summary>How this review works</summary><p>Only CVEs routed to operational review enter this form. Questions cover common weakness-type checks and CVE-specific operating facts. Required-source cases remain under investigation until source analysis is completed. Question generation and answer assessment use experimental tuned Qwen3-8B adapters, validation and one base-model fallback on failure. Same-base review is not independent validation.</p></details>'
+    +'<details class="review-help"><summary>How this review works</summary><p>Only CVEs routed to operational review enter this form. Questions cover common weakness-type checks and CVE-specific operating facts. Required-source cases remain under investigation until source analysis is completed. Questions use source-linked rule templates. Answers are summarized by deterministic rules and version-evidence checks. Only the final VEX explanation uses an LLM.</p></details>'
     +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
 async function generateOperationQuestions(){
@@ -480,7 +480,7 @@ async function generateOperationQuestions(){
     if(!r.ok)throw new Error(await r.text());
     _operationPlan=await r.json();
     box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card operation-case" style="margin-top:14px"><div class="case-heading"><h3>'+esc(c.cve)+'</h3><span class="pill">Review items: '+esc(String(c.questions.filter(q=>!q.deprecated_version_field).length))+'</span></div><p class="hint">'+esc(c.generation.status==='validated'?'Source-linked draft questions. Review each question before answering.':'Question generation: '+c.generation.status)+'</p>'
-      +'<details class="review-disclosure"><summary>Model and generation record</summary><p class="hint">Model: '+esc(c.generation.fine_tuned_for_role?'Experimental tuned adapter':c.generation.used_base_fallback?'Base-model fallback':'Base model')+' · Attempts retained: '+esc(String((c.generation.attempts||[]).length))+'</p></details>'
+      +'<details class="review-disclosure"><summary>Rule and source record</summary><p class="hint">Model: '+esc(c.generation.method||'Rule templates')+' · Attempts retained: '+esc(String((c.generation.attempts||[]).length))+'</p></details>'
       +((c.generation.normalizations||[]).length?'<p class="hint">Presentation normalization was applied. Original model output and exact changes are retained below.</p>':'')
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
       +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div class="operation-question"><span class="question-kind">'+esc(q.origin==='system'?'Installation record':q.scope==='common'?'Common check':'CVE-specific check')+'</span><label class="question-title" for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label>'
@@ -551,7 +551,7 @@ function _versionEvidenceHtml(result){
 
 function _groundedPipelineHtml(result){
   if(!result.pipeline)return '';
-  let html='<div class="card"><h3>Shared LLM pipeline</h3><p>Condition / function extraction → evidence decision → VEX authoring</p>'
+  let html='<div class="card"><h3>Rule analysis and VEX authoring</h3><p>Rule-based extraction → evidence decision → final LLM VEX explanation</p>'
     +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+(result.pipeline.model_eligible_cases??result.pipeline.case_count)+'. Generated text is a draft for review.</p></div>';
   for(const s of result.statements){
     if(s.extraction?.status==='not_run' && s.authoring?.status==='not_run')continue;
@@ -1533,17 +1533,17 @@ el('drop').ondragover=e=>{e.preventDefault();if(!el('file').disabled)el('drop').
 async function request(url,options){const r=await fetch(url,options);const d=await r.json();if(!r.ok)throw new Error(typeof d.detail==='string'?d.detail:JSON.stringify(d.detail));return d}
 let modelInfo=null;
 function showMethod(){
- el('modelBadge').textContent='Local AI · Qwen3-8B';
+ el('modelBadge').textContent='Rule-based identification · CPU';
  el('modelBadge').classList.toggle('good',!!modelInfo?.ready);
  el('models').replaceChildren();
  const labels=['L2 · Candidate IDs + model-name preservation','L3 · Version preservation + source checks','L4 · CPE selection + evidence validation'];
- labels.forEach((label,i)=>{const ready=!!modelInfo?.tasks[i]?.ready;const row=node('div',undefined,'modelrow');row.append(node('span',label),node('span',i===0?'Base ranking · new contract':ready?'Adapter ready':'Unavailable',ready?'good':'warn'));el('models').append(row)});
- el('modelDataset').textContent='L2 now ranks supplied candidate IDs with base inference and model-name checks. Its old name-generation adapter is not executed. The new L2 contract has not been fine-tuned or independently evaluated.';
+ labels.forEach((label,i)=>{const ready=!!modelInfo?.tasks[i]?.ready;const row=node('div',undefined,'modelrow');row.append(node('span',label),node('span',ready?'Rules ready':'Dictionary unavailable',ready?'good':'warn'));el('models').append(row)});
+ el('modelDataset').textContent='Product retrieval, version checks and identity validation use deterministic rules. LLM inference is reserved for the final VEX explanation.';
 }
 async function loadModels(){try{
  modelInfo=await request('/api/cve-match/models');showMethod();
  if(!modelInfo.local_snapshot_available){el('lookup').value='live';el('lookup').onchange()}
- if(!modelInfo.ready)el('status').textContent='One or more trained adapters are unavailable.';
+ if(!modelInfo.ready)el('status').textContent='The local product dictionary is unavailable.';
 }catch(e){el('modelBadge').textContent='Metadata unavailable';el('status').textContent=e.message}}
 function renderDiagnostics(row){
  const d=row.diagnostics;if(!d)return null;
@@ -1616,7 +1616,7 @@ function render(data,job){
   if(s.model_stage_errors)el('resultNotice').append(node('p',`${s.model_stage_errors} model-stage error(s) were recorded; retained evidence may still support candidate retrieval.`));
   const notes=node('details',undefined,'review-disclosure');notes.append(node('summary','Lookup scope, limitations and provenance'));notices.forEach(text=>notes.append(node('p',text)));el('resultNotice').append(notes);
  }
- const modes={unified:'Source-preserving L2 + trained L3/L4 + evidence checks',rules:'Legacy rules',base:'Legacy Qwen base',tuned:'Legacy fine-tuned Qwen',evidence:'Evidence v3 · CPU',evidence_llm:'Evidence v3 · Qwen base review (not fine-tuned)'};el('resultMeta').textContent=`${modes[data.agent_mode]} · ${data.model_version||''} · ${job.finished&&job.started?Math.round(job.finished-job.started)+'s':''}`
+ const modes={deterministic:'Deterministic identification · no LLM',unified:'Source-preserving L2 + trained L3/L4 + evidence checks',rules:'Legacy rules',base:'Legacy Qwen base',tuned:'Legacy fine-tuned Qwen',evidence:'Evidence v3 · CPU',evidence_llm:'Evidence v3 · Qwen base review (not fine-tuned)'};el('resultMeta').textContent=`${modes[data.agent_mode]} · ${data.model_version||''} · ${job.finished&&job.started?Math.round(job.finished-job.started)+'s':''}`
  window.dispatchEvent(new CustomEvent('icsvex:candidates',{detail:{jobId:job.id,result:data}}));
 }
 async function poll(id){if(activeJob!==id)return;try{const j=await request('/api/cve-match/jobs/'+id);const p=j.progress;el('status').textContent=`${labels[p.stage]||p.stage} · ${p.done}/${p.total} processed${p.component?' · '+p.component:''}`;el('bar').style.width=(p.total?100*p.done/p.total:0)+'%';document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.toggle('active',n.dataset.stage===p.stage));if(j.status==='completed'||j.status==='failed'){activeJob=null;sessionStorage.removeItem('cve-job');busy(false);document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.remove('active'));if(j.status==='failed'){el('status').textContent='Analysis failed: '+j.error;return}render(j.result,j);el('bar').style.width='100%';el('bar').style.background=j.result.summary.errors?'var(--amber)':'var(--green)';el('status').textContent=j.result.summary.errors?`Finished with errors · ${j.result.summary.errors} / ${p.total} components failed`:`Processing finished · ${p.total} components · Identity/application may remain unresolved`;return}}catch(e){el('status').textContent='Could not retrieve task status: '+e.message;activeJob=null;busy(false);return}setTimeout(()=>poll(id),1400)}
