@@ -20,7 +20,7 @@ SOURCE_DECISION_HTML = '''
 <dt>Operational branch</dt><dd>Rule templates produce common weakness-type and CVE-specific questions that an operator can answer using configuration and operating records.</dd>
 <dt>Answers</dt><dd>Collect yes / no / unknown, installed-build facts and supporting records. Unknown operating facts remain unknown.</dd>
 <dt>Evidence checks</dt><dd>Validate source references and output format. A valid reference does not establish semantic correctness.</dd></dl>
-<p class="method-boundary">Source-required cases never enter the operational questionnaire. In mixed reviews, results from both branches are preserved per CVE.</p>
+<p class="method-boundary">Five workflows: source only; source → operating context; required source missing; operating context → source; operating context only. Source-required cases enter an operating questionnaire only after a source result is recorded. A reported custom implementation requires source follow-up. Both branches retain one case ID and their evidence; missing required results or conflicting decisions remain under investigation.</p>
 </div></details>
 <details class="method-topic"><summary>3 · Decide the status<span class="topic-prompt">View details</span></summary><div class="topic-body">
 <dl><dt><code>not_affected</code></dt><dd>Supported targets are absent or unreachable within the required complete scope, with no analysis blockers.</dd>

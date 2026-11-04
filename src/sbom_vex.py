@@ -74,7 +74,7 @@ def merge(sbom,review,cases):
             record['id']=s['cve'];record['bom-ref']='vex-'+hashlib.sha256((s['cve']+'|'+ref).encode()).hexdigest()[:24]
             record.setdefault('source',{'name':'NVD','url':'https://nvd.nist.gov/vuln/detail/'+s['cve']})
             r=version_rows.get(ref);status=s['status'];just=s.get('justification')
-            if r:
+            if r and s.get('evidence_progress',{}).get('ready_for_authoring',True) and not s.get('branch_evidence',{}).get('source'):
                 if r['state']=='listed_fixed' and r['operator_attested'] and r['operator_evidence']:status='fixed';just=None
                 else:status='under_investigation';just=None
             draft=s.get('document_draft');text=draft.get('impact_statement') if draft else s.get('reason','Evidence incomplete.')

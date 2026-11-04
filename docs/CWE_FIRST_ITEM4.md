@@ -1,6 +1,6 @@
 # #4 CWE-first evidence routing
 
-Implemented 2026-11-02. User-selected basis: **Pillar + specific CWE + CVE / advisory evidence**.
+Updated 2026-11-05 with five evidence workflows. User-selected basis: **Pillar + specific CWE + CVE / advisory evidence**.
 The previous question “Do you have source?” no longer selects the default method.
 No VEXGen attribution or TIX output is used.
 
@@ -15,8 +15,12 @@ No VEXGen attribution or TIX output is used.
    defers. A bare Pillar or missing/unsupported CWE is unresolved.
 4. Source required + no source: immediately assign `under_investigation` with a
    missing-source rationale. **No extraction, operational question or writer call.**
-5. Source supplied: existing Clang/LLVM source/build analysis runs for the required
-   group. Missing function mappings, compilation or scope blockers cannot establish absence.
+5. Source supplied: Clang/LLVM source/build analysis runs for the required group.
+   Explicit context terms (remote/network access, authentication, privileges,
+   configuration, enabled/disabled features, user interaction, local attacker or
+   physical access) require a subsequent operating review. Exact triggering spans
+   are retained. This is conservative routing, not complete condition extraction.
+   Missing function mappings, compilation or scope blockers cannot establish absence.
 6. Operator review uses deterministic source-span extraction and source-linked
    CWE rule templates with common/specific scopes. Operators supply observed
    facts and records. Answer summaries and version/evidence gates are rules.
@@ -27,6 +31,37 @@ No VEXGen attribution or TIX output is used.
 8. A durable master review retains both branches, the original SBOM, policy/taxonomy
    hashes and per-CVE results. CycloneDX export merges every reviewed CVE into a
    copy of the original inventory. SPDX retains standalone VEX export.
+
+## Five workflows and one decision
+
+| Workflow | Ordered evidence | Missing evidence behavior |
+| --- | --- | --- |
+| 1. Source only | Source/build/path result | Retain analysis blockers |
+| 2. Source → operating context | Source result, then operator records | No final authoring until both results exist |
+| 3. Required source missing | No source result | `under_investigation`, no operator-answer bypass |
+| 4. Operating context → source | Operator reports a custom/modified implementation, then source review | Preserve answers; use workflow 3 until source arrives |
+| 5. Operating context only | Rule questionnaire and installed-build records | Unknown facts remain unresolved |
+
+Route schema 2 records separate `source_required` and `operational_required` axes,
+`workflow_branch`, `entry_direction` and `workflow_policy_version=five-branch-v1`.
+Unresolved routing remains an additional deferral, not a sixth evidence workflow.
+Review schema 4 retains per-CVE `branch_evidence`, `evidence_progress` and an
+append-only evidence hash/history. The original case ID is shared across stages.
+Reopening an unchanged questionnaire retains IDs and restores submitted answers.
+The original CWE routing requirement remains available when workflow 4 escalates.
+
+One deterministic combination step locks the status. Missing required results or
+conflicting non-deferred branch statuses keep `under_investigation`; neither the
+writer nor component-specific SBOM version merging may bypass that lock. A
+submitted but inconclusive branch remains inconclusive evidence. Final writing
+is permitted for its under-investigation explanation after both required results
+exist. The writer receives summaries and references from both branches. Repeated
+submission of identical evidence reuses the prior authoring result.
+
+These changes do not introduce an `affected` classifier, independent operator
+verification, exhaustive prerequisite coverage or a reviewed 944-CWE policy matrix.
+The dataset counts below describe the earlier routing snapshot, not new five-path
+ground truth or a revalidated benchmark.
 
 The official hierarchy classifies weaknesses; **MITRE does not prescribe this
 source/operational routing policy**. The current conservative fallback requires

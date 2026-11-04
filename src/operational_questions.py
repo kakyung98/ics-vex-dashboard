@@ -78,6 +78,11 @@ def create(cases,product,run_id,simulation=False,sbom=None,question_role='operat
             {'id':case['case_id']+':patch','origin':'system','answer_type':'yes_no_unknown',
              'question':'Has the vendor fix for this CVE been installed on this asset, with a build or update record?',
              'purpose':'Record patch evidence without presuming a verified fixed build.','evidence':''}])
+        questions.append({'id':case['case_id']+':custom-implementation','origin':'system',
+            'answer_type':'yes_no_unknown','kind':'discovery',
+            'question':'On this asset, has the component implementation been locally modified or replaced with custom code?',
+            'purpose':'A reported custom implementation requires source review; this answer cannot prove applicability or safety.',
+            'evidence':'Workflow discovery policy; provide a customization or maintenance record.'})
         plan['cases'].append({'case':case,'questions':questions,'generation':{**output,'status':'validated' if valid else 'rejected',
                               'checks':{'source_ids_and_schema':valid},'attempts':attempts,'errors':errors,'normalizations':normalizations,'quote_resolution':'server_resolved_source_ids',
                               'semantic_review_required':True,'model_strict_format_passed':bool(valid and not normalizations),
@@ -96,7 +101,7 @@ def public(plan):
         for r in plan['cases']]}
 
 
-def assess(plan_id,answers,component_facts=None):
+def assess(plan_id,answers,component_facts=None,*,author=True):
     with _lock:plan=deepcopy(_plans.get(plan_id))
     if not plan:plan=STORE.get('plan',plan_id)
     if not plan or time.time()-plan['created_at']>TTL:raise KeyError('Questionnaire expired or not found. Generate it again.')
@@ -146,7 +151,7 @@ def assess(plan_id,answers,component_facts=None):
         if valid and p['assessment']!=label:reasons.append('The advisory suggestion was superseded by evidence/version gates and is not decision evidence.')
         reasons.append('Operator reports: '+', '.join(q['id'].split(':')[-1]+'='+q['answer']['value'] for q in qa if not q.get('deprecated_version_field'))+'.')
         effective={'assessment':label,'explanation':' '.join(reasons),'source':'evidence_gates_and_operator_reports','raw_model_assessment':p.get('assessment') if valid else None}
-        st={'cve':case['cve'],'status':status,'justification':justification,'arm':'operational-context',
+        st={'cve':case['cve'],'case_id':case['case_id'],'status':status,'justification':justification,'arm':'operational-context',
             'scope':'operator-reported operational context','operational_assessment':label,
             'reason':reasons[0],
             'missing':[{'requirement':x} for x in missing],
@@ -159,13 +164,13 @@ def assess(plan_id,answers,component_facts=None):
     result={'arm':'operational-context','questionnaire_id':plan_id,'statements':statements,'total':len(statements),
             'by_status':dict(Counter(s['status'] for s in statements))}
     result['component_facts']=facts
-    result=VR.finish(result,[r['case'] for r in plan['cases']])
-    if plan.get('sbom',{} ) and plan['sbom'].get('bomFormat')=='CycloneDX':
+    if author:result=VR.finish(result,[r['case'] for r in plan['cases']])
+    if author and plan.get('sbom',{} ) and plan['sbom'].get('bomFormat')=='CycloneDX':
         from src.sbom_vex import merge
         result['sbom_vex']=merge(plan['sbom'],result,[r['case'] for r in plan['cases']])
         from src.sbom_schema import validate
         result['sbom_vex_validation']=validate(result['sbom_vex'])
-    elif plan.get('sbom'):
+    elif author and plan.get('sbom'):
         result['sbom_vex_validation']={'status':'unavailable','reason':'Embedded VEX export currently supports CycloneDX. Use the standalone OpenVEX or CSAF export for this input format.'}
     STORE.put('review',plan_id,result,TTL)
     return result

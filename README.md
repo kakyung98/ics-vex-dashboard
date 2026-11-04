@@ -1,7 +1,7 @@
 # ICS-VEXForge
 
 Local ICS/OT **SBOM → CVE candidates → evidence-based VEX review**.
-Updated **2026-11-04 (KST)**. Retained experiments are not current independent accuracy.
+Updated **2026-11-05 (KST)**. Retained experiments are not current independent accuracy.
 
 **Current execution policy:** product/CVE identification, CWE routing, source
 analysis, condition/function extraction, operational questions and answer
@@ -77,13 +77,21 @@ queues are disabled. Existing model files and historical reports are retained.
    984 weaknesses, 10 Pillars.
 2. Combine **Pillar + specific CWE + CVE/advisory evidence** using the versioned
    project policy. This is not an official MITRE analysis requirement.
-3. **Source required and supplied:** extract literal condition/function candidates with rules, inspect patches
-   and actual build evidence, then analyze C/C++ with Clang/LLVM CFG/direct calls.
-4. **Source required but missing:** immediately retain `under_investigation`.
-   Do not run extraction, operational questions or the writer for that case.
-5. **Operational review supported:** extract conditions with source-span patterns; select common
-   weakness-type and CVE-linked operator question templates. Collect
-   yes/no/unknown, installed-build facts and supporting records.
+3. Follow five evidence workflows (implemented 2026-11-05):
+   - **Source only:** supplied source → patch/build checks → Clang/LLVM CFG/direct calls.
+   - **Source → operating context:** source analysis, then required operator facts.
+     Explicit CVE/advisory references to network/remote access, authentication,
+     privileges, configuration, enabled features or user/physical interaction trigger this conservative context requirement.
+   - **Required source missing:** `under_investigation`; no questionnaire or writer bypass.
+   - **Operating context → source:** a reported custom/modified implementation
+     requires source review; retain the existing answers while waiting for source.
+   - **Operating context only:** source-linked rule questions, installed-build
+     facts and supporting records. Unknown answers remain unknown.
+4. Accumulate source and operating evidence under the same CVE case ID.
+   Required evidence missing or conflicting decisions → `under_investigation`.
+   Completing a branch is not proof of exploitability or independent verification.
+5. Author only after the required evidence branches have submitted results.
+   Identical evidence is not authored twice. Preserve both branch records and their history.
 6. **Routing unresolved:** retain `under_investigation`, without a questionnaire bypass.
 7. Code locks status/scope. The writer drafts an explanation; validation rejects
    changed IDs/status, invalid references, malformed output and repetition.
@@ -231,7 +239,7 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- Writer-only transition regression on 2026-11-04: **234 passed**, including
+- Five-workflow and writer-only regression on 2026-11-05: **241 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
   Software tests are not independently labelled CVEs or model accuracy.

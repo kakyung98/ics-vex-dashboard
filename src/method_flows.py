@@ -121,14 +121,20 @@ def vex_flow():
         node('Extract supported conditions', 'Pattern matches with original source spans', 'code', 'RULES'),
         node('Common + specific questions', 'CWE-specific source-linked templates', 'code', 'RULE TEMPLATES'),
         node('Answers & assessment', 'Operator facts + deterministic evidence gates', 'human', 'USER + RULES'))
-    return header('vex-review-flow','From a candidate to a VEX assessment','The CVE evidence determines whether to inspect source code or ask about asset operation.')+(
+    return header('vex-review-flow','From a candidate to a VEX assessment','Five workflows share one CVE review. Source and operating evidence can be required together.')+(
         rail(node('CVE cases', 'Component-linked candidates', 'data', 'INPUT'),
              node('Resolve CWE → Pillars', 'Pinned official hierarchy; keep every path'),
              node('Determine analysis need', 'Specific CWE + CVE / advisory evidence'))
         +'<aside class="mf-side-note"><strong>Unresolved routing → under_investigation.</strong>'
         +'<span>Project policy predictions; independent adjudication pending.</span></aside>'
-        +'<div class="mf-fork-title">Does this CVE require source analysis?</div>'
+        +'<div class="mf-fork-title">Which evidence is required?</div>'
         +lanes('Yes <small>Source required</small>',source,'No <small>Operator review</small>',operational)
+        +'<div class="mf-explanation"><ol><li><strong>Source only:</strong> supplied source → build / path analysis.</li>'
+        +'<li><strong>Source → operating context:</strong> source analysis → required exposure, authentication or configuration records.</li>'
+        +'<li><strong>Required source missing:</strong> under_investigation; operator reports cannot bypass the requirement.</li>'
+        +'<li><strong>Operating context → source:</strong> reported custom implementation → required source analysis.</li>'
+        +'<li><strong>Operating context only:</strong> supported rule questions → operating and installed-build records.</li></ol>'
+        +'<p>Both evidence branches retain the same case ID. A missing required branch or conflicting conclusions keeps the case under investigation. The writer runs after evidence collection; identical evidence is not authored again.</p></div>'
         +DOWN+'<div class="mf-gate"><span class="mf-kind">CODE · EVIDENCE GATES</span>'
         +'<strong class="mf-title">Lock status, evidence &amp; scope</strong>'
         +'<span class="mf-sub">Source-required cases cannot bypass missing source through operator answers.</span></div>'+DOWN
@@ -136,6 +142,6 @@ def vex_flow():
               node('Validate the draft', 'JSON · IDs · citations · repetition'),
               node('Merge & export', 'Original SBOM + VEX · OpenVEX · CSAF', 'data', 'OUTPUT'))
         +'<details class="mf-explanation"><summary>What happens when evidence is missing?</summary>'
-        +'<p>Missing required source or unresolved routing produces a code-only under_investigation statement. No extraction, operator questionnaire or writer is run for that case. Operator questions collect observable facts; unknown answers remain unknown. In mixed reviews, each CVE retains its own route and result.</p></details>'
+        +'<p>Initially missing required source or unresolved routing produces a code-only under_investigation statement. If an operating review later discovers a source requirement, its existing answers are retained while the case waits for source. Source-required cases that also need operating context enter the questionnaire after source analysis. Unknown answers remain unknown; completing a form does not prove exploitability.</p></details>'
         +'<div class="mf-foot"><p>Code assigns the standard status. LLM output remains a review draft. A rejected explanation does not erase the evidence.</p>'
         +'<a href="sbom-to-cve.html#sbom-cve-flow">← SBOM → CVE workflow</a></div></figure>')
