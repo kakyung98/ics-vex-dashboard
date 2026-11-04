@@ -96,7 +96,7 @@ def test_mixed_reviews_preserve_source_and_blocked_results(monkeypatch):
     source_statement = {**result['statements'][0], 'arm': 'source-code', 'status': 'not_affected'}
     I4.record_source(rid, {'statements': [source_statement]})
     operational_statement = deepcopy(result['statements'][1]);operational_statement['reason'] = 'Operator review retained.'
-    monkeypatch.setattr(I4.OQ, 'assess', lambda *a: {'statements': [operational_statement]})
+    monkeypatch.setattr(I4.OQ, 'assess', lambda *a, **kw: {'statements': [operational_statement]})
     combined = I4.answers(rid, {})
     assert [s['status'] for s in combined['statements']] == ['not_affected', 'under_investigation']
     assert combined['routes'][blocked['cve']]['route'] == 'source_analysis'

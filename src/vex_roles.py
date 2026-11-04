@@ -39,7 +39,7 @@ def prepare(cases,*,product='unspecified-product',run_id='review',simulation=Fal
     prepared=[]
     for original in cases:
         c=dict(original);cve=c['cve']
-        c['case_id']='case-'+fingerprint([run_id,product,cve,c.get('mappings',[]),c.get('functions',[]),
+        c['case_id']=c.get('case_id') or 'case-'+fingerprint([run_id,product,cve,c.get('mappings',[]),c.get('functions',[]),
                                         c.get('component_present'),c.get('version_in_range'),
                                         fingerprint(c.get('description','')),c.get('vector'),bool(simulation)])[:20]
         c['product']=str(product or 'unspecified-product');c['simulation']=bool(simulation)
@@ -66,6 +66,12 @@ def decision_packet(case,statement,result):
     case_id=case['case_id'];evidence=statement.get('evidence') or {}
     scope=(evidence.get('cfg') or {}).get('claim_boundary') or statement.get('scope') or result.get('arm','review')
     facts=[{'id':case_id+':decision','text':statement.get('reason') or 'Evidence is incomplete.'}]
+    if statement.get('branch_evidence'):
+        facts.append({'id':case_id+':combined-evidence','text':json.dumps({
+            'workflow':statement.get('analysis_route',{}).get('workflow_branch'),
+            'branches':{k:{'status':s['status'],'scope':s.get('scope'),'reason':s.get('reason')}
+                        for k,s in statement['branch_evidence'].items()},
+            'progress':statement.get('evidence_progress')},ensure_ascii=False)})
     missing=list(evidence.get('missing_evidence',[]))
     for i,item in enumerate(statement.get('missing',[])):
         missing.append(str(item.get('requirement') or item))

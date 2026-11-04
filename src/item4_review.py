@@ -10,7 +10,8 @@ import uuid
 import threading
 from src import review_store as STORE
 from src import operational_questions as OQ
-from src.vex_routing import classify
+from src.vex_routing import classify, workflow
+from src import vex_roles as VR
 from src.cve_source_evidence import catalog
 
 TTL = 86400
@@ -30,7 +31,7 @@ def result(master):
     counts = dict(Counter(s['status'] for s in statements))
     eligible = [s for s in statements if s['analysis_route']['requirement'] == 'operational_review'
                 or s['analysis_route']['route'] == 'source_analysis']
-    out = {'schema': 'ics-vex-item4-review/3', 'review_id': master['id'],
+    out = {'schema': 'ics-vex-item4-review/4', 'review_id': master['id'],
            'arm': 'cwe-first', 'statements': statements, 'total': n, 'by_status': counts,
            'deferred': counts.get('under_investigation', 0),
            'deferral_rate': counts.get('under_investigation', 0) / n,
@@ -46,6 +47,7 @@ def result(master):
            'vex_drafts': [s['document_draft'] for s in statements if s.get('document_draft')],
            'routing_is_independently_validated': False,
            'component_facts': deepcopy(master.get('component_facts', {}))}
+    out['evidence_history'] = deepcopy(master.get('history', []))
     sbom = master.get('sbom')
     if sbom and sbom.get('bomFormat') == 'CycloneDX':
         from src.sbom_vex import merge
@@ -61,13 +63,15 @@ def start(cases, product='unspecified-product', simulation=False, sbom=None):
     if not 1 <= len(cases) <= 100 or len({c['cve'] for c in cases}) != len(cases):
         raise ValueError('Provide 1 to 100 distinct CVEs.')
     master = {'id': uuid.uuid4().hex, 'created_at': time.time(), 'product': product,
-              'simulation': simulation, 'sbom': deepcopy(sbom), 'cases': [], 'statements': {}}
+              'simulation': simulation, 'sbom': deepcopy(sbom), 'cases': [], 'statements': {},
+              'evidence': {}, 'history': []}
     for original in cases:
         c = deepcopy(original)
         c['routing_sources'] = catalog(c['cve'], c.get('description', ''))
         c['analysis_route'] = classify(c)
         c['case_id'] = master['id'] + ':' + c['cve']
         master['cases'].append(c)
+        master['evidence'][c['cve']] = {}
         route = c['analysis_route']
         reason = route['reason']
         if route['requirement'] == 'operational_review':
@@ -79,6 +83,9 @@ def start(cases, product='unspecified-product', simulation=False, sbom=None):
             'analysis_route': route, 'extraction': {'status': 'not_run', 'usable': False},
             'authoring': {'status': 'not_run', 'prediction': None, 'reason': reason},
             'document_draft': None, 'pipeline_complete': False, 'review_required': True,
+            'evidence_progress':{'source':False, 'operational':False, 'ready_for_authoring':False,
+                'pending':(['Required source analysis is missing.'] if route['source_required'] else []) +
+                          (['Required operational review is missing.'] if route['operational_required'] else [])},
             'missing': [{'requirement': reason}]}
     STORE.put('item4_review', master['id'], master, TTL)
     return result(master)
@@ -87,35 +94,98 @@ def start(cases, product='unspecified-product', simulation=False, sbom=None):
 def questions(review_id):
     with _lock:
         master = get(review_id)
-        cases = [c for c in master['cases'] if c['analysis_route']['requirement'] == 'operational_review']
+        cases = [c for c in master['cases'] if c['analysis_route'].get('operational_required') and
+                 (not c['analysis_route'].get('source_required') or
+                  master.get('evidence', {}).get(c['cve'], {}).get('source'))]
         if not cases:
             raise ValueError('No CVEs are eligible for operational questions. Supply required source or resolve routing evidence.')
+        # Reopening the form must retain question IDs and entered answers.
+        if master.get('operational_plan_id') and master.get('operational_plan_cves') == [c['cve'] for c in cases]:
+            plan = STORE.get('plan', master['operational_plan_id'])
+            if plan:
+                return {**OQ.public(plan), 'review_id': review_id, 'routes': {c['cve']: c['analysis_route'] for c in master['cases']}}
         plan = OQ.create(cases, master['product'], review_id, master['simulation'],
                          sbom=master.get('sbom'), question_role='item4-questions')
         master['operational_plan_id'] = plan['id']
+        master['operational_plan_cves'] = [c['cve'] for c in cases]
         STORE.put('item4_review', review_id, master, TTL)
         return {**plan, 'review_id': review_id, 'routes': {c['cve']: c['analysis_route'] for c in master['cases']}}
 
 
+def _combine(master, c):
+    """Single deterministic decision from the accumulated, CVE-scoped evidence."""
+    evidence = master['evidence'][c['cve']]
+    source, operating = evidence.get('source'), evidence.get('operational')
+    route = c['analysis_route']
+    missing = []
+    if route['source_required'] and not source:missing.append('Required source analysis is missing.')
+    if route['operational_required'] and not operating:missing.append('Required operational review is missing.')
+    base = deepcopy(source or operating or master['statements'][c['cve']])
+    if source and operating:
+        for key in ('operational_review', 'operational_assessment'):
+            if key in operating:base[key] = deepcopy(operating[key])
+        decisions = {s['status'] for s in (source, operating)} - {'under_investigation'}
+        if len(decisions) > 1:
+            missing.append('Source and operational decisions conflict; reconcile scope and build identity.')
+        elif decisions:
+            selected = source if source['status'] in decisions else operating
+            base.update({k:deepcopy(selected.get(k)) for k in ('status','justification','reason','scope')})
+        base['missing'] = deepcopy(source.get('missing', [])) + deepcopy(operating.get('missing', []))
+    base['arm'] = 'combined-evidence' if source and operating else base.get('arm', 'routing-deferred')
+    base['analysis_route'] = deepcopy(route)
+    base['case_id'] = c['case_id']
+    base['evidence_progress'] = {'source':bool(source), 'operational':bool(operating),
+                               'pending':missing, 'ready_for_authoring':not missing}
+    base['branch_evidence'] = deepcopy(evidence)
+    if missing:
+        base.update(status='under_investigation', justification=None, reason=' '.join(missing),
+                    document_draft=None, pipeline_complete=False,
+                    authoring={'status':'waiting_for_evidence', 'prediction':None, 'reason':' '.join(missing)})
+        base['missing'] = base.get('missing', []) + [{'requirement':m} for m in missing]
+        base.setdefault('extraction', {'status':'not_run', 'usable':False})
+    else:
+        prepared = VR.prepare([c], product=master['product'], run_id=master['id'], simulation=master['simulation'])
+        signature = VR.fingerprint([evidence, route])
+        previous = master['statements'][c['cve']]
+        if previous.get('authoring_evidence_sha256') == signature:
+            return previous
+        base = VR.finish({'statements':[base]}, prepared)['statements'][0]
+        base['authoring_evidence_sha256'] = signature
+    return base
+
+
 def _update(master, statements, requirement):
     known = {c['cve']: c for c in master['cases']}
-    if any(s['cve'] not in known or known[s['cve']]['analysis_route']['requirement'] != requirement for s in statements):
+    key = 'source' if requirement == 'source_required' else 'operational'
+    flag = 'source_required' if key == 'source' else 'operational_required'
+    if len({s['cve'] for s in statements}) != len(statements) or any(s['cve'] not in known or not known[s['cve']]['analysis_route'].get(flag) for s in statements):
         raise ValueError('Result contains a CVE outside the authorized evidence branch.')
     for s in statements:
         c = known[s['cve']]
-        if requirement == 'source_required':
-            c['analysis_route'] = classify(c, source_available=True)
-        master['statements'][s['cve']] = {**deepcopy(s), 'analysis_route': deepcopy(c['analysis_route'])}
+        bucket = master.setdefault('evidence', {}).setdefault(s['cve'], {})
+        bucket[key] = deepcopy(s)
+        escalation = any(q.get('id','').endswith(':custom-implementation') and
+                         q.get('answer', {}).get('value') == 'yes'
+                         for q in bucket.get('operational', {}).get('operational_review', {}).get('questions_and_answers', []))
+        c['analysis_route'] = workflow(c['analysis_route'], source_available=bool(bucket.get('source')),
+                                      operational_to_source=escalation)
+        if escalation:
+            c['analysis_route']['reason'] = 'Custom implementation reported: source review is required; operator reports do not establish code behavior.'
+        master.setdefault('history', []).append({'cve':s['cve'], 'case_id':c['case_id'], 'evidence_kind':key,
+            'sha256':VR.fingerprint(s), 'recorded_at':time.time(), 'workflow_branch':c['analysis_route']['workflow_branch']})
+        master['statements'][s['cve']] = _combine(master, c)
     STORE.put('item4_review', master['id'], master, TTL)
     return result(master)
 
 
-def answers(review_id, values, component_facts=None):
+def answers(review_id, values, component_facts=None, *, plan_id=None):
     with _lock:
         master = get(review_id)
         if not master.get('operational_plan_id'):
             raise ValueError('Generate operational questions for this review first.')
-        assessed = OQ.assess(master['operational_plan_id'], values, component_facts)
+        if plan_id is not None and plan_id != master['operational_plan_id']:
+            raise ValueError('Questionnaire does not belong to the current review plan. Reopen the form.')
+        assessed = OQ.assess(master['operational_plan_id'], values, component_facts, author=False)
         master['component_facts'] = assessed.get('component_facts', {})
         out = _update(master, assessed['statements'], 'operational_review')
         return out

@@ -286,14 +286,20 @@ async function startItem4Review(){
   const r=await fetch('/api/item4/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:_lastVex?.cves||[],product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
   if(!r.ok)throw new Error(await r.text());
   _armResult=await r.json();_item4ReviewId=_armResult.review_id;
-  const routes=Object.entries(_armResult.routes);let html='<table><thead><tr><th>CVE / CWE / Pillar</th><th>Required evidence</th><th>Reason</th></tr></thead><tbody>';
-  for(const [cve,q] of routes)html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(q.requirement.replaceAll('_',' '))+'</td><td>'+esc(q.reason)+'</td></tr>';
-  html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
-  if(routes.some(([_,q])=>q.requirement==='source_required'))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
-  if(routes.some(([_,q])=>q.requirement==='operational_review'))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operator-answerable cases</button>';
-  html+='</div>'+_verdictTable(_armResult,'Initial evidence routing')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
-  box.innerHTML=html;
+  renderItem4Routes();
  }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}
+}
+function renderItem4Routes(){
+  const box=document.getElementById('item4routes');if(!box)return;
+  const labels={source_only:'1 · Source analysis',source_to_operational:'2 · Source → operating context',source_missing:'3 · Required source missing',operational_to_source:'4 · Operating context → source',operational_only:'5 · Operating context',routing_unknown:'Routing unresolved'};
+  const routes=Object.entries(_armResult.routes);let html='<h3>Evidence workflow</h3><p>Five paths share one review. Source and operating evidence accumulate per CVE; required evidence must be supplied before final authoring.</p><table><thead><tr><th>CVE / CWE / Pillar</th><th>Workflow</th><th>Evidence progress</th></tr></thead><tbody>';
+  for(const [cve,q] of routes){const p=_armResult.statements.find(s=>s.cve===cve)?.evidence_progress;
+   html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(labels[q.workflow_branch]||q.requirement)+'<br><small>'+esc(q.reason)+'</small></td><td>'+esc(p?'Source: '+(p.source?'recorded':'not recorded')+' · Operating context: '+(p.operational?'recorded':'not recorded'):'Awaiting evidence')+(p?.pending?.length?'<p>'+esc(p.pending.join(' '))+'</p>':'')+'</td></tr>';}
+  html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
+  if(routes.some(([_,q])=>q.source_required))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
+  if(routes.some(([_,q])=>q.operational_required&&(!q.source_required||q.source_available)))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operating context</button>';
+  html+='</div>'+_verdictTable(_armResult,'Current evidence review')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
+  box.innerHTML=html;
 }
 
 function pickArm(which){
@@ -342,7 +348,7 @@ async function uploadSource(){
 async function judgeSource(){
   const v=document.getElementById('srcverdict');
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
-  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.requirement==='source_required').map(f=>({cve:f.cve}));
+  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.source_required).map(f=>({cve:f.cve}));
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
       entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
@@ -369,6 +375,7 @@ async function judgeSource(){
       +'<ul>'+(e.cfg.blockers||[]).slice(0,30).map(b=>'<li>'+esc(b.reason)+(b.file?' · '+esc(b.file):'')+'</li>').join('')+'</ul>'
       +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
   }
+  renderItem4Routes();
   v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
 }
 
@@ -382,7 +389,7 @@ async function renderOcForm(box){
 }
 async function generateOperationQuestions(){
   const box=document.getElementById('operation-questions'),button=document.getElementById('generate-operation-questions');
-  button.disabled=true;box.innerHTML='<p>Generating CVE-specific questions locally. This may take several minutes.</p>';
+  button.disabled=true;box.innerHTML='<p>Preparing source-linked rule questions…</p>';
   try{
     const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
     const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
@@ -398,6 +405,9 @@ async function generateOperationQuestions(){
         +'<label class="record-label" for="oqe_'+ci+'_'+qi+'">Supporting record</label><input class="op-control" type="text" id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Configuration record, update ID or inspection date"></div>').join('')
       +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></section>').join('')
       +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Analyze answers and draft VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
+    const saved=new Map((_armResult?.statements||[]).flatMap(s=>(s.operational_review?.questions_and_answers||[]).map(q=>[q.id,q.answer])));
+    _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{const a=saved.get(q.id);if(!a||q.deprecated_version_field)return;document.getElementById('oq_'+ci+'_'+qi).value=a.value;document.getElementById('oqe_'+ci+'_'+qi).value=a.evidence||'';}));
+    (_operationPlan.assets||[]).forEach((a,i)=>{const f=_armResult?.component_facts?.[a.ref];if(!f)return;for(const [field,key] of [['present','present'],['product','product_name'],['version','installed_version'],['evidence','evidence']])document.getElementById('of_'+field+'_'+i).value=f[key]||'';document.getElementById('of_attest_'+i).checked=!!f.attested;});
   }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
 }
 function renderComponentFacts(plan){
@@ -432,6 +442,7 @@ async function judgeOc(){
     const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
     if(!r.ok)throw new Error(await r.text());
     _armResult=await r.json();
+    renderItem4Routes();
     v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.filter(s=>s.operational_review).map(s=>'<section class="card"><div class="case-heading"><h3>'+esc(s.cve)+'</h3><span class="pill">'+esc(_statLabel(s.operational_assessment))+'</span></div><p>Standard VEX: <span class="verdict-state">'+esc(_statLabel(s.status))+'</span></p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
       +'<button onclick="downloadOcReview()">Download review log (JSON)</button>';
   }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
