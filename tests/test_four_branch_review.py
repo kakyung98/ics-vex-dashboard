@@ -47,24 +47,29 @@ def test_source_then_operating_context_waits_and_retains_source(monkeypatch):
     assert len(calls)==before  # identical evidence does not author twice
 
 
-def test_operating_then_source_requires_source_even_with_fixed_report(monkeypatch):
+def test_operational_only_does_not_escalate_to_source(monkeypatch):
     calls=[];monkeypatch.setattr(VR,'infer',provider(calls))
     c=case('CWE-319','Network traffic is unencrypted.')
     initial=I4.start([c]);rid=initial['review_id'];cve=c['cve']
     assert initial['routes'][cve]['workflow_branch']=='operational_only'
     plan=I4.questions(rid)
-    q=next(q for q in plan['cases'][0]['questions'] if q['id'].endswith(':custom-implementation'))
-    midway=I4.answers(rid,{q['id']:{'value':'yes','evidence':'Maintenance record custom-42'}})
-    row=midway['statements'][0]
-    assert row['status']=='under_investigation' and not calls
-    assert midway['routes'][cve]['source_required']
-    assert midway['routes'][cve]['entry_direction']=='operational_to_source'
-    assert midway['routes'][cve]['workflow_branch']=='source_missing'
-    final=I4.record_source(rid,{'statements':[source(cve)]})
-    assert final['routes'][cve]['workflow_branch']=='operational_to_source'
-    assert set(final['statements'][0]['branch_evidence'])=={'source','operational'}
+    assert not any(q['id'].endswith(':custom-implementation') for q in plan['cases'][0]['questions'])
+    final=I4.answers(rid,{})
+    assert final['routes'][cve]['workflow_branch']=='operational_only'
+    assert not final['routes'][cve]['source_required']
+    assert set(final['statements'][0]['branch_evidence'])=={'operational'}
     assert final['statements'][0]['case_id']==initial['statements'][0]['case_id']
     assert {r for r,_ in calls}=={'vex-writer'}
+    with pytest.raises(ValueError):I4.record_source(rid,{'statements':[source(cve)]})
+
+
+def test_retired_five_path_reviews_require_restart_without_deleting_history():
+    from src import review_store as STORE
+    initial=I4.start([case()]);rid=initial['review_id'];master=I4.get(rid)
+    master['cases'][0]['analysis_route']['workflow_policy_version']='five-branch-v1'
+    STORE.put('item4_review',rid,master)
+    with pytest.raises(KeyError,match='retired five-path'):I4.get(rid)
+    assert STORE.get('item4_review',rid)==master
 
 
 def test_conflicting_decisions_are_not_authored_or_overwritten(monkeypatch):

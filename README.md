@@ -77,14 +77,12 @@ queues are disabled. Existing model files and historical reports are retained.
    984 weaknesses, 10 Pillars.
 2. Combine **Pillar + specific CWE + CVE/advisory evidence** using the versioned
    project policy. This is not an official MITRE analysis requirement.
-3. Follow five evidence workflows (implemented 2026-11-05):
+3. Follow four evidence workflows (corrected 2026-11-05):
    - **Source only:** supplied source → patch/build checks → Clang/LLVM CFG/direct calls.
    - **Source → operating context:** source analysis, then required operator facts.
      Explicit CVE/advisory references to network/remote access, authentication,
      privileges, configuration, enabled features or user/physical interaction trigger this conservative context requirement.
    - **Required source missing:** `under_investigation`; no questionnaire or writer bypass.
-   - **Operating context → source:** a reported custom/modified implementation
-     requires source review; retain the existing answers while waiting for source.
    - **Operating context only:** source-linked rule questions, installed-build
      facts and supporting records. Unknown answers remain unknown.
 4. Accumulate source and operating evidence under the same CVE case ID.
@@ -239,7 +237,7 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- Five-workflow and writer-only regression on 2026-11-05: **241 passed**, including
+- Four-workflow and writer-only regression on 2026-11-05: **242 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
   Software tests are not independently labelled CVEs or model accuracy.

@@ -294,8 +294,8 @@ async function startItem4Review(){
 }
 function renderItem4Routes(){
   const box=document.getElementById('item4routes');if(!box)return;
-  const labels={source_only:'1 · Source analysis',source_to_operational:'2 · Source → operating context',source_missing:'3 · Required source missing',operational_to_source:'4 · Operating context → source',operational_only:'5 · Operating context',routing_unknown:'Routing unresolved'};
-  const routes=Object.entries(_armResult.routes);let html='<h3>Evidence workflow</h3><p>Five paths share one review. Source and operating evidence accumulate per CVE; required evidence must be supplied before final authoring.</p><table><thead><tr><th>CVE / CWE / Pillar</th><th>Workflow</th><th>Evidence progress</th></tr></thead><tbody>';
+  const labels={source_only:'1 · Source analysis',source_to_operational:'2 · Source + operating context',source_missing:'3 · Required source missing',operational_only:'4 · Operating context only',routing_unknown:'Routing unresolved'};
+  const routes=Object.entries(_armResult.routes);let html='<h3>Evidence workflow</h3><p>Four paths share one review. Source and operating evidence accumulate per CVE; required evidence must be supplied before final authoring.</p><table><thead><tr><th>CVE / CWE / Pillar</th><th>Workflow</th><th>Evidence progress</th></tr></thead><tbody>';
   for(const [cve,q] of routes){const p=_armResult.statements.find(s=>s.cve===cve)?.evidence_progress;
    html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(labels[q.workflow_branch]||q.requirement)+'<br><small>'+esc(q.reason)+'</small></td><td>'+esc(p?'Source: '+(p.source?'recorded':'not recorded')+' · Operating context: '+(p.operational?'recorded':'not recorded'):'Awaiting evidence')+(p?.pending?.length?'<p>'+esc(p.pending.join(' '))+'</p>':'')+'</td></tr>';}
   html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';

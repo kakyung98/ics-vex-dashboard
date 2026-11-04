@@ -78,11 +78,6 @@ def create(cases,product,run_id,simulation=False,sbom=None,question_role='operat
             {'id':case['case_id']+':patch','origin':'system','answer_type':'yes_no_unknown',
              'question':'Has the vendor fix for this CVE been installed on this asset, with a build or update record?',
              'purpose':'Record patch evidence without presuming a verified fixed build.','evidence':''}])
-        questions.append({'id':case['case_id']+':custom-implementation','origin':'system',
-            'answer_type':'yes_no_unknown','kind':'discovery',
-            'question':'On this asset, has the component implementation been locally modified or replaced with custom code?',
-            'purpose':'A reported custom implementation requires source review; this answer cannot prove applicability or safety.',
-            'evidence':'Workflow discovery policy; provide a customization or maintenance record.'})
         plan['cases'].append({'case':case,'questions':questions,'generation':{**output,'status':'validated' if valid else 'rejected',
                               'checks':{'source_ids_and_schema':valid},'attempts':attempts,'errors':errors,'normalizations':normalizations,'quote_resolution':'server_resolved_source_ids',
                               'semantic_review_required':True,'model_strict_format_passed':bool(valid and not normalizations),

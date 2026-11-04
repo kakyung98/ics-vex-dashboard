@@ -30,8 +30,8 @@ def create():
 
 def test_questions_answers_and_writer_are_bound_to_same_case(monkeypatch):
     fake(monkeypatch);plan=create();row=plan['cases'][0]
-    assert len(row['questions'])==5 and row['generation']['status']=='validated'
-    assert any(q['id'].endswith(':custom-implementation') for q in row['questions'])
+    assert len(row['questions'])==4 and row['generation']['status']=='validated'
+    assert not any(q['id'].endswith(':custom-implementation') for q in row['questions'])
     assert {q['origin'] for q in row['questions']}=={'system','rule'}
     q=next(q for q in row['questions'] if q['answer_type']=='yes_no_unknown')
     result=TestClient(app).post('/api/oc/answers',json={'plan_id':plan['id'],

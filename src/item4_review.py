@@ -22,6 +22,8 @@ def get(review_id):
     master = STORE.get('item4_review', review_id)
     if not master:
         raise KeyError('CWE-first review expired or not found. Start the review again.')
+    if any(c.get('analysis_route',{}).get('workflow_policy_version') == 'five-branch-v1' for c in master['cases']):
+        raise KeyError('This review uses the retired five-path policy. Start a new four-path review; the historical evidence is retained.')
     return master
 
 
@@ -164,13 +166,7 @@ def _update(master, statements, requirement):
         c = known[s['cve']]
         bucket = master.setdefault('evidence', {}).setdefault(s['cve'], {})
         bucket[key] = deepcopy(s)
-        escalation = any(q.get('id','').endswith(':custom-implementation') and
-                         q.get('answer', {}).get('value') == 'yes'
-                         for q in bucket.get('operational', {}).get('operational_review', {}).get('questions_and_answers', []))
-        c['analysis_route'] = workflow(c['analysis_route'], source_available=bool(bucket.get('source')),
-                                      operational_to_source=escalation)
-        if escalation:
-            c['analysis_route']['reason'] = 'Custom implementation reported: source review is required; operator reports do not establish code behavior.'
+        c['analysis_route'] = workflow(c['analysis_route'], source_available=bool(bucket.get('source')))
         master.setdefault('history', []).append({'cve':s['cve'], 'case_id':c['case_id'], 'evidence_kind':key,
             'sha256':VR.fingerprint(s), 'recorded_at':time.time(), 'workflow_branch':c['analysis_route']['workflow_branch']})
         master['statements'][s['cve']] = _combine(master, c)
