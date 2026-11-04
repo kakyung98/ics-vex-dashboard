@@ -16,6 +16,8 @@ Usage:
   git clone --depth 1 https://github.com/cisagov/CSAF.git /tmp/CSAF
   python tools/collect_gt_icsa.py --csaf-repo /tmp/CSAF
 """
+
+from sbom_paths import public_sbom_directory
 import argparse
 import glob
 import json
@@ -85,7 +87,7 @@ def main():
 
     for aid, (rec, src) in sorted(t1.items()):
         shutil.copy2(src, os.path.join(OUT, "tier1_justification/cisa_csaf", aid + ".json"))
-        ours = os.path.join(BASE, "reverse_sbom", "%s_SBOM-CVE.json" % aid)
+        ours = str(public_sbom_directory() / ("%s_SBOM-CVE.json" % aid))
         rec["our_sbom"] = None
         if os.path.exists(ours):
             shutil.copy2(ours, os.path.join(OUT, "tier1_justification/our_sbom",

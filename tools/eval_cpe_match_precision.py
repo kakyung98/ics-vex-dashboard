@@ -172,7 +172,7 @@ def load_gt(path):
     return gt, [c for c in cases.values() if c["correct_products"]], conflicts, unreachable, ambiguous
 
 
-def score(data=DATA, matcher="string", strict=False, progress=None):
+def score(data=DATA, matcher="string", strict=False, progress=None, matcher_module=None):
     """Measure test item #3 and return the result record.
 
     Split out of main() so the web app scores through exactly this function rather
@@ -184,7 +184,7 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     is ~14k components and takes minutes, so the caller needs to be able to report
     where it is without this function knowing anything about HTTP.
     """
-    MM = _matcher(matcher)
+    MM = matcher_module if matcher_module is not None else _matcher(matcher)
     identify = MM.identify_product
     gt, cases, conflicts, unreachable, ambiguous = load_gt(data)
     tp = fp = unlabelled = abstained = unadjudicable = 0
@@ -202,7 +202,8 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     for i, case in enumerate(cases):
         if progress and i % 200 == 0:
             progress(i, len(cases), "scoring components")
-        comp = {"name": case["name"], "version": case["version"] or ""}
+        comp = {"name": case["name"], "version": case["version"] or "",
+                "supplier":case.get("publisher") or ""}
         if case.get("cpe"):
             comp["cpe"] = case["cpe"]
         _v = (case.get("publisher") or "?").strip() or "?"
@@ -265,7 +266,7 @@ def score(data=DATA, matcher="string", strict=False, progress=None):
     prec = tp / scored if scored else 0.0
     return {
         "test": "SBOM CVE-identification precision (test item #3)",
-        "sut": ("src/cpe_match_ai (retrieval behind the cascade)" if matcher == "ai"
+        "sut": getattr(MM,'SUT_NAME',None) or ("src/cpe_match_ai (retrieval behind the cascade)" if matcher == "ai"
                 else "src/cpe_match_l0l3.cves_for (L0 NVD CPE index + L3 vendor guard)"),
         "sut_mode": "strict (co-listed dropped)" if strict else "recall-safe (default)",
         "ground_truth": os.path.relpath(data, BASE),

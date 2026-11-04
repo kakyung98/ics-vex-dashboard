@@ -20,21 +20,34 @@ Run
   # or:  uvicorn src.api_server:app --port 8100
 The VEX computation here is the deterministic static leg (component match ->
 evidence tiers); it needs no GPU/models, so the service starts
-instantly. For the full SecureBERT/CodeBERT/sLLM path use src/vex_pipeline.py.
+instantly. The old src/vex_pipeline.py model path is legacy; current source and
+operational-context judgment endpoints use source_evidence and oc_vex_judge instead.
 """
-import os, sys, json, argparse, difflib, csv, re
+import os, sys, json, argparse, difflib, csv, re, tempfile, uuid
 from collections import defaultdict, Counter
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 sys.path.insert(0, os.path.join(BASE, "src"))
+sys.path.insert(0, BASE)
 import build_ground_truth as G  # exposure_for(), CWE_NAME
-import vex_source_unavailable as VT  # decision tree for source-uncollectable CVEs
 import vex_decision as VD            # single source of truth for the VEX rule
 import sbom_match as SM              # identifier-first matching + NVD version ranges
 import cert_eval as CERT             # test items #3/#4, scored via tools/eval_*.score
 from cert_page import CERT_PAGE      # the /cert.html markup + client script
+from context_vex_page import CONTEXT_VEX_PAGE  # the /context-vex.html markup + client script
 from asset_vex_page import ASSET_VEX_PAGE, ASSET_AV_MODAL_JS, ASSET_AV_CLIENT_JS  # /asset-vex.html + shared JS
-import asset_av_judge as AV                # source-less exploitability logic
+import asset_av_judge as AV                # source-less exploitability logic (v1: AV only)
+import vex_context_judge as CJ            # v3: full CVSS vector x ICS operational context
+import ics_context as ICTX                # the asset context schema and its evaluation
+import sbom_cve_problems as P6W           # the 6W problem taxonomy, measured from the corpus
+import context_standards as CSTD          # standards basis for the context schema
+# v4 (docs/ICSVEX.md): the analyzer forks after CVE identification - source uploaded
+# -> CFG arm, no source -> operational-context arm. The two never judge the same CVE.
+import oc_context as OCX                  # v4: the OT operational-context (OC) model
+import oc_vex_judge as OCJ                # v4: OC slots -> VEX status
+import cve_requirements as CREQ           # v4: what a CVE requires of its environment
+import source_intake as SRC               # v4: safe ZIP intake + call graph / CFG index
+from src import vex_roles as VR
 try:
     import cpe_match_l0l3 as L0       # L0+L3: full NVD CPE index (needs data/cpe_index.json)
 except Exception:
@@ -100,6 +113,13 @@ DATA = os.path.join(BASE, "data")
 KB_PATH = os.path.join(RESULTS, "cve_kb.json")
 
 AFFECTED, NOT_AFFECTED, UNDER_INV = "LIKELY_AFFECTED", "LIKELY_NOT_AFFECTED", "UNDER_INVESTIGATION"
+# The corpus vocabulary is hedged ("LIKELY_") because a corpus-level verdict rests on an
+# argument, not a run. FIXED is the exception and is NOT hedged: it is set only by the
+# patch pre-gate, which requires the fix commit's own lines to be present in the tree AND
+# NVD's product-matched range to have moved past the snapshot. That is a reading of the
+# code, so there is nothing "likely" about it. CSAF has a distinct product_status.fixed,
+# which is why it is not folded into NOT_AFFECTED on export.
+FIXED = "LIKELY_FIXED"
 EXPOSURES = ["isolated-cell", "control-network", "dmz-routable", "remote-accessible"]
 
 
@@ -218,11 +238,6 @@ class Store:
         self.candidates = _load(os.path.join(RESULTS, "verify_candidates.json"),
                                 {"candidates": []})
         self.code_ev = _load(os.path.join(DATA, "code_evidence.json"), {})
-        # CVEs whose vulnerable source was collected by the source collector
-        # (data/source_snapshots/<CVE>/), from the collector's report.
-        _dp = _load(os.path.join(RESULTS, "data_processor_report.json"), {})
-        self.collected_src = {r.get("cve") for r in (_dp.get("records") or [])
-                              if r.get("status") == "collected" and r.get("cve")}
         # execution-verification results (per-CVE build/exploit/verify outcomes + evidence)
         import glob as _glob
         _vf = os.path.join(RESULTS, "verify_full")
@@ -243,8 +258,12 @@ class Store:
         # keyed by CVE, mapped to the console's vocabulary. Where a matched CVE has one,
         # the analyzer shows it instead of the default under_investigation.
         _vv = _load(os.path.join(RESULTS, "vex_v2_summary.json"), {})
+        # vex_judge_v2 emits four statuses; this map had only three, so `fixed` fell to
+        # the `.get(..., UNDER_INV)` default and the console published the 4 patch-gate
+        # clearances as UNDER_INVESTIGATION - the one status the pipeline claims it never
+        # produces.
         _vmap = {"affected": AFFECTED, "not_affected": NOT_AFFECTED,
-                 "under_investigation": UNDER_INV}
+                 "under_investigation": UNDER_INV, "fixed": FIXED}
         self.vex_v2 = {}
         for _r in (_vv.get("cves") or []):
             _ev = _r.get("evidence") or {}
@@ -301,6 +320,16 @@ class Store:
                     self.by_cve[r["cve"]].append(r)
                 except Exception:
                     continue
+        from src.public_corpus import current_findings
+        self.corpus_freshness = _load(os.path.join(DATA, 'public_corpus_freshness.json'), {})
+        if self.corpus_freshness.get('status') == 'complete':
+            self.by_cve = current_findings(self.by_cve, adv_raw,
+                                          _load(os.path.join(DATA, 'nvd_cache.json'), {}))
+        from src.source_inventory import inventory,public_summary
+        source_inventory = inventory(BASE,self.by_cve)
+        self.collected_src = source_inventory['snapshot_cves']
+        self.source_inventory = public_summary(source_inventory)
+        source_records = source_inventory['analysis_records']
         self.pairs = {k for k, v in self.code_ev.items()
                       if isinstance(v, dict) and v.get("vuln_code") and v.get("patched_code")}
         # distinct KB components + their match strings (for CPE normalization)
@@ -336,10 +365,11 @@ class Store:
                     sc = float(sc)
                 except ValueError:
                     continue
-                if sc > self.cvss.get(r["cve"], -1):
+                if r['cve'] not in self.cvss:
                     self.cvss[r["cve"]] = sc
         # fill gaps from the NVD cache (metric.score) so every KB CVE gets a real base score
         _nvd = _load(os.path.join(DATA, "nvd_cache.json"), {})
+        self.nvd_metadata = _nvd
         for _cid, _e in (_nvd.items() if isinstance(_nvd, dict) else []):
             if _cid in self.cvss:
                 continue
@@ -385,12 +415,16 @@ class Store:
             _v2 = self.vex_v2.get(cve)
             self.cve_index[cve] = {
                 "cve": cve, "vex": (_v2["vex"] if _v2 else w["final_vex"]),
+                "description": (_nvd.get(cve) or {}).get('description', ''),
+                "published": (_nvd.get(cve) or {}).get('published'),
+                "last_modified": (_nvd.get(cve) or {}).get('lastModified'),
+                "nvd_status": (_nvd.get(cve) or {}).get('vulnStatus'),
                 "severity": sev if sev in srank else "unrated",
                 "cvss": self.cvss.get(cve),
                 "av": self.av.get(cve),
                 "cwe": _canon_cwe(rows), "kev": any(r.get("kev") for r in rows),
                 "year": int(parts[1]) if len(parts) >= 2 and parts[1].isdigit() else None,
-                "source_available": any(r.get("tier") == "A" for r in rows) and cve not in UNCOLLECTABLE_CVES,
+                "source_available": cve in self.collected_src,
                 "has_code_pair": cve in self.pairs,
                 "vendors": sorted({_norm_vendor(r.get("vendor")) for r in rows}),
                 "device_types": sorted({_device_type(r.get("device")) for r in rows}),
@@ -405,36 +439,13 @@ class Store:
             }
         # CVE-level view (unique CVEs, worst-case verdict across assets)
         rank = {AFFECTED: 3, UNDER_INV: 2, NOT_AFFECTED: 1}
-        srank_src = {"code-available": 3, "oss-attributed": 2, "vendor-proprietary": 1}
         cve_worst, cve_tier, cve_src = {}, {}, {}
         for cve, rows in self.by_cve.items():
             w = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
             cve_worst[cve] = w["final_vex"]
             cve_tier[cve] = w.get("evidence_tier")
-            # The axis that explains why there is so much under_investigation
-            sw = max(rows, key=lambda r: srank_src.get(r.get("source_class") or "", 0))
-            sc = sw.get("source_class") or "vendor-proprietary"
-            # "code obtained" must mean code we ACTUALLY collected+analysed, so the
-            # bucket is exactly `vex_v2 ∩ this corpus`: promote the analysed CVEs, and
-            # demote anything tagged code-available that we did NOT obtain to "open
-            # source, code not collected".
-            #
-            # NOTE the source of truth: self.vex_v2 is loaded from
-            # results/vex_v2_summary.json, NOT from data/vex_v2.json. They are
-            # different files with different update paths, and re-running the judge
-            # does not refresh the summary - so this panel sat at 107 for days after
-            # the judged population had grown to 267, with nothing to show that it
-            # was stale. tools/summarize_vex_v2.py regenerates it; run it after any
-            # vex_judge_v2 run or this count silently lies.
-            #
-            # The bucket is `summary ∩ this corpus`, which is 266: the snapshots also
-            # cover one CVE no ICS advisory cites (sqlparse CVE-2024-4340), so this
-            # page and test item #4 count populations that overlap but do not match.
-            if cve in self.vex_v2:
-                sc = "code-available"
-            elif sc == "code-available":
-                sc = "oss-attributed"
-            cve_src[cve] = sc
+            # Collection is observed independently of old verdict caches or tiers.
+            cve_src[cve] = "code-available" if cve in self.collected_src else "source-unverified"
         # unique CVE count by CVE-ID year
         yr = Counter()
         for cve in cve_worst:
@@ -458,6 +469,7 @@ class Store:
         _cve_prod = Counter(r["cve"] for r in _fi)
         _cve_prod_med = (sorted(_cve_prod.values())[len(_cve_prod) // 2] if _cve_prod else 0)
         self.cve_level = {
+            "freshness": self.corpus_freshness,
             "axes": {
                 # A VEX statement is about a vulnerability, so the CVE is the reference axis.
                 "cves": len(cve_worst),
@@ -477,16 +489,12 @@ class Store:
             "by_vex": dict(Counter(cve_worst.values())),
             "by_tier": dict(Counter(t for t in cve_tier.values() if t)),
             "by_source_class": dict(Counter(cve_src.values())),
+            "source_inventory": self.source_inventory,
         }
-        # Source-collectable population = the CVEs we actually collected source for and
-        # ran through VEX-v2 (data/vex_v2.json). This used to be the tier-A OSS-attributed
-        # subset (107), which is narrower than what the VEX-v2 pipeline now covers (267),
-        # so the panel read a stale 107. The authoritative set is the VEX-v2 keys.
+        # Source panel uses observed snapshots in the current advisory corpus.
         a_worst = {}
         ven_cves, dtype_cves = defaultdict(set), defaultdict(set)
-        for cve in self.vex_v2:
-            if cve in UNCOLLECTABLE_CVES:
-                continue
+        for cve in sorted(source_inventory["corpus_snapshot_cves"]):
             rows = self.by_cve.get(cve)
             if rows:
                 a_worst[cve] = max(rows, key=lambda r: rank.get(r["final_vex"], 0))
@@ -499,7 +507,7 @@ class Store:
                 # or from VEX-v2 alone, so the population stays the full source-collected set.
                 idx = self.cve_index.get(cve) or {}
                 a_worst[cve] = {"final_vex": idx.get("vex")
-                                or (self.vex_v2[cve].get("vex") or "UNDER_INVESTIGATION").upper(),
+                                or (source_records.get(cve,{}).get("status") or "UNDER_INVESTIGATION").upper(),
                                 "sev": idx.get("severity", ""), "kev": idx.get("kev"),
                                 "vendor": (idx.get("vendors") or [None])[0], "device": None}
                 ven_cves[_norm_vendor(a_worst[cve]["vendor"])].add(cve)
@@ -507,15 +515,17 @@ class Store:
         # canonical CWE per CVE (non-empty), so counts match the CVE's real weakness
         _a_cwe = {cve: (self.cve_index.get(cve) or {}).get("cwe", "") for cve in a_worst}
         _cwe_ctr = Counter(c for c in _a_cwe.values() if c)
-        # The population IS the VEX-v2 set, so every CVE here is collected and analysed:
-        # collected == total and pending == 0. by_vex shows the VEX-v2 verdict.
-        _analyzed = lambda cve: cve in self.vex_v2
+        # Compiler records measure attempts independently of collection.
+        _analyzed = lambda cve: cve in source_records
         self.tier_a = {
             "total_cves": len(a_worst),
-            "code_collected": sum(1 for cve in a_worst if _analyzed(cve)),
-            "pending_collection": sum(1 for cve in a_worst if not _analyzed(cve)),
+            "code_collected": len(a_worst),
+            "analysis_attempted": sum(1 for cve in a_worst if _analyzed(cve)),
+            "analysis_pending": sum(1 for cve in a_worst if not _analyzed(cve)),
+            "source_inventory": self.source_inventory,
+            "pending_collection": 0,
             "kev": sum(1 for w in a_worst.values() if w.get("kev")),
-            "by_vex": dict(Counter((self.vex_v2[cve]["vex"] if _analyzed(cve) else w["final_vex"])
+            "by_vex": dict(Counter((source_records[cve].get("status","under_investigation") if _analyzed(cve) else "under_investigation")
                                     for cve, w in a_worst.items())),
             "by_severity": dict(Counter(sev_norm(w.get("sev", "")) for w in a_worst.values())),
             "top_cwe": [{"cwe": c, "name": CWE_NAMES.get(c, ""), "count": n} for c, n in
@@ -879,6 +889,13 @@ def flagged_products(csaf, cve, label=None):
 CSAF_RAW = "https://raw.githubusercontent.com/cisagov/CSAF/develop/"
 
 
+# Uploaded source trees live for the life of the process, keyed by an opaque id.
+# They are analysis scratch, not durable data: a restart drops them and the user
+# re-uploads. Kept out of data/ on purpose - this is somebody else's source code.
+_SRC_SESSIONS = os.path.join(tempfile.gettempdir(), "icsvex_src")
+_SRC_INDEX = {}
+
+
 def build_app():
     from fastapi import FastAPI, HTTPException, File, Form, UploadFile
     from fastapi.responses import HTMLResponse
@@ -887,6 +904,18 @@ def build_app():
     app = FastAPI(title="ICS-VEX API", version="1.0",
                   description="Hybrid VEX pipeline — static triage over the corpus + "
                               "live SBOM→VEX. No PoC is generated or executed.")
+    from fastapi.middleware.cors import CORSMiddleware
+    pages_origins=['https://kakyung98.github.io']
+    app.add_middleware(CORSMiddleware,allow_origins=pages_origins,
+                       allow_methods=['GET','POST'],allow_headers=['Content-Type'],allow_credentials=False)
+
+    @app.middleware('http')
+    async def pages_private_network(request,call_next):
+        response=await call_next(request)
+        if (request.method=='OPTIONS' and request.headers.get('origin') in pages_origins
+                and request.headers.get('access-control-request-private-network')=='true'):
+            response.headers['Access-Control-Allow-Private-Network']='true'
+        return response
 
     class SbomReq(BaseModel):
         sbom: dict
@@ -1025,7 +1054,11 @@ def build_app():
         from fastapi.responses import FileResponse
         if "/" in name or "\\" in name or not name.endswith(".json"):
             raise HTTPException(400, "bad name")
-        path = os.path.join(BASE, "reverse_sbom", name)
+        from src.dataset_paths import public_sbom_directory
+        directory = str(public_sbom_directory())
+        path = os.path.abspath(os.path.join(BASE, directory, name))
+        if os.path.commonpath([os.path.abspath(BASE), path]) != os.path.abspath(BASE):
+            raise HTTPException(400, 'bad source directory')
         if not os.path.isfile(path):
             raise HTTPException(404, "SBOM not found")
         return FileResponse(path, media_type="application/json")
@@ -1088,6 +1121,149 @@ def build_app():
             raise HTTPException(400, f"exposure must be one of {EXPOSURES}")
         return vex_for_sbom(req.sbom, req.exposure)
 
+    class CandidateMatchReq(BaseModel):
+        sbom: dict
+        offline: bool = False
+        agent_mode: str = 'unified'
+        lookup_mode: str | None = None
+
+    @app.post("/api/cve-match")
+    def cve_match(req: CandidateMatchReq):
+        """Auditable LangGraph candidate retrieval; never a final VEX verdict."""
+        try:
+            from candidate_match import match_candidates
+        except ImportError as exc:
+            raise HTTPException(503, "Install matcher dependencies from requirements.txt") from exc
+        try:
+            return match_candidates(req.sbom, req.offline, agent_mode=req.agent_mode,lookup_mode=req.lookup_mode)
+        except RuntimeError as exc:
+            raise HTTPException(503, str(exc)) from exc
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise HTTPException(400, "Invalid CycloneDX/SPDX SBOM: " + str(exc)) from exc
+
+    @app.get('/api/cve-match/models')
+    def candidate_models():
+        from src.candidate_web import model_status
+        return model_status()
+
+    @app.post('/api/cve-match/models/unload')
+    def candidate_unload_models():
+        from src.identification_agents import release_runtime
+        return release_runtime()
+
+    class CandidateJobReq(BaseModel):
+        sbom: dict
+        agent_mode: str = 'unified'
+        lookup_mode: str = 'local'
+
+    @app.post('/api/cve-match/jobs',status_code=202)
+    def candidate_job(req: CandidateJobReq):
+        from src.candidate_web import submit
+        try:return submit(req.sbom,req.agent_mode,req.lookup_mode)
+        except OverflowError as exc:raise HTTPException(429,str(exc)) from exc
+        except RuntimeError as exc:raise HTTPException(503,str(exc)) from exc
+        except (ValueError,TypeError,AttributeError) as exc:raise HTTPException(400,str(exc)) from exc
+
+    @app.get('/api/cve-match/jobs/{job_id}')
+    def candidate_job_status(job_id: str):
+        from src.candidate_web import get_job
+        job=get_job(job_id)
+        if job is None:raise HTTPException(404,'Task not found. The server may have restarted.')
+        if job.get('result'):
+            from copy import deepcopy
+            from src.identification_diagnostics import explain_identification
+            job=deepcopy(job)
+            explain_identification(job['result'],job.get('input_sbom') or {})
+        return job
+
+    def candidate_vex_data(job_id):
+        from src.candidate_web import get_job
+        job=get_job(job_id)
+        if job is None:raise HTTPException(404,'Identification task not found.')
+        if job['status']!='completed':raise HTTPException(409,'Identification has not completed yet.')
+        result=job['result'];records={};components=[]
+        for component in list(result['components'])+([result['asset_analysis']] if result.get('asset_analysis') else []):
+            comp=component['component']
+            components.append({'bom-ref':comp['id'],'name':comp['name'],'version':comp['version']})
+            for finding in component.get('cves',[]):
+                cid=finding.get('cve_id','')
+                if not re.fullmatch(r'CVE-\d{4}-\d{4,}',cid) or finding.get('match_status')=='no_match':continue
+                if cid not in records:
+                    idx=STORE.cve_index.get(cid,{})
+                    vector,description=_cve_facts(cid)
+                    records[cid]={'cve':cid,'component':comp['name'],'version':comp['version'],
+                        'cwe':idx.get('cwe'),
+                        'vector':vector or '', 'description':description or '',
+                        'cvss':idx.get('cvss'),'severity':idx.get('severity',''),'av':idx.get('av') or '',
+                        'source_collectable':bool(idx.get('source_available') or cid in STORE.pairs),
+                        'kev':bool(idx.get('kev')),'epss':idx.get('epss'),
+                        'final_vex':UNDER_INV,'justification':None,'version_decided':True,'mappings':[]}
+                row=records[cid]
+                row['version_decided']=row['version_decided'] and finding['match_status']=='match'
+                row['mappings'].append({'component':comp['name'],'component_id':comp['id'],
+                    'version':comp['version'],'match_status':finding['match_status'],'evidence':finding.get('evidence',{}),
+                    'identification_evidence':{'architecture':component.get('architecture',result.get('architecture','legacy')),
+                        'identity':component.get('validation',{}),'version_observations':component.get('l3',{}).get('observations',[]),
+                        'version_status':component.get('l3',{}).get('status'),
+                        'model_stage_checks':{key:{k:(component.get(key,{}).get('agent') or {}).get(k)
+                            for k in ('status','guard_accepted','executed','input_sha256')} for key in ('l2','l3','l4')}
+                            if component.get('architecture',result.get('architecture'))=='unified-identification-v1' else None,
+                        'dictionary_snapshot_sha256':result.get('dictionary_snapshot_sha256')}})
+        rows=list(records.values())
+        from copy import deepcopy
+        handoff_sbom=deepcopy(job.get('input_sbom') or {'bomFormat':'CycloneDX','metadata':{'component':result.get('asset',{})},'components':components})
+        if result.get('asset_analysis') and handoff_sbom.get('bomFormat')=='CycloneDX':
+            handoff_sbom.setdefault('metadata',{}).setdefault('component',{}).setdefault('bom-ref',result['asset_analysis']['component']['id'])
+        return {'job_id':job_id,'components':len(components),'cves_matched':len(rows),'cves':rows,
+                'simulation':bool(result.get('input_notice')),
+                'mapping_count':sum(len(r['mappings']) for r in rows),
+                'summary':{'by_vex':{UNDER_INV:len(rows)}},
+                'sbom':handoff_sbom}
+
+    @app.get('/api/cve-match/jobs/{job_id}/vex')
+    def candidate_vex(job_id: str):return candidate_vex_data(job_id)
+
+    @app.get('/api/vex-review/models')
+    def grounded_model_status():
+        from src.operational_model_config import status as operational_status
+        return {'model':'Qwen3-8B','roles':[{'role':role,'adapter':role+'-qwen3-8b-v1',
+                'active':True,
+                'weights_available':all(os.path.isfile(os.path.join(BASE,'models',role+'-qwen3-8b-v1',f))
+                                        for f in ['training_complete.json','adapter_model.safetensors','adapter_config.json'])}
+                for role in ['vex-writer']], 'shared_quantized_base':True,'outputs_require_review':True,
+                'extraction_strategy':'deterministic_source_spans',
+                'condition_self_review_enabled':False,
+                'operational_models':operational_status(),
+                'question_self_review_enabled':False,
+                'base_inference_roles':[],'llm_policy':'final_vex_writer_only',
+                'research_roles':[]}
+
+    class CandidateContextReq(BaseModel):
+        asset: dict = {}
+
+    @app.post('/api/cve-match/jobs/{job_id}/oc')
+    def candidate_context(job_id: str, req: CandidateContextReq):
+        data=candidate_vex_data(job_id)
+        known={f['cve']:f for f in data['cves']}
+        prepared=VR.prepare(data['cves'],product=data['sbom']['metadata']['component'].get('name','unspecified-product'),
+                            run_id=job_id,simulation=bool(data.get('simulation')))
+        cases=[{'cve':f['cve'],'requirements':VR.requirements(CREQ.extract(f['cve'],f['vector'],f['description'],cwe_context=_cwe_details(f['cve'],f.get('cwe'))),f),
+                'asset':req.asset,'component_present':True,'version_in_range':True} for f in prepared]
+        result=OCJ.judge_many(cases)
+        for statement in result['statements']:
+            if statement['status']=='affected' and not known[statement['cve']]['version_decided']:
+                statement.update(status='under_investigation',justification=None,
+                    reason='Operational prerequisites are satisfied, but installed product/version applicability is unconfirmed. VEX affected cannot be established.',
+                    identification_gate='version_or_applicability_unconfirmed')
+        counts=Counter(s['status'] for s in result['statements']);n=len(result['statements'])
+        deferred=counts.get('under_investigation',0)
+        result.update(by_status=dict(counts),deferred=deferred,total=n,
+            deferral_rate=round(deferred/n,4) if n else None,
+            decision_rate=round((n-deferred)/n,4) if n else None,arm='operational-context',identification_job=job_id)
+        from src.web_locale import english_statement
+        result['statements']=[english_statement(s) for s in result['statements']]
+        return VR.finish(result,prepared)
+
     class CompareReq(BaseModel):
         sbom: dict
         exposure: str | None = None
@@ -1104,13 +1280,13 @@ def build_app():
 
     @app.get("/api/vex_tree")
     def vex_tree_def():
-        """The source-uncollectable-CVE decision tree definition (for the walker)."""
-        return VT.TREE
+        """Retired with the VEX-v2 source arm. Kept so the old URL answers."""
+        return {"retired": True, "reason": "the source-uncollectable decision tree was retired with the VEX-v2 source arm; the replacement is the OC operational-context model (docs/ICSVEX.md)"}
 
     @app.post("/api/vex_tree")
     def vex_tree(req: TreeReq):
-        """Walk the source-uncollectable decision tree with the given answers."""
-        return VT.classify(req.av, req.answers or {})
+        """Retired with the VEX-v2 source arm. Kept so the old URL answers."""
+        return {"retired": True, "reason": "the source-uncollectable decision tree was retired with the VEX-v2 source arm; the replacement is the OC operational-context model (docs/ICSVEX.md)"}
 
     # ---- certification test items #3 / #4 -------------------------------
     # The page can run the measurement itself, so a reviewer does not have to take
@@ -1158,6 +1334,86 @@ def build_app():
         res = AV.assess(av, attrs, extra)
         res["cve"] = cve
         return res
+
+    # ---- v3: the context arm (full CVSS vector x ICS operational context) ----
+    # The v1 endpoint above reads one metric (AV) and matches it against an
+    # attack-surface set. These read the whole vector, evaluate every precondition
+    # it imposes, and keep a structural impossibility strictly apart from an
+    # operator control - only the former may set not_affected. See
+    # docs/METHODOLOGY_V3.md.
+
+    @app.get("/api/problems-6w")
+    def problems_6w():
+        """The 6W problem taxonomy for S/HBOM -> CVE identification, with every
+        figure recomputed from the corpus rather than read from a constant."""
+        return P6W.report()
+
+    @app.get("/api/context/fields")
+    def context_fields():
+        """The asset context schema, grouped by what each group is allowed to decide."""
+        groups = {"structural": [], "control": [], "mission": []}
+        for key, kind, typ, label, helptext in ICTX.CONTEXT_FIELDS:
+            groups[kind].append({"key": key, "type": typ, "label": label,
+                                 "help": helptext,
+                                 "refs": CSTD.refs_for(key)})
+        return {"groups": groups,
+                "rule": {"structural": "a property of the hardware or build; its "
+                                       "absence is a sound refutation and may set "
+                                       "not_affected",
+                         "control": "a configuration or procedure; it lowers the "
+                                    "environmental score and exports as a CSAF "
+                                    "mitigation, but never sets not_affected",
+                         "mission": "what a successful exploit would cost; drives "
+                                    "CR/IR/AR priority only, never the status"}}
+
+    class ContextVexReq(BaseModel):
+        cve: str = ""
+        vector: str | None = None
+        context: dict = {}
+        cve_requirements: dict = {}
+        component_present: bool = True
+        version_in_range: bool = True
+        patched: bool = False
+
+    @app.post("/api/context-vex")
+    def context_vex(req: ContextVexReq):
+        """Judge one (asset, CVE) statement from the full vector and the context."""
+        body = req.dict()
+        cve = (body.get("cve") or "").strip().upper()
+        vector = body.get("vector")
+        if not vector:                                  # fall back to the cache
+            rec = _load(os.path.join(DATA, "nvd_cvss.json"), {}).get(cve)
+            if isinstance(rec, dict):
+                vector = rec.get("vector")
+        sig = _load(os.path.join(DATA, "exploit_signals.json"), {}).get(cve) or {}
+        rem = _load(os.path.join(DATA, "remediations.json"), {}).get(cve) or {}
+        res = CJ.judge(cve, vector, body.get("context") or {},
+                       cve_requirements=body.get("cve_requirements") or {},
+                       signals=sig,
+                       remediation_categories=list(rem.get("categories") or {}),
+                       component_present=body.get("component_present", True),
+                       version_in_range=body.get("version_in_range", True),
+                       patched=body.get("patched", False))
+        res["readiness"] = CJ.readiness(body.get("context") or {})
+        return res
+
+    @app.get("/api/context/standards")
+    def context_standards():
+        """Traceability of the context schema to IEC 62443 / NIST SP 800-82 / the
+        KISA critical-infrastructure guide, with the deliberate omissions and the
+        verification caveats attached."""
+        return CSTD.report([f[0] for f in ICTX.CONTEXT_FIELDS])
+
+    @app.get("/api/context/sensitivity")
+    def context_sensitivity():
+        """The committed corpus-wide sensitivity measurement, if it has been run."""
+        p = os.path.join(BASE, "results", "context_vex_sensitivity.json")
+        if not os.path.isfile(p):
+            return {"available": False,
+                    "how": "python tools/eval_context_vex.py"}
+        d = _load(p, {})
+        d["available"] = True
+        return d
 
     @app.get("/api/cert/items")
     def cert_items():
@@ -1211,6 +1467,301 @@ def build_app():
             return {"ok": False, "valid": valid}
         return {"ok": True, "path": path, "bytes": len(data), "valid": valid}
 
+    def _cve_facts(cve):
+        """CVSS vector + description for one CVE, from the local NVD caches.
+
+        The analyzer's /api/vex rows carry `av` and a score but not the full
+        vector or the description, and both arms need them: the vector states
+        the preconditions, the description names the vulnerable function. Having
+        the server look them up means a client that sends only a CVE id still
+        gets a real judgment instead of an empty requirement set - and an empty
+        requirement set is exactly what used to come back as `affected`.
+        """
+        cve = (cve or "").strip().upper()
+        vec = desc = None
+        rec = _load(os.path.join(DATA, "nvd_cvss.json"), {}).get(cve)
+        if isinstance(rec, dict):
+            vec = rec.get("vector")
+        rec = STORE.nvd_metadata.get(cve)
+        if isinstance(rec, dict):
+            desc = rec.get("description")
+        return vec, desc
+
+    def _cwe_details(cve, supplied=None):
+        from src.cwe_context import context
+        return context(cve,nvd=STORE.nvd_metadata.get(cve),corpus_cwe=STORE.cve_index.get(cve,{}).get('cwe'),supplied=supplied)
+
+    # ---- v4 · the two judgment arms ------------------------------------
+    # Compatibility evidence-arm APIs. The default analyzer first uses
+    # /api/item4/start to route by CWE Pillar, specific weakness and evidence.
+    # Required source absence cannot be bypassed through operator questions.
+
+    @app.get("/api/oc/fields")
+    def oc_fields():
+        """The asset questionnaire for the no-source branch, grouped by OC slot.
+
+        Each field carries its Appendix A provenance (or EXTENDED when the CISA
+        guide has no such field), because "where did these questions come from"
+        is the first thing an assessor asks.
+        """
+        from src.web_locale import english_groups,GROUPS
+        return {"model": OCX.OC_MODEL,
+                "slots": [{"id": i, "label": GROUPS[i.lower()], "help": 'Compare CVE prerequisites with verified asset evidence.', "fields": f}
+                          for i, l, h, f in OCX.OC_SLOTS],
+                "groups": english_groups(OCX.fields_by_group()),
+                "rule": {
+                    "absent": "Structurally absent: may support not_affected with evidence",
+                    "disabled": "Disabled by configuration: mitigation only, not clearance",
+                    "unknown": "Missing evidence cannot clear a vulnerability",
+                }}
+
+    class OcJudgeReq(BaseModel):
+        asset: dict = {}
+        cves: list = []          # [{cve, vector?, description?, component_present?}]
+        product: str = 'unspecified-product'
+        simulation: bool = False
+
+    @app.post("/api/oc/judge")
+    def oc_judge(req: OcJudgeReq):
+        """Operational-context VEX for every CVE in one go."""
+        cases = []
+        raw_cases=[]
+        for c in (req.cves or []):
+            cve = c.get("cve")
+            if not cve:
+                continue
+            vec, desc = c.get("vector"), c.get("description")
+            if not vec or not desc:
+                _v, _d = _cve_facts(cve)
+                vec, desc = vec or _v, desc or _d
+            raw_cases.append({**c,'cve':cve,'vector':vec,'description':desc})
+        prepared=VR.prepare(raw_cases,product=req.product,run_id=VR.fingerprint(req.asset),simulation=req.simulation)
+        for c in prepared:
+            cve,vec,desc=c['cve'],c.get('vector'),c.get('description')
+            cases.append({
+                "cve": cve,
+                "requirements": VR.requirements(CREQ.extract(cve, vec, desc,cwe_context=_cwe_details(cve,c.get('cwes',c.get('cwe')))),c),
+                "asset": req.asset or {},
+                "component_present": c.get("component_present", True),
+                "version_in_range": c.get("version_in_range", True),
+            })
+        res = OCJ.judge_many(cases)
+        res["arm"] = "operational-context"
+        from src.web_locale import english_statement
+        res['statements']=[english_statement(s) for s in res['statements']]
+        return VR.finish(res,prepared)
+
+    class OperationalQuestionsReq(BaseModel):
+        cves: list = []
+        product: str = 'unspecified-product'
+        simulation: bool = False
+        identification_job: str | None = None
+
+    @app.post('/api/item4/start')
+    def item4_start(req: OperationalQuestionsReq):
+        from src import item4_review as I4
+        cases=req.cves;product=req.product;simulation=req.simulation;sbom=None
+        if req.identification_job:
+            data=candidate_vex_data(req.identification_job)
+            cases=data['cves'];sbom=data['sbom'];simulation=bool(data.get('simulation'))
+            product=((sbom.get('metadata') or {}).get('component') or {}).get('name',product)
+        raw=[]
+        for c in cases:
+            cid=c.get('cve','')
+            if not re.fullmatch(r'CVE-\d{4}-\d{4,}',cid):raise HTTPException(400,'Invalid CVE ID.')
+            vector,description=_cve_facts(cid)
+            # Local records have precedence; caller text is explicitly supplied evidence when no record exists.
+            raw.append({**c,'description':description or c.get('description',''),
+                        'vector':vector or c.get('vector',''),'cwe_context':_cwe_details(cid,c.get('cwe'))})
+        try:return I4.start(raw,product,simulation,sbom)
+        except ValueError as e:raise HTTPException(400,str(e))
+
+    @app.get('/api/item4/reviews/{review_id}')
+    def item4_get(review_id: str):
+        from src import item4_review as I4
+        try:return I4.result(I4.get(review_id))
+        except KeyError as e:raise HTTPException(404,str(e))
+
+    @app.post('/api/item4/{review_id}/questions')
+    def item4_questions(review_id: str):
+        from src import item4_review as I4
+        try:return I4.questions(review_id)
+        except KeyError as e:raise HTTPException(404,str(e))
+        except ValueError as e:raise HTTPException(400,str(e))
+
+    @app.post('/api/oc/questions')
+    def operational_questions(req: OperationalQuestionsReq):
+        from src import operational_questions as OQ
+        cases=req.cves
+        product=req.product;simulation=req.simulation;source_sbom=None
+        if req.identification_job:
+            data=candidate_vex_data(req.identification_job)
+            cases=data['cves'];product=data['sbom']['metadata']['component'].get('name',product)
+            simulation=bool(data.get('simulation'))
+            source_sbom=data['sbom']
+        if not 1<=len(cases)<=100:raise HTTPException(400,'Provide 1 to 100 CVEs.')
+        raw=[]
+        for c in cases:
+            cid=c.get('cve','')
+            if not re.fullmatch(r'CVE-\d{4}-\d{4,}',cid):raise HTTPException(400,'Invalid CVE ID.')
+            vector,description=_cve_facts(cid)
+            raw.append({**c,'cve':cid,'description':description or c.get('description',''),
+                        'vector':vector or c.get('vector',''),'cwe_context':_cwe_details(cid,c.get('cwe'))})
+        try:return OQ.create(raw,product,uuid.uuid4().hex,simulation,sbom=source_sbom)
+        except ValueError as e:raise HTTPException(400,str(e))
+
+    class OperationalAnswersReq(BaseModel):
+        plan_id: str
+        answers: dict = {}
+        component_facts: dict = {}
+
+    @app.post('/api/item4/{review_id}/answers')
+    def item4_answers(review_id: str, req: OperationalAnswersReq):
+        from src import item4_review as I4
+        try:return I4.answers(review_id,req.answers,req.component_facts)
+        except KeyError as e:raise HTTPException(404,str(e))
+        except ValueError as e:raise HTTPException(400,str(e))
+
+    @app.post('/api/oc/answers')
+    def operational_answers(req: OperationalAnswersReq):
+        from src import operational_questions as OQ
+        try:return OQ.assess(req.plan_id,req.answers,req.component_facts)
+        except KeyError as e:raise HTTPException(404,str(e))
+        except ValueError as e:raise HTTPException(400,str(e))
+
+    @app.get('/api/oc/reviews/{plan_id}/sbom')
+    def operational_sbom(plan_id: str):
+        from src.review_store import get
+        result=get('review',plan_id)
+        if not result:raise HTTPException(404,'Review not found or expired.')
+        if not result.get('sbom_vex'):raise HTTPException(409,'No original CycloneDX SBOM was linked to this review.')
+        return result['sbom_vex']
+
+    @app.post("/api/source/upload")
+    async def source_upload(file: UploadFile = File(...)):
+        """Take a source ZIP, extract it safely, and index it.
+
+        The upload is DATA: it is extracted and parsed, never built or executed.
+        src/source_intake.py handles zip-slip, symlinks and zip bombs; whatever
+        it refuses is reported back rather than silently dropped.
+        """
+        if not (file.filename or "").lower().endswith(".zip"):
+            raise HTTPException(400, "a .zip of the source tree is expected")
+        sid = uuid.uuid4().hex[:16]
+        root = os.path.join(_SRC_SESSIONS, sid)
+        zpath = root + ".zip"
+        os.makedirs(_SRC_SESSIONS, exist_ok=True)
+        data = await file.read()
+        with open(zpath, "wb") as fh:
+            fh.write(data)
+        try:
+            got = SRC.extract_zip(zpath, root)
+            idx = SRC.index_tree(root)
+            ep = SRC.entry_points(idx)
+        finally:
+            try:
+                os.remove(zpath)
+            except OSError:
+                pass
+        from src.source_evidence import inspect_build
+        build = inspect_build(root)
+        _SRC_INDEX[sid] = {"index": idx, "entries": ep["entries"], "root": root, "upload": got}
+        return {"session": sid, "upload": got,
+                "build": build,
+                "files_indexed": idx["files"],
+                "functions": len(idx["functions"]),
+                "indirect_call_sites": idx["indirect_call_sites"],
+                "entry_points": {"count": len(ep["entries"]), "kind": ep["kind"],
+                                 "approximate": ep["approximate"],
+                                 "sample": ep["entries"][:12]},
+                # Said out loud because it changes what Q1 may claim: without a
+                # complete tree, "not found" and "not uploaded" are the same thing.
+                "note": ("The call graph is a syntactic approximation. The %d indirect call sites "
+                         "are unresolved, so missing paths alone do not prove unreachability."
+                         % idx["indirect_call_sites"])}
+
+    class SrcJudgeReq(BaseModel):
+        session: str
+        cves: list = []              # [{cve, description?, functions?: [...]}]
+        tree_is_complete: bool = False
+        engine: str = 'clang'
+        analysis_scope: str = 'partial'
+        entry_points: list[str] = []
+        product: str = 'uploaded-source'
+        simulation: bool = False
+        identification_job: str | None = None
+        item4_review_id: str | None = None
+
+    @app.post("/api/source/judge")
+    def source_judge(req: SrcJudgeReq):
+        """Patch/build/source review; static reachability is not exploitability."""
+        sess = _SRC_INDEX.get(req.session)
+        if req.engine not in {'clang','legacy'} or req.analysis_scope not in {'product','library','partial'}:
+            raise HTTPException(400,'Invalid source engine or analysis scope')
+        if not sess:
+            raise HTTPException(404, "unknown or expired source session")
+        master=None
+        if req.item4_review_id:
+            from src import item4_review as I4
+            try:master=I4.get(req.item4_review_id)
+            except KeyError as e:raise HTTPException(404,str(e))
+            if req.engine!='clang':raise HTTPException(400,'CWE-first source review requires Clang/LLVM.')
+            allowed=[c for c in master['cases'] if c['analysis_route']['requirement']=='source_required']
+            if not allowed:raise HTTPException(400,'No CVEs in this review require source analysis.')
+            if set(c.get('cve') for c in req.cves)-{c['cve'] for c in allowed}:
+                raise HTTPException(400,'CVEs outside the source-required group are not accepted.')
+            req.cves=allowed;req.product=master['product'];req.simulation=master['simulation']
+            req.identification_job=None
+        cases = []
+        handoff=candidate_vex_data(req.identification_job) if req.identification_job else None
+        linked={c['cve']:c for c in handoff['cves']} if handoff else {}
+        if len(req.cves) > 200:
+            raise HTTPException(400, "At most 200 CVEs can be reviewed per request")
+        for c in (req.cves or []):
+            if not isinstance(c, dict) or not isinstance(c.get("cve"), str):
+                raise HTTPException(400, "Each CVE must be an object with a CVE identifier")
+            cve = c.get("cve")
+            if not cve:
+                continue
+            fns = c.get("functions")
+            if fns is not None and (not isinstance(fns, list) or not all(isinstance(f, str) for f in fns)):
+                raise HTTPException(400, "functions must be an array of strings")
+            if not fns:
+                desc = c.get("description") or _cve_facts(cve)[1]
+                fns = CREQ.vulnerable_functions(desc)
+            desc = c.get('description') or _cve_facts(cve)[1] or ''
+            known = STORE.cve_index.get(cve, {})
+            cases.append({**linked.get(cve,{}),**c, "functions": fns,
+                          'description':desc,
+                          "cvss_score": c.get("cvss_score", STORE.cvss.get(cve)),
+                          "cwe": c.get("cwe", known.get("cwe"))})
+        from src.source_evidence import review
+        cases=VR.prepare(cases,product=req.product,run_id=VR.fingerprint([req.session,req.analysis_scope,req.entry_points,req.tree_is_complete]),simulation=req.simulation)
+        # Source targets come from explicit source/patch/description evidence.
+        # Model-based mapping caches are excluded; use explicit description/patch/source evidence.
+        res = review(sess["root"], sess["index"], req.entry_points, cases, sess.get("upload"),
+                     engine=req.engine,analysis_scope=req.analysis_scope,complete=req.tree_is_complete)
+        res["tree_completeness_declaration"] = req.tree_is_complete
+        res["indirect_call_sites"] = sess["index"]["indirect_call_sites"]
+        from src.web_locale import english_statement
+        res['statements']=[english_statement(s) for s in res['statements']]
+        for statement in res['statements']:
+            case=next(c for c in cases if c['cve']==statement['cve'])
+            if case.get('source_mapping_assistance'):
+                statement['source_mapping_assistance']=case['source_mapping_assistance']
+                statement.setdefault('evidence',{})['source_mapping_assistance']=case['source_mapping_assistance']
+                if case['source_mapping_assistance'].get('proposals'):
+                    statement['reason']+=' Target candidates include byte-bound LLM proposals; CVE causality remains unverified.'
+        res=VR.finish(res,cases)
+        if handoff and handoff['sbom'].get('bomFormat')=='CycloneDX':
+            from src.sbom_vex import merge
+            res['sbom_vex']=merge(handoff['sbom'],res,cases)
+            from src.sbom_schema import validate
+            res['sbom_vex_validation']=validate(res['sbom_vex'])
+        if master:
+            return I4.record_source(req.item4_review_id,res)
+        return res
+
     @app.post("/api/refresh")
     def refresh():
         STORE.refresh()
@@ -1229,6 +1780,11 @@ def build_app():
     @app.get("/sbom-to-cve.html", response_class=HTMLResponse)
     def sbom_to_cve_page():
         return make_page("sbom-to-cve")
+
+    @app.get("/cve-matcher.html", response_class=HTMLResponse)
+    def cve_matcher_page():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse('/',status_code=307)
 
     @app.get("/vex-decision.html", response_class=HTMLResponse)
     def vex_decision_page():
@@ -1263,6 +1819,11 @@ def build_app():
     def cert_page():
         return make_page("cert")
 
+    @app.get("/context-vex.html", response_class=HTMLResponse)
+    def context_vex_html():
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse('/',status_code=307)
+
     @app.get("/asset-vex.html", response_class=HTMLResponse)
     def asset_vex_page():
         # merged into the decision page; keep the old URL working
@@ -1275,7 +1836,7 @@ def build_app():
 # frontend (single page, calls the API above)
 # ---------------------------------------------------------------------------
 FRONTEND_TEMPLATE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS-VEX API console</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>ICS-VEXForge · Vulnerability intelligence</title>
 <style>
 @font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-5Medium.woff2') format('woff2');font-weight:500;font-display:swap}
 @font-face{font-family:'Paperlogy';src:url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-7Bold.woff2') format('woff2');font-weight:700;font-display:swap}
@@ -1452,6 +2013,7 @@ async function run(){
   const o=document.getElementById('out');o.innerHTML='<span class="hint">analyzing…</span>';
   let sbom;try{sbom=jsoncParse(document.getElementById('sbom').value)}catch(e){o.innerHTML='<span class="err">invalid JSON</span>';return}
   _treeState={};   // fresh decision trees for this SBOM
+  _lastSbom=sbom;_pidMap=null;
   // Deployment exposure intentionally omitted: it never sets a VEX status (only an
   // SSVC priority), so the analyzer does not collect it on the main bar.
   const r=await fetch('/api/vex',{method:'POST',headers:{'Content-Type':'application/json'},
@@ -1478,8 +2040,239 @@ async function run(){
       +'<td>'+nextcol+'</td></tr>';}
   h+='</tbody></table>';
   h+=_abstainBlock(d);
-  h+='<div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Export VEX (after deciding source-uncollectable CVEs via the tree):</span>'+'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'+'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button></div>';
-  o.innerHTML=h;
+  o.innerHTML=h+_armForkHtml();
+}
+
+// ---- 2단계: 판정 근거 분기 (docs/ICSVEX.md) --------------------------------
+// CVE 식별이 끝나면 근거가 두 갈래로 갈린다. 소스가 있으면 코드에서 읽고, 없으면
+// 자산 운영정보로 전제조건을 대조한다. 한 CVE가 두 팔을 동시에 타지 않는다 —
+// 어느 근거가 상태를 정했는지 문서에서 읽을 수 있어야 하기 때문이다.
+let _srcSession=null, _ocFields=null, _armResult=null;
+let _candidateJobId=null, _lastSbom=null;
+
+let _item4ReviewId=null;
+function _armForkHtml(){_item4ReviewId=null;return '<div class="card" id="armfork" style="margin-top:14px">'
+ +'<h3>Step 2 · CWE-first VEX review</h3><p>Check the CWE Pillar, specific weakness and CVE/advisory evidence before selecting the analysis method.</p>'
+ +'<button class="primary" onclick="startItem4Review()">Determine required evidence →</button><div id="item4routes"></div><div id="armbody" style="margin-top:14px"></div></div>';}
+async function startItem4Review(){
+ const box=document.getElementById('item4routes');box.innerHTML='<p>Checking weakness ancestry and advisory evidence…</p>';
+ try{
+  const r=await fetch('/api/item4/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:_lastVex?.cves||[],product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+  if(!r.ok)throw new Error(await r.text());
+  _armResult=await r.json();_item4ReviewId=_armResult.review_id;
+  const routes=Object.entries(_armResult.routes);let html='<table><thead><tr><th>CVE / CWE / Pillar</th><th>Required evidence</th><th>Reason</th></tr></thead><tbody>';
+  for(const [cve,q] of routes)html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(q.requirement.replaceAll('_',' '))+'</td><td>'+esc(q.reason)+'</td></tr>';
+  html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
+  if(routes.some(([_,q])=>q.requirement==='source_required'))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
+  if(routes.some(([_,q])=>q.requirement==='operational_review'))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operator-answerable cases</button>';
+  html+='</div>'+_verdictTable(_armResult,'Initial evidence routing')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
+  box.innerHTML=html;
+ }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}
+}
+
+function pickArm(which){
+  if(!_item4ReviewId)return;
+  const b=document.getElementById('armbody');
+  if(which==='source'){
+    b.innerHTML='<div class="row"><div>'
+      +'<label>소스코드 ZIP — 제품 소스 트리를 통째로 압축해 올려주세요</label>'
+      +'<input type="file" id="srczip" accept=".zip">'
+      +'<label style="margin-top:10px">Analysis scope</label><select id="srcscope">'
+      +'<option value="library">Component / library source</option><option value="product">Product source with build configuration</option><option value="partial">Partial source</option></select>'
+      +'<label>Product entry points (comma-separated; include callbacks, interrupts and initialization roots)</label><input id="srcentries" value="main">'
+      +'<label style="display:block;margin-top:8px"><input type="checkbox" id="srccomplete"> I supplied complete source/dependencies and the complete entry-point set for this selected product build.</label>'
+      +'<div class="hint" style="margin-top:8px">Include compile_commands.json and build manifests from the build being reviewed. '
+      +'The backend compares locally cached CVE patch hunks with your files and records declared compilation units. '
+      +'Source paths and patch matches support review; they do not prove exploitability or a fixed deployed binary.</div>'
+      +'<div style="margin-top:10px"><button class="primary" onclick="uploadSource()">업로드 후 분석 ▶</button></div>'
+      +'</div></div><div id="srcout" style="margin-top:12px"></div>';
+  }else{
+    b.innerHTML='<div class="hint">자산 운영정보 양식을 불러오는 중…</div>';
+    renderOcForm(b);
+  }
+}
+
+async function uploadSource(){
+  const f=document.getElementById('srczip').files[0];
+  const out=document.getElementById('srcout');
+  if(!f){out.innerHTML='<span class="err">ZIP 파일을 선택해주세요</span>';return;}
+  out.innerHTML='<span class="hint">업로드·색인 중… (큰 트리는 시간이 걸립니다)</span>';
+  const fd=new FormData();fd.append('file',f);
+  let up;
+  try{const r=await fetch('/api/source/upload',{method:'POST',body:fd});
+      if(!r.ok){out.innerHTML='<span class="err">업로드 실패 '+r.status+'</span>';return;}
+      up=await r.json();}
+  catch(e){out.innerHTML='<span class="err">'+esc(String(e))+'</span>';return;}
+  _srcSession=up.session;
+  let h='<div class="hint">파일 <b>'+up.files_indexed+'</b> · 함수 <b>'+up.functions+'</b>'
+    +' · 진입점 <b>'+up.entry_points.count+'</b> ('+esc(up.entry_points.kind)+')'
+    +' · 간접 호출 자리 <b>'+up.indirect_call_sites+'</b></div>'
+    +'<div class="hint" style="margin-top:6px">'+esc(up.note)+'</div>';
+  if(up.upload.truncated) h+='<div class="err" style="margin-top:6px">상한에 걸려 일부만 처리했습니다: '+esc(up.upload.truncated)+'</div>';
+  h+='<div class="hint">Build databases: '+up.build.compilation_databases.length+' · Mapped translation units: '+up.build.translation_units.length+' · Unresolved entries: '+up.build.unresolved_entries.length+'</div>';
+  out.innerHTML=h+'<div style="margin-top:10px"><button class="primary" onclick="judgeSource()">Review patches, build and source →</button></div><div id="srcverdict" style="margin-top:12px"></div>';
+}
+
+async function judgeSource(){
+  const v=document.getElementById('srcverdict');
+  v.innerHTML='<span class="hint">판정 중…</span>';
+  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.requirement==='source_required').map(f=>({cve:f.cve}));
+  const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:"clang",analysis_scope:document.getElementById('srcscope').value,
+      entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
+      product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+  if(!r.ok){v.innerHTML='<span class="err">판정 실패 '+r.status+'</span>';return;}
+  _armResult=await r.json();
+  let details='<div class="hint">Clang/LLVM source review · Conclusions apply to the selected build and declared roots. Missing build/entry coverage, indirect calls or compiler failures block negative decisions. A path does not prove attacker control or exploitation.</div>';
+  details+='<div class="card"><b>'+esc(_armResult.cfg.tool?.version||_armResult.cfg.engine)+'</b><p>Scope: '+esc(_armResult.cfg.scope)
+    +' · Analysis run: '+esc(_armResult.cfg.execution_status||'unknown')
+    +' · Translation units: '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
+    +' · Uploaded commands executed: '+_armResult.cfg.uploaded_commands_executed+' · Program executed: '+_armResult.cfg.program_executed+'</p></div>';
+  for(const s of _armResult.statements){
+    const e=s.evidence;if(!e?.patch)continue;
+    const hunks=e.patch.patches.flatMap(p=>p.hunks);
+    details+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Patch / build / source evidence</summary>'
+      +'<p>Patch files: '+e.patch.patches.length+' · Fixed-pattern hunks: '+hunks.filter(h=>h.status==='fixed_pattern').length
+      +' · Vulnerable-pattern hunks: '+hunks.filter(h=>h.status==='vulnerable_pattern').length+' · Static paths: '+e.reachable_paths.length+'</p>'
+      +'<p>CFG paths: '+e.cfg.reachable_paths.length+' · Unreachable: '+e.cfg.unreachable+' · Analysis blockers: '+e.cfg.blockers.length+'</p>'
+      +'<p>Missing evidence: '+esc(e.missing_evidence.join(', '))+'</p>'
+      +'<p><b>Explanation:</b> '+esc(e.explanation?.reason||s.reason)+'</p>'
+      +'<p>Claim boundary: '+esc(e.cfg.claim_boundary||e.cfg.scope)+'</p>'
+      +(e.cfg.reachable_paths||[]).map(p=>'<p><b>Observed path:</b> '+esc(p.path.join(' → '))+'</p>'
+        +'<ul>'+(p.call_sites||[]).map(c=>'<li>'+esc(c.file||'')+':'+esc(String(c.line||'?'))+' · '+esc(c.from)+' → '+esc(c.to)+'</li>').join('')+'</ul>').join('')
+      +'<ul>'+(e.cfg.blockers||[]).slice(0,30).map(b=>'<li>'+esc(b.reason)+(b.file?' · '+esc(b.file):'')+'</li>').join('')+'</ul>'
+      +'<pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+esc(JSON.stringify(e,null,2))+'</pre></details>';
+  }
+  v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
+}
+
+let _operationPlan=null;
+async function renderOcForm(box){
+  _operationPlan=null;
+  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Generate questions for each CVE, then answer using actual configuration and operating records. Choose unknown when you cannot confirm a fact. Enter the installed product and version once per component.</p>'
+    +'<p class="hint">These answers support a review; they do not establish verified code absence.</p>'
+    +'<details class="review-help"><summary>How this review works</summary><p>Only CVEs routed to operational review enter this form. Questions cover common weakness-type checks and CVE-specific operating facts. Required-source cases remain under investigation until source analysis is completed. Questions use source-linked rule templates. Answers are summarized by deterministic rules and version-evidence checks. Only the final VEX explanation uses an LLM.</p></details>'
+    +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
+}
+async function generateOperationQuestions(){
+  const box=document.getElementById('operation-questions'),button=document.getElementById('generate-operation-questions');
+  button.disabled=true;box.innerHTML='<p>Generating CVE-specific questions locally. This may take several minutes.</p>';
+  try{
+    const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
+    if(!r.ok)throw new Error(await r.text());
+    _operationPlan=await r.json();
+    box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card operation-case" style="margin-top:14px"><div class="case-heading"><h3>'+esc(c.cve)+'</h3><span class="pill">Review items: '+esc(String(c.questions.filter(q=>!q.deprecated_version_field).length))+'</span></div><p class="hint">'+esc(c.generation.status==='validated'?'Source-linked draft questions. Review each question before answering.':'Question generation: '+c.generation.status)+'</p>'
+      +'<details class="review-disclosure"><summary>Rule and source record</summary><p class="hint">Method: '+esc(c.generation.method||'Rule templates')+' · Attempts retained: '+esc(String((c.generation.attempts||[]).length))+'</p></details>'
+      +((c.generation.normalizations||[]).length?'<p class="hint">Presentation normalization was applied. Original model output and exact changes are retained below.</p>':'')
+      +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
+      +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div class="operation-question"><span class="question-kind">'+esc(q.origin==='system'?'Installation record':q.scope==='common'?'Common check':'CVE-specific check')+'</span><label class="question-title" for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label>'
+        +'<details class="question-evidence"><summary>Why we ask'+(q.evidence?' · View source':'')+'</summary><p>'+esc(q.purpose)+'</p>'+(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')+'</details>'
+        +(q.answer_type==='text'?'<input class="op-control" type="text" id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Enter the operational fact, or leave unknown">':'<select class="op-control" id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
+        +'<label class="record-label" for="oqe_'+ci+'_'+qi+'">Supporting record</label><input class="op-control" type="text" id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Configuration record, update ID or inspection date"></div>').join('')
+      +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></section>').join('')
+      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Analyze answers and draft VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
+  }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
+}
+function renderComponentFacts(plan){
+ let html='<style>.op-control{display:block;width:100%;box-sizing:border-box;margin:6px 0 10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card2);color:var(--ink);font:inherit}.op-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}</style>'
+  +'<section class="card"><h3>Shared component and installed-version facts</h3><p>Complete each actual component once. These facts are reused across its CVEs. Do not copy advisory versions as installed versions. Unselected or unknown components remain unresolved.</p>';
+ (plan.assets||[]).forEach((a,i)=>{
+  html+='<article class="card"><h4>'+esc(a.name)+'</h4><p class="hint">Component ref: '+esc(a.ref)+' · Original SBOM version: '+esc(a.reported_sbom_version||'unknown')+'</p><div class="op-facts">'
+   +'<label>Present in the reviewed asset?<select class="op-control" id="of_present_'+i+'"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No / not selected for this asset</option></select></label>'
+   +'<label>Actual manufacturer / product family<input type="text" class="op-control" id="of_product_'+i+'" list="of_options_'+i+'" maxlength="500" placeholder="Select the actual product family"><datalist id="of_options_'+i+'">'+(a.product_options||[]).map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist></label>'
+   +'<label>Observed installed firmware / build<input type="text" class="op-control" id="of_version_'+i+'" maxlength="160" placeholder="Read from device or inventory record"></label>'
+   +'<label>Supporting record and inspection date<input type="text" class="op-control" id="of_evidence_'+i+'" maxlength="1500" placeholder="Device record, inventory ID or update record"></label></div>'
+   +'<label><input type="checkbox" id="of_attest_'+i+'"> I checked this product and installed version against the stated record. This is an operator attestation, not independent machine verification.</label></article>';
+ });
+ return html+'</section>';
+}
+function collectComponentFacts(){
+ const out={};(_operationPlan.assets||[]).forEach((a,i)=>{out[a.ref]={present:document.getElementById('of_present_'+i).value,
+ product_name:document.getElementById('of_product_'+i).value,installed_version:document.getElementById('of_version_'+i).value,
+ evidence:document.getElementById('of_evidence_'+i).value,attested:document.getElementById('of_attest_'+i).checked};});return out;
+}
+function downloadSbomVex(){
+ if(!_armResult?.sbom_vex){alert('No original CycloneDX SBOM was linked to this review.');return;}
+ _dl('ics-sbom-with-vex.cdx.json',_armResult.sbom_vex);
+}
+
+async function judgeOc(){
+  if(!_operationPlan)return;
+  const v=document.getElementById('ocverdict'),button=document.getElementById('submit-operation-answers'),answers={};
+  _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{if(q.deprecated_version_field)return;answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
+  button.disabled=true;v.innerHTML='<p>Comparing operator reports with CVE evidence and writing VEX drafts locally...</p>';
+  try{
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
+    if(!r.ok)throw new Error(await r.text());
+    _armResult=await r.json();
+    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.filter(s=>s.operational_review).map(s=>'<section class="card"><div class="case-heading"><h3>'+esc(s.cve)+'</h3><span class="pill">'+esc(_statLabel(s.operational_assessment))+'</span></div><p>Standard VEX: <span class="verdict-state">'+esc(_statLabel(s.status))+'</span></p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
+      +'<button onclick="downloadOcReview()">Download review log (JSON)</button>';
+  }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
+}
+
+function downloadOcReview(){
+  const url=URL.createObjectURL(new Blob([JSON.stringify({schema:'ics-vex-context-review/1',..._armResult},null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='ics-vex-context-review.json';a.click();URL.revokeObjectURL(url);
+}
+
+function _versionEvidenceHtml(result){
+ let h='';
+ for(const s of result.statements||[]){
+  const evaluation=s.operational_review?.version_evaluation;
+  if(!evaluation)continue;
+  h+='<section class="card"><h3>'+esc(s.cve)+' · Installed-version comparison</h3><table><thead><tr><th>Component</th><th>Reported product / version</th><th>Vendor evidence</th><th>Installation record</th></tr></thead><tbody>';
+  for(const row of evaluation.components||[]){
+   h+='<tr><td>'+esc(row.component_ref)+'</td><td>'+esc(row.product_name||'Unknown product')+' / '+esc(row.installed_version||'Unknown version')+'</td><td>'+esc(row.state)+'</td><td>'+esc(row.operator_attested&&row.operator_evidence?'Operator-attested record; not independently verified':'Missing or unattested')+'</td></tr>';
+  }
+  h+='</tbody></table><p class="hint">'+esc(evaluation.comparison_policy)+'</p></section>';
+ }
+ const schema=result.sbom_vex_validation;
+ if(schema)h+='<p class="hint">SBOM export schema: '+esc(schema.status)+'. '+esc(schema.reason||'Schema validation checks document structure, not the accuracy of an asset assessment.')+'</p>';
+ return h;
+}
+
+function _groundedPipelineHtml(result){
+  if(!result.pipeline)return '';
+  let html='<div class="card"><h3>Rule analysis and VEX authoring</h3><p>Rule-based extraction → evidence decision → final LLM VEX explanation</p>'
+    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+(result.pipeline.model_eligible_cases??result.pipeline.case_count)+'. Generated text is a draft for review.</p></div>';
+  for(const s of result.statements){
+    if(s.extraction?.status==='not_run' && s.authoring?.status==='not_run')continue;
+    const x=s.extraction||{},w=s.authoring||{},draft=s.document_draft;
+    html+='<details class="card" style="margin-top:10px"><summary>'+esc(s.cve)+' · Extraction: '+esc(x.status||'unknown')+' · Authoring: '+esc(w.status||'unknown')+'</summary>'
+      +'<p class="hint">Case: '+esc(s.case_id||'')+'</p>';
+    if(x.usable){
+      html+='<h4>Quoted condition candidates</h4><ul>'+(x.prediction.conditions||[]).map(c=>'<li>'+esc(c.kind)+': '+esc(c.evidence)+'</li>').join('')+'</ul>'
+        +'<h4>Mentioned function candidates</h4><ul>'+(x.prediction.function_candidates||[]).map(f=>'<li>'+esc(f.name)+' · '+esc(f.evidence)+'</li>').join('')+'</ul>';
+    }else html+='<p>Extraction was not accepted. '+esc(x.reason||'Schema, literal quotation or policy checks failed.')+'</p>';
+    if(draft)html+='<h4>Generated VEX explanation (draft)</h4><p>'+esc(draft.impact_statement)+'</p>'
+      +(draft.action_statement?'<p>'+esc(draft.action_statement)+'</p>':'')+'<p>Evidence IDs: '+esc(draft.evidence_refs.join(', '))+'</p>';
+    else html+='<p>Generated explanation was not accepted. '+esc(w.error==='output_token_limit'?'The response reached the output limit before completing JSON.':w.error==='invalid_json_output'?'The model did not return a complete JSON object.':w.reason||JSON.stringify(w.diagnostics||{})||'Decision, identifier, evidence-reference or format checks failed.')+'</p>';
+    html+='<details><summary>Model outputs and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify({extraction:x,authoring:w},null,2))+'</pre></details>'
+      +'<details><summary>Evidence supplied to the VEX writer</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.evidence_packet,null,2))+'</pre></details></details>';
+  }
+  return html+_versionEvidenceHtml(result);
+}
+
+function _verdictTable(res,armLabel){
+  const C2={affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
+  // 판정률을 상태 분포와 같은 줄에 놓는다. 유보는 Precision 분모에서 빠지므로
+  // 유보율을 가린 정밀도는 성취가 아니라 회피다 (docs/ICSVEX.md §8).
+  let h='<div class="hint">'+esc(armLabel)+' · 전체 <b>'+res.total+'</b>'
+    +' · 판정 <b>'+Math.round((res.decision_rate||0)*100)+'%</b>'
+    +' · 유보 <b>'+res.deferred+'</b></div>'
+    +'<table style="margin-top:8px"><thead><tr><th>CVE</th><th>VEX</th><th>정당화</th><th>근거</th></tr></thead><tbody>';
+  for(const s of res.statements){
+    const col=C2[s.status]||'var(--ink3)';
+    h+='<tr><td class="mono">'+esc(s.cve)+'</td>'
+      +'<td><span class="badge" style="background:color-mix(in srgb,'+col+' 12%,transparent);color:'+col+'">'+esc(_statLabel(s.status))+'</span></td>'
+      +'<td class="mono" style="font-size:14px">'+esc(s.justification||'—')+'</td>'
+      +'<td class="hint">'+esc(s.reason||'')+'</td></tr>';
+  }
+  return h+'</tbody></table><section class="export-actions"><h3>Download your assessment</h3><p class="hint">'+(res.sbom_vex?'SBOM + VEX keeps the original component inventory with its assessment. OpenVEX and CSAF are standalone VEX documents.':'OpenVEX and CSAF provide standalone VEX documents for this review.')+'</p>'
+    +'<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">'
+    +'<button class="treebtn" onclick="exportOpenVex()">Download OpenVEX</button>'
+    +'<button class="treebtn" onclick="exportCsaf()">Download CSAF VEX</button>'+(res.sbom_vex?'<button class="primary" onclick="downloadSbomVex()">Download SBOM + VEX (CycloneDX)</button>':'')+'</div></section>';
 }
 function ex(){document.getElementById('sbom').value=JSON.stringify({bomFormat:"CycloneDX",specVersion:"1.5",
   components:[{name:"OpenSSL",version:"1.1.1k"},{name:"zlib",version:"1.2.11"},{name:"BusyBox",version:"1.31.1"}]},null,2);
@@ -1511,19 +2304,26 @@ async function stats(){
     // Axis cards - the CVE is the unit a VEX verdict is about. Product and statement axes are not shown.
     const ak=document.getElementById('kpis-axes');
     if(ak){ak.innerHTML='';
-      const AX=[['cves','unique CVEs','the VEX judgement unit'],
+      const AX=[['cves','unique CVEs','vulnerability identifiers'],
                 ['advisories_collected','ICS advisories','source, 2010–2026'],
-                ['advisories_with_cves','ICS-CERT products','carrying these CVEs']];
+                ['advisories_with_cves','advisories with CVEs','not a unique-product count']];
       for(const [key,lab,sub] of AX)
         ak.innerHTML+='<div class="kpi"><b>'+(ax[key]||0).toLocaleString()+'</b><span>'+lab+'<br><span class="hint" style="font-size:11px">'+sub+'</span></span></div>';}
     // The 'VEX verdict - per CVE' card was removed; only the source-code reachability axis is shown.
     const sk=document.getElementById('kpis-src');
-    if(sk){sk.innerHTML='';const sc=s.by_source_class||{};
-      const SL={'code-available':'code obtained','oss-attributed':'open source, code not collected','vendor-proprietary':'vendor-proprietary — source unobtainable'};
-      const SC={'code-available':C.LIKELY_AFFECTED,'oss-attributed':C.UNDER_INVESTIGATION,'vendor-proprietary':'var(--ink3)'};
-      for(const key of ['code-available','oss-attributed','vendor-proprietary'])
-        sk.innerHTML+='<div class="kpi"><b style="color:'+SC[key]+'">'+(sc[key]||0).toLocaleString()+'</b><span>'+SL[key]+'</span></div>';}
-  }catch(e){const sk=document.getElementById('kpis-src');if(sk)sk.innerHTML='<span class="err">stats unavailable — run src/vex_batch.py</span>';}
+    if(sk){
+      const si=s.source_inventory;
+      if(!si)throw new Error('Source inventory is unavailable. Refresh the public snapshot.');
+      const cards=[['snapshots_in_corpus','source snapshots in this CVE corpus'],
+                   ['no_local_snapshot','no local snapshot recorded'],
+                   ['analysis_attempted_in_corpus','compiler analysis attempted'],
+                   ['snapshots_total','snapshots stored across all CVEs']];
+      sk.innerHTML=cards.map(([key,label])=>'<div class="kpi"><b>'+(si[key]||0).toLocaleString()+'</b><span>'+label+'</span></div>').join('');
+      const states=Object.entries(si.analysis_state_in_corpus||{}).map(([state,n])=>state+': '+Number(n).toLocaleString()).join(' · ');
+      const note=document.getElementById('source-inventory-note');
+      if(note)note.textContent=(si.snapshots_outside_corpus||0)+' stored snapshots are outside this advisory CVE corpus. Compiler attempt states: '+(states||'no records')+'. Collection and analysis counts overlap; they must not be added.';
+    }
+  }catch(e){const sk=document.getElementById('kpis-src');if(sk)sk.innerHTML='<span class="err">Source inventory unavailable — refresh the backend or public snapshot</span>';}
 }
 const SEVC={critical:'var(--aff)',high:'#e08d5b',medium:'var(--und)',low:'var(--safe)',unrated:'var(--ink3)'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -1649,7 +2449,7 @@ async function coverage(){
       '<div class="kpi"><b style="color:var(--safe)">'+d.attemptable+'</b><span>engine-attemptable</span></div>'+
       '<div class="kpi"><b style="color:var(--und)">'+d.not_doable+'</b><span>not doable</span></div>';
     const by=d.by_reason||{};
-    let h='<div class="ct">Why '+d.not_doable+' cannot run <span class="hint">(source unobtainable / build infeasible)</span></div>';
+    let h='<div class="ct">Why '+d.not_doable+' cannot run <span class="hint">(collection or build blockers)</span></div>';
     const mx=Math.max(1,...Object.values(by));
     h+='<div class="cwe" style="margin-bottom:10px">';
     for(const k of Object.keys(by))
@@ -1762,6 +2562,7 @@ function _remedCsaf(r){return {patch_or_firmware_upgrade:'vendor_fix',temporary_
 function _canonStatus(s){s=String(s||'');
   if(s==='LIKELY_AFFECTED')return 'affected';
   if(s==='LIKELY_NOT_AFFECTED')return 'not_affected';
+  if(s==='LIKELY_FIXED')return 'fixed';
   if(s==='UNDER_INVESTIGATION')return 'under_investigation';
   if(s==='not_affected')return 'not_affected';
   if(s==='route_to_icsvexforge')return 'under_investigation';
@@ -1833,7 +2634,13 @@ function _v2Label(v){
     return 'VEX-v2: <b>affected</b> &middot; code present (reachability not analysed)';}
   return 'VEX-v2: under investigation';}
 function _v2Title(v){return (v.basis?('Reason: '+v.basis+' \\u2014 '):'')+'VEX-v2 evidence \\u2014 Q2 present: '+(v.q2||'?')+' \\u00b7 Q3 reach (Joern): '+(v.q3||'?')+' \\u00b7 Q4 control (Z3): '+(v.q4||'?');}
-function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(r);}return rows;}
+function _applyGroundedVex(row){
+  const s=(_armResult?.statements||[]).find(s=>s.cve===row.cve);if(!s)return row;
+  const d=s.document_draft;
+  return Object.assign({},row,{status:s.status,justification:s.justification||'',impact_statement:d?.impact_statement||s.reason||'',
+    action_statement:d?.action_statement||null,evidence_refs:d?.evidence_refs||[],model_authoring_status:s.authoring?.status||'unavailable',review_required:true});
+}
+function _vexRows(){const rows=[];for(const f of ((_lastVex&&_lastVex.cves)||[])){const rs=_rowStatus(f.cve);const ov=_vexFields[f.cve]||{};const r=Object.assign({cve:f.cve,component:f.component||'',cvss:f.cvss,av:f.av||'',kev:!!f.kev,justification:_autoStatus(f.cve).justification},ov);r.status=rs.status;r.source_collectable=rs.source_collectable;rows.push(_applyGroundedVex(r));}return rows;}
 function _sbomProduct(){
   const c=(_lastSbom&&_lastSbom.metadata&&_lastSbom.metadata.component)||{};
   return {name:c.name||'SBOM target', ref:c['bom-ref']||'PRODUCT-1', purl:c.purl||''};}
@@ -1961,7 +2768,7 @@ function saveVexFields(cve){
     const sn=[];
     if(r.status==='not_affected'&&st.status==='not_affected'){
       st.justification=_justOrNull(r);
-      if(r.action_statement)st.impact_statement=r.action_statement;}
+      if(r.impact_statement||r.action_statement)st.impact_statement=r.impact_statement||r.action_statement;}
     else if(st.status==='affected'){
       st.action_statement=(r.remediation?(r.remediation+': '):'')+(r.action_statement||('Apply vendor update or mitigation for '+r.component+'.'));}
     else if(st.status==='fixed'){
@@ -1972,6 +2779,9 @@ function saveVexFields(cve){
       if(r.investigation_progress)sn.push('progress: '+r.investigation_progress);
       if(r.missing_evidence)sn.push('missing: '+r.missing_evidence);
       if(r.planned_update)sn.push('planned: '+r.planned_update);}
+    if(r.impact_statement&&_effStatus(r)!=='not_affected')sn.push('Explanation: '+r.impact_statement);
+    if(r.evidence_refs?.length)sn.push('Evidence IDs: '+r.evidence_refs.join(', '));
+    if(r.review_required)sn.push('Draft for review; model authoring: '+r.model_authoring_status);
     if(sn.length)st.status_notes=sn.join(' | ');
     return st;});
   const doc={"@context":"https://openvex.dev/ns/v0.2.0","@id":"https://kakyung98.github.io/ics-vex-dashboard/vex/"+_docId(p.name),
@@ -1990,6 +2800,9 @@ function exportCsaf(){
     const v={cve:r.cve,product_status:{}};v.product_status[B2C[st]]=[cpid];
     const notes=[{category:'other',title:'ICS-VEXForge assessment',
       text:'status='+st+'; component='+r.component+(r.cvss!=null?('; cvss='+r.cvss):'')+(r.av?('; av='+r.av):'')}];
+    if(r.impact_statement)notes.push({category:'description',title:'Evidence-based explanation (draft)',text:r.impact_statement});
+    if(r.evidence_refs?.length)notes.push({category:'other',title:'Evidence IDs',text:r.evidence_refs.join(', ')});
+    if(r.review_required)notes.push({category:'other',title:'Review required',text:'Draft; model authoring: '+r.model_authoring_status});
     if(st==='not_affected'){
       // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
@@ -2019,7 +2832,7 @@ function exportCsaf(){
       publisher:{category:'other',name:'ICS-VEXForge (Chonnam SSRC)',
         namespace:'https://kakyung98.github.io/ics-vex-dashboard/',
         issuing_authority:'Third-party SBOM-based analysis. Not the product supplier.'},
-      tracking:{id:_docId(p.name),status:'final',version:'1',initial_release_date:now,current_release_date:now,
+      tracking:{id:_docId(p.name),status:rows.some(r=>r.review_required)?'draft':'final',version:'1',initial_release_date:now,current_release_date:now,
         revision_history:[{number:'1',date:now,summary:'Initial VEX generated by ICS-VEXForge.'}],generator:{engine:{name:'ICS-VEXForge',version:'2026.08'}}}},
     product_tree:{full_product_names:fpn},
     vulnerabilities:vulns};
@@ -2094,7 +2907,7 @@ function advSearch(){
     h+='<tr class="clk" onclick="openAdvisory(\\''+esc(String(a.id))+'\\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
-function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1};
+function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1,LIKELY_FIXED:0};
   let h=CVE_INDEX.filter(r=>r.cve.toLowerCase().includes(ql)||(r.cwe||'').toLowerCase().includes(ql)||(r.vendors||[]).some(v=>v.toLowerCase().includes(ql))||(r.component||'').toLowerCase().includes(ql));
   h.sort((a,b)=>((b.kev?1:0)-(a.kev?1:0))||(rk[b.vex]-rk[a.vex])||a.cve.localeCompare(b.cve));
   return h.slice(0,100).map(r=>({cve:r.cve,cvss:r.cvss,severity:r.severity,cwe:r.cwe,kev:r.kev,vex:r.vex,vendor:(r.vendors||[]).slice(0,2).join(', '),component:r.component}));}
@@ -2269,10 +3082,12 @@ ANALYZER_HTML = """<div class="card"><div class="row">
     <div id="fname" class="hint" style="margin-top:6px"></div></div>
 </div><div id="out" style="margin-top:12px"></div></div>"""
 
-CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">Dataset axes <span class="hint" style="font-weight:400">— CVE is the VEX judgement unit</span></h3><div id="kpis-axes" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">The axis is the <b>ICS-CERT advisory (ICSA)</b>: CISA publishes one CSAF document per ICSA, so one ICSA here yields one reverse-built SBOM and one VEX document — making our output directly comparable to <span class="mono">cisagov/CSAF</span> file-for-file. A VEX statement is <b>product × vulnerability × status</b>, so the judgement unit is the <b>statement</b> (ICSA × CVE), never a bare CVE.</p></div>
-<div class="card"><h3 style="margin:0 0 8px">Why <span class="mono" style="font-weight:400">under investigation</span> — source-code reachability of the dataset</h3><div id="kpis-src" class="kpis hint">loading…</div>
-<p class="hint" style="margin-top:10px">A code-based VEX verdict needs the vulnerable source. In this dataset most CVEs sit on <b>vendor-proprietary firmware</b>, where the source cannot be obtained at all — so no justification can ever be evidenced and <span class="mono">under investigation</span> is the only defensible status. This is the gap the pipeline targets, not a failure of it.</p></div>
+CORPUS_HTML = """<div class="card"><h3 style="margin:0 0 8px">CVE coverage and advisory scope</h3><div id="kpis-axes" class="kpis hint">loading…</div>
+<p class="hint" style="margin-top:10px">Advisories group the source material. These totals describe the corpus, not completed assessments. A VEX decision applies to a <b>product/component and CVE pair</b>; one advisory can cover several products and vulnerabilities.</p></div>
+<div class="card"><h3 style="margin:0 0 8px">Source snapshot availability and analysis coverage</h3><div id="kpis-src" class="kpis hint">loading…</div>
+<p class="hint" id="source-inventory-note" style="margin-top:10px"></p>
+<p class="hint">A stored snapshot does not establish the vulnerable version, a complete product/build, or a completed exploitability assessment. No local snapshot means collection is unconfirmed; it does not prove proprietary licensing or that source is unobtainable.</p>
+<p class="hint">CWE, specific weakness and CVE/advisory evidence determine the review route. Source-required cases without source remain <span class="mono">under_investigation</span>. Eligible operational cases use operator-answerable questions; uncertain routing remains deferred. Collection counts do not assign VEX status.</p></div>
 <div class="card"><h3 style="margin:0 0 4px">CISA ICS advisories <span class="hint">the source data · 2010–2026</span></h3>
 <div id="adv-kpis" class="kpis" style="margin-top:8px">loading…</div>
 <div id="adv-year" style="margin-top:14px"></div>
@@ -2597,7 +3412,8 @@ def _merged_decision_page():
     return _decision_page() + _q34_scope_section() + divider + asset
 
 
-_DECISION_PAGE = _merged_decision_page()
+from src.source_decision_page import SOURCE_DECISION_HTML
+_DECISION_PAGE = SOURCE_DECISION_HTML
 
 
 
@@ -2856,7 +3672,8 @@ by a better similarity threshold.</p>
    .replace("__ROWS__", body).replace("__YEARS__", yrs).replace("__VERS__", vrows)
 
 
-_SBOM_CVE_PAGE = _sbom_cve_page() + _vendor_precision_section()
+from src.identification_method_page import IDENTIFICATION_METHOD_HTML
+_SBOM_CVE_PAGE = IDENTIFICATION_METHOD_HTML
 
 
 PAGES = {
@@ -2867,13 +3684,14 @@ PAGES = {
                '<h1 style="margin:0 0 18px">ICS-CERT Advisories (CISA)</h1>' + SOURCE_HTML),
     # one page: the population, and the slice of it that has source
     "dataset": ("CVE Dataset", """<h1 style="margin:0 0 6px">CVE Dataset</h1>
-<p class="hint" style="margin:0 0 18px">Everything derived from the ICS-CERT advisories: how many CVEs exist, what verdict each carries, and which of them have obtainable source &mdash; the only ones a code-level judgment can be made about. The two halves used to be separate pages (&ldquo;corpus statistics&rdquo; and &ldquo;source code available&rdquo;), but they answer one question: <b>what is in the dataset, and how much of it can actually be judged?</b></p>"""
+<p class="hint" style="margin:0 0 18px">Current advisory CVEs, observed source snapshots and recorded compiler analysis attempts. Source collection and VEX decisions are separate evidence stages.</p>"""
                + CORPUS_HTML + COLLECTABLE_HTML),
     "published-vex": ("Published VEX (CISA)",
                       '<h1 style="margin:0 0 18px">Published VEX (CISA)</h1>' + PUBLISHED_VEX_HTML),
     "ics-sbom": ("Synthetic SBOM dataset", _ICSSBOM_PAGE),
     "cert": ("Certification performance metrics", CERT_PAGE),
     "asset-vex": ("Asset-attribute exploitability", ASSET_VEX_PAGE),
+    "context-vex": ("6W problems & CVSS x context VEX", CONTEXT_VEX_PAGE),
 }
 # Two sections: the ANALYZER (interactive tools that take an SBOM and produce a VEX
 # judgement, in pipeline order) and the DATASET (the reference corpus those tools are
@@ -2886,11 +3704,8 @@ _NAV_GROUPS = [
     # halves of the VEX decision (source-available tree + source-unavailable
     # asset-attribute estimate). Grouped apart from the analyzer tool.
     ("Method", [
-        ("sbom-to-cve", "sbom-to-cve.html", "ICS-SBOM to CVE"),
+        ("sbom-to-cve", "sbom-to-cve.html", "SBOM → CVE Method"),
         ("vex-decision", "vex-decision.html", "VEX Decision Logic"),
-    ]),
-    ("Certification", [
-        ("cert", "cert.html", "Test items #3 / #4"),
     ]),
     ("Dataset", [
         ("dataset", "dataset.html", "CVE Dataset"),
@@ -2921,19 +3736,53 @@ def nav_html(active, exclude=()):
         gi += 1
         for key, href, label in items:
             cls = "navtab" + (" navtab-main" if key == "analyzer" else "") + (" on" if key == active else "")
-            parts.append(f'<a class="{cls}" href="{href}">{label}</a>')
+            from src.ui_theme import nav_icon
+            current=' aria-current="page"' if key==active else ''
+            parts.append(f'<a class="{cls}" href="{href}"{current}>{nav_icon(key)}<span>{label}</span></a>')
     parts.append('</nav>')
     return "".join(parts)
 
 
 def make_page(active):
     _sub, content = PAGES[active]
-    return (FRONTEND_TEMPLATE
-            .replace("__VEX_TREE__", json.dumps(VT.TREE, ensure_ascii=False))
+    if active == 'ics-sbom' and STORE.sbom_index.get('generated_at'):
+        from html import escape
+        s=STORE.sbom_index
+        excluded=s.get('excluded_advisories',[])
+        content += ('<section class="card" style="margin-top:18px"><h2>Generation coverage</h2>'
+                    '<p>'+str(s.get('generated',0))+' synthetic SBOMs from '+str(s.get('advisory_records',0))+
+                    ' advisory records. Generated '+escape(s['generated_at'])+'.</p>'
+                    '<p class="hint">'+str(len(excluded))+' records excluded because the upstream advisory could not be collected: '+
+                    escape(', '.join(x['advisory_id']+' ('+x['reason']+')' for x in excluded))+
+                    '. These records are not represented by invented SBOMs.</p></section>')
+    if active in {'source', 'dataset'} and STORE.corpus_freshness.get('status') == 'complete':
+        from html import escape
+        f = STORE.corpus_freshness
+        content += ('<section class="card" style="margin-top:18px"><h2>Data freshness</h2>'
+                    '<p>CISA CSAF latest revision: '+escape(str(f.get('latest_advisory_modified', '')))+
+                    '<br>NVD feeds retrieved: '+escape(str(f.get('completed_at', '')))+
+                    '<br>Refreshed NVD records: '+str(f.get('nvd_records_refreshed', 0))+
+                    ' / '+str(f.get('cves_after', 0))+'</p>'
+                    '<p class="hint">New advisory relationships are under investigation until assessed. '
+                    'Historical training and evaluation datasets retain their original snapshots.</p></section>')
+    extra=''
+    if active=='analyzer':
+        from src.candidate_widget import widget_parts,BRIDGE_SCRIPT
+        content,widget_script=widget_parts()
+        extra=widget_script+BRIDGE_SCRIPT
+    page=(FRONTEND_TEMPLATE
+            .replace("__VEX_TREE__", "{}")
             .replace("__NAV__", nav_html(active))
             .replace("__CONTENT__", content)
             .replace("__ASSET_AV_JS__",
                      "window.__ICSVEX_RUNTIME=true;\n" + ASSET_AV_CLIENT_JS + ASSET_AV_MODAL_JS))
+    from src.web_locale import english_ui
+    from src.ui_theme import STYLE,TOPBAR
+    page=english_ui(page.replace('</body>',extra+'</body>') if extra else page)
+    page=page.replace('</head>',STYLE+'</head>')
+    page=page.replace('<main class="main">','<main class="main">'+TOPBAR,1)
+    page=page.replace('</svg></a></div>','</svg></a><div class="side-brand-name">ICS-VEXForge<small>Vulnerability intelligence</small></div></div>',1)
+    return page
 
 
 app = build_app()

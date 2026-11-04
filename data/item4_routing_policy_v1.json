@@ -1,0 +1,19 @@
+{
+  "schema": "ics-vex-item4-routing-policy/1",
+  "version": "item4-pillar-v1",
+  "authority": "project_research_policy_not_a_MITRE_analysis_requirement",
+  "human_adjudicated": false,
+  "source_required_ancestors": ["CWE-119", "CWE-190", "CWE-191", "CWE-362", "CWE-367", "CWE-369", "CWE-415", "CWE-416", "CWE-457", "CWE-476", "CWE-674", "CWE-843", "CWE-89", "CWE-94", "CWE-78", "CWE-22"],
+  "source_default_pillars": ["CWE-284", "CWE-435", "CWE-664", "CWE-682", "CWE-691", "CWE-693", "CWE-697", "CWE-703", "CWE-707", "CWE-710"],
+  "operational_rules": [
+    {"id": "transport-encryption", "cwe_ancestors": ["CWE-319", "CWE-523", "CWE-311", "CWE-200"], "evidence_pattern": "(?i)cleartext|clear.text|unencrypted|plain.text|transmi.{0,70}without encryption", "operator_topics": ["affected interface", "enabled protocol", "credential transmission", "vendor fixed build"]},
+    {"id": "protocol-cryptography", "cwe_ancestors": ["CWE-326", "CWE-327"], "evidence_pattern": "(?i)\\bTLS\\b|\\bSSL\\b|cipher|protocol|cryptograph|encrypt", "operator_topics": ["enabled protocol versions", "configured ciphers", "vendor build record"]},
+    {"id": "interface-authentication", "cwe_ancestors": ["CWE-306"], "evidence_pattern": "(?i)unauthenticated|without authentication|missing authentication|authentication.{0,35}not required", "operator_topics": ["affected service", "enabled authentication", "account configuration", "vendor build record"]},
+    {"id": "password-configuration", "cwe_ancestors": ["CWE-521", "CWE-1392"], "evidence_pattern": "(?i)password|credential", "operator_topics": ["password policy", "default account state", "vendor configuration record"]},
+    {"id": "cookie-configuration", "cwe_ancestors": ["CWE-614", "CWE-1004"], "evidence_pattern": "(?i)cookie|https|httponly", "operator_topics": ["management protocol", "cookie configuration", "inspection record"]},
+    {"id": "resource-permissions", "cwe_ancestors": ["CWE-732"], "evidence_pattern": "(?i)file|directory|permission|resource", "operator_topics": ["affected resource", "configured permissions", "configuration record"]}
+  ],
+  "unknown_policy": "under_investigation_without_operational_question_bypass",
+  "multiple_cwe_policy": "any_source_requirement_wins_then_any_unknown_defers",
+  "routing_is_not_a_vex_verdict": true
+}

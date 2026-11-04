@@ -1,0 +1,43 @@
+flowchart TD
+  S(["입력: SBOM (CycloneDX)"]) --> C["부품별 정보 추출<br/>이름 · 버전 · 공급사 · 모델코드 · PURL · CPE"]
+  C --> D1{"① 모델코드 정확 일치"}
+  M1["<b>방법</b>: ics:model-number 속성 또는 이름에서<br/>주문코드 정규식 추출 → 모델-CVE 인덱스<br/>(CISA 권고 기반) 완전 일치 조회<br/>근사 매칭 없음"] -.- D1
+
+  D1 -- 일치 --> D1a{"버전이 CISA 선언<br/>범위 밖으로 확정?"}
+  M1a["<b>방법</b>: 부품명의 VERS 표기<br/>(vers:…/&lt;4.3.4, &gt;=2.2|&lt;2.6)를<br/>시작/끝 경계로 파싱 → 버전 튜플 비교<br/>판단 불가면 유지"] -.- D1a
+  D1a -- 예 --> N0["CVE 없음"]
+  D1a -- "아니오 / 판단 불가" --> P1["해당 모델의 CVE 전체 선택"]
+
+  D1 -- 불일치 --> D2{"② PURL 일치"}
+  M2["<b>방법</b>: pkg:type/ns/<b>name</b>@ver 에서<br/>name만 추출 → NVD 제품 키 조회"] -.- D2
+  D2 -- 불일치 --> D3{"③ CPE 일치"}
+  M3["<b>방법</b>: cpe:2.3:part:vendor:<b>product</b>:… 에서<br/>product 필드만 추출 → NVD 제품 키 조회<br/>(vendor·version 필드는 미사용)"] -.- D3
+  D3 -- 불일치 --> D4{"④ 이름 정확 일치"}
+  M4["<b>방법</b>: 소문자화한 부품명 =<br/>NVD 제품 키"] -.- D4
+  D4 -- 불일치 --> D5{"⑤ 이름 정규화 일치"}
+  M5["<b>방법</b>: 괄호·버전 조각·불용어(firmware,<br/>inc, automation 등) 제거 → 토큰 n-gram을<br/>긴 것부터 _ / 붙여쓰기로 조회<br/>1토큰은 5자 이상만 허용"] -.- D5
+  D5 -- 불일치 --> D6{"⑥ 이름 유사도 일치"}
+  M6["<b>방법</b>: Ratcliff-Obershelp 유사도<br/>(3자 접두어로 후보 축소)<br/>1위 ≥ 0.90 그리고 1위−2위 ≥ 0.05"] -.- D6
+  D6 -- 불일치 --> AB["판단 보류 (abstain)<br/>CVE 없음"]
+
+  D2 -- 일치 --> PR["NVD 제품 식별"]
+  D3 -- 일치 --> PR
+  D4 -- 일치 --> PR
+  D5 -- 일치 --> PR
+  D6 -- 일치 --> PR
+
+  PR --> D7{"NVD cpeMatch 항목별<br/>버전이 범위 밖으로 확정?"}
+  M7["<b>방법</b>: SBOM 부품 버전을 NVD 경계<br/>(start/end Incl/Excl, 고정 버전)와<br/>숫자·문자 토큰 튜플로 비교<br/>미기재·파싱 불가면 유지"] -.- D7
+  D7 -- 예 --> DROP["해당 CVE 제외"]
+  D7 -- "아니오 / 판단 불가" --> V["공급사 신뢰도 등급 부여<br/>SBOM 공급사 일치 = anchored<br/>제품의 대표 벤더 = canonical<br/>그 외 = co-listed (기본 모드에선 유지)"]
+  V --> P2["CVE 선택 (중복 제거)"]
+
+  P1 --> OUT(["출력: 부품별 식별 CVE 목록"])
+  P2 --> OUT
+
+  classDef ex fill:#eeeeee,stroke:#888,color:#333,stroke-dasharray:4 3;
+  classDef io fill:#dbe8fb,stroke:#2f5fa8,color:#000;
+  classDef note fill:#fff8dc,stroke:#c9a227,color:#000,text-align:left;
+  class AB,N0,DROP ex;
+  class S,OUT io;
+  class M1,M1a,M2,M3,M4,M5,M6,M7 note;

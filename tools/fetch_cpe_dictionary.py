@@ -138,6 +138,8 @@ def main():
     a = ap.parse_args()
 
     state = load_state() if a.resume else {}
+    if state.get('mode')=='official_bulk_feed':
+        raise RuntimeError('This dictionary uses a verified bulk/API-delta snapshot. Refresh with tools/refresh_cpe_feed.py; do not append paginated legacy data.')
     if not a.resume and os.path.isfile(OUT):
         # the previous version deleted OUT unconditionally, so a rerun without
         # --resume silently threw away hours of fetching

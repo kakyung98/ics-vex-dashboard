@@ -18,6 +18,8 @@ adversarial cases assert only facts (openssl and openssh share no CVEs).
 
 Output: results/l0l3_delta.json
 """
+
+from sbom_paths import public_sbom_directory
 import glob
 import json
 import os
@@ -31,7 +33,7 @@ from generate_ics_sbom import OSS    # the old 42-entry OSS catalog (baseline)
 import component_resolve as R    # Stage 1 layering, so the rate is per layer
 
 OUT = os.path.join(BASE, "results", "l0l3_delta.json")
-CORPUS = os.path.join(BASE, "reverse_sbom")
+CORPUS = str(public_sbom_directory())
 
 # Resolution paths, strongest identity first. Identifier paths (purl/cpe) are
 # lookups; name paths are inferences and are reported separately for that reason.

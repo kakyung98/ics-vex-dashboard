@@ -17,11 +17,11 @@ authorities used instead are the ones the test spec names
 
 The corpus splits into two layers, and they are NOT scorable the same way:
 
-  Layer A  vendor-anchored (58.1%, 6,034 CVEs)
+  Layer A  vendor-anchored (41,868 pairs over 6,461 CVEs)
            The ICS product itself is in NVD: "Siemens Scalance X414-3E"
            -> cpe:2.3:o:siemens:scalance_x414-3e_firmware. The matcher's job is
            name -> CPE product, and the correct answer exists. Scorable.
-  Layer B  embedded third-party only (41.9%, 4,279 CVEs)
+  Layer B  embedded third-party only (23,049 pairs over 4,316 CVEs)
            CISA says "Schneider ProLeiT is affected by CVE-2025-46817"; NVD's CPE
            for it is `redis:redis`. The ICS name appears nowhere in NVD, so no
            name-based matcher can reach the answer. Counting these as misses scores
@@ -30,9 +30,28 @@ The corpus splits into two layers, and they are NOT scorable the same way:
 Only Layer A is emitted as scorable GT. Layer B is written to a separate file so the
 exclusion is auditable rather than hidden.
 
+The two layers share 720 CVEs and do not partition the corpus, so quote the axis along
+with the share or the numbers look wrong. Over the 11,550 corpus CVEs:
+
+    6,461  layer A, the scorable GT        NVD anchors a CPE under the component's
+                                           own publisher, so CISA and NVD can be
+                                           cross-checked
+    3,596  layer B only                    NVD's CPE names an embedded third party
+      720  BOTH layers                     a multi-component CVE: one component
+                                           vendor-anchored, another embedded-only
+    1,482  neither layer                   NVD publishes NO CPE for the CVE at all,
+                                           so no applicability statement exists for
+                                           any authority to adjudicate against
+       11  held out                        circular OSS links (see exclusions below)
+
+Layer B is 42.9% of the 10,057 CVEs that reach either layer, and 35.5% of the 64,917
+(component, CVE) pairs across both. Both figures are real; they count different things.
+
 Out: data/cpe_match_eval.jsonl        scorable GT (the evaluation ground-truth schema)
      data/cpe_match_eval_layerB.jsonl excluded embedded-layer pairs, with reason
 """
+
+from sbom_paths import public_sbom_directory
 import argparse
 import collections
 import glob
@@ -46,7 +65,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE, "src"))
 from sbom_match import cmp_ver            # version arithmetic only, never identity
 
-CORPUS = os.path.join(BASE, "reverse_sbom")
+CORPUS = str(public_sbom_directory())
 NVD_DETAIL = os.path.join(BASE, "data", "nvd_cpe_detail.json")
 OUT = os.path.join(BASE, "data", "cpe_match_eval.jsonl")
 OUT_B = os.path.join(BASE, "data", "cpe_match_eval_layerB.jsonl")
@@ -544,10 +563,10 @@ def main():
     # knobs and, just as importantly, what was EXCLUDED and why
     manifest = {
         "test": "SBOM CVE-identification precision (test item #3) - ground truth",
-        "generated_from": {"corpus": "reverse_sbom/ (CISA CSAF)",
+        "generated_from": {"corpus": os.path.relpath(str(public_sbom_directory()), BASE),
                            "applicability": "data/nvd_cpe_detail.json (NVD)"},
         "evidence_sources": ["CISA", "NVD"],
-        "population": a.population or "reverse_sbom/ (whole corpus)",
+        "population": a.population or str(public_sbom_directory()),
         "population_cves": len(population) if population else None,
         "seed": a.seed,
         "per_vendor_cap": a.per_vendor or "none",
