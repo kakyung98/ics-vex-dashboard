@@ -15,7 +15,11 @@ No VEXGen attribution or TIX output is used.
    defers. A bare Pillar or missing/unsupported CWE is unresolved.
 4. Source required + no source: immediately assign `under_investigation` with a
    missing-source rationale. **No extraction, operational question or writer call.**
-5. Source supplied: Clang/LLVM source/build analysis runs for the required group.
+5. Source supplied: language-aware AST source analysis runs for the required group
+   (C, C++, Python, Java, SQL, JavaScript, Go, R, Ruby). No binary is required.
+   Auto mode uses Clang/LLVM only for configured C/C++-only builds; otherwise it
+   uses Tree-sitter source parsing. Syntax call candidates cannot authorize
+   absence/unreachability clearance; dynamic/import/SQL coverage remains incomplete.
    Explicit context terms (remote/network access, authentication, privileges,
    configuration, enabled/disabled features, user interaction, local attacker or
    physical access) require a subsequent operating review. Exact triggering spans

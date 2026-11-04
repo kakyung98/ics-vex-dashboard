@@ -48,6 +48,9 @@ LANG_EXT = {
     ".hpp": "cpp", ".hh": "cpp", ".py": "python", ".java": "java",
     ".cs": "csharp", ".js": "javascript", ".ts": "typescript", ".go": "go",
     ".rs": "rust",
+    ".sql":"sql", ".r":"r", ".rb":"ruby", ".rake":"ruby",
+    ".mjs":"javascript", ".cjs":"javascript", ".jsx":"javascript", ".tsx":"typescript",
+    ".hxx":"cpp",
 }
 # 벤더 디렉터리는 색인하되 엔트리포인트 후보에서는 빼고 싶을 때가 있어 표시만 해 둔다.
 _VENDOR_HINT = re.compile(
@@ -280,6 +283,22 @@ def entry_points(index):
         return {"entries": sorted(mains), "kind": "main", "approximate": False}
     roots = sorted(n for n in funcs if not callers.get(n))
     return {"entries": roots, "kind": "unreferenced-roots", "approximate": True}
+
+
+def index_source_tree(root):
+    """AST-based intake for the web workflow; preserve legacy regex API separately."""
+    from src.multilang_source import build
+    graph=build(root);functions={};callers={}
+    for key,f in graph['functions'].items():
+        if f['kind']=='module':continue
+        calls=sorted({c['symbol'] for c in f['calls']})
+        functions.setdefault(f['name'],[]).append({'file':f['file'],'line':f['line'],
+            'lang':f['language'],'calls':calls,'cfg':{'kind':'syntax_only_not_cfg'},'symbol_id':key})
+        for c in calls:callers.setdefault(c,set()).add(f['name'])
+    return {'functions':functions,'callers':{k:sorted(v) for k,v in callers.items()},
+            'files':len(graph['translation_units']), 'languages':graph['languages'],
+            'parser_diagnostics':graph['blockers'],
+            'indirect_call_sites':sum(c['indirect'] for f in graph['functions'].values() for c in f['calls'])}
 
 
 def reaches(index, target, entries, max_depth=40):

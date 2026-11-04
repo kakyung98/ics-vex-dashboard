@@ -13,7 +13,7 @@ import shlex
 from collections import Counter
 
 from src import source_intake as SI
-from src import source_cfg, clang_source
+from src import source_cfg, clang_source, multilang_source
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 CODE = set(SI.LANG_EXT)
@@ -33,7 +33,7 @@ def load_json(path, default):
 def inspect_build(root):
     """Resolve paths against uploaded files; never read host paths from a DB."""
     root = Path(root)
-    sources = [p for p in root.rglob("*") if p.is_file() and p.suffix in CODE]
+    sources = [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in CODE]
     rels = [p.relative_to(root).as_posix() for p in sources]
     databases, units, unresolved, configurations = [], set(), [], []
     manifests = []
@@ -148,12 +148,19 @@ def patch_evidence(root, cve, data_dir=DATA, files=None, texts=None):
             "note": "Whitespace-normalized hunk matches are review evidence; they do not establish patch completeness, applicability or a fixed deployed build."}
 
 
-def review(root, index, entries, cves, upload=None, data_dir=DATA, *, engine='clang', analysis_scope='partial', complete=False):
+def review(root, index, entries, cves, upload=None, data_dir=DATA, *, engine='auto', analysis_scope='partial', complete=False):
     build = inspect_build(root)
-    if engine not in {'clang','legacy'}:raise ValueError('Unsupported source engine')
-    cfg = (clang_source.build(root,build,entries=entries,scope=analysis_scope,complete=complete)
-           if engine=='clang' else source_cfg.build(root))
-    source_files = [p for p in Path(root).rglob("*") if p.is_file() and p.suffix in CODE]
+    if engine not in {'auto','syntax','clang','legacy'}:raise ValueError('Unsupported source engine')
+    options={'entries':entries,'scope':analysis_scope,'complete':complete}
+    cfg = (multilang_source.auto_build(root,build,**options) if engine=='auto' else
+           multilang_source.build(root,build,**options) if engine=='syntax' else
+           clang_source.build(root,build,**options) if engine=='clang' else source_cfg.build(root))
+    compiled=cfg['engine']=='clang-llvm-ir/1'
+    modern=engine!='legacy'
+    if compiled and any(multilang_source.language(p) not in {'c','cpp'} for p in multilang_source.source_files(root)):
+        cfg['blockers'].append({'reason':'non_cpp_sources_outside_clang_analysis'})
+        cfg['negative_decisions_enabled']=False
+    source_files = [p for p in Path(root).rglob("*") if p.is_file() and p.suffix.lower() in CODE]
     texts = {}
     target_cache = load_json(Path(data_dir) / "vuln_targets.json", {})
     statements = []
@@ -173,15 +180,17 @@ def review(root, index, entries, cves, upload=None, data_dir=DATA, *, engine='cl
             for d in index["functions"].get(name, []):
                 definitions.append({"function": name, "file": d["file"], "line": d["line"],
                                     "declared_translation_unit": d["file"] in build["translation_units"]})
-        if engine=='clang':
+        if modern:
             definitions=[{'function':f['name'],'file':f['file'],'line':f['line'],'symbol_id':key,
-                          'declared_translation_unit':True} for key,f in cfg['functions'].items() if f['name'] in names or f['symbol'] in names]
+                          'declared_translation_unit':compiled,'language':f.get('language','c/c++')} for key,f in cfg['functions'].items() if f['name'] in names or f['symbol'] in names]
         missing = ["complete_and_correct_vulnerable_artefact_mapping", "sound_whole_program_coverage", "deployed_build_identity"]
+        if cfg['engine']=='tree-sitter-source/1':
+            missing.extend(['language_semantics_and_runtime_dispatch','sound_cfg_or_runtime_reachability'])
         if not names:
             missing.append("vulnerable_artefacts")
         if not patch["patches"]:
             missing.append("local_fixing_patch")
-        if not build["compilation_databases"]:
+        if (compiled or engine=='legacy') and not build["compilation_databases"]:
             missing.append("compilation_database")
         if upload and (upload.get("truncated") or any(v for k, v in upload.get("skipped", {}).items() if k != "dir")):
             missing.append("complete_source_intake")
@@ -203,17 +212,20 @@ def review(root, index, entries, cves, upload=None, data_dir=DATA, *, engine='cl
                 reason = "Vulnerable function names occur in source but no definition was indexed; external code or parser coverage requires review."
         elif not names:
             reason = "The vulnerable functions could not be identified; missing mapping is not evidence of function absence."
-        flow = (clang_source.assess(cfg,names,'complete_source_intake' not in missing) if engine=='clang'
+        flow = (multilang_source.assess(cfg,names,'complete_source_intake' not in missing) if modern
                 else source_cfg.assess(cfg,names,'complete_source_intake' not in missing))
-        if engine=='clang' and flow['absence_proven']:
+        if compiled and flow['absence_proven']:
             status,justification,rule='not_affected','vulnerable_code_not_present','CLANG_BUILD_TARGETS_ABSENT'
             reason='The identified targets are absent from the analysed translation units under the supplied build flags and declared complete product/entry scope.'
         if definitions and flow["unreachable"]:
             status, justification, rule = "not_affected", "vulnerable_code_not_in_execute_path", "CFG_VULNERABLE_FUNCTIONS_UNREACHABLE"
             reason = "The identified targets exist, but the analysed CFG/call graph has no path from the declared entry points to them within the selected source/build scope."
         if flow["reachable_paths"]:
-            reason = "A compiler/CFG-derived possible call path reaches an identified target; path feasibility, attacker control and CVE applicability require review."
-        if engine=='clang':paths=flow['reachable_paths']
+            reason = ("A compiler/CFG-derived possible call path reaches an identified target; path feasibility, attacker control and CVE applicability require review." if compiled else
+                      "A syntax-derived name-based call candidate reaches an identified target; this is not a verified CFG/runtime path or exploitability proof.")
+        if modern:paths=flow['reachable_paths']
+        if cfg['engine']=='tree-sitter-source/1' and not flow['reachable_paths']:
+            reason='No syntax-derived call candidate was established. Missing calls or definitions are not proof of absence or unreachability.'
         if status=='not_affected' and not reference_names:
             status,justification,rule='under_investigation',None,'UNVERIFIED_LLM_FUNCTION_MAPPING'
             reason='Only description-derived function candidates were available; they cannot authorize source-absence or unreachability clearance.'
@@ -229,18 +241,18 @@ def review(root, index, entries, cves, upload=None, data_dir=DATA, *, engine='cl
                     "absence_scope": "uploaded_source_tree", "unresolved_reference_files": references,
                     "definitions": definitions, "reachable_paths": paths, "patch": patch,
                     "cfg": flow,
-                    "missing_evidence": missing, "graph_coverage": "compiled_translation_units" if engine=='clang' else "syntactic_approximation",
+                    "missing_evidence": missing, "graph_coverage": "compiled_translation_units" if compiled else "syntactic_approximation",
                     'explanation':explanation}
         statements.append({"cve": cve, "status": status, "justification": justification,
                            "reason": reason, "rule": rule, "arm": "source-evidence",
-                           "evidence_basis": "Clang/LLVM CFG and direct call graph, patch hunks and declared build configuration" if engine=='clang' else "Patch hunks, declared build configuration and approximate source paths",
+                           "evidence_basis": "Clang/LLVM CFG and direct call graph, patch hunks and declared build configuration" if compiled else "Source AST, syntax-derived call candidates and patch evidence; no runtime path proof",
                            "evidence": evidence})
     n = len(statements)
     counts = dict(Counter(s["status"] for s in statements))
     deferred = counts.get("under_investigation", 0)
     inventory = [{"file": p.relative_to(Path(root)).as_posix(), "sha256": digest(p)}
                  for p in sorted(Path(root).rglob("*")) if p.is_file()]
-    return {"arm": "source-evidence", "method": "ICS-VEXForge compiler-backed source evidence",
+    return {"arm": "source-evidence", "method": "ICS-VEXForge multilingual source evidence",
             "statements": statements, "total": n, "by_status": counts,
             "deferred": deferred, "decision_rate": round((n-deferred)/n,4) if n else None, "deferral_rate": round(deferred/n,4) if n else None,
             "build": build, "inventory_sha256": hashlib.sha256(json.dumps(inventory, sort_keys=True).encode()).hexdigest(),

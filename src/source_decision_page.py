@@ -16,7 +16,7 @@ SOURCE_DECISION_HTML = '''
 <p class="method-boundary">The CWE hierarchy is official. The analysis-routing policy is a separate project policy awaiting independent validation. Pillar alone does not determine the method.</p>
 </div></details>
 <details class="method-topic"><summary>2 · Analyze each eligible CVE<span class="topic-prompt">View details</span></summary><div class="topic-body">
-<dl><dt>Source branch</dt><dd>Extract supported function candidates. Inspect patches and build flags; use Clang/LLVM for targets and paths.</dd>
+<dl><dt>Source branch</dt><dd>Parse C, C++, Python, Java, SQL, JavaScript, Go, R and Ruby source text with Tree-sitter. Record definitions, source locations and name-based call candidates without running the project. Configured C/C++ builds can additionally use Clang/LLVM CFG and direct calls.</dd>
 <dt>Operational branch</dt><dd>Rule templates produce common weakness-type and CVE-specific questions that an operator can answer using configuration and operating records.</dd>
 <dt>Answers</dt><dd>Collect yes / no / unknown, installed-build facts and supporting records. Unknown operating facts remain unknown.</dd>
 <dt>Evidence checks</dt><dd>Validate source references and output format. A valid reference does not establish semantic correctness.</dd></dl>
@@ -43,6 +43,8 @@ SOURCE_DECISION_HTML = '''
 </details>
 <details class="method-extra"><summary>Source analysis limits</summary>
 <ul><li>Inspect compile_commands.json and build manifests; do not execute uploaded build commands.</li>
+<li>Source AST analysis needs no executable or build database. Syntax call candidates are not a verified runtime CFG and cannot authorize absence/unreachability clearance.</li>
+<li>Dynamic dispatch, imports, callbacks, cross-language FFI and SQL dialect/quoted-body coverage remain incomplete. Parser errors and unresolved calls are exported.</li>
 <li>Compiler errors, missing units and unresolved calls can block negative conclusions.</li>
 <li>Patch-hunk similarity does not prove that every fix is present.</li>
 <li>Partial source cannot establish whole-product absence or unreachability.</li>
