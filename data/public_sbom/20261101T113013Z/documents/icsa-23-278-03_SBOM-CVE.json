@@ -1,0 +1,462 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:3b20bd92-fe88-5384-b290-5d3f4ddada92",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-23-278-03",
+      "name": "Mitsubishi Electric CC-Link IE TSN Industrial Managed Switch (Update A)",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'CC-Link IE TSN Industrial Managed Switch (Update A)' by Mitsubishi Electric, reverse-built from CISA ICS-CERT advisory icsa-23-278-03.",
+      "scope": "required",
+      "publisher": "Mitsubishi Electric",
+      "purl": "pkg:generic/cc-link-ie-tsn-industrial-managed-switch-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:mitsubishi-electric:cc-link-ie-tsn-industrial-managed-switch-update-a:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Mitsubishi Electric"
+      },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "ics",
+        "mitsubishi-electric",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "5d394e1e9b0afbc645d170c9ac136815306bc97672193b6bc9af94934779a3e6"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-278-03",
+          "comment": "Source CISA ICS-CERT advisory icsa-23-278-03"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Mitsubishi Electric"
+        },
+        {
+          "name": "ics:product",
+          "value": "CC-Link IE TSN Industrial Managed Switch (Update A)"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-23-278-03"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-23-278-03",
+      "dependsOn": [
+        "pkg:oss:openssl",
+        "mod:icsa-23-278-03:firmware",
+        "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt8f2-firm",
+        "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt4-firmwa"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:openssl",
+      "name": "OpenSSL",
+      "version": "NOASSERTION",
+      "description": "TLS/SSL and general-purpose cryptography library. Handles the device's secure communication channels and certificate processing.",
+      "scope": "required",
+      "publisher": "OpenSSL Project",
+      "manufacturer": {
+        "name": "OpenSSL Project"
+      },
+      "supplier": {
+        "name": "OpenSSL Project"
+      },
+      "tags": [
+        "crypto",
+        "oss",
+        "tls"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/openssl",
+      "cpe": "cpe:2.3:a:openssl:openssl:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "A"
+        }
+      ]
+    },
+    {
+      "type": "firmware",
+      "bom-ref": "mod:icsa-23-278-03:firmware",
+      "name": "CC-Link IE TSN Industrial Managed Switch (Update Vendor Firmware/Application",
+      "version": "NOASSERTION",
+      "description": "Vendor firmware/application inventory placeholder; source not publicly available.",
+      "scope": "required",
+      "publisher": "Mitsubishi Electric",
+      "manufacturer": {
+        "name": "Mitsubishi Electric"
+      },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/cc-link-ie-tsn-industrial-managed-switch-update-a",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt8f2-firm",
+      "name": "Mitsubishi Electric CC-Link IE TSN Industrial Managed Switch NZ2MHG-TSNT8F2 <=firmware_05",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Mitsubishi Electric",
+      "manufacturer": {
+        "name": "Mitsubishi Electric"
+      },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "ics",
+        "mitsubishi-electric",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt8f2-firm@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=firmware_05"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt4-firmwa",
+      "name": "Mitsubishi Electric CC-Link IE TSN Industrial Managed Switch NZ2MHG-TSNT4 <=firmware_05",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Mitsubishi Electric",
+      "manufacturer": {
+        "name": "Mitsubishi Electric"
+      },
+      "supplier": {
+        "name": "Mitsubishi Electric"
+      },
+      "tags": [
+        "ics",
+        "mitsubishi-electric",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt4-firmwa@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=firmware_05"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-23-278-03:CVE-2022-4304",
+      "id": "CVE-2022-4304",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-278-03"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.9,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+        }
+      ],
+      "cwes": [
+        208
+      ],
+      "affects": [
+        {
+          "ref": "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt8f2-firm"
+        },
+        {
+          "ref": "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt4-firmwa"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-278-03"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "A"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.16195"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-23-278-03:CVE-2022-4450",
+      "id": "CVE-2022-4450",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-278-03"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        }
+      ],
+      "cwes": [
+        415
+      ],
+      "affects": [
+        {
+          "ref": "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt8f2-firm"
+        },
+        {
+          "ref": "variant:mitsubishi-electric-cc-link-ie-tsn-industrial-managed-switch-nz2mhg-tsnt4-firmwa"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-278-03"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.20287"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

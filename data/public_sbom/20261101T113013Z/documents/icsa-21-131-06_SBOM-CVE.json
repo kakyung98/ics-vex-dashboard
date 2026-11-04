@@ -1,0 +1,347 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:f39746a7-f574-5e1e-8a19-b4466dda4369",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-21-131-06",
+      "name": "Siemens SNMP Implementation of WinCC Runtime",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SNMP Implementation of WinCC Runtime' by Siemens, reverse-built from CISA ICS-CERT advisory icsa-21-131-06.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "purl": "pkg:generic/snmp-implementation-of-wincc-runtime@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:siemens:snmp-implementation-of-wincc-runtime:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bc85a7e12d6a43c6619b42bca638c23e479b3d1f7207f870aefb3f8b7e33d0c0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-21-131-06",
+          "comment": "Source CISA ICS-CERT advisory icsa-21-131-06"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Siemens"
+        },
+        {
+          "name": "ics:product",
+          "value": "SNMP Implementation of WinCC Runtime"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-21-131-06"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-21-131-06",
+      "dependsOn": [
+        "pkg:oss:net-snmp",
+        "variant:siemens-simatic-hmi-comfort-panels-1st-generation-incl-siplus-variants-v16-updat",
+        "variant:siemens-simatic-hmi-ktp-mobile-panels-v16-update-4"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:net-snmp",
+      "name": "Net-SNMP",
+      "version": "NOASSERTION",
+      "description": "SNMP agent that lets a network management system poll device status.",
+      "scope": "required",
+      "publisher": "Net-SNMP Project",
+      "manufacturer": {
+        "name": "Net-SNMP Project"
+      },
+      "supplier": {
+        "name": "Net-SNMP Project"
+      },
+      "tags": [
+        "management",
+        "oss",
+        "snmp"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/net-snmp",
+      "cpe": "cpe:2.3:a:net-snmp:net-snmp:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-hmi-comfort-panels-1st-generation-incl-siplus-variants-v16-updat",
+      "name": "Siemens SIMATIC HMI Comfort Panels 1st Generation (incl. SIPLUS variants) <V16_Update_4",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-simatic-hmi-comfort-panels-1st-generation-incl-siplus-variants-v16-updat@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<V16_Update_4"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-hmi-ktp-mobile-panels-v16-update-4",
+      "name": "Siemens SIMATIC HMI KTP Mobile Panels <V16_Update_4",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-simatic-hmi-ktp-mobile-panels-v16-update-4@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<V16_Update_4"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-21-131-06:CVE-2019-19276",
+      "id": "CVE-2019-19276",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-21-131-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.3,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P/RL:O/RC:C"
+        }
+      ],
+      "cwes": [
+        787
+      ],
+      "affects": [
+        {
+          "ref": "variant:siemens-simatic-hmi-comfort-panels-1st-generation-incl-siplus-variants-v16-updat"
+        },
+        {
+          "ref": "variant:siemens-simatic-hmi-ktp-mobile-panels-v16-update-4"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-21-131-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L/E:P/RL:O/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.0102"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

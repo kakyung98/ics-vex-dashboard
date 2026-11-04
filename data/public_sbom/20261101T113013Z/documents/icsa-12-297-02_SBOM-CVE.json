@@ -1,0 +1,250 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:cef16a09-94a9-5262-b8b7-3dddb4719d7e",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-12-297-02",
+      "name": "Korenix Jetport 5600 Series Hard-coded Credentials",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Jetport 5600 Series Hard-coded Credentials' by Korenix, reverse-built from CISA ICS-CERT advisory icsa-12-297-02.",
+      "scope": "required",
+      "publisher": "Korenix",
+      "purl": "pkg:generic/jetport-5600-series-hard-coded-credentials@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:korenix:jetport-5600-series-hard-coded-credentials:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Korenix"
+      },
+      "supplier": {
+        "name": "Korenix"
+      },
+      "tags": [
+        "ics",
+        "korenix",
+        "linux",
+        "reverse-sbom"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c06756c229245a310f6d82f11f13e4c697845bb6f026aa190fa35343f4764b6e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-12-297-02",
+          "comment": "Source CISA ICS-CERT advisory icsa-12-297-02"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Korenix"
+        },
+        {
+          "name": "ics:product",
+          "value": "Jetport 5600 Series Hard-coded Credentials"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "linux"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-12-297-02"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-12-297-02",
+      "dependsOn": [
+        "pkg:oss:linux-kernel"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:linux-kernel",
+      "name": "Linux Kernel",
+      "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
+      "scope": "required",
+      "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/linux",
+      "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-12-297-02:CVE-2012-4577",
+      "id": "CVE-2012-4577",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-12-297-02"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 10.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C"
+        }
+      ],
+      "cwes": [
+        259
+      ],
+      "affects": [
+        {
+          "ref": "pkg:oss:linux-kernel",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-12-297-02"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.03602"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

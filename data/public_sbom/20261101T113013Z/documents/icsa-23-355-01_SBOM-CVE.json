@@ -1,0 +1,347 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:ece02cc7-9856-5bbc-ae47-51fead4a8ec4",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-23-355-01",
+      "name": "FXC AE1021/AE1021PE",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'AE1021/AE1021PE' by FXC, reverse-built from CISA ICS-CERT advisory icsa-23-355-01.",
+      "scope": "required",
+      "publisher": "FXC",
+      "purl": "pkg:generic/ae1021-ae1021pe@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:fxc:ae1021-ae1021pe:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "FXC"
+      },
+      "supplier": {
+        "name": "FXC"
+      },
+      "tags": [
+        "fxc",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c0a82e70024b6ca40ac032a03a64049e6a7461342c01af38eaace2b67cd317f0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-355-01",
+          "comment": "Source CISA ICS-CERT advisory icsa-23-355-01"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "FXC"
+        },
+        {
+          "name": "ics:product",
+          "value": "AE1021/AE1021PE"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-23-355-01"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-23-355-01",
+      "dependsOn": [
+        "pkg:oss:ntp",
+        "variant:fxc-ae1021pe-firmware-2-0-9",
+        "variant:fxc-ae1021-firmware-2-0-9"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:ntp",
+      "name": "NTP Daemon",
+      "version": "NOASSERTION",
+      "description": "Time-synchronization daemon for event-timestamp consistency.",
+      "scope": "required",
+      "publisher": "Network Time Foundation",
+      "manufacturer": {
+        "name": "Network Time Foundation"
+      },
+      "supplier": {
+        "name": "Network Time Foundation"
+      },
+      "tags": [
+        "ntp",
+        "oss",
+        "time"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NTP"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/ntp",
+      "cpe": "cpe:2.3:a:ntp:ntp:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:fxc-ae1021pe-firmware-2-0-9",
+      "name": "FXC AE1021PE firmware <=2.0.9",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "FXC",
+      "manufacturer": {
+        "name": "FXC"
+      },
+      "supplier": {
+        "name": "FXC"
+      },
+      "tags": [
+        "fxc",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/fxc-ae1021pe-firmware-2-0-9@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=2.0.9"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:fxc-ae1021-firmware-2-0-9",
+      "name": "FXC AE1021 firmware <=2.0.9",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "FXC",
+      "manufacturer": {
+        "name": "FXC"
+      },
+      "supplier": {
+        "name": "FXC"
+      },
+      "tags": [
+        "fxc",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/fxc-ae1021-firmware-2-0-9@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=2.0.9"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-23-355-01:CVE-2023-49897",
+      "id": "CVE-2023-49897",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-355-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 8.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        78
+      ],
+      "affects": [
+        {
+          "ref": "variant:fxc-ae1021pe-firmware-2-0-9"
+        },
+        {
+          "ref": "variant:fxc-ae1021-firmware-2-0-9"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-355-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:A/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "true"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.50447"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

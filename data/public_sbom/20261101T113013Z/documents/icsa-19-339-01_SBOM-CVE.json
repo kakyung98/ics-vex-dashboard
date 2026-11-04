@@ -1,0 +1,260 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:7257f0d0-6db1-5039-8a92-99b6a247caa3",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-19-339-01",
+      "name": "Thales DIS SafeNet Sentinel LDK License Manager Runtime",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'DIS SafeNet Sentinel LDK License Manager Runtime' by Thales, reverse-built from CISA ICS-CERT advisory icsa-19-339-01.",
+      "scope": "required",
+      "publisher": "Thales",
+      "purl": "pkg:generic/dis-safenet-sentinel-ldk-license-manager-runtime@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:thales:dis-safenet-sentinel-ldk-license-manager-runtime:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Thales"
+      },
+      "supplier": {
+        "name": "Thales"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "thales",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c64a35bd72396cf54864676824b6811c8867d2a03d7ac69922c288d43301e221"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-19-339-01",
+          "comment": "Source CISA ICS-CERT advisory icsa-19-339-01"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Thales"
+        },
+        {
+          "name": "ics:product",
+          "value": "DIS SafeNet Sentinel LDK License Manager Runtime"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-19-339-01"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-19-339-01",
+      "dependsOn": [
+        "mod:icsa-19-339-01:firmware"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "firmware",
+      "bom-ref": "mod:icsa-19-339-01:firmware",
+      "name": "Thales SafeNet Sentinel LDK License Manager < 7.101 (only Microsoft Windows versions are affected)",
+      "version": "NOASSERTION",
+      "description": "Single product enumerated by the source CSAF product_tree; the advisory declares no model variants.",
+      "scope": "required",
+      "publisher": "Thales",
+      "manufacturer": {
+        "name": "Thales"
+      },
+      "supplier": {
+        "name": "Thales"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/thales-safenet-sentinel-ldk-license-manager-7-101-only-microsoft-windows-version@NOASSERTION",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "< 7.101 (only Microsoft Windows versions are affected)"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-19-339-01:CVE-2019-18232",
+      "id": "CVE-2019-18232",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-19-339-01"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 7.3,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        59
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-19-339-01:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-19-339-01"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:L/I:H/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00423"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

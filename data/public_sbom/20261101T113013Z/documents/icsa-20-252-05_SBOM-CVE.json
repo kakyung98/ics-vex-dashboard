@@ -1,0 +1,260 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:303d7632-5b7d-5265-a5d7-d4143dc550f9",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-20-252-05",
+      "name": "Siemens Siveillance Video Client",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Siveillance Video Client' by Siemens, reverse-built from CISA ICS-CERT advisory icsa-20-252-05.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "purl": "pkg:generic/siveillance-video-client@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:siemens:siveillance-video-client:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3059e65a7a1367714d22526bb63c4412710cfcb0c29d459fb0bea5bc8556c333"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-20-252-05",
+          "comment": "Source CISA ICS-CERT advisory icsa-20-252-05"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Siemens"
+        },
+        {
+          "name": "ics:product",
+          "value": "Siveillance Video Client"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-20-252-05"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-20-252-05",
+      "dependsOn": [
+        "mod:icsa-20-252-05:firmware"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "firmware",
+      "bom-ref": "mod:icsa-20-252-05:firmware",
+      "name": "Siemens Siveillance Video Client vers:all/*",
+      "version": "NOASSERTION",
+      "description": "Single product enumerated by the source CSAF product_tree; the advisory declares no model variants.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-siveillance-video-client-vers-all@NOASSERTION",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:all/*"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-20-252-05:CVE-2020-15785",
+      "id": "CVE-2020-15785",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-20-252-05"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.3,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N/E:P/RL:O/RC:C"
+        }
+      ],
+      "cwes": [
+        319
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-20-252-05:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-20-252-05"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N/E:P/RL:O/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00623"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

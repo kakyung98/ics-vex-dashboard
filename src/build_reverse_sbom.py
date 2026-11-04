@@ -18,6 +18,11 @@ Output:
   data/devices.csv                      the device index
 """
 
+import sys as _dataset_sys
+from pathlib import Path as _DatasetPath
+_dataset_sys.path.insert(0,str(_DatasetPath(__file__).resolve().parents[1]))
+from src.dataset_paths import new_public_sbom_directory
+
 import csv
 import json
 import os
@@ -37,7 +42,7 @@ CLOSED_OSS = {"codesys_rt", "ipnet", "treck_tcpip", "sqlserver_express", "dotnet
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 ADV = os.path.join(BASE, "data", "cisa_advisories.json")
 SIG = os.path.join(BASE, "data", "exploit_signals.json")
-OUT_SBOM = os.path.join(BASE, "reverse_sbom")
+OUT_SBOM = str(new_public_sbom_directory())
 OUT_DATA = os.path.join(BASE, "data")
 NS = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
@@ -501,7 +506,7 @@ def main():
                     "publisher": "Chonnam SSRC — ICS-VEX",
                     "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
                     "externalReferences": [{"type": "documentation",
-                        "url": ["https://kakyung98.github.io/ics-vex-dashboard/"],
+                        "url": "https://kakyung98.github.io/ics-vex-dashboard/",
                         "comment": "ICS-VEXForge web console"}],
                 }]},
                 "distributionConstraints": {"tlp": "CLEAR"},

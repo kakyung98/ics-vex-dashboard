@@ -25,6 +25,8 @@ Known measurement limits, stated rather than hidden:
 
 Output: results/sbom_cpe_limits.json
 """
+
+from sbom_paths import public_sbom_directory
 import collections
 import glob
 import json
@@ -137,7 +139,7 @@ def main():
 
     # --- version notation in our SBOMs --------------------------------------
     vk, samples = collections.Counter(), collections.defaultdict(list)
-    for f in glob.glob(os.path.join(BASE, "reverse_sbom", "*.json")):
+    for f in glob.glob(os.path.join(str(public_sbom_directory()), "*.json")):
         d = json.load(open(f, encoding="utf-8"))
         for comp in d.get("components", []):
             for pr in comp.get("properties") or []:

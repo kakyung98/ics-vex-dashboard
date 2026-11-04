@@ -1,0 +1,499 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:68edca01-2282-5eac-8fc4-6be8d55fd27c",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-23-108-02",
+      "name": "Schneider Electric APC Easy UPS Online Monitoring Software (Update A)",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'APC Easy UPS Online Monitoring Software (Update A)' by Schneider Electric, reverse-built from CISA ICS-CERT advisory icsa-23-108-02.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "purl": "pkg:generic/apc-easy-ups-online-monitoring-software-update-a@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:schneider-electric:apc-easy-ups-online-monitoring-software-update-a:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "schneider-electric",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "953b2aecbe7e4640d78152e2b944fd2dbfa26a98d67558bfd524fb65afd35e15"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-108-02",
+          "comment": "Source CISA ICS-CERT advisory icsa-23-108-02"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Schneider Electric"
+        },
+        {
+          "name": "ics:product",
+          "value": "APC Easy UPS Online Monitoring Software (Update A)"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-23-108-02"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-23-108-02",
+      "dependsOn": [
+        "pkg:oss:openjdk",
+        "variant:schneider-electric-apc-easy-ups-online-monitoring-software-v2-5-ga-01-22261",
+        "variant:schneider-electric-schneider-electric-easy-ups-online-monitoring-software-v2-5-g"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:openjdk",
+      "name": "OpenJDK Runtime",
+      "version": "NOASSERTION",
+      "description": "Java runtime on which the supervisory/historian server application runs.",
+      "scope": "required",
+      "publisher": "Eclipse Adoptium",
+      "manufacturer": {
+        "name": "Eclipse Adoptium"
+      },
+      "supplier": {
+        "name": "Eclipse Adoptium"
+      },
+      "tags": [
+        "java",
+        "oss",
+        "runtime"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-with-classpath-exception"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/openjdk",
+      "cpe": "cpe:2.3:a:oracle:jdk:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-apc-easy-ups-online-monitoring-software-v2-5-ga-01-22261",
+      "name": "Schneider Electric APC Easy UPS Online Monitoring Software <=v2.5-GA-01-22261",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/schneider-electric-apc-easy-ups-online-monitoring-software-v2-5-ga-01-22261@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=v2.5-GA-01-22261"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:schneider-electric-schneider-electric-easy-ups-online-monitoring-software-v2-5-g",
+      "name": "Schneider Electric Schneider Electric Easy UPS Online Monitoring Software <=V2.5-GA-01-22320",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Schneider Electric",
+      "manufacturer": {
+        "name": "Schneider Electric"
+      },
+      "supplier": {
+        "name": "Schneider Electric"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "schneider-electric"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/schneider-electric-schneider-electric-easy-ups-online-monitoring-software-v2-5-g@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=V2.5-GA-01-22320"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-23-108-02:CVE-2023-29411",
+      "id": "CVE-2023-29411",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-108-02"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 9.8,
+          "severity": "critical",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        306
+      ],
+      "affects": [
+        {
+          "ref": "variant:schneider-electric-apc-easy-ups-online-monitoring-software-v2-5-ga-01-22261"
+        },
+        {
+          "ref": "variant:schneider-electric-schneider-electric-easy-ups-online-monitoring-software-v2-5-g"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-108-02"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.01315"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-23-108-02:CVE-2023-29412",
+      "id": "CVE-2023-29412",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-108-02"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 9.8,
+          "severity": "critical",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        78
+      ],
+      "affects": [
+        {
+          "ref": "variant:schneider-electric-apc-easy-ups-online-monitoring-software-v2-5-ga-01-22261"
+        },
+        {
+          "ref": "variant:schneider-electric-schneider-electric-easy-ups-online-monitoring-software-v2-5-g"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-108-02"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.01223"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-23-108-02:CVE-2023-29413",
+      "id": "CVE-2023-29413",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-23-108-02"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 7.5,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        }
+      ],
+      "cwes": [
+        306
+      ],
+      "affects": [
+        {
+          "ref": "variant:schneider-electric-apc-easy-ups-online-monitoring-software-v2-5-ga-01-22261"
+        },
+        {
+          "ref": "variant:schneider-electric-schneider-electric-easy-ups-online-monitoring-software-v2-5-g"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-23-108-02"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00712"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "2"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

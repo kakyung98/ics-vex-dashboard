@@ -29,27 +29,34 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(BASE, "benchmark")
 
-# bundled path -> (source path, what it is)
 # bundled path -> (source path, one line on what it is)
-# #3 is scored over the whole corpus and #4 over the 104 CVEs whose source could be
+# #3 is scored over the whole corpus and #4 over every CVE whose source could be
 # collected. The populations differ on purpose: identification needs no source, so
 # filtering #3 by source availability would import a condition belonging to #4.
+#
+# A description may carry `{placeholders}`, which _describe() fills from the live file
+# at build time. Counts in these lines used to be typed in by hand, and all of them
+# went stale: the bundle advertised a #3 answer key of "6,518 records over 2,652 CVEs
+# and 471 vendors" long after it had grown to 41,868 over 6,461, and 22,810 exclusions
+# after they had reached 23,049. `--check` hashes files, so it passed every time while
+# the prose beside the hash was wrong. Nothing here states a number it has not counted.
 FILES = {
     "item3/input.jsonl": (
         "data/bench_input_item3.jsonl",
-        "INPUT: 543 SBOM components as the SUT receives them — the messy advisory "
+        "INPUT: {lines:,} SBOM components as the SUT receives them — the messy advisory "
         "string, never the CPE the answer key holds (tools/build_benchmark_inputs.py)"),
     "item3/ground_truth.jsonl": (
         "data/cpe_match_eval.jsonl",
-        "GT 6,518 records over 2,652 CVEs and 471 vendors, from CISA CSAF affects "
-        "assertions cross-checked against NVD applicability"),
+        "GT {lines:,} records over {cves:,} CVEs and {vendors:,} vendors, from CISA CSAF "
+        "affects assertions cross-checked against NVD applicability"),
     "item3/excluded.jsonl": (
         "data/cpe_match_eval_layerB.jsonl",
-        "22,810 pairs excluded up front: the ICS name appears nowhere in NVD, so no "
+        "{lines:,} pairs excluded up front: the ICS name appears nowhere in NVD, so no "
         "name-based matcher can reach the answer. Kept so the exclusion is auditable"),
     "item3/manifest.json": (
         "data/cpe_match_eval_manifest.json",
@@ -60,16 +67,18 @@ FILES = {
 
     "item4/population.json": (
         "data/vex_population_104.json",
-        "The 104 source-available CVEs — #4's population; #3 has no such filter"),
+        "The {items} CVEs of the original certification-document population. RETIRED as "
+        "the scored population — the headline figure is now measured over every "
+        "collected-source CVE (see item4/manifest.json); kept for traceability"),
     "item4/input.jsonl": (
         "data/bench_input_item4.jsonl",
-        "INPUT: 54 CVEs with the source/patch evidence available per CVE "
+        "INPUT: {lines} CVEs with the source/patch evidence available per CVE "
         "(tools/build_benchmark_inputs.py)"),
     "item4/ground_truth.jsonl": (
         "data/vex_gt_all.jsonl",
-        "Answer key over the FULL collected-source population: every CVE with a "
-        "source snapshot, labelled from execution pairs and fix-commit patch "
-        "signatures only"),
+        "Answer key over the FULL collected-source population: {lines} (CVE, build) cases "
+        "over {cves} CVEs with a source snapshot, labelled from execution pairs and "
+        "fix-commit patch signatures only"),
     "item4/predictions.json": (
         "data/vex_v2_pregate.json",
         "The SUT output being scored: vex_judge_v2 --no-patch-gate. Pre-gate, because "
@@ -82,7 +91,7 @@ FILES = {
         "rather than deleting it - so these come from the gate-live run"),
     "item4/predictions_gated.json": (
         "data/vex_v2.json",
-        "vex_judge_v2 with the Q1 patch gate live, over the vulnerable build. Needed "
+        "vex_judge_v2 with the patch PRE-gate live, over the vulnerable build. The gate is separate from Q1-Q4, not one of them. Needed "
         "to score the full population alongside the patched verdicts; circular on the "
         "patch_verified cases, which the result records"),
     "item4/result_allbuilds.json": (
@@ -95,17 +104,97 @@ FILES = {
         "the SUT share no oracle. Small by construction"),
     "item4/manifest.json": (
         "data/vex_gt_all_manifest.json",
-        "How the GT was built: evidence mix, corroboration, the 50 CVEs evidence could not label"),
+        "How the GT was built: population, evidence mix, corroboration, and every "
+        "exclusion with its reason (the CVEs evidence could not label)"),
     "item4/result.json": (
         "results/vex_precision_all.json",
         "HEADLINE scored run for item #4: vulnerable build, patch gate off - the "
         "largest scope whose answer key shares no oracle with the SUT"),
 }
 
+def _say(msg):
+    """print() that survives a non-UTF-8 console.
+
+    These descriptions carry em-dashes, and the default Windows console here is cp949,
+    which cannot encode them - printing one raised UnicodeEncodeError and took the whole
+    --check down after it had already found the drift it was built to find. A diagnostic
+    must not fail on the shape of what it is diagnosing.
+    """
+    enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+    print(msg.encode(enc, "replace").decode(enc, "replace"))
+
+
 def _r(rel):
     """Read a result file, or {} if it has not been produced yet."""
     p = os.path.join(BASE, rel)
     return json.load(open(p, encoding="utf-8")) if os.path.isfile(p) else {}
+
+
+# Fields a jsonl record may carry the CVE id / vendor under. The #3 and #4 keys differ
+# (cve_id vs cve), and #3 nests the vendor inside `component`, so counting has to try
+# each rather than assume one shape.
+_CVE_KEYS = ("cve_id", "cve")
+_VENDOR_KEYS = ("cisa_vendor", "vendor", "vendor_norm")
+
+
+def _dig(rec, keys):
+    """First truthy value under `keys`, looking one level into `component` too."""
+    for k in keys:
+        if rec.get(k):
+            return rec[k]
+    sub = rec.get("component")
+    if isinstance(sub, dict):
+        for k in keys:
+            if sub.get(k):
+                return sub[k]
+    return None
+
+
+def _stats(src):
+    """Count what a source file actually contains, for the description placeholders.
+
+    Returns every key any description might reference; unused ones cost nothing. This
+    is the whole point of the module's drift policy: a number in the manifest is a
+    measurement of the file sitting next to it, taken at the same moment as its hash.
+    """
+    st = {"lines": 0, "cves": 0, "vendors": 0, "items": 0}
+    if src.endswith(".jsonl"):
+        cves, vendors = set(), set()
+        with open(src, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                st["lines"] += 1
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                cve, vendor = _dig(rec, _CVE_KEYS), _dig(rec, _VENDOR_KEYS)
+                if cve:
+                    cves.add(cve)
+                if vendor:
+                    vendors.add(vendor)
+        st["cves"], st["vendors"] = len(cves), len(vendors)
+        st["items"] = st["lines"]
+    else:
+        try:
+            doc = json.load(open(src, encoding="utf-8"))
+        except (ValueError, OSError):
+            return st
+        st["items"] = len(doc) if isinstance(doc, (list, dict)) else 0
+        st["lines"] = st["items"]
+    return st
+
+
+def _describe(src, what):
+    """Fill a description's `{placeholders}` from the live file.
+
+    A description with no placeholder passes through untouched, so only the lines that
+    quote a count pay for the read.
+    """
+    if "{" not in what:
+        return what
+    return what.format(**_stats(src))
 
 
 def _pct(res, key="precision"):
@@ -161,7 +250,7 @@ and is free under a precision-only metric, so it is disclosed here.
 | `input.jsonl` | **what the SUT is fed**: CVE + source/patch evidence |
 | `ground_truth.jsonl` | answer key, affected / not_affected ({i4tot} cases) |
 | `predictions.json` | SUT output, pre-gate, vulnerable build — what `result.json` scores |
-| `predictions_gated.json` | SUT output with the Q1 patch gate live |
+| `predictions_gated.json` | SUT output with the patch pre-gate live |
 | `predictions_patched.json` | SUT output for the vendor's remediated releases |
 | `result.json` | **headline**: vulnerable build, gate off |
 | `result_allbuilds.json` | both builds, gate live |
@@ -296,19 +385,33 @@ def main():
             print("no bundle yet: run without --check")
             return
         man = json.load(open(man_path, encoding="utf-8"))
-        stale, missing = [], []
+        stale, missing, misdescribed = [], [], []
         for rel, rec in man["files"].items():
             src = os.path.join(BASE, rec["source"])
             dst = os.path.join(OUT, rel)
             if not os.path.isfile(src) or not os.path.isfile(dst):
                 missing.append(rel)
-            elif sha256(src) != rec["sha256"] or sha256(dst) != rec["sha256"]:
+                continue
+            if sha256(src) != rec["sha256"] or sha256(dst) != rec["sha256"]:
                 stale.append(rel)
+            # A matching hash does not make the manifest right: the description beside
+            # it is prose, and a hand-typed count in it can contradict the very file it
+            # describes. Re-derive it and compare, so a wrong NUMBER is as detectable
+            # as a wrong byte.
+            want = _describe(src, FILES.get(rel, (None, ""))[1])
+            if want and want != rec.get("description"):
+                misdescribed.append(rel)
         print("bundle built %s" % man["generated"])
-        print("  files   : %d" % len(man["files"]))
-        print("  stale   : %s" % (", ".join(stale) or "none"))
-        print("  missing : %s" % (", ".join(missing) or "none"))
-        if stale or missing:
+        print("  files        : %d" % len(man["files"]))
+        print("  stale        : %s" % (", ".join(stale) or "none"))
+        print("  missing      : %s" % (", ".join(missing) or "none"))
+        print("  misdescribed : %s" % (", ".join(misdescribed) or "none"))
+        for rel in misdescribed:
+            _say("      %s\n        manifest: %s\n        live    : %s"
+                 % (rel, man["files"][rel].get("description"),
+                    _describe(os.path.join(BASE, man["files"][rel]["source"]),
+                              FILES[rel][1])))
+        if stale or missing or misdescribed:
             print("\n-> rebuild: python tools/build_benchmark_bundle.py")
         return
 
@@ -329,7 +432,8 @@ def main():
         dst = os.path.join(OUT, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy2(src, dst)
-        manifest["files"][rel] = {"source": src_rel, "description": what,
+        manifest["files"][rel] = {"source": src_rel,
+                                  "description": _describe(src, what),
                                   "bytes": os.path.getsize(src),
                                   "sha256": sha256(src)}
         copied += 1

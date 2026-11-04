@@ -12,6 +12,8 @@ Output: results/audit_cpe_match_gt.json (+ a printed summary).
 The guiding distinction the memo insists on: separate a confirmed code/data defect
 from a hypothesis that still needs checking. Each finding below says which it is.
 """
+
+from sbom_paths import public_sbom_directory
 import collections
 import json
 import os
@@ -21,7 +23,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE, "tools"))
 import build_cpe_match_gt as G   # reuse its norm()/anchored_cpes() exactly
 
-RSBOM = os.path.join(BASE, "reverse_sbom")
+RSBOM = str(public_sbom_directory())
 DETAIL = os.path.join(BASE, "data", "nvd_cpe_detail.json")
 GT = os.path.join(BASE, "data", "cpe_match_eval.jsonl")
 GT_B = os.path.join(BASE, "data", "cpe_match_eval_layerB.jsonl")

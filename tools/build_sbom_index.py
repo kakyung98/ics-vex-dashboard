@@ -14,10 +14,12 @@ Output: sbom_index.json { "generated": N, "assets": [ {asset_id, file, vendor,
   product, base_platform, advisories:[...], component_count,
   components:[{name,version,description}], cves:[{id,component,severity,cvss,cwe}] } ] }
 """
+
+from sbom_paths import public_sbom_directory
 import os, csv, json, glob
 
 BASE = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-RSBOM = os.path.join(BASE, "reverse_sbom")
+RSBOM = str(public_sbom_directory())
 DATA = os.path.join(BASE, "data")
 OUT = os.path.join(BASE, "sbom_index.json")
 

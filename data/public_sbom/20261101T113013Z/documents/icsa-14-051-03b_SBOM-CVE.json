@@ -1,0 +1,441 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:60c0bb63-b6f8-5988-9254-20f7103da0b4",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-14-051-03b",
+      "name": "Siemens RuggedCom Uncontrolled Resource Consumption Vulnerability (Update B)",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'RuggedCom Uncontrolled Resource Consumption Vulnerability (Update B)' by Siemens, reverse-built from CISA ICS-CERT advisory icsa-14-051-03b.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "purl": "pkg:generic/ruggedcom-uncontrolled-resource-consumption-vulnerability-update-b@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:siemens:ruggedcom-uncontrolled-resource-consumption-vulnerability-update-b:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "433c46eb23851e49fcaade0a6482625c620153ad8e7911823fd53252f9c253b4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-14-051-03b",
+          "comment": "Source CISA ICS-CERT advisory icsa-14-051-03b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Siemens"
+        },
+        {
+          "name": "ics:product",
+          "value": "RuggedCom Uncontrolled Resource Consumption Vulnerability (Update B)"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-14-051-03b"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-14-051-03b",
+      "dependsOn": [
+        "pkg:oss:net-snmp",
+        "variant:siemens-ros-v3-11",
+        "variant:siemens-ros-v3-11-for-product-rs950g-ros-v3-11-5",
+        "variant:siemens-ros-v3-12-ros-v3-12-4",
+        "variant:siemens-ros-v4-0-for-product-rsg2488-ros-v4-1-0"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:net-snmp",
+      "name": "Net-SNMP",
+      "version": "NOASSERTION",
+      "description": "SNMP agent that lets a network management system poll device status.",
+      "scope": "required",
+      "publisher": "Net-SNMP Project",
+      "manufacturer": {
+        "name": "Net-SNMP Project"
+      },
+      "supplier": {
+        "name": "Net-SNMP Project"
+      },
+      "tags": [
+        "management",
+        "oss",
+        "snmp"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/net-snmp",
+      "cpe": "cpe:2.3:a:net-snmp:net-snmp:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ros-v3-11",
+      "name": "Siemens ROS <v3.11",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-ros-v3-11@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<v3.11"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ros-v3-11-for-product-rs950g-ros-v3-11-5",
+      "name": "Siemens ROS v3.11 (for product RS950G) <ROS_v3.11.5",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-ros-v3-11-for-product-rs950g-ros-v3-11-5@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<ROS_v3.11.5"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ros-v3-12-ros-v3-12-4",
+      "name": "Siemens ROS v3.12 <ROS_v3.12.4",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-ros-v3-12-ros-v3-12-4@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<ROS_v3.12.4"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-ros-v4-0-for-product-rsg2488-ros-v4-1-0",
+      "name": "Siemens ROS v4.0 (for product RSG2488) <ROS_v4.1.0",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-ros-v4-0-for-product-rsg2488-ros-v4-1-0@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0004"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<ROS_v4.1.0"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-14-051-03b:CVE-2014-1966",
+      "id": "CVE-2014-1966",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-14-051-03b"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 7.8,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:N/I:N/A:C"
+        }
+      ],
+      "cwes": [
+        400
+      ],
+      "affects": [
+        {
+          "ref": "variant:siemens-ros-v3-11"
+        },
+        {
+          "ref": "variant:siemens-ros-v3-11-for-product-rs950g-ros-v3-11-5"
+        },
+        {
+          "ref": "variant:siemens-ros-v3-12-ros-v3-12-4"
+        },
+        {
+          "ref": "variant:siemens-ros-v4-0-for-product-rsg2488-ros-v4-1-0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-14-051-03b"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.02158"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "4"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

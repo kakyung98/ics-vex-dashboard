@@ -20,6 +20,8 @@ Usage:
   python tools/inject_product_variants.py                   # the 25 in data/gt_icsa
   python tools/inject_product_variants.py --csaf-repo /path # all of cisagov/CSAF
 """
+
+from sbom_paths import public_sbom_directory
 import argparse
 import glob
 import json
@@ -27,7 +29,7 @@ import os
 import re
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SBOM = os.path.join(BASE, "reverse_sbom")
+SBOM = str(public_sbom_directory())
 
 
 def slug(s):

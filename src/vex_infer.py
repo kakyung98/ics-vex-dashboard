@@ -189,6 +189,7 @@ class SllmStaticAnalyst:
     """Static VEX analyst/critic/adjudicator. No exploit generation, no execution."""
 
     def __init__(self, load_4bit=True):
+        raise RuntimeError('Legacy LLM analysis is disabled. Only final VEX writing may use a model.')
         from transformers import AutoTokenizer, AutoModelForCausalLM
         from peft import PeftModel
         self.tok = AutoTokenizer.from_pretrained(LORA_ADAPTER)

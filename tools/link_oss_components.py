@@ -36,6 +36,8 @@ attributes to the component is held out, not only the one that happened to creat
 Usage:
   python tools/link_oss_components.py [--dry-run]
 """
+
+from sbom_paths import public_sbom_directory
 import argparse
 import collections
 import glob
@@ -48,7 +50,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE, "src"))
 import build_reverse_sbom as B
 
-SBOM = os.path.join(BASE, "reverse_sbom")
+SBOM = str(public_sbom_directory())
 NVD_DETAIL = os.path.join(BASE, "data", "nvd_cpe_detail.json")
 
 

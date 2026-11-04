@@ -1,0 +1,1620 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:d51f0b96-3226-5d01-bccf-f222abd9571c",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-25-112-04",
+      "name": "ABB MV Drives",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'MV Drives' by ABB, reverse-built from CISA ICS-CERT advisory icsa-25-112-04.",
+      "scope": "required",
+      "publisher": "ABB",
+      "purl": "pkg:generic/mv-drives@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:abb:mv-drives:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "78f70e103c5219ecf1a815df5b603cfc06dedcfd34fe8d0ffe8074e45c1f22f9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04",
+          "comment": "Source CISA ICS-CERT advisory icsa-25-112-04"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "ABB"
+        },
+        {
+          "name": "ics:product",
+          "value": "MV Drives"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-25-112-04",
+      "dependsOn": [
+        "pkg:oss:codesys-rt",
+        "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1",
+        "variant:abb-acs6080-laaab-5-07",
+        "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1",
+        "variant:abb-acs5000-laaab-5-07",
+        "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1",
+        "variant:abb-acs6000-laaab-5-07"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:codesys-rt",
+      "name": "CODESYS Control Runtime System",
+      "version": "NOASSERTION",
+      "description": "Control runtime that executes IEC 61131-3 programs. Includes online change and a communication server.",
+      "scope": "required",
+      "publisher": "CODESYS GmbH",
+      "manufacturer": {
+        "name": "CODESYS GmbH"
+      },
+      "supplier": {
+        "name": "CODESYS GmbH"
+      },
+      "tags": [
+        "iec-61131",
+        "plc",
+        "runtime"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/codesys-control",
+      "cpe": "cpe:2.3:a:codesys:control_runtime_system:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1",
+      "name": "ABB ACS6080 >=LAAAA_2.10.0|<LAAAB_5.06.1",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "ABB",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/abb-acs6080-laaaa-2-10-0-laaab-5-06-1@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": ">=LAAAA_2.10.0|<LAAAB_5.06.1"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:abb-acs6080-laaab-5-07",
+      "name": "ABB ACS6080 LAAAB_5.07",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "ABB",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/abb-acs6080-laaab-5-07@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1",
+      "name": "ABB ACS5000 >=LAAAB_4.03.0|<LAAAB_5.06.1",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "ABB",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/abb-acs5000-laaab-4-03-0-laaab-5-06-1@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": ">=LAAAB_4.03.0|<LAAAB_5.06.1"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:abb-acs5000-laaab-5-07",
+      "name": "ABB ACS5000 LAAAB_5.07",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "ABB",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/abb-acs5000-laaab-5-07@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0004"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1",
+      "name": "ABB ACS6000 >=LAAAA_2.10.0|<LAAAB_5.06.1",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "ABB",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/abb-acs6000-laaaa-2-10-0-laaab-5-06-1@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0005"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": ">=LAAAA_2.10.0|<LAAAB_5.06.1"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:abb-acs6000-laaab-5-07",
+      "name": "ABB ACS6000 LAAAB_5.07",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "ABB",
+      "manufacturer": {
+        "name": "ABB"
+      },
+      "supplier": {
+        "name": "ABB"
+      },
+      "tags": [
+        "abb",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/abb-acs6000-laaab-5-07@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0006"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2022-4046",
+      "id": "CVE-2022-4046",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 8.8,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        119
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00878"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37545",
+      "id": "CVE-2023-37545",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37546",
+      "id": "CVE-2023-37546",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37547",
+      "id": "CVE-2023-37547",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37548",
+      "id": "CVE-2023-37548",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37549",
+      "id": "CVE-2023-37549",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37550",
+      "id": "CVE-2023-37550",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37552",
+      "id": "CVE-2023-37552",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37553",
+      "id": "CVE-2023-37553",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37554",
+      "id": "CVE-2023-37554",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37555",
+      "id": "CVE-2023-37555",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37556",
+      "id": "CVE-2023-37556",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37557",
+      "id": "CVE-2023-37557",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        787
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37558",
+      "id": "CVE-2023-37558",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-25-112-04:CVE-2023-37559",
+      "id": "CVE-2023-37559",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-25-112-04"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        }
+      ],
+      "cwes": [
+        20
+      ],
+      "affects": [
+        {
+          "ref": "variant:abb-acs6080-laaaa-2-10-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs5000-laaab-4-03-0-laaab-5-06-1"
+        },
+        {
+          "ref": "variant:abb-acs6000-laaaa-2-10-0-laaab-5-06-1"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-25-112-04"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:N/I:N/A:H/E:U/RL:W/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00626"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}
