@@ -9,6 +9,8 @@ CODE_QUESTION=re.compile(r'(?i)\b(?:taint|AST|CFG|call graph|control.flow graph|
 
 
 def topics(case):
+    if (case.get('analysis_route') or {}).get('required_facts'):
+        return sorted({f['label'] for f in case['analysis_route']['required_facts'] if f['location']=='operator'})
     matched={d['rule_id'] for d in (case.get('analysis_route') or {}).get('decisions',[])}
     return sorted({t for r in policy()['operational_rules'] if r['id'] in matched for t in r['operator_topics']})
 

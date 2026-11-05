@@ -8,11 +8,13 @@ No VEXGen attribution or TIX output is used.
 
 1. Preserve each CVE's reported CWE IDs. Derive all Pillar ancestry paths using
    `ChildOf` edges in official CWE View 1000. Never replace the reported CWE by a Pillar.
-2. Apply `data/item4_routing_policy_v1.json`. Explicit code-causality weakness
-   ancestors or memory/concurrency evidence require source. Supported operational
-   rules require both a specific CWE ancestry and matching CVE/advisory text.
-3. Multiple CWEs: any source requirement wins; otherwise any unresolved mapping
-   defers. A bare Pillar or missing/unsupported CWE is unresolved.
+2. Apply `data/cwe_evidence_policy_v2.json`: per-detailed-CWE evidence facts,
+   nearest explicit detailed ancestors, direct exceptions and equal-distance
+   unions. No Pillar-wide source fallback exists. Explicit CVE mechanism evidence
+   can refine eligible source/configuration variants before the workflow starts.
+3. Multiple CWEs: any unresolved/mapping-restricted item defers; otherwise union
+   the source and operating requirements. Bare Pillars and invalid/deprecated CWEs
+   defer. Official Prohibited/Discouraged mappings defer; Allowed-with-Review is flagged.
 4. Source required + no source: immediately assign `under_investigation` with a
    missing-source rationale. **No extraction, operational question or writer call.**
 5. Source supplied: language-aware AST source analysis runs for the required group
@@ -45,7 +47,7 @@ No VEXGen attribution or TIX output is used.
 | 3. Required source missing | No source result | `under_investigation`, no operator-answer bypass |
 | 4. Operating context only | Rule questionnaire and installed-build records | Unknown facts remain unresolved |
 
-Route schema 2 records separate `source_required` and `operational_required` axes,
+Route schema 3 records separate `source_required` and `operational_required` axes,
 `workflow_branch`, `entry_direction` and `workflow_policy_version=four-branch-v1`.
 Unresolved routing remains an additional deferral, not a fifth evidence workflow.
 Review schema 4 retains per-CVE `branch_evidence`, `evidence_progress` and an
@@ -64,15 +66,18 @@ exist. The writer receives summaries and references from both branches. Repeated
 submission of identical evidence reuses the prior authoring result.
 
 These changes do not introduce an `affected` classifier, independent operator
-verification, exhaustive prerequisite coverage or a reviewed 944-CWE policy matrix.
+verification or exhaustive prerequisite coverage. The 944-row evidence-policy
+matrix is mechanically checked and explained, but not independently adjudicated.
 The dataset counts below describe the earlier routing snapshot, not new four-path
 ground truth or a revalidated benchmark.
 
 The official hierarchy classifies weaknesses; **MITRE does not prescribe this
-source/operational routing policy**. The current conservative fallback requires
-source for specific weaknesses with known Pillar ancestry but no supported
-operational rule. That fallback is a project choice, not proof that source is
-technically indispensable. The narrow operational set needs expert policy review.
+source/operational routing policy**. The old conservative Pillar fallback has been
+removed. All 944 profiles record evidence facts, rule inheritance and official
+platform/detection/mapping metadata from the exact same pinned XML hash. Baseline
+counts are source 728, operational 26 and unresolved/specialist 190. These are not
+accuracy or actual CVE-route counts. See [the full criteria](CWE_ROUTING_CRITERIA.md)
+and [the complete matrix](CWE_EVIDENCE_POLICY_V2.md).
 
 Official sources: [CWE downloads](https://cwe.mitre.org/data/downloads.html),
 [View 1000](https://cwe.mitre.org/data/slices/1000.html),
@@ -151,7 +156,7 @@ deferred per the user's instruction; no external review is claimed.
 ## Main implementation files
 
 - `src/cwe_taxonomy.py`, `tools/cache_cwe_taxonomy.py`: pinned official hierarchy.
-- `src/vex_routing.py`, `data/item4_routing_policy_v1.json`: auditable project policy.
+- `src/cwe_evidence_policy.py`, `src/vex_routing.py`, `data/cwe_evidence_policy_v2.json`: auditable evidence policy; v1 files are historical.
 - `src/item4_review.py`: durable per-CVE routing and mixed-branch aggregation.
 - `src/item4_questions.py`: common/specific operator-facing LLM contract.
 - `src/api_server.py`: `/api/item4/start`, `/api/item4/{id}/questions`,

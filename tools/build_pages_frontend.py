@@ -66,6 +66,8 @@ def build():
              'advisories.json':STORE.advisories,'advisories_list.json':{'count':len(STORE.advisories_list),'advisories':STORE.advisories_list},
              'cve_index.json':list(STORE.cve_index.values()),'verify_results.json':STORE.verify,
              'verify_coverage.json':STORE.verify_coverage}
+    from src.cwe_evidence_policy import catalog
+    exports['cwe_routing_profiles.json']=catalog()
     if STORE.sbom_index.get('assets'):
         sbom_index=json.loads(json.dumps(STORE.sbom_index))
         from src.dataset_paths import public_sbom_directory

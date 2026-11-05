@@ -1,9 +1,10 @@
 """Readable source/context decision rules and authoring boundaries."""
 from src.method_flows import vex_flow
+from src.cwe_policy_page import explorer
 
 SOURCE_DECISION_HTML = '''
 <h1>VEX Decision Logic</h1>
-'''+vex_flow()+'''
+'''+vex_flow()+explorer()+'''
 <section class="method-notes" aria-label="VEX evidence and decision rules">
 <h2>How the decision is made</h2>
 <dl><dt>Status</dt><dd>Code applies evidence rules and fixes the status and scope.</dd>
@@ -13,6 +14,7 @@ SOURCE_DECISION_HTML = '''
 <dt>Source required</dt><dd>Review source and build evidence. If source is unavailable, immediately retain under_investigation.</dd>
 <dt>Operator review</dt><dd>Use only evidence-supported weaknesses with operator-observable configuration or protocol facts.</dd>
 <dt>Unresolved</dt><dd>Missing CWE or insufficient routing evidence remains under_investigation.</dd></dl>
+<p>Each of the 944 detailed CWEs has a baseline evidence profile. Direct exceptions and nearest detailed ancestors determine the required facts. Explicit CVE configuration/implementation mechanisms can refine eligible profiles. No Pillar-wide source fallback applies. Hardware, design, mapping restrictions and unspecified mechanisms remain explicit.</p>
 <p class="method-boundary">The CWE hierarchy is official. The analysis-routing policy is a separate project policy awaiting independent validation. Pillar alone does not determine the method.</p>
 </div></details>
 <details class="method-topic"><summary>2 · Analyze each eligible CVE<span class="topic-prompt">View details</span></summary><div class="topic-body">

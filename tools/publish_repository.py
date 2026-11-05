@@ -4,9 +4,9 @@ from collections import Counter
 import subprocess,json,os,uuid,hashlib,re
 
 ROOT=Path(__file__).resolve().parents[1]
-EXT={'.py','.js','.md','.ps1','.yml','.yaml','.mmd','.png','.svg','.c','.h'}
+EXT={'.py','.js','.cjs','.mjs','.md','.ps1','.yml','.yaml','.mmd','.png','.svg','.c','.h'}
 DATA=['cisa_advisories.json','cpe_index.json','nvd_cache.json','nvd_cpe_detail.json','nvd_cvss.json',
-      'identity_aliases_v3.json','item4_routing_policy_v1.json','operational_runtime_models.json',
+      'identity_aliases_v3.json','item4_routing_policy_v1.json','cwe_evidence_policy_v2.json','operational_runtime_models.json',
       'public_corpus_freshness.json','upstream_csaf_latest.zip']
 
 
@@ -23,8 +23,9 @@ def files():
         if p.is_file() and p.suffix in {'.py','.md'}:selected.add(p.relative_to(ROOT).as_posix())
     selected.update(['README.md','requirements.txt','requirements-training.txt','sbom_index.json'])
     selected.update('data/'+n for n in DATA if (ROOT/'data'/n).is_file())
-    for folder in ['data/cwe_taxonomy','data/cpe_feed','.tools/cyclonedx-schemas']:
+    for folder in ['data/cwe_taxonomy','data/cwe_routing','data/cpe_feed','.tools/cyclonedx-schemas']:
         selected.update(p.relative_to(ROOT).as_posix() for p in (ROOT/folder).glob('**/*.json') if p.is_file())
+    selected.update(p.relative_to(ROOT).as_posix() for p in (ROOT/'data/cwe_routing').glob('**/*.csv') if p.is_file())
     from sys import path
     path.insert(0,str(ROOT))
     from src.dataset_paths import public_sbom_directory
@@ -41,7 +42,7 @@ def files():
         assert p.is_file() and not p.is_symlink() and p.resolve().is_relative_to(ROOT.resolve()),name
         assert not set(p.relative_to(ROOT).parts)&{'models','results','cert_uploads','__pycache__'},name
         assert p.stat().st_size<95*1024*1024,('oversized',name)
-        if p.suffix in {'.py','.js','.md','.json','.yml','.yaml','.ps1'}:
+        if p.suffix in {'.py','.js','.cjs','.mjs','.md','.json','.yml','.yaml','.ps1'}:
             text=p.read_text(encoding='utf-8',errors='replace')
             assert not re.search(r'gh[pousr]_[A-Za-z0-9]{25,}|sk-proj-[A-Za-z0-9_-]{30,}|AIza[0-9A-Za-z_-]{30,}',text),('possible credential in public candidate',name)
     return sorted(selected)

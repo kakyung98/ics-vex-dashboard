@@ -28,7 +28,7 @@ def test_official_pinned_taxonomy_and_multiple_ancestry():
     assert 'ancestry_cycle' in ancestry('X', custom)['errors']
 
 
-@pytest.mark.parametrize('cwe', ['CWE-119', 'CWE-787', 'CWE-416', 'CWE-362'])
+@pytest.mark.parametrize('cwe', ['CWE-120', 'CWE-787', 'CWE-416', 'CWE-362'])
 def test_required_source_never_uses_operational_fallback(cwe, monkeypatch):
     calls = []
     monkeypatch.setattr(VR, 'infer', lambda *a: calls.append(a))
@@ -45,7 +45,10 @@ def test_required_source_never_uses_operational_fallback(cwe, monkeypatch):
 def test_operational_requires_specific_CWE_and_evidence():
     op = case('CWE-319', 'Sensitive information is sent in cleartext over the device network.')
     assert classify(op)['requirement'] == 'operational_review'
-    assert classify(case('CWE-319', 'A product vulnerability exists.'))['requirement'] != 'operational_review'
+    # A detailed observable transport weakness is enough to choose a review,
+    # never enough to decide a VEX status. Broad parent CWE-200 still needs context.
+    assert classify(case('CWE-319', 'A product vulnerability exists.'))['requirement'] == 'operational_review'
+    assert classify(case('CWE-200', 'A product vulnerability exists.'))['requirement'] == 'undetermined'
     assert classify(case('CWE-284', 'Authentication requirements are unspecified.'))['requirement'] == 'undetermined'
     assert classify(case('CWE-999999'))['requirement'] == 'undetermined'
     assert classify({'cve': op['cve'], 'description': op['description']})['requirement'] == 'undetermined'

@@ -394,12 +394,28 @@ function renderItem4Routes(){
   const labels={source_only:'1 · Source analysis',source_to_operational:'2 · Source + operating context',source_missing:'3 · Required source missing',operational_only:'4 · Operating context only',routing_unknown:'Routing unresolved'};
   const routes=Object.entries(_armResult.routes);let html='<h3>Evidence workflow</h3><p>Four paths share one review. Source and operating evidence accumulate per CVE; required evidence must be supplied before final authoring.</p><table><thead><tr><th>CVE / CWE / Pillar</th><th>Workflow</th><th>Evidence progress</th></tr></thead><tbody>';
   for(const [cve,q] of routes){const p=_armResult.statements.find(s=>s.cve===cve)?.evidence_progress;
-   html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(labels[q.workflow_branch]||q.requirement)+'<br><small>'+esc(q.reason)+'</small></td><td>'+esc(p?'Source: '+(p.source?'recorded':'not recorded')+' · Operating context: '+(p.operational?'recorded':'not recorded'):'Awaiting evidence')+(p?.pending?.length?'<p>'+esc(p.pending.join(' '))+'</p>':'')+'</td></tr>';}
+   html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(labels[q.workflow_branch]||q.requirement)+'<br><small>'+esc(q.reason)+'</small>'+cweRoutingDetails(q)+'</td><td>'+esc(p?'Source: '+(p.source?'recorded':'not recorded')+' · Operating context: '+(p.operational?'recorded':'not recorded'):'Awaiting evidence')+(p?.pending?.length?'<p>'+esc(p.pending.join(' '))+'</p>':'')+'</td></tr>';}
   html+='</tbody></table><p class="hint">Versioned project policy; independent routing validation is pending. Required source missing → under_investigation. Unknown routing → under_investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
   if(routes.some(([_,q])=>q.source_required))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
   if(routes.some(([_,q])=>q.operational_required&&(!q.source_required||q.source_available)))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operating context</button>';
   html+='</div>'+_verdictTable(_armResult,'Current evidence review')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
   box.innerHTML=html;
+}
+
+function cweRoutingDetails(route){
+ let h='<details class="review-disclosure"><summary>Why this route? CWE evidence requirements</summary><p>Policy: '+esc(route.policy_version||'unknown')+' · Project rules; independent validation pending.</p>';
+ for(const d of route.decisions||[]){
+  h+='<h4>'+esc(d.cwe)+' · '+esc(d.name||'Unknown weakness')+'</h4><p>'+esc(d.reason||'')+'</p>';
+  h+='<p>Source requirement: '+esc(d.source_requirement||'undetermined')+' · Assignment: '+esc(d.resolution||'unknown')+'</p><ul>';
+  for(const f of d.required_facts||[])h+='<li>'+esc(f.label)+' <small>('+esc(f.location)+')</small></li>';
+  h+='</ul>';
+  if(d.cve_mapping_gate)h+='<p>CVE mapping usage: '+esc(d.cve_mapping_gate.usage)+(d.cve_mapping_gate.requires_mapping_review?' · Mapping review needed.':'')+'</p>';
+  if(d.official_metadata?.detection_methods?.length)h+='<details><summary>Official detection suggestions (not mandatory routing rules)</summary><ul>'+d.official_metadata.detection_methods.map(m=>'<li>'+esc(m.method)+': '+esc(m.description)+'</li>').join('')+'</ul></details>';
+  for(const m of d.matched_rules||[])h+='<p>Rule: '+esc(m.rule_id)+'<br>'+esc((m.anchors||[]).map(a=>a.path.join(' → ')).join('; '))+'</p>';
+  for(const e of d.evidence||[])h+='<blockquote>'+esc(e.quote)+'</blockquote>';
+ }
+ if(route.operational_requirement_evidence?.length)h+='<p>Operating-context discovery terms: '+esc([...new Set(route.operational_requirement_evidence.map(e=>e.quote))].join(', '))+'. These terms do not prove exploit prerequisites.</p>';
+ return h+'</details>';
 }
 
 function pickArm(which){

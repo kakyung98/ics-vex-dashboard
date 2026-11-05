@@ -76,7 +76,8 @@ queues are disabled. Existing model files and historical reports are retained.
 1. Preserve reported CWE IDs and derive all Pillar paths from pinned **CWE v5.0**:
    984 weaknesses, 10 Pillars.
 2. Combine **Pillar + specific CWE + CVE/advisory evidence** using the versioned
-   project policy. This is not an official MITRE analysis requirement.
+   `cwe-evidence-v2` policy. It has an individual record for all 944 mapped active
+   detailed CWEs. Pillars group records; they never supply a blanket source requirement.
 3. Follow four evidence workflows (corrected 2026-11-05):
    - **Source only:** supplied source → language-aware AST/patch checks; optionally Clang/LLVM for configured C/C++ builds.
    - **Source + operating context:** source analysis, then required operator facts.
@@ -96,11 +97,34 @@ queues are disabled. Existing model files and historical reports are retained.
 8. Preserve each CVE's branch result. Merge VEX into a copy of the original
    CycloneDX SBOM; standalone OpenVEX/CSAF are available. SPDX uses standalone VEX.
 
-The snapshot's 944 mapped, non-deprecated detailed CWEs are grouped under the
-10 Pillars, retaining multiple memberships. See the [full grouping](docs/CWE_PILLAR_GROUPS_V5.md).
-This is taxonomy membership, not a completed source-required/source-free table.
-The proposed Pillar-specific “required facts → evidence location” policy has not
-replaced the current list/keyword routing rules in `src/vex_routing.py`.
+The evidence policy now separates **implementation properties**, **observable
+deployment records**, and **specialist/unspecified evidence**. Explicit detailed
+rules take precedence; otherwise the nearest explicit detailed ancestor applies,
+with equally specific requirements combined. A separate 26-type operational
+allowlist prevents inheritance from accidentally treating Java declarations as
+runtime permissions. There is no “no operational rule → source required” fallback.
+
+The baseline table has **728 source-requiring**, **26 operational**, and **190
+specialist/mechanism-unresolved** profiles. These are project policy assignments,
+not independent gold, accuracy, or final CVE-route counts. Some entries have
+official Prohibited/Discouraged CVE mapping usage and defer at runtime. Explicit
+CVE implementation/configuration evidence can refine eligible profiles: a generic
+weak crypto label is unresolved, a documented configurable TLS mechanism can use
+operating records, and a risky embedded implementation does not become a setting.
+
+Every record retains its definition, all Pillars, rule/ancestor path, evidence
+facts, official platform/detection suggestions and mapping cautions, plus source
+and policy hashes. Official detection suggestions are not mandatory analysis rules.
+Unknown/mapping-restricted CWEs cannot be hidden by another mapped CWE in the same CVE.
+
+See the [detailed criteria and limitations (Korean)](docs/CWE_ROUTING_CRITERIA.md),
+[all 944 policy records](docs/CWE_EVIDENCE_POLICY_V2.md),
+[JSON](data/cwe_routing/v2/profiles.json), [CSV](data/cwe_routing/v2/profiles.csv),
+and the [official Pillar grouping](docs/CWE_PILLAR_GROUPS_V5.md).
+Rebuild with `python tools/build_cwe_evidence_policy.py`.
+The web's **VEX Decision Logic → Search all 944 CWE profiles** shows the policy;
+each CVE route also exposes **Why this route?** with its actual evidence and rule.
+Changed policy versions/hashes require a new review without deleting historical evidence.
 
 | Evidence | Permitted conclusion |
 | --- | --- |
@@ -263,7 +287,7 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- Multilingual-source, four-workflow and writer-only regression on 2026-11-05: **258 passed**, including
+- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-05: **291 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
   Software tests are not independently labelled CVEs or model accuracy.
@@ -338,7 +362,7 @@ optional live NVD lookup reads the server-side `NVD_API_KEY`.
 | `src/api_server.py` | FastAPI entry and generated UI |
 | `src/candidate_web.py`, `src/unified_identification.py` | #3 jobs and L2/L3/L4 orchestration |
 | `src/identity_retrieval.py`, `src/identity_evidence.py`, `src/identity_versions.py` | Retrieval, original-evidence acceptance and versions |
-| `src/cwe_taxonomy.py`, `src/vex_routing.py`, `data/item4_routing_policy_v1.json` | Official hierarchy and separate routing policy |
+| `src/cwe_taxonomy.py`, `src/cwe_evidence_policy.py`, `src/vex_routing.py`, `data/cwe_evidence_policy_v2.json` | Official hierarchy, 944 detailed evidence profiles and CVE-specific routing |
 | `src/item4_review.py` | Durable #4 review and mixed-branch aggregation |
 | `src/rule_analysis.py`, `src/cve_source_evidence.py` | Literal source-span extraction, rule questions and answer summaries |
 | `src/vex_roles.py` | Evidence packets, locked-decision authoring and writer validation |

@@ -18,7 +18,8 @@
     '/api/by_year':'by_year.json','/api/advisories':'advisories.json',
     '/api/advisories/list':'advisories_list.json','/api/sbom_index':'sbom_index.json',
     '/api/published_vex':'published_vex.json','/api/verify_results':'verify_results.json',
-    '/api/verify_coverage':'verify_coverage.json'
+    '/api/verify_coverage':'verify_coverage.json',
+    '/api/item4/cwe-policy':'cwe_routing_profiles.json'
   };
   const asJson=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   let index;
