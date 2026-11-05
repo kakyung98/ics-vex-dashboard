@@ -7,6 +7,7 @@ def explorer():
 <details class="method-extra" id="cwe-policy-explorer"><summary>Search all 944 CWE profiles</summary>
 <p>Baseline rules choose the nearest explicit detailed CWE ancestor. Equally specific requirements combine. CVE-specific implementation/configuration mechanisms can refine the baseline. No Pillar-wide source default applies. Hardware/design and unspecified mechanisms remain unresolved. This project policy has not been independently validated.</p>
 <div id="cwe-policy-summary">Open this section to load the policy.</div>
+<div id="cwe-pillar-results" style="overflow-x:auto"></div>
 <label>CWE or weakness name <input id="cwe-policy-query" placeholder="CWE-862, SQL, permissions" style="width:100%;padding:10px;box-sizing:border-box"></label>
 <label>Source requirement <select id="cwe-policy-source"><option value="">All</option><option value="required">Required</option><option value="not_required">Operational review</option><option value="undetermined">Unresolved / specialist evidence</option></select></label>
 <label>Pillar <select id="cwe-policy-pillar"><option value="">All Pillars</option></select></label>
@@ -26,6 +27,7 @@ def explorer():
  root.addEventListener('toggle',async()=>{if(!root.open||data||loading)return;loading=true;
   try{const response=await fetch('/api/item4/cwe-policy');if(!response.ok)throw new Error('Policy unavailable: '+response.status);data=await response.json();
    const s=data.summary;document.getElementById('cwe-policy-summary').textContent=s.version+': '+s.detailed_cwes+' detailed CWEs. Baselines: source '+(s.by_source_requirement.required||0)+', operational '+(s.by_source_requirement.not_required||0)+', unresolved/specialist '+(s.by_source_requirement.undetermined||0)+'. Actual CVE routes also apply mapping restrictions and mechanism evidence. Coverage is not accuracy.';
+   document.getElementById('cwe-pillar-results').innerHTML='<h3>All 10 Pillars</h3><p>A CWE may belong to multiple Pillars. Membership counts overlap; there are 944 unique detailed CWEs. These are baseline evidence requirements, not VEX verdicts.</p><table><thead><tr><th>Pillar / name</th><th>Memberships</th><th>Source</th><th>Operational</th><th>Unresolved / specialist</th></tr></thead><tbody>'+Object.entries(s.per_pillar).map(([id,p])=>'<tr><td>'+e(id)+'<br>'+e(p.name)+'</td><td>'+e(p.memberships)+'</td><td>'+e(p.by_source_requirement.required||0)+'</td><td>'+e(p.by_source_requirement.not_required||0)+'</td><td>'+e(p.by_source_requirement.undetermined||0)+'</td></tr>').join('')+'</tbody></table>';
    for(const [id,p] of Object.entries(s.per_pillar)){const option=document.createElement('option');option.value=id;option.textContent=id+' · '+p.name;pillar.appendChild(option);}
    document.getElementById('cwe-policy-download').disabled=false;show();
   }catch(error){document.getElementById('cwe-policy-summary').textContent=String(error);}finally{loading=false;}

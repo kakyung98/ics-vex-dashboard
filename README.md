@@ -1,7 +1,7 @@
 # ICS-VEXForge
 
 Local ICS/OT **SBOM → CVE candidates → evidence-based VEX review**.
-Updated **2026-11-05 (KST)**. Retained experiments are not current independent accuracy.
+Updated **2026-11-06 (KST)**. Retained experiments are not current independent accuracy.
 
 **Current execution policy:** product/CVE identification, CWE routing, source
 analysis, condition/function extraction, operational questions and answer
@@ -121,6 +121,11 @@ See the [detailed criteria and limitations (Korean)](docs/CWE_ROUTING_CRITERIA.m
 [all 944 policy records](docs/CWE_EVIDENCE_POLICY_V2.md),
 [JSON](data/cwe_routing/v2/profiles.json), [CSV](data/cwe_routing/v2/profiles.csv),
 and the [official Pillar grouping](docs/CWE_PILLAR_GROUPS_V5.md).
+The criteria document's section 3 now lists all 10 Pillar aggregates and every
+detailed CWE membership; section 4 traces 8 locally cached CVEs and 12 constructed
+controls through the actual router. [Reproducible inputs and outputs](data/cwe_routing/v2/criteria_results.json)
+retain rule paths, literal evidence spans and missing evidence. These outputs are
+not independently adjudicated labels or classification accuracy.
 Rebuild with `python tools/build_cwe_evidence_policy.py`.
 The web's **VEX Decision Logic → Search all 944 CWE profiles** shows the policy;
 each CVE route also exposes **Why this route?** with its actual evidence and rule.
