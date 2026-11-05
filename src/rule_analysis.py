@@ -32,14 +32,23 @@ TEMPLATES={
  'password-configuration':('Are default accounts disabled and vendor-supported password requirements enforced?','configuration'),
  'cookie-configuration':('Which management protocol and cookie security settings are currently in use?','configuration'),
  'resource-permissions':('What ownership and access permissions are configured for the resource described in the cited advisory?','configuration')}
+TEMPLATES.update({
+ 'crypto-configuration':TEMPLATES['protocol-cryptography'],
+ 'key-configuration':('Which vendor-documented key or certificate replacement records apply to this asset? Do not enter key material.','configuration'),
+ 'deployment-configuration':('Which vendor-documented deployment settings control access to the service or resource described in the advisory?','configuration'),
+ 'authorization-enforcement':('Which actual user roles and permissions are assigned to the operation described in the cited advisory?','privileges'),
+ 'crypto-implementation':('Which interfaces use the affected credential, certificate or cryptographic service described in the advisory?','configuration'),
+ 'security-enforcement':('Which users and systems can access the operation protected by the control described in the advisory?','network_path')})
 
 
 def questions(case,sources):
     usable=[s for s in sources if s['source_kind'] in {'description','summary'}]
     if not usable:return {'prediction':{'questions':[]},'method':'rule_templates','llm_used':False},[]
     decisions=(case.get('analysis_route') or {}).get('decisions',[])
+    profiles=(case.get('analysis_route') or {}).get('question_profiles',[])
     matched=[d for d in decisions if d.get('rule_id') in TEMPLATES]
-    chosen=matched[0] if matched else None
+    selected=next((q for q in profiles if q in TEMPLATES),None)
+    chosen={'rule_id':selected} if selected else matched[0] if matched else None
     quotes=[e['quote'] for d in matched for e in d.get('evidence',[])]
     refs=[s['id'] for s in usable if any(q in s['text'] for q in quotes)][:2] or [usable[0]['id']]
     question,kind=TEMPLATES[chosen['rule_id']] if chosen else ('Which interfaces and services are used by the component named in the cited advisory?','discovery')

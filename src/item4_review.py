@@ -10,9 +10,10 @@ import uuid
 import threading
 from src import review_store as STORE
 from src import operational_questions as OQ
-from src.vex_routing import classify, workflow
+from src.vex_routing import classify, workflow, policy
 from src import vex_roles as VR
 from src.cve_source_evidence import catalog
+from src.cwe_evidence_policy import metadata as cwe_metadata
 
 TTL = 86400
 _lock = threading.RLock()
@@ -24,6 +25,10 @@ def get(review_id):
         raise KeyError('CWE-first review expired or not found. Start the review again.')
     if any(c.get('analysis_route',{}).get('workflow_policy_version') == 'five-branch-v1' for c in master['cases']):
         raise KeyError('This review uses the retired five-path policy. Start a new four-path review; the historical evidence is retained.')
+    if any(c.get('analysis_route',{}).get('policy_version')!=policy()['version'] or
+           c.get('analysis_route',{}).get('policy_sha256')!=policy()['sha256'] or
+           c.get('analysis_route',{}).get('official_metadata_sha256')!=cwe_metadata()['sha256'] for c in master['cases']):
+        raise KeyError('CWE evidence policy changed. Start a new review; historical evidence is retained without silently relabeling it.')
     return master
 
 
