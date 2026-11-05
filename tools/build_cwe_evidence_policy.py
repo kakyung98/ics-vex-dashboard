@@ -26,6 +26,8 @@ def main():
     for cid,r in sorted(data['profiles'].items(),key=lambda kv:int(kv[0][4:])):
         lines.append('| '+ ' | '.join([f'[{cid}]({r["definition_url"]})',r['name'].replace('|','/'),', '.join(r['pillars']),r['source_requirement'],r['operational_requirement'],', '.join(m['rule_id'] for m in r['matched_rules'])+' / '+r['resolution'],r['cve_mapping_gate']['usage']])+' |')
     (ROOT/'docs/CWE_EVIDENCE_POLICY_V2.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+    from build_cwe_routing_results import write_results
+    write_results(data=data)
     print(json.dumps(data['summary'],ensure_ascii=False))
 
 
