@@ -10,8 +10,13 @@ from src.item4_questions import validate
 from src.operational_questions import _validate_questions
 
 
-def case(cwe='CWE-787', description='An out-of-bounds write affects packet processing.', cve='CVE-2099-12345'):
-    return {'cve': cve, 'cwe': [cwe], 'description': description}
+pytestmark = pytest.mark.usefixtures('synthetic_evidence_routes')
+
+
+def case(cwe='CWE-787', description='An out-of-bounds write affects packet processing.', cve='CVE-2099-12345', operating=False):
+    return {'cve': cve, 'cwe': [cwe], 'description': description,
+            '_fixture_requirement':'operational_review' if cwe=='CWE-319' else 'source_required',
+            '_fixture_operating':operating or cwe=='CWE-319'}
 
 
 def test_official_pinned_taxonomy_and_multiple_ancestry():
@@ -39,25 +44,16 @@ def test_required_source_never_uses_operational_fallback(cwe, monkeypatch):
     assert row['extraction']['status'] == row['authoring']['status'] == 'not_run'
     with pytest.raises(ValueError): I4.questions(result['review_id'])
     assert not calls
-    assert classify(case(cwe), source_available=True)['route'] == 'source_analysis'
+    assert classify(case(cwe), source_available=True)['route'] == 'defer_routing_unknown'  # fixture fields never authorize production routes
 
 
-def test_operational_requires_specific_CWE_and_evidence():
-    op = case('CWE-319', 'Sensitive information is sent in cleartext over the device network.')
-    assert classify(op)['requirement'] == 'operational_review'
-    # A detailed observable transport weakness is enough to choose a review,
-    # never enough to decide a VEX status. Broad parent CWE-200 still needs context.
-    assert classify(case('CWE-319', 'A product vulnerability exists.'))['requirement'] == 'operational_review'
-    assert classify(case('CWE-200', 'A product vulnerability exists.'))['requirement'] == 'undetermined'
-    assert classify(case('CWE-284', 'Authentication requirements are unspecified.'))['requirement'] == 'undetermined'
-    assert classify(case('CWE-999999'))['requirement'] == 'undetermined'
-    assert classify({'cve': op['cve'], 'description': op['description']})['requirement'] == 'undetermined'
-    op['cwe'].append('CWE-787')
-    assert classify(op)['requirement'] == 'source_required'
-    op['cwe'] = ['CWE-319', 'CWE-999999']
-    assert classify(op)['requirement'] == 'undetermined'
-    op['cwe'] = ['CWE-319'];op['description'] += ' A buffer overflow also occurs.'
-    assert classify(op)['requirement'] == 'source_required'
+def test_production_routes_ignore_fixture_requirements_and_keyword_shortcuts():
+    for cwe in ['CWE-319','CWE-200','CWE-787','CWE-284','CWE-999999']:
+        for present in (False,True):
+            r=classify(case(cwe,'Remote buffer overflow; TLS configuration; missing authorization.'),source_available=present)
+            assert r['requirement']=='undetermined'
+            assert r['workflow_branch']=='routing_unknown'
+            assert r['initial_vex_status']=='under_investigation'
 
 
 def test_new_questions_require_both_scopes_and_operator_facts():

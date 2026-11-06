@@ -73,68 +73,34 @@ proof of safety. Input SBOM vulnerability answers are not identification ground 
 adapter is loaded lazily at that final stage. Other adapters and analysis-model
 queues are disabled. Existing model files and historical reports are retained.
 
-1. Preserve reported CWE IDs and derive all Pillar paths from pinned **CWE v5.0**:
-   984 weaknesses, 10 Pillars.
-2. Combine **Pillar + specific CWE + CVE/advisory evidence** using the versioned
-   `cwe-evidence-v2.1` policy. It has an individual record for all 944 mapped active
-   detailed CWEs. Pillars group records; they never supply a blanket source requirement.
-3. Follow four evidence workflows (corrected 2026-11-05):
-   - **Source only:** supplied source → language-aware AST/patch checks; optionally Clang/LLVM for configured C/C++ builds.
-   - **Source + operating context:** source analysis, then required operator facts.
-     Explicit CVE/advisory references to network/remote access, authentication,
-     privileges, configuration, enabled features or user/physical interaction trigger this conservative context requirement.
-   - **Required source missing:** `under_investigation`; no questionnaire or writer bypass.
-   - **Operating context only:** source-linked rule questions, installed-build
-     facts and supporting records. Unknown answers remain unknown.
-4. Accumulate source and operating evidence under the same CVE case ID.
-   Required evidence missing or conflicting decisions → `under_investigation`.
-   Completing a branch is not proof of exploitability or independent verification.
-5. Author only after the required evidence branches have submitted results.
-   Identical evidence is not authored twice. Preserve both branch records and their history.
-6. **Routing unresolved:** retain `under_investigation`, without a questionnaire bypass.
-7. Code locks status/scope. The writer drafts an explanation; validation rejects
-   changed IDs/status, invalid references, malformed output and repetition.
-8. Preserve each CVE's branch result. Merge VEX into a copy of the original
-   CycloneDX SBOM; standalone OpenVEX/CSAF are available. SPDX uses standalone VEX.
+**Current #4 limitation (2026-11-06): automatic evidence routing is disabled.**
+The previous manual CWE-to-source/operational mappings, nearest-ancestor method
+inheritance, 26-type operational allowlist and keyword route refinements were
+removed because their decision criteria were not sufficiently justified.
+Policy `cwe-evidence-v2.2-unassigned` preserves the 944 official detailed CWE
+records and all 10 Pillars, but assigns no evidence route. New CWE-first reviews
+remain `routing_unknown` / `under_investigation`, regardless of keywords or source
+availability. Source uploads and operator answers cannot bypass that state.
 
-The evidence policy now separates **implementation properties**, **observable
-deployment records**, and **specialist/unspecified evidence**. Explicit detailed
-rules take precedence; otherwise the nearest explicit detailed ancestor applies,
-with equally specific requirements combined. A separate 26-type operational
-allowlist prevents inheritance from accidentally treating Java declarations as
-runtime permissions. There is no “no operational rule → source required” fallback.
+Source analyzers, operational review engines, the four execution workflows,
+locked-status VEX writer and export validators remain as capabilities. Execution
+unit tests use explicit synthetic routing contracts to check those engines; these
+fixtures are not production classification rules, gold labels or accuracy tests.
+No replacement classification is inferred from the official CWE hierarchy.
+Official mapping usage is retained as advisory metadata only.
 
-The baseline table has **728 source-requiring**, **26 operational**, and **190
-specialist/mechanism-unresolved** profiles. These are project policy assignments,
-not independent gold, accuracy, or final CVE-route counts. Some entries have
-official Prohibited/Discouraged CVE mapping usage; these assignment guidelines
-are informational and do not block analysis of the reported CWE. Explicit
-CVE implementation/configuration evidence can refine eligible profiles: a generic
-weak crypto label is unresolved, a documented configurable TLS mechanism can use
-operating records, and a risky embedded implementation does not become a setting.
-
-Every record retains its definition, all Pillars, rule/ancestor path, evidence
-facts, official platform/detection suggestions and mapping cautions, plus source
-and policy hashes. Official detection suggestions are not mandatory analysis rules.
-Unknown or mechanism-unresolved CWEs cannot be hidden by another mapped CWE in
-the same CVE. Mapping usage alone never makes a reported CWE unresolved.
-
-See the [detailed criteria and limitations (Korean)](docs/CWE_ROUTING_CRITERIA.md),
-[all 944 policy records](docs/CWE_EVIDENCE_POLICY_V2.md),
+See the [current criteria and removed rules](docs/CWE_ROUTING_CRITERIA.md),
+[all 944 unassigned records](docs/CWE_EVIDENCE_POLICY_V2.md),
 [JSON](data/cwe_routing/v2/profiles.json), [CSV](data/cwe_routing/v2/profiles.csv),
 and the [official Pillar grouping](docs/CWE_PILLAR_GROUPS_V5.md).
-The criteria document's section 3 now lists all 10 Pillar aggregates and every
-detailed CWE membership. Its main assignment table separates direct/inherited
-evidence rules from optional CWE-assignment metadata. Section 5 explains why the
-same guidance grade can lead to different routes without blocking analysis.
-Section 4 traces 8 locally cached CVEs and 12 constructed
-controls through the actual router. [Reproducible inputs and outputs](data/cwe_routing/v2/criteria_results.json)
-retain rule paths, literal evidence spans and missing evidence. These outputs are
-not independently adjudicated labels or classification accuracy.
+[Reproducible current outputs](data/cwe_routing/v2/criteria_results.json) distinguish
+real cached inputs from constructed controls; all currently remain unassigned.
 Rebuild with `python tools/build_cwe_evidence_policy.py`.
-The web's **VEX Decision Logic → Search all 944 CWE profiles** shows the policy;
-each CVE route also exposes **Why this route?** with its actual evidence and rule.
-Changed policy versions/hashes require a new review without deleting historical evidence.
+Changed policy versions/hashes require a new review; existing runtime records are
+historical evidence and are not silently relabeled as current results.
+
+The following describes retained evidence-engine capabilities, **not automatically
+assigned routes for the 944 CWEs**:
 
 | Evidence | Permitted conclusion |
 | --- | --- |
@@ -297,11 +263,12 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-06: **295 passed**, including
+- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-06: **279 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
-  All 944 profiles retain reported CWEs and route independently of assignment
-  guidance grades. Discouraged/Prohibited metadata no longer blocks analysis.
+  All 944 profiles remain unassigned. Checks reject heuristic routing and verify
+  questionnaire/source-result bypass protection. Execution-only workflow tests use
+  explicit synthetic route contracts, not CWE classification labels.
   Software tests are not independently labelled CVEs or model accuracy.
 - A historical model-based #4 smoke produced common/specific questions for one eligible CVE and
   excluded a source-required case. Acceptance required presentation normalization;

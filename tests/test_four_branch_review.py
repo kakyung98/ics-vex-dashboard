@@ -7,6 +7,9 @@ from tests.test_item4_routing import case
 from tests.test_shared_vex_pipeline import provider
 
 
+pytestmark = pytest.mark.usefixtures('synthetic_evidence_routes')
+
+
 def source(cve, status='under_investigation'):
     return {'cve':cve, 'status':status, 'justification':'code_not_present' if status=='not_affected' else None,
             'reason':'Scoped source evidence.', 'scope':'complete declared product build', 'arm':'source-code'}
@@ -25,7 +28,7 @@ def test_source_only_and_missing_source_are_distinct(monkeypatch):
 
 def test_source_then_operating_context_waits_and_retains_source(monkeypatch):
     calls=[];monkeypatch.setattr(VR,'infer',provider(calls))
-    initial=I4.start([case(description='A remote attacker triggers an out-of-bounds write.')]);rid=initial['review_id']
+    initial=I4.start([case(description='A remote attacker triggers an out-of-bounds write.',operating=True)]);rid=initial['review_id']
     cve=initial['statements'][0]['cve'];case_id=initial['statements'][0]['case_id']
     with pytest.raises(ValueError):I4.questions(rid)
     midway=I4.record_source(rid,{'statements':[source(cve,'not_affected')]})
@@ -74,7 +77,7 @@ def test_retired_five_path_reviews_require_restart_without_deleting_history():
 
 def test_conflicting_decisions_are_not_authored_or_overwritten(monkeypatch):
     calls=[];monkeypatch.setattr(VR,'infer',provider(calls))
-    initial=I4.start([case(description='Remote out-of-bounds write.')]);rid=initial['review_id'];cve=initial['statements'][0]['cve']
+    initial=I4.start([case(description='Remote out-of-bounds write.',operating=True)]);rid=initial['review_id'];cve=initial['statements'][0]['cve']
     I4.record_source(rid,{'statements':[source(cve,'not_affected')]})
     master=I4.get(rid)
     result=I4._update(master,[{'cve':cve,'status':'fixed','justification':None,'reason':'Vendor build record.'}],'operational_review')
@@ -100,10 +103,10 @@ def test_export_cannot_clear_required_source_with_fixed_version_row():
     assert 'vulnerabilities' not in sbom
 
 
-def test_source_and_operational_requirements_cite_triggering_text():
+def test_production_does_not_treat_remote_keyword_as_an_operating_requirement():
     r=classify(case(description='Remote attackers trigger an out-of-bounds write.'),source_available=True)
-    assert r['workflow_branch']=='source_to_operational'
-    assert r['operational_requirement_evidence'][0]['quote']=='Remote'
+    assert r['workflow_branch']=='routing_unknown'
+    assert not r['operational_requirement_evidence']
 
 
 def test_foreign_or_duplicate_source_results_are_atomic():

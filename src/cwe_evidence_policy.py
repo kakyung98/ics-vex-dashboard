@@ -1,8 +1,8 @@
 """Versioned evidence requirements, derived per detailed CWE, never VEX verdicts."""
-from collections import Counter,deque
+from collections import Counter
 from functools import lru_cache
 from pathlib import Path
-import hashlib,json,re
+import hashlib,json
 from src.cwe_taxonomy import load,ancestry
 ROOT=Path(__file__).resolve().parents[1]
 POLICY_FILE=ROOT/'data/cwe_evidence_policy_v2.json'
@@ -30,27 +30,11 @@ def metadata():
 
 
 def validate(p,taxonomy):
-    names=set();records=taxonomy['records']
-    for rule in p['rules']:
-        if rule['id'] in names:raise ValueError('Duplicate evidence rule ID')
-        names.add(rule['id'])
-        for c in rule['anchors']:
-            if c not in records or records[c]['abstraction']=='Pillar' or records[c]['status']=='Deprecated':
-                raise ValueError('Invalid or overly broad rule anchor: '+c)
-        if not rule['facts'] or any(f not in p['facts'] for f in rule['facts']):raise ValueError('Unknown evidence fact')
-    for r in p['source_refinements']+p['operational_refinements']:re.compile(r['pattern'])
-    re.compile(p['context_pattern']);re.compile(p['specialist_definition_pattern'])
-    for cid in p['operator_observable_baseline_allowlist']:
-        if cid not in records or records[cid]['abstraction']=='Pillar':raise ValueError('Invalid operator baseline allowlist entry')
-
-
-def distances(cwe,records):
-    paths={cwe:[cwe]};queue=deque([cwe])
-    while queue:
-        cid=queue.popleft()
-        for parent in records.get(cid,{}).get('parents_view_1000',[]):
-            if parent not in paths:paths[parent]=paths[cid]+[parent];queue.append(parent)
-    return paths
+    if p.get('automatic_routing_enabled') is not False:
+        raise ValueError('Automatic evidence assignment has no justified decision contract')
+    for key in ('rules','facts','operator_observable_baseline_allowlist','source_refinements','operational_refinements','operational_rules'):
+        if p.get(key):
+            raise ValueError('Retired heuristic assignment must remain empty: '+key)
 
 
 def profile(cwe,*,rules=None,taxonomy=None):
@@ -74,45 +58,8 @@ def profile(cwe,*,rules=None,taxonomy=None):
     if chain['errors'] or not chain['pillars'] or rec.get('abstraction')=='Pillar' or rec.get('status')=='Deprecated':
         row['rationale']='Missing/deprecated/unmapped CWE or bare Pillar; no detailed evidence requirement assigned.'
         return row
-    paths=distances(cwe,t['records']);matches=[]
-    for rule in p['rules']:
-        anchors=[a for a in rule['anchors'] if a in paths]
-        if anchors:
-            distance=min(len(paths[a])-1 for a in anchors)
-            matches.append({'rule_id':rule['id'],'distance':distance,
-                'anchors':[{'cwe':a,'path':paths[a]} for a in anchors if len(paths[a])-1==distance],
-                'facts':rule['facts'],'rationale':rule['rationale']})
-    specialist=re.search(p['specialist_definition_pattern'],rec.get('name',''))
-    platforms=info.get('platforms',[])
-    named_languages={v['Name'] for v in platforms if v['kind']=='Language' and v.get('Name')}
-    hdl_only=bool(named_languages and named_languages<={'Verilog','VHDL','SystemVerilog'} and
-        not any(v['kind']=='Language' and v.get('Class')=='Not Language-Specific' for v in platforms))
-    if specialist or hdl_only:
-        selected=[{'rule_id':'hardware-design-evidence','distance':0,
-            'anchors':[{'cwe':cwe,'path':[cwe]}],'facts':['hardware_design'],
-            'rationale':'The detailed CWE name or explicit HDL platform scope requires hardware/design evidence outside the software analyzers.',
-            'definition_span':[specialist.start(),specialist.end()] if specialist else None,
-            'definition_quote':specialist.group() if specialist else ', '.join(sorted(named_languages)),
-            'metadata_source':'CWE name' if specialist else 'official Applicable_Platforms.Language'}]
-    elif matches:
-        minimum=min(m['distance'] for m in matches)
-        selected=[m for m in matches if m['distance']==minimum]
-    else:selected=[]
-    row['matched_rules']=selected
-    row['shadowed_rules']=[m for m in matches if m not in selected]
-    row['required_facts']=[{'id':f,**p['facts'][f]} for f in sorted({f for m in selected for f in m['facts']})]
-    locations={f['location'] for f in row['required_facts']}
-    row['resolution']='direct' if selected and all(m['distance']==0 for m in selected) else 'inherited' if selected else 'unresolved'
-    if not locations or locations&{'specialist','cve_evidence'}:
-        row['rationale']=' '.join(m['rationale'] for m in selected) or 'No explicit detailed/ancestor evidence rule; obtain mechanism evidence. No default source requirement.'
-    else:
-        row['source_requirement']='required' if 'source' in locations else 'not_required'
-        row['operational_requirement']='required' if 'operator' in locations else 'conditional_on_CVE_context'
-        row['rationale']=' '.join(m['rationale'] for m in selected)
-        if row['source_requirement']=='not_required' and cwe not in p['operator_observable_baseline_allowlist']:
-            row['source_requirement']='undetermined';row['operational_requirement']='undetermined'
-            row['rationale']='The inherited operator rule is not explicitly admitted for this detailed CWE. Obtain mechanism evidence rather than extrapolating configuration answerability.'
-    row['question_profiles']=[m['rule_id'] for m in selected]
+    row['rationale']='No justified evidence-routing criteria are assigned. Official CWE membership and metadata are retained; source/operating requirements remain undetermined.'
+
     return row
 
 
@@ -142,5 +89,6 @@ def catalog():
         'unresolved_baseline_rules':dict(Counter(','.join(m['rule_id'] for m in r['matched_rules']) for r in rows.values() if r['source_requirement']=='undetermined')),
         'per_pillar':per_pillar,'multiple_pillar_membership_retained':True,
         'human_adjudicated':False,'independently_validated':False,
-        'coverage_is_not_accuracy':True,'default_source_requirement_removed':True}
+        'coverage_is_not_accuracy':True,'default_source_requirement_removed':True,
+        'automatic_routing_enabled':False,'unassigned_profiles':len(rows)}
     return {'summary':summary,'profiles':rows}
