@@ -124,7 +124,10 @@ See the [detailed criteria and limitations (Korean)](docs/CWE_ROUTING_CRITERIA.m
 [JSON](data/cwe_routing/v2/profiles.json), [CSV](data/cwe_routing/v2/profiles.csv),
 and the [official Pillar grouping](docs/CWE_PILLAR_GROUPS_V5.md).
 The criteria document's section 3 now lists all 10 Pillar aggregates and every
-detailed CWE membership; section 4 traces 8 locally cached CVEs and 12 constructed
+detailed CWE membership. Its main assignment table separates direct/inherited
+evidence rules from optional CWE-assignment metadata. Section 5 explains why the
+same guidance grade can lead to different routes without blocking analysis.
+Section 4 traces 8 locally cached CVEs and 12 constructed
 controls through the actual router. [Reproducible inputs and outputs](data/cwe_routing/v2/criteria_results.json)
 retain rule paths, literal evidence spans and missing evidence. These outputs are
 not independently adjudicated labels or classification accuracy.

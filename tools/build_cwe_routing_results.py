@@ -141,18 +141,27 @@ def section3(report):
     lines += [f'| **소속 합계: 중복 포함** | 한 CWE의 여러 Pillar 소속을 모두 계산 | **1201** | **{totals["required"]}** | **{totals["not_required"]}** | **{totals["undetermined"]}** |',
         '| **고유 CWE 합계** | 각 CWE를 한 번만 계산 | **944** | **728** | **26** | **190** |','',
         '**합계 해석:** 235개 세부 CWE가 여러 Pillar에 속하므로 Pillar별 소속 수 합계는 1,201개다. 같은 CWE를 한 번만 세면 944개다. Pillar별 열을 합쳐 728·26·190과 바로 비교하면 중복 계산이 된다.','',
-        '### 3.3 직접 적용·상속·CVE 매핑 참고 정보의 실제 집계','',
-        '| Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 | Allowed | Allowed-with-Review | Discouraged | Prohibited |',
-        '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
+        '### 3.3 증거 기준을 직접 적용했는지·상속했는지','',
+        '이 표는 증거 요구 기준의 적용 방식을 집계한다. 각 행에서 자체 기준과 상속의 합은 3.2절의 해당 Pillar 소속 수와 같다.','',
+        '| Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 |',
+        '| --- | ---: | ---: |']
     for p in report['pillars']:
-        r=p['by_resolution'];m=p['official_mapping_usage']
-        lines.append('| '+' | '.join([p['pillar'],str(r.get('direct',0)),str(r.get('inherited',0)),*[str(m.get(k,0)) for k in ['Allowed','Allowed-with-Review','Discouraged','Prohibited']]])+' |')
-    lines += ['', '이 표도 Pillar 소속 기준이므로 중복을 포함한다. 오른쪽 네 열은 CWE를 새로 부여하는 작성자를 위한 공식 매핑 지침이며, 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니다. 현재 시스템은 보고된 CWE를 유지하며 이 등급으로 경로를 차단하지 않는다. 왼쪽 두 열과 오른쪽 네 열은 같은 집합을 별개 기준으로 집계하므로 모두 더하지 않는다.','',
+        r=p['by_resolution']
+        lines.append('| '+' | '.join([p['pillar'],str(r.get('direct',0)),str(r.get('inherited',0))])+' |')
+    lines += ['', '자체 기준/조건은 해당 CWE 자체의 규칙·명칭·플랫폼 조건이 적용된 경우이고, 상속은 가장 가까운 명시적 상위 세부 CWE 기준을 적용한 경우다. 직접 적용 여부는 독립 검수 여부나 분류 정확도를 뜻하지 않는다. Pillar 소속 기준이므로 행 사이에 중복을 포함한다.','',
+        '<details>','<summary>참고 메타데이터: 공식 CWE 부여 지침 집계 — 분석 경로에 사용하지 않음</summary>','',
+        '아래 네 등급은 CWE를 새로 부여하는 작성자를 위한 공식 지침이다. 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니며, 소스/운영 필요 여부를 결정하지 않는다. 이 집계는 출처 추적을 위해 본 판단 표와 분리해 남긴다.','',
+        '| Pillar | Allowed | Allowed-with-Review | Discouraged | Prohibited |',
+        '| --- | ---: | ---: | ---: | ---: |']
+    for p in report['pillars']:
+        m=p['official_mapping_usage']
+        lines.append('| '+' | '.join([p['pillar'],*[str(m.get(k,0)) for k in ['Allowed','Allowed-with-Review','Discouraged','Prohibited']]])+' |')
+    lines += ['', '</details>','',
         '### 3.4 Pillar별 모든 세부 CWE의 분류 결과','',
         '아래 10개 펼침 항목에 전체 1,201개 소속 행을 싣는다. 고유 CWE 944개를 모두 포함하며, 중복 소속 CWE는 해당 Pillar마다 다시 나타난다. 각 행은 **기본 증거 요구**이고, 실제 CVE 메커니즘 보정을 적용한 실행 결과는 4절에서 구분한다.','']
     for p in report['pillars']:
         lines += ['<details>',f'<summary>{p["pillar"]} · {p["name"]} · {p["memberships"]}개 소속</summary>','',
-            '| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |',
+            '| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |',
             '| --- | --- | --- | --- | --- |']
         for r in p['members']:
             facts='<br>'.join(f'{f["id"]} ({LOC_KO[f["location"]]})' for f in r['required_facts'])
@@ -251,7 +260,7 @@ def replace_section(text,number,body):
     if start in text:
         a=text.index(start);b=text.index(end,a)+len(end)
         return text[:a]+block.rstrip()+'\n\n'+text[b:].lstrip('\r\n')
-    anchor='### 상속 원칙과 예외' if number==3 else '## 5. 잘못되거나 넓은 CVE 매핑 처리'
+    anchor='### 상속 원칙과 예외' if number==3 else '## 5. 보고된 CWE 유지와 근거 부족 처리'
     if anchor not in text:raise ValueError('Documentation section anchor missing: '+anchor)
     return text.replace(anchor,block+anchor,1)
 
