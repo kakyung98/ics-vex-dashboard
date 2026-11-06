@@ -2,6 +2,10 @@
 
 정책 버전: `cwe-evidence-v2.1` / 기준 분류: 고정된 공식 CWE v5.0 View 1000.
 
+갱신: **2026-11-06 (KST)**. CVE에 이미 연결된 CWE를 입력으로 사용한다. `Mapping_Notes.Usage`는 CWE 부여 지침을 보존한 참고 정보이며 **분석 경로의 허용·차단 조건이 아니다.**
+
+현재 결정 순서는 **보고된 CWE 유지 → 필요한 사실과 증거 소재 확인 → CVE·권고의 구체적 메커니즘으로 보완 → 소스·운영 요구 결합 → 자료 유무에 따라 실행 경로 선택**이다. 메커니즘이 불명확하거나 지원하지 않는 전문 자료가 필요하면 그 이유를 기록하고 유보한다.
+
 ## 1. 무엇을 결정하는가
 
 이 정책은 **이미 식별된 CVE를 특정 자산에서 검토할 때 어떤 증거를 수집할지** 결정한다. 취약점의 존재, 실제 악용 가능성, VEX 상태를 CWE만으로 결정하지 않는다.
@@ -70,22 +74,44 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 **합계 해석:** 235개 세부 CWE가 여러 Pillar에 속하므로 Pillar별 소속 수 합계는 1,201개다. 같은 CWE를 한 번만 세면 944개다. Pillar별 열을 합쳐 728·26·190과 바로 비교하면 중복 계산이 된다.
 
-### 3.3 직접 적용·상속·CVE 매핑 참고 정보의 실제 집계
+### 3.3 증거 기준을 직접 적용했는지·상속했는지
 
-| Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 | Allowed | Allowed-with-Review | Discouraged | Prohibited |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| CWE-284 | 76 | 106 | 157 | 19 | 6 | 0 |
-| CWE-435 | 5 | 12 | 13 | 4 | 0 | 0 |
-| CWE-664 | 75 | 305 | 324 | 35 | 14 | 7 |
-| CWE-682 | 11 | 2 | 12 | 0 | 1 | 0 |
-| CWE-691 | 19 | 67 | 77 | 7 | 2 | 0 |
-| CWE-693 | 37 | 66 | 89 | 10 | 4 | 0 |
-| CWE-697 | 10 | 11 | 17 | 3 | 1 | 0 |
-| CWE-703 | 13 | 45 | 49 | 5 | 4 | 0 |
-| CWE-707 | 10 | 135 | 129 | 10 | 6 | 0 |
-| CWE-710 | 49 | 147 | 120 | 25 | 1 | 50 |
+이 표는 증거 요구 기준의 적용 방식을 집계한다. 각 행에서 자체 기준과 상속의 합은 3.2절의 해당 Pillar 소속 수와 같다.
 
-이 표도 Pillar 소속 기준이므로 중복을 포함한다. 오른쪽 네 열은 CWE를 새로 부여하는 작성자를 위한 공식 매핑 지침이며, 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니다. 현재 시스템은 보고된 CWE를 유지하며 이 등급으로 경로를 차단하지 않는다. 왼쪽 두 열과 오른쪽 네 열은 같은 집합을 별개 기준으로 집계하므로 모두 더하지 않는다.
+| Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 |
+| --- | ---: | ---: |
+| CWE-284 | 76 | 106 |
+| CWE-435 | 5 | 12 |
+| CWE-664 | 75 | 305 |
+| CWE-682 | 11 | 2 |
+| CWE-691 | 19 | 67 |
+| CWE-693 | 37 | 66 |
+| CWE-697 | 10 | 11 |
+| CWE-703 | 13 | 45 |
+| CWE-707 | 10 | 135 |
+| CWE-710 | 49 | 147 |
+
+자체 기준/조건은 해당 CWE 자체의 규칙·명칭·플랫폼 조건이 적용된 경우이고, 상속은 가장 가까운 명시적 상위 세부 CWE 기준을 적용한 경우다. 직접 적용 여부는 독립 검수 여부나 분류 정확도를 뜻하지 않는다. Pillar 소속 기준이므로 행 사이에 중복을 포함한다.
+
+<details>
+<summary>참고 메타데이터: 공식 CWE 부여 지침 집계 — 분석 경로에 사용하지 않음</summary>
+
+아래 네 등급은 CWE를 새로 부여하는 작성자를 위한 공식 지침이다. 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니며, 소스/운영 필요 여부를 결정하지 않는다. 이 집계는 출처 추적을 위해 본 판단 표와 분리해 남긴다.
+
+| Pillar | Allowed | Allowed-with-Review | Discouraged | Prohibited |
+| --- | ---: | ---: | ---: | ---: |
+| CWE-284 | 157 | 19 | 6 | 0 |
+| CWE-435 | 13 | 4 | 0 | 0 |
+| CWE-664 | 324 | 35 | 14 | 7 |
+| CWE-682 | 12 | 0 | 1 | 0 |
+| CWE-691 | 77 | 7 | 2 | 0 |
+| CWE-693 | 89 | 10 | 4 | 0 |
+| CWE-697 | 17 | 3 | 1 | 0 |
+| CWE-703 | 49 | 5 | 4 | 0 |
+| CWE-707 | 129 | 10 | 6 | 0 |
+| CWE-710 | 120 | 25 | 1 | 50 |
+
+</details>
 
 ### 3.4 Pillar별 모든 세부 CWE의 분류 결과
 
@@ -94,7 +120,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-284 · Improper Access Control · 182개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-9](https://cwe.mitre.org/data/definitions/9.html) J2EE Misconfiguration: Weak Access Permissions for EJB Methods | 소스 필요<br>운영: 필수 | actor_and_access_scope (운영)<br>authorization_enforcement (소스) | authorization-enforcement @ CWE-269 / 거리 2 | Allowed |
 | [CWE-13](https://cwe.mitre.org/data/definitions/13.html) ASP.NET Misconfiguration: Password in Configuration File | 추가 근거·전문 자료<br>운영: 미정 | cve_specific_mechanism (CVE 메커니즘) | unspecified-mechanism @ CWE-668 / 거리 3 | Allowed |
@@ -284,7 +310,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-435 · Improper Interaction Between Multiple Correctly-Behaving Entities · 17개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-14](https://cwe.mitre.org/data/definitions/14.html) Compiler Removal of Code to Clear Buffers | 소스 필요<br>운영: CVE 문맥에 따라 추가 | code_structure (소스) | code-structure @ CWE-1038 / 거리 2 | Allowed |
 | [CWE-86](https://cwe.mitre.org/data/definitions/86.html) Improper Neutralization of Invalid Characters in Identifiers in Web Pages | 소스 필요<br>운영: CVE 문맥에 따라 추가 | reference_resolution (소스) | reference-resolution @ CWE-436 / 거리 1 | Allowed |
@@ -309,7 +335,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-664 · Improper Control of a Resource Through its Lifetime · 380개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-8](https://cwe.mitre.org/data/definitions/8.html) J2EE Misconfiguration: Entity Bean Declared Remote | 추가 근거·전문 자료<br>운영: 미정 | cve_specific_mechanism (CVE 메커니즘) | unspecified-mechanism @ CWE-668 / 거리 1 | Allowed |
 | [CWE-13](https://cwe.mitre.org/data/definitions/13.html) ASP.NET Misconfiguration: Password in Configuration File | 추가 근거·전문 자료<br>운영: 미정 | cve_specific_mechanism (CVE 메커니즘) | unspecified-mechanism @ CWE-668 / 거리 3 | Allowed |
@@ -697,7 +723,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-682 · Incorrect Calculation · 13개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-128](https://cwe.mitre.org/data/definitions/128.html) Wrap-around Error | 소스 필요<br>운영: CVE 문맥에 따라 추가 | calculation_semantics (소스) | calculation-comparison @ CWE-128 / 거리 0 | Allowed |
 | [CWE-131](https://cwe.mitre.org/data/definitions/131.html) Incorrect Calculation of Buffer Size | 소스 필요<br>운영: CVE 문맥에 따라 추가 | calculation_semantics (소스) | calculation-comparison @ CWE-131 / 거리 0 | Allowed |
@@ -718,7 +744,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-691 · Insufficient Control Flow Management · 86개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-179](https://cwe.mitre.org/data/definitions/179.html) Incorrect Behavior Order: Early Validation | 소스 필요<br>운영: CVE 문맥에 따라 추가 | input_to_sensitive_operation (소스)<br>state_control_flow (소스) | input-processing @ CWE-20 / 거리 1<br>state-and-lifetime @ CWE-696 / 거리 1 | Allowed |
 | [CWE-180](https://cwe.mitre.org/data/definitions/180.html) Incorrect Behavior Order: Validate Before Canonicalize | 소스 필요<br>운영: CVE 문맥에 따라 추가 | input_to_sensitive_operation (소스)<br>state_control_flow (소스) | input-processing @ CWE-20 / 거리 2<br>state-and-lifetime @ CWE-696 / 거리 2 | Allowed |
@@ -812,7 +838,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-693 · Protection Mechanism Failure · 103개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-5](https://cwe.mitre.org/data/definitions/5.html) J2EE Misconfiguration: Data Transmission Without Encryption | 운영 검토 가능<br>운영: 필수 | communication_configuration (운영) | transport-encryption @ CWE-319 / 거리 1 | Allowed |
 | [CWE-6](https://cwe.mitre.org/data/definitions/6.html) J2EE Misconfiguration: Insufficient Session-ID Length | 소스 필요<br>운영: 필수 | actor_and_access_scope (운영)<br>crypto_implementation (소스) | crypto-implementation @ CWE-330 / 거리 2 | Allowed |
@@ -923,7 +949,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-697 · Incorrect Comparison · 21개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-183](https://cwe.mitre.org/data/definitions/183.html) Permissive List of Allowed Inputs | 소스 필요<br>운영: CVE 문맥에 따라 추가 | calculation_semantics (소스) | calculation-comparison @ CWE-183 / 거리 0 | Allowed |
 | [CWE-184](https://cwe.mitre.org/data/definitions/184.html) Incomplete List of Disallowed Inputs | 소스 필요<br>운영: CVE 문맥에 따라 추가 | input_to_sensitive_operation (소스) | input-processing @ CWE-184 / 거리 0 | Allowed |
@@ -952,7 +978,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-703 · Improper Check or Handling of Exceptional Conditions · 58개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-7](https://cwe.mitre.org/data/definitions/7.html) J2EE Misconfiguration: Missing Custom Error Page | 소스 필요<br>운영: CVE 문맥에 따라 추가 | error_handling (소스) | error-handling @ CWE-755 / 거리 2 | Allowed |
 | [CWE-12](https://cwe.mitre.org/data/definitions/12.html) ASP.NET Misconfiguration: Missing Custom Error Page | 소스 필요<br>운영: CVE 문맥에 따라 추가 | error_handling (소스) | error-handling @ CWE-755 / 거리 2 | Allowed |
@@ -1018,7 +1044,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-707 · Improper Neutralization · 145개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-20](https://cwe.mitre.org/data/definitions/20.html) Improper Input Validation | 소스 필요<br>운영: CVE 문맥에 따라 추가 | input_to_sensitive_operation (소스) | input-processing @ CWE-20 / 거리 0 | Discouraged |
 | [CWE-37](https://cwe.mitre.org/data/definitions/37.html) Path Traversal: '/absolute/pathname/here' | 소스 필요<br>운영: CVE 문맥에 따라 추가 | input_to_sensitive_operation (소스) | input-processing @ CWE-138 / 거리 2 | Allowed |
@@ -1171,7 +1197,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 <details>
 <summary>CWE-710 · Improper Adherence to Coding Standards · 196개 소속</summary>
 
-| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |
+| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |
 | --- | --- | --- | --- | --- |
 | [CWE-11](https://cwe.mitre.org/data/definitions/11.html) ASP.NET Misconfiguration: Creating Debug Binary | 소스 필요<br>운영: CVE 문맥에 따라 추가 | code_structure (소스) | code-structure @ CWE-489 / 거리 1 | Allowed |
 | [CWE-14](https://cwe.mitre.org/data/definitions/14.html) Compiler Removal of Code to Clear Buffers | 소스 필요<br>운영: CVE 문맥에 따라 추가 | code_structure (소스) | code-structure @ CWE-1038 / 거리 2 | Allowed |
@@ -2236,15 +2262,38 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 <!-- END GENERATED SECTION 4 RESULTS -->
 
-## 5. 잘못되거나 넓은 CVE 매핑 처리
+## 5. 보고된 CWE 유지와 근거 부족 처리
 
 원문 XML의 `Mapping_Notes.Usage`도 보존한다.
+
+### 5.1 분석 경로를 정하는 기준과 참고 정보의 구분
+
+| 항목 | 현재 처리 |
+| --- | --- |
+| CVE가 보고한 CWE ID | 입력과 결과에서 그대로 보존한다. 매핑 등급 때문에 자동 교체하지 않는다. |
+| 세부 CWE의 정의·규칙·상속 경로 | 확인할 사실과 증거 소재를 결정하는 기본 기준으로 사용한다. |
+| CVE 설명·권고의 구체적 구현/설정 메커니즘 | 허용된 보정 규칙에 따라 필요한 소스·운영 증거를 구체화한다. |
+| `Mapping_Notes.Usage` | 출처 추적과 CWE 부여 지침 확인용으로만 남긴다. 실행 경로에 영향을 주지 않는다. |
+| 필요한 소스 분석 결과가 없음 | 소스 요구를 유지하고 ③ 필수 소스 대기로 분기한다. |
+| 필요한 증거 자체를 정할 근거가 없음 | 부족한 메커니즘·전문 자료를 명시하고 분류를 유보한다. |
+
+### 5.2 매핑 지침은 분석 중단 사유가 아님
 
 - `Allowed`, `Allowed-with-Review`, `Discouraged`, `Prohibited`: 모두 보고된 CWE를 유지하고 증거 요구와 CVE 메커니즘에 따라 분석을 진행한다.
 - 이 값들은 CWE를 새로 부여할 때 참고하는 공식 지침이다. 이미 연결된 CWE의 분석을 차단하거나 교체를 요구하는 조건으로 사용하지 않는다.
 - 주의 등급은 출처 추적용 참고 정보로 보존한다. 등급이 좋다는 이유만으로 경로의 정확성이 검증되는 것도 아니다.
 - 포괄적인 CWE는 CVE 설명·권고 근거로 메커니즘을 보완한다. 그래도 필요한 증거를 정할 수 없으면 유보한다.
 - Pillar만 보고됐거나, 알 수 없는/폐기된 CWE라면 유보한다.
+
+### 5.3 같은 주의 등급이어도 달라지는 실행 결과
+
+| 보고된 CWE | 참고 Usage | 증거에 따른 처리 |
+| --- | --- | --- |
+| CWE-119 | Discouraged | 메모리 경계·수명에 관한 소스 증거를 요구한다. 소스 결과가 없으면 ③, 있으면 운영 문맥에 따라 ① 또는 ②다. |
+| CWE-263 | Discouraged | 배포된 계정·암호 만료 정책을 운영 기록으로 확인하는 ④ 경로다. |
+| CWE-200 | Discouraged | 정보 노출이라는 유형만으로 원인이 특정되지 않는다. CVE·권고 근거로 보완하고, 그래도 필요한 증거가 불명확하면 유보한다. |
+
+위 차이는 Usage 등급이 아니라 **각 CWE에서 확인해야 할 사실과 CVE 메커니즘의 차이**에서 나온다. 경로를 선택했다는 사실만으로 affected/not_affected를 부여하지 않는다.
 
 여러 CWE 중 하나라도 해결되지 않으면 다른 하나의 소스 분석 결과가 그 문제를 가리지 못하게 전체 경로를 유보한다. 모두 분류 가능하면 필요한 소스·운영 증거의 합집합을 사용한다.
 
