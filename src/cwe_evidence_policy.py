@@ -67,7 +67,9 @@ def profile(cwe,*,rules=None,taxonomy=None):
         'interpretation':'Official descriptions and detection suggestions support review; they do not prescribe the project routing rule.'}
     row['cve_mapping_gate']={'usage':info.get('mapping_usage','Unknown'),
         'requires_mapping_review':info.get('mapping_usage') in {'Allowed-with-Review','Prohibited','Discouraged'},
-        'blocked_for_cve_routing':info.get('mapping_usage') in {'Prohibited','Discouraged'},
+        'blocked_for_cve_routing':False,
+        'advisory_only':True,
+        'interpretation':'Assignment guidance only. Preserve the reported CWE; route using evidence requirements and CVE mechanism evidence.',
         'rationale':info.get('mapping_rationale','')}
     if chain['errors'] or not chain['pillars'] or rec.get('abstraction')=='Pillar' or rec.get('status')=='Deprecated':
         row['rationale']='Missing/deprecated/unmapped CWE or bare Pillar; no detailed evidence requirement assigned.'

@@ -47,9 +47,8 @@ def classify(case,*,source_available=False,taxonomy=None,rules=None):
         source=row['source_requirement'];operating=row['operational_requirement']=='required'
         facts={f['id']:f for f in row['required_facts']};evidence=[];refinements=[]
         valid=not row['errors'] and row['pillars'] and row['abstraction']!='Pillar' and row.get('status')!='Deprecated'
-        mapping_blocked=row['cve_mapping_gate']['blocked_for_cve_routing']
         specialized=any(f['location']=='specialist' for f in facts.values())
-        if valid and not specialized and not mapping_blocked:
+        if valid and not specialized:
             for rule in rules['source_refinements']:
                 for block in blocks:
                     m=re.search(rule['pattern'],block['text'])
@@ -72,8 +71,6 @@ def classify(case,*,source_available=False,taxonomy=None,rules=None):
                             evidence.append({'source_id':block['id'],'span':[m.start(),m.end()],
                                 'quote':m.group(),'source':block['source'],'rule_id':rule['id']});break
         if source=='required' and context_evidence:operating=True
-        if mapping_blocked:
-            source='undetermined';operating=False
         if refinements and source!='undetermined':facts.pop('cve_specific_mechanism',None)
         if operating:
             facts['actor_and_access_scope']={'id':'actor_and_access_scope',**rules['facts']['actor_and_access_scope']}
@@ -81,7 +78,7 @@ def classify(case,*,source_available=False,taxonomy=None,rules=None):
         decisions.append({**row,'requirement':requirement,'source_requirement':source,
             'operational_required':operating,'required_facts':list(facts.values()),
             'rule_id':row['matched_rules'][0]['rule_id'] if row['matched_rules'] else 'unmapped',
-            'reason':('The official CWE mapping usage is '+row['cve_mapping_gate']['usage']+'; obtain a more suitable CVE weakness mapping. ' if mapping_blocked else '')+row['rationale']+(' CVE evidence refines the mechanism using: '+', '.join(sorted(set(refinements)))+'.' if refinements else ''),
+            'reason':row['rationale']+(' CVE evidence refines the mechanism using: '+', '.join(sorted(set(refinements)))+'.' if refinements else ''),
             'baseline_source_requirement':row['source_requirement'],
             'base_profile_resolution':row['resolution'],
             'resolution':'cve_refined' if refinements else row['resolution'],

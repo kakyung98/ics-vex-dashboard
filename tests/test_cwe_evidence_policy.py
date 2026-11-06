@@ -127,16 +127,16 @@ def test_catalog_api_and_policy_changed_session_handling():
     assert STORE.get('item4_review',rid)==master
 
 
-def test_all_944_runtime_routes_respect_mapping_gate_and_availability_is_separate():
+def test_all_944_runtime_routes_follow_evidence_not_mapping_usage_and_availability_is_separate():
     p=P.policy()
     for cid,row in P.catalog()['profiles'].items():
         absent=classify(cwe_case(cid));present=classify(cwe_case(cid),source_available=True)
         assert absent['requirement']==present['requirement']
         assert absent['initial_vex_status']=='under_investigation'
         assert not absent['routing_confers_negative_verdict']
-        if row['cve_mapping_gate']['blocked_for_cve_routing']:
-            assert absent['requirement']=='undetermined'
-        elif row['source_requirement']=='required':
+        assert not row['cve_mapping_gate']['blocked_for_cve_routing']
+        assert row['cve_mapping_gate']['advisory_only']
+        if row['source_requirement']=='required':
             assert absent['workflow_branch']=='source_missing'
             assert present['workflow_branch'] in {'source_only','source_to_operational'}
         elif row['source_requirement']=='not_required':
@@ -185,11 +185,28 @@ def test_embedded_default_key_overrides_operator_key_rotation_profile():
     assert embedded['source_required']
 
 
-def test_prohibited_mapping_never_becomes_source_clearance_from_keywords():
-    restricted=next(cid for cid,r in P.catalog()['profiles'].items() if r['official_metadata']['mapping_usage']=='Prohibited')
-    result=classify(cwe_case(restricted,'Remote buffer overflow with an insecure configuration.'))
-    assert result['requirement']=='undetermined'
-    assert result['decisions'][0]['cve_mapping_gate']['blocked_for_cve_routing']
+@pytest.mark.parametrize('cid,usage,branch',[
+    ('CWE-119','Discouraged','source_only'),
+    ('CWE-1042','Prohibited','source_only'),
+    ('CWE-263','Discouraged','operational_only'),
+    ('CWE-200','Discouraged','routing_unknown'),
+])
+def test_reported_cwe_is_preserved_and_assignment_guidance_does_not_block(cid,usage,branch):
+    result=classify(cwe_case(cid),source_available=True)
+    assert result['cwes']==[cid]
+    assert result['workflow_branch']==branch
+    guidance=result['decisions'][0]['cve_mapping_gate']
+    assert guidance['usage']==usage
+    assert guidance['advisory_only'] and not guidance['blocked_for_cve_routing']
+    assert result['initial_vex_status']=='under_investigation'
+    assert not result['routing_confers_negative_verdict']
+
+
+def test_discouraged_mapping_does_not_suppress_mechanism_refinement():
+    result=classify(cwe_case('CWE-287','Authentication is misconfigured by an access policy setting.'))
+    assert result['workflow_branch']=='operational_only'
+    assert result['decisions'][0]['refinement_rules']
+    assert result['cwes']==['CWE-287']
 
 
 def test_metadata_hash_and_xml_pin_are_recorded_and_do_not_imply_mandatory_detection():

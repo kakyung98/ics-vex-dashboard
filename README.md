@@ -76,7 +76,7 @@ queues are disabled. Existing model files and historical reports are retained.
 1. Preserve reported CWE IDs and derive all Pillar paths from pinned **CWE v5.0**:
    984 weaknesses, 10 Pillars.
 2. Combine **Pillar + specific CWE + CVE/advisory evidence** using the versioned
-   `cwe-evidence-v2` policy. It has an individual record for all 944 mapped active
+   `cwe-evidence-v2.1` policy. It has an individual record for all 944 mapped active
    detailed CWEs. Pillars group records; they never supply a blanket source requirement.
 3. Follow four evidence workflows (corrected 2026-11-05):
    - **Source only:** supplied source → language-aware AST/patch checks; optionally Clang/LLVM for configured C/C++ builds.
@@ -107,7 +107,8 @@ runtime permissions. There is no “no operational rule → source required” f
 The baseline table has **728 source-requiring**, **26 operational**, and **190
 specialist/mechanism-unresolved** profiles. These are project policy assignments,
 not independent gold, accuracy, or final CVE-route counts. Some entries have
-official Prohibited/Discouraged CVE mapping usage and defer at runtime. Explicit
+official Prohibited/Discouraged CVE mapping usage; these assignment guidelines
+are informational and do not block analysis of the reported CWE. Explicit
 CVE implementation/configuration evidence can refine eligible profiles: a generic
 weak crypto label is unresolved, a documented configurable TLS mechanism can use
 operating records, and a risky embedded implementation does not become a setting.
@@ -115,7 +116,8 @@ operating records, and a risky embedded implementation does not become a setting
 Every record retains its definition, all Pillars, rule/ancestor path, evidence
 facts, official platform/detection suggestions and mapping cautions, plus source
 and policy hashes. Official detection suggestions are not mandatory analysis rules.
-Unknown/mapping-restricted CWEs cannot be hidden by another mapped CWE in the same CVE.
+Unknown or mechanism-unresolved CWEs cannot be hidden by another mapped CWE in
+the same CVE. Mapping usage alone never makes a reported CWE unresolved.
 
 See the [detailed criteria and limitations (Korean)](docs/CWE_ROUTING_CRITERIA.md),
 [all 944 policy records](docs/CWE_EVIDENCE_POLICY_V2.md),
@@ -292,9 +294,11 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-05: **291 passed**, including
+- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-06: **295 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
+  All 944 profiles retain reported CWEs and route independently of assignment
+  guidance grades. Discouraged/Prohibited metadata no longer blocks analysis.
   Software tests are not independently labelled CVEs or model accuracy.
 - A historical model-based #4 smoke produced common/specific questions for one eligible CVE and
   excluded a source-required case. Acceptance required presentation normalization;
