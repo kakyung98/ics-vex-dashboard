@@ -1370,7 +1370,7 @@ CVE에 보고된 CWE ID, 공식 정의, View 1000의 계층과 Pillar 관계를 
 | control-embedded-key | 구성한 통제 입력 | CWE-1394 | 분류 유보 | 분류 유보 |
 | control-java-declaration | 구성한 통제 입력 | CWE-493 | 분류 유보 | 분류 유보 |
 | control-hardware | 구성한 통제 입력 | CWE-1252 | 분류 유보 | 분류 유보 |
-| control-mapping-advisory | 구성한 통제 입력 | CWE-119 | 분류 유보 | 분류 유보 |
+| control-reported-cwe-preserved | 구성한 통제 입력 | CWE-119 | 분류 유보 | 분류 유보 |
 | control-mixed-unknown | 구성한 통제 입력 | CWE-787, CWE-999999 | 분류 유보 | 분류 유보 |
 
 현재 모든 신규 검토는 `routing_unknown` / `under_investigation`으로 시작하며 소스 또는 운영 경로를 추정하지 않는다. 공식 CWE ID·정의·계층·출처는 보존한다. 기존 소스 분석기와 문서 출력 기능 자체를 삭제한 것은 아니다.
@@ -1382,9 +1382,11 @@ CVE에 보고된 CWE ID, 공식 정의, View 1000의 계층과 Pillar 관계를 
 
 <!-- END GENERATED SECTION 4 RESULTS -->
 
-## 5. 보고된 CWE 유지와 근거 부족 처리
+## 5. CVE에 기록된 CWE만 사용
 
-`Allowed`, `Allowed-with-Review`, `Discouraged`, `Prohibited`는 CWE 부여 지침을 보존한 참고 정보다. 어느 등급도 이미 보고된 CWE를 제거하거나 분석 경로를 차단하는 조건으로 사용하지 않는다. 현재 미지정의 원인은 매핑 등급이 아니라 정당화된 증거 경로 기준이 없다는 것이다.
+NVD·CISA 등 CVE 원문에 이미 기록된 CWE ID와 출처를 사용한다. 이 시스템은 CWE를 새로 부여하거나 기존 ID를 다른 CWE로 교체하지 않는다. Pillar는 그 ID의 공식 상위 관계를 조회한 결과이며 새 CWE 부여가 아니다.
+
+CWE가 제공되지 않으면 미확인으로 표시한다. 설명문이나 LLM으로 CWE를 추측하지 않는다. CWE 부여 등급표·등급 집계는 문서와 웹·파생 출력에서 제거했다.
 
 ## 6. 실행 기능과 분류 기능의 구분
 

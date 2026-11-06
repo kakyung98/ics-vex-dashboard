@@ -47,14 +47,8 @@ def profile(cwe,*,rules=None,taxonomy=None):
         'routing_is_not_a_verdict':True,'source_analyzer_capability_guaranteed':False}
     m=metadata() if t.get('xml_sha256')==load().get('xml_sha256') else {'records':{},'sha256':None}
     info=m['records'].get(cwe,{})
-    row['official_metadata']={**info,'metadata_sha256':m['sha256'],
+    row['official_metadata']={**{k:v for k,v in info.items() if k not in {'mapping_usage','mapping_rationale'}},'metadata_sha256':m['sha256'],
         'interpretation':'Official descriptions and detection suggestions support review; they do not prescribe the project routing rule.'}
-    row['cve_mapping_gate']={'usage':info.get('mapping_usage','Unknown'),
-        'requires_mapping_review':info.get('mapping_usage') in {'Allowed-with-Review','Prohibited','Discouraged'},
-        'blocked_for_cve_routing':False,
-        'advisory_only':True,
-        'interpretation':'Assignment guidance only. Preserve the reported CWE; route using evidence requirements and CVE mechanism evidence.',
-        'rationale':info.get('mapping_rationale','')}
     if chain['errors'] or not chain['pillars'] or rec.get('abstraction')=='Pillar' or rec.get('status')=='Deprecated':
         row['rationale']='Missing/deprecated/unmapped CWE or bare Pillar; no detailed evidence requirement assigned.'
         return row
@@ -85,7 +79,6 @@ def catalog():
         'excluded_deprecated':[cid for cid,r in t['records'].items() if r['status']=='Deprecated'],
         'excluded_unmapped_active':[cid for cid,r in t['records'].items() if r['status']!='Deprecated' and r['abstraction']!='Pillar' and cid not in rows],
         'by_resolution':dict(Counter(r['resolution'] for r in rows.values())),
-        'official_mapping_usage':dict(Counter(r['official_metadata'].get('mapping_usage','Unknown') for r in rows.values())),
         'unresolved_baseline_rules':dict(Counter(','.join(m['rule_id'] for m in r['matched_rules']) for r in rows.values() if r['source_requirement']=='undetermined')),
         'per_pillar':per_pillar,'multiple_pillar_membership_retained':True,
         'human_adjudicated':False,'independently_validated':False,

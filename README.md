@@ -87,7 +87,9 @@ locked-status VEX writer and export validators remain as capabilities. Execution
 unit tests use explicit synthetic routing contracts to check those engines; these
 fixtures are not production classification rules, gold labels or accuracy tests.
 No replacement classification is inferred from the official CWE hierarchy.
-Official mapping usage is retained as advisory metadata only.
+Only CWE IDs already reported by the CVE sources are used. The system does not
+assign new CWEs; assignment-guidance grades and their tables are removed from
+project displays and derived outputs.
 
 See the [current criteria and removed rules](docs/CWE_ROUTING_CRITERIA.md),
 [all 944 unassigned records](docs/CWE_EVIDENCE_POLICY_V2.md),
