@@ -44,7 +44,7 @@ def control_cases():
       ('embedded-key','CWE-1394','The device uses a hardcoded default cryptographic key.','하드코딩된 키로 메커니즘 보정'),
       ('java-declaration','CWE-493','A critical public variable lacks the final modifier.','Java 선언 속성의 직접 예외'),
       ('hardware','CWE-1252','The CPU hardware is not configured for the required memory protection.','하드웨어 전문 증거 요구'),
-      ('mapping-restricted','CWE-119','A buffer overflow occurs.','공식 Discouraged 매핑 처리'),
+      ('mapping-advisory','CWE-119','A buffer overflow occurs.','Discouraged도 기존 CWE를 유지하고 메모리 증거로 진행'),
       ('mixed-unknown',['CWE-787','CWE-999999'],'A remote buffer overflow occurs.','여러 CWE 중 미확정 항목 보존'),
     ]
     return [{'id':'control-'+key,'kind':'constructed_control_not_real_CVE','title':title,
@@ -141,15 +141,15 @@ def section3(report):
     lines += [f'| **소속 합계: 중복 포함** | 한 CWE의 여러 Pillar 소속을 모두 계산 | **1201** | **{totals["required"]}** | **{totals["not_required"]}** | **{totals["undetermined"]}** |',
         '| **고유 CWE 합계** | 각 CWE를 한 번만 계산 | **944** | **728** | **26** | **190** |','',
         '**합계 해석:** 235개 세부 CWE가 여러 Pillar에 속하므로 Pillar별 소속 수 합계는 1,201개다. 같은 CWE를 한 번만 세면 944개다. Pillar별 열을 합쳐 728·26·190과 바로 비교하면 중복 계산이 된다.','',
-        '### 3.3 직접 적용·상속·CVE 매핑 제약의 실제 집계','',
+        '### 3.3 직접 적용·상속·CVE 매핑 참고 정보의 실제 집계','',
         '| Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 | Allowed | Allowed-with-Review | Discouraged | Prohibited |',
         '| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
     for p in report['pillars']:
         r=p['by_resolution'];m=p['official_mapping_usage']
         lines.append('| '+' | '.join([p['pillar'],str(r.get('direct',0)),str(r.get('inherited',0)),*[str(m.get(k,0)) for k in ['Allowed','Allowed-with-Review','Discouraged','Prohibited']]])+' |')
-    lines += ['', '이 표도 Pillar 소속 기준이므로 중복을 포함한다. `Discouraged`와 `Prohibited`는 기본 증거 유형과 별개인 매핑 제약이다. 해당 CWE의 기본값이 소스라고 해도 실제 CVE 경로는 매핑 검토 때문에 유보될 수 있다.','',
+    lines += ['', '이 표도 Pillar 소속 기준이므로 중복을 포함한다. 오른쪽 네 열은 CWE를 새로 부여하는 작성자를 위한 공식 매핑 지침이며, 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니다. 현재 시스템은 보고된 CWE를 유지하며 이 등급으로 경로를 차단하지 않는다. 왼쪽 두 열과 오른쪽 네 열은 같은 집합을 별개 기준으로 집계하므로 모두 더하지 않는다.','',
         '### 3.4 Pillar별 모든 세부 CWE의 분류 결과','',
-        '아래 10개 펼침 항목에 전체 1,201개 소속 행을 싣는다. 고유 CWE 944개를 모두 포함하며, 중복 소속 CWE는 해당 Pillar마다 다시 나타난다. 각 행은 **기본 증거 요구**이고, 실제 CVE 보정 및 매핑 제약을 적용한 실행 결과는 4절에서 구분한다.','']
+        '아래 10개 펼침 항목에 전체 1,201개 소속 행을 싣는다. 고유 CWE 944개를 모두 포함하며, 중복 소속 CWE는 해당 Pillar마다 다시 나타난다. 각 행은 **기본 증거 요구**이고, 실제 CVE 메커니즘 보정을 적용한 실행 결과는 4절에서 구분한다.','']
     for p in report['pillars']:
         lines += ['<details>',f'<summary>{p["pillar"]} · {p["name"]} · {p["memberships"]}개 소속</summary>','',
             '| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CVE 매핑 Usage |',
@@ -167,12 +167,12 @@ def section4(report):
     lines=['### 4.1 실제 적용 순서와 기록하는 결과','',
         '| 순서 | 검사 내용 | 기록하는 필드 / 결과 |','| --- | --- | --- |',
         '| 1 | 보고된 세부 CWE와 모든 Pillar 경로 확인 | `cwes`, `pillars`, `decisions[].paths` |',
-        '| 2 | CWE 기본 증거 유형과 매핑 Usage 확인 | `baseline_source_requirement`, `cve_mapping_gate` |',
+        '| 2 | CWE 기본 증거 유형 확인; 매핑 Usage는 참고로 보존 | `baseline_source_requirement`, `cve_mapping_gate` |',
         '| 3 | 직접 기준·가장 가까운 상위 세부 기준 적용 | `matched_rules`, `distance`, `anchors[].path` |',
         '| 4 | 명시적 구현 결함 문구 확인 | `refinement_rules`, `evidence[].quote/span/source_id` |',
         '| 5 | 허용한 유형에서 명시적 운영 설정 메커니즘 확인 | 구현 결함 근거가 우선. 허용된 경우에만 운영 경로로 보정 |',
         '| 6 | 실제 역할·접근·설정 등 운영 문맥 신호 확인 | `operational_required`, `operational_requirement_evidence` |',
-        '| 7 | 여러 CWE의 요구 합치기 | 미확정/매핑 제한 항목이 하나라도 있으면 `routing_unknown` |',
+        '| 7 | 여러 CWE의 요구 합치기 | 필요 증거가 미확정인 항목이 하나라도 있으면 `routing_unknown` |',
         '| 8 | 소스 분석 결과 등록 여부 적용 | `source_available`, `workflow_branch` |','',
         '이 순서는 경로 결정의 실행 결과를 설명한다. 소스를 분석하거나 운영 답변의 진위를 검증하거나 최종 VEX 상태를 평가한 결과가 아니다.','',
         '### 4.2 고유 CWE 944개 전체에 동일한 중립 입력을 넣은 결과','',
@@ -180,7 +180,7 @@ def section4(report):
         '| 실행 결과 | 수 |','| --- | ---: |']
     for key in ['source_only','source_to_operational','source_missing','operational_only','routing_unknown']:
         lines.append(f'| {BRANCH_KO[key]} | {report["generic_description_source_result_present_counts"].get(key,0)} |')
-    lines += ['', '기본표의 728·26·190과 다른 이유는 CVE 매핑 Usage 제약과 CWE 자체가 요구하는 운영 사실을 함께 적용했기 때문이다. 중립 입력은 구체적인 CVE 메커니즘 보정을 유발하지 않는다.','',
+    lines += ['', '소스 기본값 728개는 CWE 자체가 요구하는 운영 사실에 따라 소스만/소스+운영으로 나뉜다. 운영 기본값 26개와 미확정 190개는 중립 입력에서 그대로 유지된다. 매핑 Usage는 실행 경로를 차단하지 않는다. 중립 입력은 구체적인 CVE 메커니즘 보정을 유발하지 않는다.','',
         '### 4.3 로컬에 저장된 실제 CVE 입력의 경로 결과','',
         '아래는 로컬 NVD/CSAF 스냅샷의 실제 CVE 설명과 보고된 CWE를 넣어 실행한 결과다. 최신 온라인 원문을 새로 조사한 결과가 아니다. `자료 없음/있음`은 같은 입력에서 **소스 분석 결과 등록 여부만 바꾼 대조**이며, 실제 소스 수집 여부에 대한 주장이 아니다.','',
         '| 실제 CVE | 보고된 CWE | 자료 없음 | 자료 있다고 가정 | 적용한 기준 / 보정 |',

@@ -1,6 +1,6 @@
 # CWE 기반 증거 경로 결정 기준
 
-정책 버전: `cwe-evidence-v2` / 기준 분류: 고정된 공식 CWE v5.0 View 1000.
+정책 버전: `cwe-evidence-v2.1` / 기준 분류: 고정된 공식 CWE v5.0 View 1000.
 
 ## 1. 무엇을 결정하는가
 
@@ -70,7 +70,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 **합계 해석:** 235개 세부 CWE가 여러 Pillar에 속하므로 Pillar별 소속 수 합계는 1,201개다. 같은 CWE를 한 번만 세면 944개다. Pillar별 열을 합쳐 728·26·190과 바로 비교하면 중복 계산이 된다.
 
-### 3.3 직접 적용·상속·CVE 매핑 제약의 실제 집계
+### 3.3 직접 적용·상속·CVE 매핑 참고 정보의 실제 집계
 
 | Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 | Allowed | Allowed-with-Review | Discouraged | Prohibited |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -85,11 +85,11 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 | CWE-707 | 10 | 135 | 129 | 10 | 6 | 0 |
 | CWE-710 | 49 | 147 | 120 | 25 | 1 | 50 |
 
-이 표도 Pillar 소속 기준이므로 중복을 포함한다. `Discouraged`와 `Prohibited`는 기본 증거 유형과 별개인 매핑 제약이다. 해당 CWE의 기본값이 소스라고 해도 실제 CVE 경로는 매핑 검토 때문에 유보될 수 있다.
+이 표도 Pillar 소속 기준이므로 중복을 포함한다. 오른쪽 네 열은 CWE를 새로 부여하는 작성자를 위한 공식 매핑 지침이며, 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니다. 현재 시스템은 보고된 CWE를 유지하며 이 등급으로 경로를 차단하지 않는다. 왼쪽 두 열과 오른쪽 네 열은 같은 집합을 별개 기준으로 집계하므로 모두 더하지 않는다.
 
 ### 3.4 Pillar별 모든 세부 CWE의 분류 결과
 
-아래 10개 펼침 항목에 전체 1,201개 소속 행을 싣는다. 고유 CWE 944개를 모두 포함하며, 중복 소속 CWE는 해당 Pillar마다 다시 나타난다. 각 행은 **기본 증거 요구**이고, 실제 CVE 보정 및 매핑 제약을 적용한 실행 결과는 4절에서 구분한다.
+아래 10개 펼침 항목에 전체 1,201개 소속 행을 싣는다. 고유 CWE 944개를 모두 포함하며, 중복 소속 CWE는 해당 Pillar마다 다시 나타난다. 각 행은 **기본 증거 요구**이고, 실제 CVE 메커니즘 보정을 적용한 실행 결과는 4절에서 구분한다.
 
 <details>
 <summary>CWE-284 · Improper Access Control · 182개 소속</summary>
@@ -1412,12 +1412,12 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 | 순서 | 검사 내용 | 기록하는 필드 / 결과 |
 | --- | --- | --- |
 | 1 | 보고된 세부 CWE와 모든 Pillar 경로 확인 | `cwes`, `pillars`, `decisions[].paths` |
-| 2 | CWE 기본 증거 유형과 매핑 Usage 확인 | `baseline_source_requirement`, `cve_mapping_gate` |
+| 2 | CWE 기본 증거 유형 확인; 매핑 Usage는 참고로 보존 | `baseline_source_requirement`, `cve_mapping_gate` |
 | 3 | 직접 기준·가장 가까운 상위 세부 기준 적용 | `matched_rules`, `distance`, `anchors[].path` |
 | 4 | 명시적 구현 결함 문구 확인 | `refinement_rules`, `evidence[].quote/span/source_id` |
 | 5 | 허용한 유형에서 명시적 운영 설정 메커니즘 확인 | 구현 결함 근거가 우선. 허용된 경우에만 운영 경로로 보정 |
 | 6 | 실제 역할·접근·설정 등 운영 문맥 신호 확인 | `operational_required`, `operational_requirement_evidence` |
-| 7 | 여러 CWE의 요구 합치기 | 미확정/매핑 제한 항목이 하나라도 있으면 `routing_unknown` |
+| 7 | 여러 CWE의 요구 합치기 | 필요 증거가 미확정인 항목이 하나라도 있으면 `routing_unknown` |
 | 8 | 소스 분석 결과 등록 여부 적용 | `source_available`, `workflow_branch` |
 
 이 순서는 경로 결정의 실행 결과를 설명한다. 소스를 분석하거나 운영 답변의 진위를 검증하거나 최종 VEX 상태를 평가한 결과가 아니다.
@@ -1428,13 +1428,13 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 | 실행 결과 | 수 |
 | --- | ---: |
-| ① 소스만 | 512 |
-| ② 소스+운영 | 137 |
+| ① 소스만 | 584 |
+| ② 소스+운영 | 144 |
 | ③ 소스 분석 결과 대기 | 0 |
-| ④ 운영만 | 25 |
-| 분류 유보 | 270 |
+| ④ 운영만 | 26 |
+| 분류 유보 | 190 |
 
-기본표의 728·26·190과 다른 이유는 CVE 매핑 Usage 제약과 CWE 자체가 요구하는 운영 사실을 함께 적용했기 때문이다. 중립 입력은 구체적인 CVE 메커니즘 보정을 유발하지 않는다.
+소스 기본값 728개는 CWE 자체가 요구하는 운영 사실에 따라 소스만/소스+운영으로 나뉜다. 운영 기본값 26개와 미확정 190개는 중립 입력에서 그대로 유지된다. 매핑 Usage는 실행 경로를 차단하지 않는다. 중립 입력은 구체적인 CVE 메커니즘 보정을 유발하지 않는다.
 
 ### 4.3 로컬에 저장된 실제 CVE 입력의 경로 결과
 
@@ -1469,7 +1469,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 | 하드코딩된 키로 메커니즘 보정 | CWE-1394 | ③ 소스 분석 결과 대기 | ② 소스+운영 |
 | Java 선언 속성의 직접 예외 | CWE-493 | ③ 소스 분석 결과 대기 | ① 소스만 |
 | 하드웨어 전문 증거 요구 | CWE-1252 | 분류 유보 | 분류 유보 |
-| 공식 Discouraged 매핑 처리 | CWE-119 | 분류 유보 | 분류 유보 |
+| Discouraged도 기존 CWE를 유지하고 메모리 증거로 진행 | CWE-119 | ③ 소스 분석 결과 대기 | ① 소스만 |
 | 여러 CWE 중 미확정 항목 보존 | CWE-787, CWE-999999 | 분류 유보 | 분류 유보 |
 
 ### 4.5 각 입력의 원문·상속 경로·매칭 인용·필요한 사실
@@ -1615,7 +1615,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 - Pillar: `CWE-693`
 - 기본값 → 이번 입력: `undetermined` → `undetermined`
 - 매핑 Usage: `Discouraged`
-- 결정 이유: The official CWE mapping usage is Discouraged; obtain a more suitable CVE weakness mapping. The broad weakness includes both implementation and deployment mechanisms; obtain CVE-specific evidence.
+- 결정 이유: The broad weakness includes both implementation and deployment mechanisms; obtain CVE-specific evidence.
 - 기준: `unspecified-mechanism` / 거리 `0` / 경로 `CWE-311`
 
 | 보정 규칙 | 실제 매칭 인용 | 구간 [시작, 끝) | 원문 ID |
@@ -2148,13 +2148,13 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 </details>
 
 <details>
-<summary>control-mapping-restricted · 공식 Discouraged 매핑 처리 · 통제 입력: 실제 CVE 아님</summary>
+<summary>control-mapping-advisory · Discouraged도 기존 CWE를 유지하고 메모리 증거로 진행 · 통제 입력: 실제 CVE 아님</summary>
 
 - 입력 종류: **통제 입력: 실제 CVE 아님**
 - 입력 CWE: `CWE-119`
-- 자료 없음: **분류 유보**
-- 자료 있다고 가정: **분류 유보**
-- 증거 요구: `undetermined` / 운영 필요: `False`
+- 자료 없음: **③ 소스 분석 결과 대기**
+- 자료 있다고 가정: **① 소스만**
+- 증거 요구: `source_required` / 운영 필요: `False`
 
 **입력 설명 원문**
 
@@ -2163,14 +2163,14 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 **CWE-119: Improper Restriction of Operations within the Bounds of a Memory Buffer**
 
 - Pillar: `CWE-664`
-- 기본값 → 이번 입력: `required` → `undetermined`
+- 기본값 → 이번 입력: `required` → `required`
 - 매핑 Usage: `Discouraged`
-- 결정 이유: The official CWE mapping usage is Discouraged; obtain a more suitable CVE weakness mapping. Memory/index/lifetime claims require implementation-level definitions and operation evidence.
+- 결정 이유: Memory/index/lifetime claims require implementation-level definitions and operation evidence. CVE evidence refines the mechanism using: explicit-memory-defect.
 - 기준: `memory-safety` / 거리 `0` / 경로 `CWE-119`
 
 | 보정 규칙 | 실제 매칭 인용 | 구간 [시작, 끝) | 원문 ID |
 | --- | --- | --- | --- |
-| 없음 | 매칭 없음 | 해당 없음 | 해당 없음 |
+| explicit-memory-defect | buffer overflow | [2, 17] | description |
 
 | 필요한 사실 | 소재 |
 | --- | --- |
@@ -2229,7 +2229,7 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 - 전체 실행 입력과 출력: [criteria_results.json](../data/cwe_routing/v2/criteria_results.json)
 - 재생성: `python tools/build_cwe_routing_results.py --as-of 2026-11-06`
-- 정책 해시: `8e570ab421aa824e90144ab5817ebf62e19b653005949812b43833f2f5d10813`
+- 정책 해시: `fc18c51198a485fa7ffffca35af3859d365162fe983f3af5ce9fd15a5fd0f672`
 - 공식 XML 해시: `47165a9593def89c69b9ef50c34d99ac68db55df8373613e85e9cc9ceecefb1d`
 
 문서 생성 시 모든 매칭 인용에 대해 `원문[시작:끝] == 인용`을 확인하고, 소스 자료 유무만 바꾸었을 때 증거 요구 자체가 바뀌지 않는지 검사한다. 이 검사는 문서·코드의 일치성 검사다. 독립 정답 라벨, 분류 정확도, Cohen's kappa, 소스 분석 성공률 또는 최종 VEX 정확도를 측정한 것은 아니다.
@@ -2240,9 +2240,10 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 원문 XML의 `Mapping_Notes.Usage`도 보존한다.
 
-- `Allowed`: 보고된 매핑으로 진행하되 독립적으로 정확성이 검증됐다고 주장하지 않는다.
-- `Allowed-with-Review`: 경로는 계산하되 매핑 검토 필요 표시를 유지한다.
-- `Prohibited` / `Discouraged`: 이 프로젝트는 더 적절한 매핑을 요청하며 경로를 유보한다. 둘을 동일한 공식 금지라고 주장하지 않는다. `Discouraged`에 대해서도 유보하는 것은 프로젝트의 보수적 선택이다.
+- `Allowed`, `Allowed-with-Review`, `Discouraged`, `Prohibited`: 모두 보고된 CWE를 유지하고 증거 요구와 CVE 메커니즘에 따라 분석을 진행한다.
+- 이 값들은 CWE를 새로 부여할 때 참고하는 공식 지침이다. 이미 연결된 CWE의 분석을 차단하거나 교체를 요구하는 조건으로 사용하지 않는다.
+- 주의 등급은 출처 추적용 참고 정보로 보존한다. 등급이 좋다는 이유만으로 경로의 정확성이 검증되는 것도 아니다.
+- 포괄적인 CWE는 CVE 설명·권고 근거로 메커니즘을 보완한다. 그래도 필요한 증거를 정할 수 없으면 유보한다.
 - Pillar만 보고됐거나, 알 수 없는/폐기된 CWE라면 유보한다.
 
 여러 CWE 중 하나라도 해결되지 않으면 다른 하나의 소스 분석 결과가 그 문제를 가리지 못하게 전체 경로를 유보한다. 모두 분류 가능하면 필요한 소스·운영 증거의 합집합을 사용한다.
@@ -2263,14 +2264,14 @@ Pillar는 자료의 상위 분류와 탐색에 사용한다. Pillar 전체를 �
 
 ## 7. 현재 분류표와 검증의 의미
 
-기본 증거 유형은 944개 중 소스 필요 728개, 운영 기록으로 수집 가능한 유형 26개, 메커니즘·전문 자료를 더 요구하는 유형 190개다. 이는 CVE별 최종 경로 수나 정답률이 아니다. 공식 매핑 제약과 CVE 보정을 적용하면 실제 경로 수는 달라진다.
+기본 증거 유형은 944개 중 소스 필요 728개, 운영 기록으로 수집 가능한 유형 26개, 메커니즘·전문 자료를 더 요구하는 유형 190개다. 이는 CVE별 최종 경로 수나 정답률이 아니다. CVE 메커니즘 보정과 운영 증거 요구를 적용하면 실제 경로 수는 달라진다. 매핑 Usage 자체는 경로를 바꾸지 않는다.
 
 243개는 해당 CWE 자체의 규칙·명칭·명시적 플랫폼 조건에서 결정했고, 701개는 명시적 세부 기준점에서 상속했다. 944개 모두에 설명 가능한 레코드가 있다는 뜻이지, 944개를 독립적인 전문가가 정답으로 인증했다는 뜻은 아니다.
 
 검증은 다음을 분리한다.
 
 1. **기계적 일관성:** 944개 일대일 대응, 10개 Pillar와 1,201개 다중 소속 보존, 실제 상속 경로, 원문/정책 해시, 결과 재현성.
-2. **논리 회귀 검사:** 소스 유무로 요구 자체가 바뀌지 않음, 금지/주의 매핑 처리, 운영 유형 확장의 차단, Java 선언/암호 구현/하드웨어 예외, 같은 CWE의 설정/구현 사례, 여러 CWE에서 불명확한 항목 보존.
+2. **논리 회귀 검사:** 소스 유무로 요구 자체가 바뀌지 않음, 매핑 등급에 의한 차단 없음, 운영 유형 확장의 차단, Java 선언/암호 구현/하드웨어 예외, 같은 CWE의 설정/구현 사례, 여러 CWE에서 불명확한 항목 보존.
 3. **의미 정확도:** 별도 독립 평가가 필요하다. 현재 독립 정답표, Cohen's kappa, 경로 분류 정확도를 확보했다고 주장하지 않는다.
 
 또한 이 정책은 파서·CFG·taint 분석기나 운영 악용 조건 평가기의 기능을 새로 구현하지 않는다. 필요한 증거를 분류했다고 그 증거를 실제로 검증할 수 있게 된 것은 아니다.

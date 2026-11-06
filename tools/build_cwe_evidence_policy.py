@@ -20,7 +20,7 @@ def main():
     lines=['# Detailed CWE evidence requirements','',
         'Project policy derived from explicit evidence rules and the pinned CWE v5.0 View 1000. Taxonomy membership is official; routing requirements are project hypotheses, not independently adjudicated ground truth. No VEX verdict follows from this table.','',
         'Every mapped active non-Pillar CWE has one row. Ancestor rules apply only through explicit detailed anchors, selecting the nearest match; equally specific requirements are combined. No Pillar-wide source default exists. Hardware/design and unspecified mechanisms remain unresolved.','',
-        'Baseline summary: `'+json.dumps(data['summary']['by_source_requirement'])+'`. Actual CVE routes also apply mapping restrictions and explicit mechanism refinements. See [the detailed criteria](CWE_ROUTING_CRITERIA.md).','',
+        'Baseline summary: `'+json.dumps(data['summary']['by_source_requirement'])+'`. Actual CVE routes apply explicit mechanism refinements; mapping usage is advisory only and does not block analysis. See [the detailed criteria](CWE_ROUTING_CRITERIA.md).','',
         '| CWE | Name | Pillars | Source baseline | Operating baseline | Rule / resolution | CVE mapping usage |',
         '| --- | --- | --- | --- | --- | --- | --- |']
     for cid,r in sorted(data['profiles'].items(),key=lambda kv:int(kv[0][4:])):
