@@ -93,7 +93,7 @@ def build_results(as_of='2026-11-06',data=None):
             'record_sha256':json_fingerprint(rec),'feed_timestamp':rec.get('feed_timestamp'),
             'last_modified_in_snapshot':rec.get('lastModified'),
             'reference_urls':list(dict.fromkeys(rec.get('references',[]))),
-            'review_note':('현재 규칙은 CWE-732 기본값을 따라 운영 경로를 선택한다. 그러나 설명의 token 수정이 구현 검증을 필요로 하는지는 이 규칙이 확정하지 못한다. 올바른 경로의 독립 정답으로 사용하지 말고 추가 메커니즘 검토 대상으로 남긴다.' if cid=='CVE-2026-61892' else None)})
+            'review_note':None})
     cases+=control_cases()
     for row in cases:
         row['routes']={}
@@ -124,132 +124,41 @@ def cell(value):return str(value).replace('|','/').replace('\n',' ')
 
 
 def section3(report):
-    lines=['### 3.1 구분해야 하는 네 가지 숫자','',
-        '| 구분 | 수 | 의미 |','| --- | ---: | --- |',
-        '| Pillar | **10개** | 공식 계층의 상위 유형 |',
-        '| 고유 세부 CWE | **944개** | 이번 정책표의 대상 |',
-        '| 증거 기본값 | 3종 | 소스 / 운영 / 추가 근거·전문 자료 |',
-        '| 실행 경로 | 4종 | 소스만 / 소스+운영 / 필수 소스 대기 / 운영만 |','',
-        '따라서 728·26·190은 Pillar 수가 아니다. 10개 Pillar 아래의 고유 CWE 944개를 증거 기본값으로 나눈 수다. 분류 근거 부족은 별도 유보이며 새로운 Pillar가 아니다.','',
-        '### 3.2 10개 Pillar 전체의 실제 집계 결과','',
-        '| Pillar | 공식 명칭 / 설명 | 소속 수 | 소스 기본값 | 운영 기본값 | 추가 근거·전문 자료 |',
-        '| --- | --- | ---: | ---: | ---: | ---: |']
+    lines=['### 3.1 공식 계층의 범위','',
+        '10개 Pillar와 고유 세부 CWE 944개의 공식 소속 관계만 유지한다. 다중 소속을 포함한 행은 1,201개다. 아래 미확정 수는 취약점 분석 실패율이나 정확도가 아니라 **경로 기준 미지정 상태**다.','',
+        '| Pillar | 공식 이름 | 세부 CWE 소속 수 | 증거 경로 미지정 |',
+        '| --- | --- | ---: | ---: |']
     for p in report['pillars']:
-        c=p['by_source_requirement']
-        lines.append(f'| {p["pillar"]} | {p["name"]}<br>{p["korean_label"]} | {p["memberships"]} | {c.get("required",0)} | {c.get("not_required",0)} | {c.get("undetermined",0)} |')
-    totals={k:sum(p['by_source_requirement'].get(k,0) for p in report['pillars']) for k in ['required','not_required','undetermined']}
-    lines += [f'| **소속 합계: 중복 포함** | 한 CWE의 여러 Pillar 소속을 모두 계산 | **1201** | **{totals["required"]}** | **{totals["not_required"]}** | **{totals["undetermined"]}** |',
-        '| **고유 CWE 합계** | 각 CWE를 한 번만 계산 | **944** | **728** | **26** | **190** |','',
-        '**합계 해석:** 235개 세부 CWE가 여러 Pillar에 속하므로 Pillar별 소속 수 합계는 1,201개다. 같은 CWE를 한 번만 세면 944개다. Pillar별 열을 합쳐 728·26·190과 바로 비교하면 중복 계산이 된다.','',
-        '### 3.3 증거 기준을 직접 적용했는지·상속했는지','',
-        '이 표는 증거 요구 기준의 적용 방식을 집계한다. 각 행에서 자체 기준과 상속의 합은 3.2절의 해당 Pillar 소속 수와 같다.','',
-        '| Pillar | 자체 기준/조건 | 상위 세부 기준점에서 상속 |',
-        '| --- | ---: | ---: |']
-    for p in report['pillars']:
-        r=p['by_resolution']
-        lines.append('| '+' | '.join([p['pillar'],str(r.get('direct',0)),str(r.get('inherited',0))])+' |')
-    lines += ['', '자체 기준/조건은 해당 CWE 자체의 규칙·명칭·플랫폼 조건이 적용된 경우이고, 상속은 가장 가까운 명시적 상위 세부 CWE 기준을 적용한 경우다. 직접 적용 여부는 독립 검수 여부나 분류 정확도를 뜻하지 않는다. Pillar 소속 기준이므로 행 사이에 중복을 포함한다.','',
-        '<details>','<summary>참고 메타데이터: 공식 CWE 부여 지침 집계 — 분석 경로에 사용하지 않음</summary>','',
-        '아래 네 등급은 CWE를 새로 부여하는 작성자를 위한 공식 지침이다. 이미 CVE에 연결된 CWE의 분석을 허용·금지하는 등급이 아니며, 소스/운영 필요 여부를 결정하지 않는다. 이 집계는 출처 추적을 위해 본 판단 표와 분리해 남긴다.','',
-        '| Pillar | Allowed | Allowed-with-Review | Discouraged | Prohibited |',
-        '| --- | ---: | ---: | ---: | ---: |']
-    for p in report['pillars']:
-        m=p['official_mapping_usage']
-        lines.append('| '+' | '.join([p['pillar'],*[str(m.get(k,0)) for k in ['Allowed','Allowed-with-Review','Discouraged','Prohibited']]])+' |')
-    lines += ['', '</details>','',
-        '### 3.4 Pillar별 모든 세부 CWE의 분류 결과','',
-        '아래 10개 펼침 항목에 전체 1,201개 소속 행을 싣는다. 고유 CWE 944개를 모두 포함하며, 중복 소속 CWE는 해당 Pillar마다 다시 나타난다. 각 행은 **기본 증거 요구**이고, 실제 CVE 메커니즘 보정을 적용한 실행 결과는 4절에서 구분한다.','']
+        lines.append(f'| {p["pillar"]} | {p["name"]} | {p["memberships"]} | {p["memberships"]} |')
+    lines += ['', '### 3.2 세부 CWE 원문과 소속 목록','',
+        '기존 소스 728·운영 26·전문/메커니즘 190 분류와 직접 243·상속 701 집계는 삭제했다. 공식 계층은 증거 수집 방법을 보장하지 않으므로 분석 방법을 상속하지 않는다.','']
     for p in report['pillars']:
         lines += ['<details>',f'<summary>{p["pillar"]} · {p["name"]} · {p["memberships"]}개 소속</summary>','',
-            '| 세부 CWE / 이름 | 기본 요구 / 운영 필요 | 필요한 사실의 소재 | 적용 규칙과 기준점 | CWE 부여 지침 (참고만) |',
-            '| --- | --- | --- | --- | --- |']
+            '| 세부 CWE | 공식 이름 | 현재 증거 경로 |','| --- | --- | --- |']
         for r in p['members']:
-            facts='<br>'.join(f'{f["id"]} ({LOC_KO[f["location"]]})' for f in r['required_facts'])
-            rules='<br>'.join(m['rule_id']+' @ '+', '.join(a['cwe'] for a in m['anchors'])+f' / 거리 {m["distance"]}' for m in r['matched_rules'])
-            lines.append('| '+' | '.join([f'[{r["cwe"]}]({r["definition_url"]}) {cell(r["name"])}',
-                REQ_KO[r['source_requirement']]+'<br>운영: '+OP_KO[r['operational_requirement']],facts,rules,r['mapping_usage']])+' |')
+            lines.append(f'| [{r["cwe"]}]({r["definition_url"]}) | {cell(r["name"])} | 미지정 |')
         lines += ['', '</details>','']
     return '\n'.join(lines)
 
 
 def section4(report):
-    lines=['### 4.1 실제 적용 순서와 기록하는 결과','',
-        '| 순서 | 검사 내용 | 기록하는 필드 / 결과 |','| --- | --- | --- |',
-        '| 1 | 보고된 세부 CWE와 모든 Pillar 경로 확인 | `cwes`, `pillars`, `decisions[].paths` |',
-        '| 2 | CWE 기본 증거 유형 확인; 매핑 Usage는 참고로 보존 | `baseline_source_requirement`, `cve_mapping_gate` |',
-        '| 3 | 직접 기준·가장 가까운 상위 세부 기준 적용 | `matched_rules`, `distance`, `anchors[].path` |',
-        '| 4 | 명시적 구현 결함 문구 확인 | `refinement_rules`, `evidence[].quote/span/source_id` |',
-        '| 5 | 허용한 유형에서 명시적 운영 설정 메커니즘 확인 | 구현 결함 근거가 우선. 허용된 경우에만 운영 경로로 보정 |',
-        '| 6 | 실제 역할·접근·설정 등 운영 문맥 신호 확인 | `operational_required`, `operational_requirement_evidence` |',
-        '| 7 | 여러 CWE의 요구 합치기 | 필요 증거가 미확정인 항목이 하나라도 있으면 `routing_unknown` |',
-        '| 8 | 소스 분석 결과 등록 여부 적용 | `source_available`, `workflow_branch` |','',
-        '이 순서는 경로 결정의 실행 결과를 설명한다. 소스를 분석하거나 운영 답변의 진위를 검증하거나 최종 VEX 상태를 평가한 결과가 아니다.','',
-        '### 4.2 고유 CWE 944개 전체에 동일한 중립 입력을 넣은 결과','',
-        '입력 설명을 모든 CWE에서 `A product vulnerability exists.`로 고정하고 `source_available=True`로 놓아 실행했다. 이 값은 **분석 결과가 있다고 가정한 라우터 인자**이며, 944개 제품의 소스를 수집했다는 뜻이 아니다. 실제 CVE 분포나 분류 정확도도 아니다.','',
-        '| 실행 결과 | 수 |','| --- | ---: |']
-    for key in ['source_only','source_to_operational','source_missing','operational_only','routing_unknown']:
-        lines.append(f'| {BRANCH_KO[key]} | {report["generic_description_source_result_present_counts"].get(key,0)} |')
-    lines += ['', '소스 기본값 728개는 CWE 자체가 요구하는 운영 사실에 따라 소스만/소스+운영으로 나뉜다. 운영 기본값 26개와 미확정 190개는 중립 입력에서 그대로 유지된다. 매핑 Usage는 실행 경로를 차단하지 않는다. 중립 입력은 구체적인 CVE 메커니즘 보정을 유발하지 않는다.','',
-        '### 4.3 로컬에 저장된 실제 CVE 입력의 경로 결과','',
-        '아래는 로컬 NVD/CSAF 스냅샷의 실제 CVE 설명과 보고된 CWE를 넣어 실행한 결과다. 최신 온라인 원문을 새로 조사한 결과가 아니다. `자료 없음/있음`은 같은 입력에서 **소스 분석 결과 등록 여부만 바꾼 대조**이며, 실제 소스 수집 여부에 대한 주장이 아니다.','',
-        '| 실제 CVE | 보고된 CWE | 자료 없음 | 자료 있다고 가정 | 적용한 기준 / 보정 |',
+    lines=['### 4.1 현재 실행 결과','',
+        '근거가 확립되지 않은 수작업 기준·상속·운영 목록·키워드 보정을 제거했다. 현재 자동 분석 경로 선택은 중단되어 있다. 소스 자료 유무나 특정 단어만으로 이 상태를 해제하지 않는다.','',
+        '| 전체 고유 세부 CWE | 자동 소스 지정 | 자동 운영 지정 | 기준 미지정 |',
+        '| ---: | ---: | ---: | ---: |',
+        '| 944 | 0 | 0 | 944 |','',
+        '이 숫자는 평가 정확도가 아니다. 기존의 584/144/26/190 경로 집계도 현재 결과로 사용하지 않는다.','',
+        '### 4.2 실제/통제 입력 재실행','',
+        '실제 CVE는 로컬 스냅샷 입력이며, 통제 입력은 구성한 사례다. 모두 현재 라우터의 미지정 처리를 확인하는 용도이며 정답 데이터가 아니다.','',
+        '| 입력 | 구분 | 보고된 CWE | 소스 결과 없음 | 소스 결과 있다고 가정 |',
         '| --- | --- | --- | --- | --- |']
-    real=[r for r in report['cases'] if r['kind']=='real_CVE_from_local_snapshot']
-    for row in real:
-        r=row['routes']['source_result_present'];rules=sorted({d['rule_id'] for d in r['decisions']});refines=sorted({v for d in r['decisions'] for v in d['refinement_rules']})
-        lines.append('| '+' | '.join([row['id'],', '.join(row['case']['cwe']),BRANCH_KO[row['routes']['source_result_absent']['workflow_branch']],
-            BRANCH_KO[r['workflow_branch']],'<br>'.join(rules+refines)])+' |')
-    lines += ['', '**주의할 실제 사례:** `CVE-2026-61892`는 현재 코드상 운영 경로다. 설명에는 token 수정이 나오므로, 구현 결함인지 배포 권한 문제인지 별도 검토가 필요할 수 있다. 이 출력은 라우터의 현 상태를 공개한 것이며, 운영 경로가 충분하다는 독립 정답으로 간주하지 않는다.','',
-        '### 4.4 문서 재현용 통제 입력의 대조 결과','',
-        '다음 항목은 **실제 CVE가 아닌 구성한 입력**이다. 같은 CWE에서도 구현/설정 설명이 달라지면 어떻게 동작하는지, 그리고 정보 부족을 유보하는지 확인하는 용도다.','',
-        '| 통제 사례 | 입력 CWE | 자료 없음 | 자료 있다고 가정 |',
-        '| --- | --- | --- | --- |']
-    controls=[r for r in report['cases'] if r['kind']=='constructed_control_not_real_CVE']
-    for row in controls:
-        lines.append('| '+' | '.join([row['title'],', '.join(row['case']['cwe']),
-            BRANCH_KO[row['routes']['source_result_absent']['workflow_branch']],BRANCH_KO[row['routes']['source_result_present']['workflow_branch']]])+' |')
-    lines += ['', '### 4.5 각 입력의 원문·상속 경로·매칭 인용·필요한 사실','',
-        '아래 펼침 항목은 위 표의 모든 실제/통제 입력을 상세히 추적한다. 문구가 매칭되지 않으면 “매칭 없음”으로 기록한다. 매칭된 인용을 실제 악용 조건이 모두 파악됐다는 뜻으로 해석하지 않는다.','']
     for row in report['cases']:
-        r=row['routes']['source_result_present'];kind='실제 CVE의 로컬 스냅샷' if row['kind']=='real_CVE_from_local_snapshot' else '통제 입력: 실제 CVE 아님'
-        lines += ['<details>',f'<summary>{row["id"]} · {row["title"]} · {kind}</summary>','',
-            f'- 입력 종류: **{kind}**',f'- 입력 CWE: `{", ".join(row["case"]["cwe"])}`',
-            f'- 자료 없음: **{BRANCH_KO[row["routes"]["source_result_absent"]["workflow_branch"]]}**',
-            f'- 자료 있다고 가정: **{BRANCH_KO[r["workflow_branch"]]}**',
-            f'- 증거 요구: `{r["requirement"]}` / 운영 필요: `{r["operational_required"]}`']
-        if row.get('record_sha256'):lines.append(f'- 로컬 입력 레코드 해시: `{row["record_sha256"]}`')
-        if row.get('feed_timestamp'):lines.append(f'- 로컬 수집 시각 필드: `{row["feed_timestamp"]}`')
-        lines += ['', '**입력 설명 원문**','',*['> '+line for line in row['case']['description'].splitlines()],'']
-        if row.get('review_note'):lines += ['**해석 한계:** '+row['review_note'],'']
-        for d in r['decisions']:
-            lines += [f'**{d["cwe"]}: {d.get("name") or "알 수 없는 유형"}**','',
-                f'- Pillar: `{", ".join(d["pillars"]) or "없음"}`',
-                f'- 기본값 → 이번 입력: `{d["baseline_source_requirement"]}` → `{d["source_requirement"]}`',
-                f'- 매핑 Usage: `{d["cve_mapping_gate"]["usage"]}`',
-                f'- 결정 이유: {d["reason"]}']
-            for m in d['matched_rules']:
-                paths=' / '.join(' → '.join(a['path']) for a in m['anchors'])
-                lines.append(f'- 기준: `{m["rule_id"]}` / 거리 `{m["distance"]}` / 경로 `{paths}`')
-            lines += ['', '| 보정 규칙 | 실제 매칭 인용 | 구간 [시작, 끝) | 원문 ID |',
-                '| --- | --- | --- | --- |']
-            for e in d['evidence']:
-                lines.append('| '+' | '.join([e['rule_id'],cell(e['quote']),str(e['span']),e['source_id']])+' |')
-            if not d['evidence']:lines.append('| 없음 | 매칭 없음 | 해당 없음 | 해당 없음 |')
-            lines += ['', '| 필요한 사실 | 소재 |','| --- | --- |']
-            for f in d['required_facts']:lines.append(f'| `{f["id"]}`: {cell(f["label"])} | {LOC_KO[f["location"]]} |')
-            if not d['required_facts']:lines.append('| 매핑/기준이 미확정이어서 필요한 사실도 확정하지 않음 | 미정 |')
-            lines += ['']
-        contexts=r['operational_requirement_evidence']
-        if contexts:lines += ['운영 문맥으로 매칭한 원문 조각: '+', '.join('`'+q+'`' for q in dict.fromkeys(e['quote'] for e in contexts))+'. 이 조각들은 전제조건 충족의 증거가 아니다.','']
-        if row['kind']=='real_CVE_from_local_snapshot':
-            lines += ['원문 확인 링크: [NVD 기록](https://nvd.nist.gov/vuln/detail/'+row['id']+'). 링크의 현재 내용과 로컬 스냅샷은 다를 수 있다.','']
-        lines += ['</details>','']
-    lines += ['### 4.6 재현 파일과 검증 범위','',
-        '- 전체 실행 입력과 출력: [criteria_results.json](../data/cwe_routing/v2/criteria_results.json)',
-        '- 재생성: `python tools/build_cwe_routing_results.py --as-of '+report['documentation_date_kst']+'`',
-        f'- 정책 해시: `{report["policy_sha256"]}`',
-        f'- 공식 XML 해시: `{report["taxonomy_xml_sha256"]}`','',
-        '문서 생성 시 모든 매칭 인용에 대해 `원문[시작:끝] == 인용`을 확인하고, 소스 자료 유무만 바꾸었을 때 증거 요구 자체가 바뀌지 않는지 검사한다. 이 검사는 문서·코드의 일치성 검사다. 독립 정답 라벨, 분류 정확도, Cohen\'s kappa, 소스 분석 성공률 또는 최종 VEX 정확도를 측정한 것은 아니다.']
+        kind='실제 CVE 로컬 기록' if row['kind']=='real_CVE_from_local_snapshot' else '구성한 통제 입력'
+        lines.append('| '+' | '.join([row['id'],kind,', '.join(row['case']['cwe']),BRANCH_KO[row['routes']['source_result_absent']['workflow_branch']],BRANCH_KO[row['routes']['source_result_present']['workflow_branch']]])+' |')
+    lines += ['', '현재 모든 신규 검토는 `routing_unknown` / `under_investigation`으로 시작하며 소스 또는 운영 경로를 추정하지 않는다. 공식 CWE ID·정의·계층·출처는 보존한다. 기존 소스 분석기와 문서 출력 기능 자체를 삭제한 것은 아니다.','',
+        '전체 입력과 반환값: [criteria_results.json](../data/cwe_routing/v2/criteria_results.json).',
+        '재생성: `python tools/build_cwe_evidence_policy.py`.','',
+        '정책 버전: `'+report['policy_version']+'` / 정책 해시: `'+report['policy_sha256']+'`.']
     return '\n'.join(lines)
 
 

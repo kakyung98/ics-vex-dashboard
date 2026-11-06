@@ -124,9 +124,9 @@ def vex_flow():
     return header('vex-review-flow','From a candidate to a VEX assessment','Four workflows share one CVE review. Source and operating evidence can be required together.')+(
         rail(node('CVE cases', 'Component-linked candidates', 'data', 'INPUT'),
              node('Resolve CWE → Pillars', 'Pinned official hierarchy; keep every path'),
-             node('Determine evidence needs', '944 detailed profiles + explicit CVE mechanism evidence'))
+             node('Evidence route unassigned', 'Automatic CWE-to-method rules removed'))
         +'<aside class="mf-side-note"><strong>Unresolved routing → under_investigation.</strong>'
-        +'<span>Project policy predictions; independent adjudication pending.</span></aside>'
+        +'<span>Automatic routing disabled. The branches below describe retained execution capabilities, not currently assigned CWE routes.</span></aside>'
         +'<div class="mf-fork-title">Which evidence is required?</div>'
         +lanes('Yes <small>Source required</small>',source,'No <small>Operator review</small>',operational)
         +'<div class="mf-explanation"><ol><li><strong>Source only:</strong> supplied source → build / path analysis.</li>'

@@ -92,7 +92,8 @@ def start(cases, product='unspecified-product', simulation=False, sbom=None):
             'document_draft': None, 'pipeline_complete': False, 'review_required': True,
             'evidence_progress':{'source':False, 'operational':False, 'ready_for_authoring':False,
                 'pending':(['Required source analysis is missing.'] if route['source_required'] else []) +
-                          (['Required operational review is missing.'] if route['operational_required'] else [])},
+                          (['Required operational review is missing.'] if route['operational_required'] else []) +
+                          ([route['reason']] if route['requirement']=='undetermined' else [])},
             'missing': [{'requirement': reason}]}
     STORE.put('item4_review', master['id'], master, TTL)
     return result(master)
