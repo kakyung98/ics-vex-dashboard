@@ -14,7 +14,7 @@ SOURCE_DECISION_HTML = '''
 <dt>Source required</dt><dd>Review source and build evidence. If source is unavailable, immediately retain under_investigation.</dd>
 <dt>Operator review</dt><dd>Use only evidence-supported weaknesses with operator-observable configuration or protocol facts.</dd>
 <dt>Unresolved</dt><dd>Missing CWE or insufficient routing evidence remains under_investigation.</dd></dl>
-<p>Official definitions and Pillar membership remain available for all 944 detailed CWEs. Automatic evidence routing is disabled: unsupported manual assignments, inherited methods and keyword refinements were removed. New reviews remain under investigation. Source and operational engines remain available as separate capabilities; CWE-first reviews cannot automatically enter them.</p>
+<p>Each of the 944 detailed CWEs has an evidence collection plan: its exact definition, directly listed detection methods, requested artifacts and case-selection conditions. Entries without detection methods start with CVE/vendor mechanism evidence. Methods are alternatives; they do not establish source necessity or operator-only sufficiency. Final automatic routing remains disabled until case-specific requirements are justified.</p>
 <p class="method-boundary">The CWE hierarchy is official. The analysis-routing policy is a separate project policy awaiting independent validation. Pillar alone does not determine the method.</p>
 </div></details>
 <details class="method-topic"><summary>2 · Analyze each eligible CVE<span class="topic-prompt">View details</span></summary><div class="topic-body">

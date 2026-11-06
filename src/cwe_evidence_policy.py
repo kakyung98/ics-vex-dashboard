@@ -4,6 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 import hashlib,json
 from src.cwe_taxonomy import load,ancestry
+from src.cwe_evidence_plans import plan as evidence_plan, summarize as plan_summary
 ROOT=Path(__file__).resolve().parents[1]
 POLICY_FILE=ROOT/'data/cwe_evidence_policy_v2.json'
 
@@ -47,6 +48,9 @@ def profile(cwe,*,rules=None,taxonomy=None):
         'routing_is_not_a_verdict':True,'source_analyzer_capability_guaranteed':False}
     m=metadata() if t.get('xml_sha256')==load().get('xml_sha256') else {'records':{},'sha256':None}
     info=m['records'].get(cwe,{})
+    row['evidence_plan']=evidence_plan(cwe,rec,info)
+    row['evidence_plan']['source_snapshot']={'taxonomy_xml_sha256':t.get('xml_sha256'),
+                                           'metadata_sha256':m['sha256']}
     row['official_metadata']={**{k:v for k,v in info.items() if k not in {'mapping_usage','mapping_rationale'}},'metadata_sha256':m['sha256'],
         'interpretation':'Official descriptions and detection suggestions support review; they do not prescribe the project routing rule.'}
     if chain['errors'] or not chain['pillars'] or rec.get('abstraction')=='Pillar' or rec.get('status')=='Deprecated':
@@ -83,5 +87,6 @@ def catalog():
         'per_pillar':per_pillar,'multiple_pillar_membership_retained':True,
         'human_adjudicated':False,'independently_validated':False,
         'coverage_is_not_accuracy':True,'default_source_requirement_removed':True,
-        'automatic_routing_enabled':False,'unassigned_profiles':len(rows)}
+        'automatic_routing_enabled':False,'unassigned_profiles':len(rows),
+        'evidence_plans':plan_summary(rows)}
     return {'summary':summary,'profiles':rows}

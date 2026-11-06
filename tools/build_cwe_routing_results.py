@@ -73,7 +73,8 @@ def build_results(as_of='2026-11-06',data=None):
             'members':[{'cwe':r['cwe'],'name':r['name'],'pillars':r['pillars'],
                 'definition_url':r['definition_url'],'source_requirement':r['source_requirement'],
                 'operational_requirement':r['operational_requirement'],'required_facts':r['required_facts'],
-                'matched_rules':r['matched_rules'],'resolution':r['resolution']} for r in members]})
+                'matched_rules':r['matched_rules'],'resolution':r['resolution'],
+                'evidence_plan':r['evidence_plan']} for r in members]})
     assert len(pillars)==10 and sum(p['memberships'] for p in pillars)==1201
     assert {m['cwe'] for p in pillars for m in p['members']}==set(profiles)
 
@@ -111,7 +112,7 @@ def build_results(as_of='2026-11-06',data=None):
         'official_metadata_sha256':summary['official_metadata_sha256'],
         'scope':'Reproducible router outputs. No source analysis, operator assessment or VEX correctness evaluation.',
         'pillar_count':10,'unique_detailed_cwes':len(profiles),'membership_count':sum(p['memberships'] for p in pillars),
-        'baseline_counts':summary['by_source_requirement'],
+        'baseline_counts':summary['by_source_requirement'],'plan_summary':summary['evidence_plans'],
         'generic_description_source_result_present_counts':dict(generic),
         'pillars':pillars,'cases':cases,'missing_local_real_CVE_records':missing,
         'independent_expected_labels':None,'semantic_accuracy_measured':False,
@@ -122,27 +123,30 @@ def cell(value):return str(value).replace('|','/').replace('\n',' ')
 
 
 def section3(report):
-    lines=['### 3.1 공식 계층의 범위','',
-        '10개 Pillar와 고유 세부 CWE 944개의 공식 소속 관계만 유지한다. 다중 소속을 포함한 행은 1,201개다. 아래 미확정 수는 취약점 분석 실패율이나 정확도가 아니라 **경로 기준 미지정 상태**다.','',
-        '| Pillar | 공식 이름 | 세부 CWE 소속 수 | 증거 경로 미지정 |',
+    lines=['### 3.1 공식 계층과 증거 계획의 범위','',
+        '고유 CWE 944개 각각에 증거 수집 계획을 작성했다. Pillar 소속을 모두 나열하면 중복 포함 1,201행이다. 각 계획은 해당 CWE 자체의 공식 정의와 Detection_Methods를 근거로 한다. 소속 관계에서 방법을 상속하지 않는다.','',
+        f'고유 944개 중 {report["plan_summary"]["entry_specific_method_available"]}개는 해당 항목의 공식 탐지 방법을 연결했고, {report["plan_summary"]["mechanism_first"]}개는 CVE·벤더 메커니즘 우선 확인을 지정했다. 이 계획 수는 정확도나 최종 필수 증거 확정 수가 아니다.','',
+        '| Pillar | 공식 이름 | 세부 CWE 소속 수 | 증거 계획 기록 수 |',
         '| --- | --- | ---: | ---: |']
     for p in report['pillars']:
         lines.append(f'| {p["pillar"]} | {p["name"]} | {p["memberships"]} | {p["memberships"]} |')
     lines += ['', '### 3.2 세부 CWE 원문과 소속 목록','',
-        '기존 소스 728·운영 26·전문/메커니즘 190 분류와 직접 243·상속 701 집계는 삭제했다. 공식 계층은 증거 수집 방법을 보장하지 않으므로 분석 방법을 상속하지 않는다.','']
+        '각 행의 권장 경로는 증거 수집의 대안이다. 여러 경로가 있으면 모두 필수라는 뜻이 아니다. 공식 방법 미기재 항목도 CVE·벤더 메커니즘 우선 확인이라는 첫 단계를 지정했다. 개별 자산의 최종 소스/운영 필요 여부는 아직 확정하지 않는다. 정의 원문 전문·해당 방법의 원문 설명·자료 요청·출처는 JSON/CSV에 포함된다.','']
     for p in report['pillars']:
         lines += ['<details>',f'<summary>{p["pillar"]} · {p["name"]} · {p["memberships"]}개 소속</summary>','',
-            '| 세부 CWE | 공식 이름 | 현재 증거 경로 |','| --- | --- | --- |']
+            '| 세부 CWE | 공식 이름 | 권장 증거 수집 경로 (대안) | 해당 CWE 자체의 근거 |','| --- | --- | --- | --- |']
         for r in p['members']:
-            lines.append(f'| [{r["cwe"]}]({r["definition_url"]}) | {cell(r["name"])} | 미지정 |')
+            plan=r['evidence_plan']
+            methods='<br>'.join(cell(a['method']) for a in plan['alternatives']) or '공식 탐지 방법 미기재: 정의 원문 + CVE·벤더 근거를 먼저 확인'
+            lines.append(f'| [{r["cwe"]}]({r["definition_url"]}) | {cell(r["name"])} | {"<br>".join(plan["route_labels_ko"])} | {methods} |')
         lines += ['', '</details>','']
     return '\n'.join(lines)
 
 
 def section4(report):
     lines=['### 4.1 현재 실행 결과','',
-        '근거가 확립되지 않은 수작업 기준·상속·운영 목록·키워드 보정을 제거했다. 현재 자동 분석 경로 선택은 중단되어 있다. 소스 자료 유무나 특정 단어만으로 이 상태를 해제하지 않는다.','',
-        '| 전체 고유 세부 CWE | 자동 소스 지정 | 자동 운영 지정 | 기준 미지정 |',
+        '944개 증거 수집 계획을 제공한다. 탐지 방법은 가능한 자료 수집 대안이지 최종 필수 증거의 선언이 아니다. 자산별 CVE 메커니즘에 적합한 방법과 자료가 선택되기 전에는 자동 상태 판단 경로로 전환하지 않는다.','',
+        '| 전체 고유 세부 CWE | 최종 소스 필수 자동 확정 | 운영만으로 충분하다고 확정 | CVE별 증거 적합성 확인 필요 |',
         '| ---: | ---: | ---: | ---: |',
         '| 944 | 0 | 0 | 944 |','',
         '이 숫자는 평가 정확도가 아니다. 기존의 584/144/26/190 경로 집계도 현재 결과로 사용하지 않는다.','',
@@ -153,7 +157,7 @@ def section4(report):
     for row in report['cases']:
         kind='실제 CVE 로컬 기록' if row['kind']=='real_CVE_from_local_snapshot' else '구성한 통제 입력'
         lines.append('| '+' | '.join([row['id'],kind,', '.join(row['case']['cwe']),BRANCH_KO[row['routes']['source_result_absent']['workflow_branch']],BRANCH_KO[row['routes']['source_result_present']['workflow_branch']]])+' |')
-    lines += ['', '현재 모든 신규 검토는 `routing_unknown` / `under_investigation`으로 시작하며 소스 또는 운영 경로를 추정하지 않는다. 공식 CWE ID·정의·계층·출처는 보존한다. 기존 소스 분석기와 문서 출력 기능 자체를 삭제한 것은 아니다.','',
+    lines += ['', '신규 검토에는 해당 CWE의 증거 수집 계획을 함께 제공하지만, 최종 필수 증거가 정해지지 않았으므로 `routing_unknown` / `under_investigation`으로 시작한다. 원문에 연결된 CWE ID를 바꾸지 않는다. 실행 관찰 자료와 운영자 질문은 같은 것이 아니며, 이 계획은 동적 시험·바이너리 분석을 자동 실행하지 않는다.','',
         '전체 입력과 반환값: [criteria_results.json](../data/cwe_routing/v2/criteria_results.json).',
         '재생성: `python tools/build_cwe_evidence_policy.py`.','',
         '정책 버전: `'+report['policy_version']+'` / 정책 해시: `'+report['policy_sha256']+'`.']

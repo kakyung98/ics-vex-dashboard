@@ -78,9 +78,21 @@ The previous manual CWE-to-source/operational mappings, nearest-ancestor method
 inheritance, 26-type operational allowlist and keyword route refinements were
 removed because their decision criteria were not sufficiently justified.
 Policy `cwe-evidence-v2.2-unassigned` preserves the 944 official detailed CWE
-records and all 10 Pillars, but assigns no evidence route. New CWE-first reviews
+records and all 10 Pillars. Each record now has an **evidence collection plan**:
+596 entries list their own official detection methods; 348 start with CVE/vendor
+mechanism evidence because their entry contains no detection method. Every plan
+includes the exact definition, direct method descriptions, artifact requests,
+case-selection prerequisites and source/plan hashes. Methods are alternatives,
+not proof that source is mandatory or an operator questionnaire is sufficient.
+No method is inherited from another CWE. Final asset-specific requirements are
+still unassigned. New CWE-first reviews
 remain `routing_unknown` / `under_investigation`, regardless of keywords or source
 availability. Source uploads and operator answers cannot bypass that state.
+
+[Evidence-plan implementation](src/cwe_evidence_plans.py) is a deterministic
+translation of directly listed methods to artifact requests; it does not run a model
+or assign CWE IDs. Runtime/compiled/formal methods are requests for independently
+provided reports, not newly implemented analyzers.
 
 Source analyzers, operational review engines, the four execution workflows,
 locked-status VEX writer and export validators remain as capabilities. Execution
@@ -96,7 +108,7 @@ See the [current criteria and removed rules](docs/CWE_ROUTING_CRITERIA.md),
 [JSON](data/cwe_routing/v2/profiles.json), [CSV](data/cwe_routing/v2/profiles.csv),
 and the [official Pillar grouping](docs/CWE_PILLAR_GROUPS_V5.md).
 [Reproducible current outputs](data/cwe_routing/v2/criteria_results.json) distinguish
-real cached inputs from constructed controls; all currently remain unassigned.
+real cached inputs from constructed controls; all final requirements currently remain unassigned while collection plans are provided.
 Rebuild with `python tools/build_cwe_evidence_policy.py`.
 Changed policy versions/hashes require a new review; existing runtime records are
 historical evidence and are not silently relabeled as current results.
@@ -265,10 +277,12 @@ Report unsafe clearances, coverage and deferral alongside precision/recall.
 
 ## Verification and limitations
 
-- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-06: **279 passed**, including
+- CWE evidence policy, multilingual-source, four-workflow and writer-only regression on 2026-11-06: **284 passed**, including
   rejection of non-writer model roles, model-free identification aliases,
   rule questionnaires, operating evidence, writer contracts and compiler checks.
-  All 944 profiles remain unassigned. Checks reject heuristic routing and verify
+  All 944 profiles have collection plans; final asset requirements remain unassigned.
+  Checks verify entry-specific definition/method provenance, alternative semantics,
+  no inherited methods, no automatic necessity claims, and reject heuristic routing and verify
   questionnaire/source-result bypass protection. Execution-only workflow tests use
   explicit synthetic route contracts, not CWE classification labels.
   Software tests are not independently labelled CVEs or model accuracy.
