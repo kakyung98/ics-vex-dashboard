@@ -201,9 +201,10 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 <button id="pages-backend-disconnect" hidden>Disconnect</button>
 <a id="pages-open-local" href="http://127.0.0.1:8100" target="_blank" rel="noopener">Open local app ↗</a></div>
 <p class="hint" style="margin:8px 0 0">Uploaded files are sent to the connected backend. Your browser may ask for local-network permission.</p></section>
-<h1 style="margin:0 0 18px">Published VEX (CISA)</h1><div class="card"><h3 style="margin:0 0 4px">Published CISA VEX flags <span class="hint" id="pv-hint"></span></h3>
-<p class="hint" style="margin:0 0 12px">The entire public ICS VEX label set: across all 3,984 files in CISA's CSAF repository, only these advisories carry a <span class="mono">vulnerabilities[].flags[].label</span> justification. Keyed to CVE — the VEX judgment unit. These are <b>vendor assertions</b> about proprietary product builds (adopted verbatim as provenance), <b>not verified ground truth</b>: the product source is not obtainable, so they are a label reference, not a benchmark. Three code/build justifications appear — <span class="mono">component_not_present</span> dominates, but it is not the only one; environment-based justifications never appear.</p>
-<p class="hint" style="margin:-4px 0 12px;font-size:12px">Counting note: the distribution below is by <b>label instance</b> (<b>19</b>) &mdash; one pair, <span class="mono">CVE-2024-3596</span>, carries two labels (<span class="mono">vulnerable_code_not_in_execute_path</span> + <span class="mono">vulnerable_code_not_present</span>), so label instances (<b>19</b>) exceed the <b>18</b> (ICSA&times;CVE) pairs.</p>
+<h1 style="margin:0 0 18px">Published VEX (CISA)</h1><div class="card"><h3 style="margin:0 0 4px">Published CISA VEX assertions <span class="hint" id="pv-hint"></span></h3>
+<p class="hint" id="pv-snapshot">Reading the collected CSAF snapshot…</p>
+<p class="hint">This page reads explicit <code>vulnerabilities[].flags</code> from the newest locally collected CSAF snapshot. Counts, labels, product scope and document hashes come from those files. A CVE/advisory pair can contain multiple label instances.</p>
+<p class="hint">Published assertions describe the publisher's product scope. They are displayed separately from this system's VEX estimates and from construction-based evaluation gold. The snapshot date is the collection date; this is not a live claim about all current upstream documents.</p>
 <div id="pv-kpis" class="kpis">loading…</div>
 <div id="pv-charts" style="margin-top:16px"></div>
 <div id="pv-rows" style="margin-top:16px"></div></div>
@@ -264,39 +265,73 @@ async function run(){
       +'<td>'+nextcol+'</td></tr>';}
   h+='</tbody></table>';
   h+=_abstainBlock(d);
-  o.innerHTML=h+_armForkHtml();
+  o.innerHTML=_armForkHtml()+'<details class="review-disclosure"><summary>View identified CVEs and initial evidence</summary>'+h+'</details>';
 }
 
-// ---- 2단계: 판정 Evidence 분기 (docs/ICSVEX.md) --------------------------------
-// CVE 식별이 끝나면 Evidence가 두 갈래로 갈린다. 소스가 있으면 코드에서 읽고, 없으면
-// 자산 운영정보로 전제조건을 대조한다. 한 CVE가 두 팔을 동시에 타지 않는다 —
-// 어느 Evidence가 상태를 정했는지 문서에서 읽을 수 있어야 하기 때문이다.
+// Product source is collected once; CWE routes reuse that source session.
 let _srcSession=null, _ocFields=null, _armResult=null;
 let _candidateJobId=null, _lastSbom=null;
-
 let _item4ReviewId=null;
-function _armForkHtml(){_item4ReviewId=null;return '<div class="card" id="armfork" style="margin-top:14px">'
- +'<h3>Step 2 · CWE-first VEX review</h3><p>Check the CWE Pillar, specific weakness and CVE/advisory evidence before selecting the analysis method.</p>'
- +'<button class="primary" onclick="startItem4Review()">Determine required evidence →</button><div id="item4routes"></div><div id="armbody" style="margin-top:14px"></div></div>';}
-async function startItem4Review(){
- const box=document.getElementById('item4routes');box.innerHTML='<p>Checking weakness ancestry and advisory evidence…</p>';
+function _armForkHtml(){
+ _item4ReviewId=null;_srcSession=null;_armResult=null;
+ setTimeout(previewCweReviewRoutes,0);
+ return '<div class="card" id="armfork" style="margin-top:14px">'
+ +'<h3>Product evidence and VEX review</h3>'
+ +'<div id="cwe-route-preview"><p>Determining review priorities from CWE and CVE conditions…</p></div>'
+ +'<label for="review-source-availability">Do you have source code for this product/build?</label>'
+ +'<select id="review-source-availability" onchange="chooseReviewSource()"><option value="">Select source availability</option><option value="yes">Yes — upload one source ZIP</option><option value="no">No source available</option></select>'
+ +'<p>Provide source once for this product. CVE–CWE classification determines which reviews use it. Include the relevant dependency sources in the same ZIP.</p>'
+ +'<div id="armbody" style="margin-top:14px"></div>'
+ +'<button class="primary" id="start-product-review" onclick="startItem4Review()">Start VEX review →</button><div id="item4routes"></div></div>';
+}
+async function previewCweReviewRoutes(){
+ const box=document.getElementById('cwe-route-preview');if(!box)return;
+ const labels={source_only:'Source analysis first',source_and_context:'Source + operating context',operational_only:'Operating context first',unresolved:'Resolve CWE / CVE mechanism'};
  try{
-  const r=await fetch('/api/item4/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:_lastVex?.cves||[],product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
+  const r=await fetch('/api/item4/preview',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:(_lastVex?.cves||[]).map(c=>({cve:c.cve,cwe:c.cwe,description:c.description||'',vector:c.vector||''}))})});
+  if(!r.ok)throw new Error('Review routing failed (HTTP '+r.status+').');
+  const data=await r.json();if(!box.isConnected)return;
+  box.innerHTML='<h4>Review path before source upload</h4><table><thead><tr><th>CVE / CWE</th><th>Planned review</th><th>Reason</th></tr></thead><tbody>'+Object.entries(data.routes).map(([cve,route])=>'<tr><td>'+esc(cve)+'<br>'+esc(route.cwes.join(', ')||'CWE unknown')+'</td><td>'+esc(labels[route.review_strategy.path])+'</td><td>'+esc(route.reason)+'</td></tr>').join('')+'</tbody></table><p class="hint">These are review priorities. Source-only means source analysis is the first task; it does not establish a final VEX result.</p>';
+ }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p><button onclick="previewCweReviewRoutes()">Retry route classification</button>';}
+}
+function chooseReviewSource(){
+ _srcSession=null;_item4ReviewId=null;_armResult=null;
+ document.getElementById('item4routes').innerHTML='';
+ document.getElementById('start-product-review').textContent=document.getElementById('review-source-availability').value==='yes'?'Upload source and start review →':'Start operating-context review →';
+ if(document.getElementById('review-source-availability').value==='yes')pickArm('source');
+ else document.getElementById('armbody').innerHTML='<p>CVE–CWE routing will identify available evidence paths. Missing required evidence remains under investigation.</p>';
+}
+async function startItem4Review(){
+ const box=document.getElementById('item4routes'),choice=document.getElementById('review-source-availability').value;
+ if(!choice){box.innerHTML='<p class="err">Select whether product source is available.</p>';return;}
+ const button=document.getElementById('start-product-review');if(button.disabled)return;button.disabled=true;
+ const sourceChoice=document.getElementById('review-source-availability');sourceChoice.disabled=true;
+ try{
+  if(choice==='yes'&&!_srcSession){box.innerHTML='<p>Uploading and indexing the selected source ZIP…</p>';if(!await uploadSource()){box.innerHTML='<p class="err">Source upload was not completed. See the message above and retry.</p>';return;}}
+  box.innerHTML='<p>Routing CVEs using CWE evidence and product source availability…</p>';
+  const r=await fetch('/api/item4/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identification_job:_candidateJobId||null,cves:_lastVex?.cves||[],product:_sbomProduct().name,simulation:!!_lastVex?.simulation,source_available:choice==='yes',source_session:choice==='yes'?_srcSession:null})});
   if(!r.ok)throw new Error(await r.text());
   _armResult=await r.json();_item4ReviewId=_armResult.review_id;
+  document.getElementById('review-source-availability').disabled=true;
+  const zip=document.getElementById('srczip');if(zip)zip.disabled=true;
+  button.hidden=true;
   renderItem4Routes();
+  if(choice==='yes'&&Object.values(_armResult.routes).some(q=>q.source_required||q.source_review_available))await judgeSource();
+  if(choice==='no'){await renderOcForm(document.getElementById('armbody'));await generateOperationQuestions();}
  }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}
+ finally{button.disabled=false;if(!_item4ReviewId){sourceChoice.disabled=false;const zip=document.getElementById('srczip');if(zip)zip.disabled=false;}}
 }
 function renderItem4Routes(){
   const box=document.getElementById('item4routes');if(!box)return;
-  const labels={source_only:'1 · Source analysis',source_to_operational:'2 · Source + operating context',source_missing:'3 · Required source missing',operational_only:'4 · Operating context only',routing_unknown:'Routing unresolved'};
-  const routes=Object.entries(_armResult.routes);let html='<h3>Evidence workflow</h3><p>Four paths share one review. Source and operating evidence accumulate per CVE; required evidence must be supplied before final authoring.</p><table><thead><tr><th>CVE / CWE / Pillar</th><th>Workflow</th><th>Evidence progress</th></tr></thead><tbody>';
+  const labels={source_only:'1 · Source analysis',source_to_operational:'2 · Source + operating context',source_missing:'3 · Required source missing',operational_only:'4 · Operating context only',routing_unknown:'Routing unresolved',source_unavailable:'Source unavailable — review other evidence',source_collection:'Use shared product source',evidence_collection:'Evidence collection'};
+  const routes=Object.entries(_armResult.routes);let html='<details id="evidence-route-details" class="review-disclosure"><summary>View CVE–CWE routes and evidence requirements ('+routes.length+' CVEs)</summary><h3>Evidence workflow</h3><p>Product source: '+esc(_armResult.source_intake?.available===true?'Uploaded once; reused for eligible CVEs':_armResult.source_intake?.available===false?'Unavailable':'Not declared')+'</p><p>Collection alternatives are assigned per CVE. Source and implementation-review alternatives enable analysis; final method suitability and evidence requirements must be resolved before authoring.</p><table><thead><tr><th>CVE / CWE / Pillar</th><th>Workflow</th><th>Evidence progress</th></tr></thead><tbody>';
   for(const [cve,q] of routes){const p=_armResult.statements.find(s=>s.cve===cve)?.evidence_progress;
-   html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td>'+esc(labels[q.workflow_branch]||q.requirement)+'<br><small>'+esc(q.reason)+'</small>'+cweRoutingDetails(q)+'</td><td>'+esc(p?'Source: '+(p.source?'recorded':'not recorded')+' · Operating context: '+(p.operational?'recorded':'not recorded'):'Awaiting evidence')+(p?.pending?.length?'<p>'+esc(p.pending.join(' '))+'</p>':'')+'</td></tr>';}
-  html+='</tbody></table><p class="hint">Automatic CWE evidence routing is disabled; unsupported assignment rules were removed. No justified route is assigned. New reviews remain under investigation.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
-  if(routes.some(([_,q])=>q.source_required))html+='<button class="primary" onclick="pickArm(&#39;source&#39;)">Upload required source ZIP</button>';
-  if(routes.some(([_,q])=>q.operational_required&&(!q.source_required||q.source_available)))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Review operating context</button>';
-  html+='</div>'+_verdictTable(_armResult,'Current evidence review')+'<button onclick="downloadOcReview()">Download current review JSON</button>';
+   const sourceState=_armResult.source_intake?.available===false?'Unavailable for this product':q.source_required?'Required':q.source_review_available?'Use shared source':'Need not determined';
+   const options=(q.collection_options||[]).map(o=>'<li>'+esc(o.label_ko)+'<ul>'+o.requests.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></li>').join('');
+   html+='<tr><td>'+esc(cve)+'<br>'+esc(q.cwes.join(', ')||'CWE unknown')+'<br><small>'+esc(q.pillars.join(', ')||'Pillar unresolved')+'</small></td><td><b>'+esc(labels[q.workflow_branch]||'Evidence review')+'</b><p>Source: '+esc(sourceState)+'</p><p>'+esc(q.reason)+'</p>'+(options?'<details><summary>Artifacts to collect</summary><ul>'+options+'</ul></details>':'')+cweRoutingDetails(q)+'</td><td>'+esc(p?'Source analysis: '+(p.source?'recorded':_armResult.source_intake?.available===false?'unavailable':q.source_review_available||q.source_required?'awaiting shared-source analysis':'not collected'):'Awaiting evidence')+'<p>Operating context: '+esc(p?.operational?'assessed':q.operational_context_available?'awaiting answers':'not collected')+'</p><p>VEX estimate: '+esc(_statLabel(_armResult.statements.find(s=>s.cve===cve)?.operational_assessment||'likely_cannot_determine'))+'</p><p>Final evidence requirements: unresolved</p></td></tr>';}
+  html+='</tbody></table><p class="hint">Automatic evidence collection is active. Source and implementation-review alternatives enable source analysis; other methods request scoped reports. Final method suitability and evidence requirements remain unresolved, so collection alone does not clear a CVE.</p><div style="display:flex;gap:10px;flex-wrap:wrap">';
+  if(routes.some(([_,q])=>q.operational_context_available||(q.operational_required&&(!q.source_required||q.source_available))))html+='<button class="primary" onclick="pickArm(&#39;oc&#39;)">Enter operating context and estimate VEX</button>';
+  html+='</div><button onclick="downloadOcReview()">Download current review JSON</button></details>';
   box.innerHTML=html;
 }
 
@@ -304,6 +339,7 @@ function cweRoutingDetails(route){
  let h='<details class="review-disclosure"><summary>Why this route? CWE evidence requirements</summary><p>Policy: '+esc(route.policy_version||'unknown')+' · Project rules; independent validation pending.</p>';
  for(const d of route.decisions||[]){
   h+='<h4>'+esc(d.cwe)+' · '+esc(d.name||'Unknown weakness')+'</h4><p>'+esc(d.reason||'')+'</p>';
+  h+='<p>Collection alternatives: '+esc((route.collection_routes||[]).join(', ')||'Unresolved')+'</p>';
   h+='<p>Source requirement: '+esc(d.source_requirement||'undetermined')+' · Assignment: '+esc(d.resolution||'unknown')+'</p><ul>';
   for(const f of d.required_facts||[])h+='<li>'+esc(f.label)+' <small>('+esc(f.location)+')</small></li>';
   h+='</ul>';
@@ -317,61 +353,77 @@ function cweRoutingDetails(route){
 }
 
 function pickArm(which){
-  if(!_item4ReviewId)return;
+  if(which!=='source'&&!_item4ReviewId)return;
   const b=document.getElementById('armbody');
   if(which==='source'){
     b.innerHTML='<div class="row"><div>'
-      +'<label>Source code ZIP — C, C++, Python, Java, SQL, JavaScript, Go, R or Ruby</label>'
-      +'<input type="file" id="srczip" accept=".zip">'
-      +'<label>Source analyzer</label><select id="srcengine"><option value="auto">Automatic — source AST; Clang for configured C/C++ builds</option><option value="syntax">Source AST only — no compilation</option><option value="clang">Clang/LLVM — C/C++ build evidence</option></select>'
+      +'<label>Source code ZIP — C/C++, C#, Go, Java/Kotlin, JavaScript/TypeScript, Python, Ruby, Rust or Swift</label>'
+      +'<input type="file" id="srczip" accept=".zip" onchange="sourceZipChanged()">'
+      +'<label>Source analysis method</label><select id="srcengine"><option value="auto">CodeQL — source security queries (recommended)</option><option value="syntax">Source structure and function calls — auxiliary AST</option><option value="clang">Legacy C/C++ build comparison — Clang/LLVM</option></select>'
+      +'<p class="hint">Automatic selects source-structure analysis for ordinary ZIPs and Clang for configured C/C++ builds. This selects an analyzer, not a CVE category.</p>'
       +'<label style="margin-top:10px">Analysis scope</label><select id="srcscope">'
       +'<option value="library">Component / library source</option><option value="product">Product source with build configuration</option><option value="partial">Partial source</option></select>'
       +'<label>Entry functions (optional for syntax analysis; comma-separated)</label><input id="srcentries" placeholder="main, handler, process_request">'
       +'<label style="display:block;margin-top:8px"><input type="checkbox" id="srccomplete"> I supplied complete source/dependencies and the complete entry-point set for this selected product build.</label>'
       +'<div class="hint" style="margin-top:8px">Include compile_commands.json and build manifests from the build being reviewed. '
-      +'Upload source text, not firmware images or executables. The backend parses functions and call candidates without running your code. C/C++ uses Clang/LLVM when a compilation database is supplied; other source uses Tree-sitter. '
+      +'Upload source text. CodeQL creates a source database and runs security queries without executing the uploaded program or build scripts. Languages requiring a build are reported as blocked; no silent analyzer fallback is used. AST and Clang remain explicit comparison options. '
       +'Source paths and patch matches support review; they do not prove exploitability or a fixed deployed binary.</div>'
-      +'<div style="margin-top:10px"><button class="primary" onclick="uploadSource()">Upload and index source ▶</button></div>'
+      +'<p class="hint">Choose a ZIP, then select Upload source and start review. Uploading and analysis run in sequence.</p>'
       +'</div></div><div id="srcout" style="margin-top:12px"></div>';
   }else{
     b.innerHTML='<div class="hint">Loading the operational context form…</div>';
-    renderOcForm(b);
+    renderOcForm(b).then(()=>generateOperationQuestions());
   }
 }
 
+function sourceZipChanged(){
+ _srcSession=null;
+ const out=document.getElementById('srcout'),file=document.getElementById('srczip').files[0];
+ out.textContent=file?'Selected: '+file.name+'. Ready to upload and start review.':'';
+ document.getElementById('item4routes').innerHTML='';
+}
 async function uploadSource(){
-  const f=document.getElementById('srczip').files[0];
-  const out=document.getElementById('srcout');
-  if(!f){out.innerHTML='<span class="err">Choose a ZIP file first</span>';return;}
-  out.innerHTML='<span class="hint">Uploading and indexing… Large source trees may take longer.</span>';
+ const input=document.getElementById('srczip'),f=input.files[0],out=document.getElementById('srcout');
+ if(!f){out.innerHTML='<span class="err">Choose a source ZIP file first.</span>';return false;}
+ if(!f.name.toLowerCase().endsWith('.zip')){out.innerHTML='<span class="err">Select a .zip source archive.</span>';return false;}
+ input.disabled=true;_srcSession=null;
+ out.innerHTML='<span class="hint">Uploading and indexing '+esc(f.name)+'…</span>';
+ try{
   const fd=new FormData();fd.append('file',f);
-  let up;
-  try{const r=await fetch('/api/source/upload',{method:'POST',body:fd});
-      if(!r.ok){out.innerHTML='<span class="err">Upload failed: '+r.status+'</span>';return;}
-      up=await r.json();}
-  catch(e){out.innerHTML='<span class="err">'+esc(String(e))+'</span>';return;}
+  const r=await fetch('/api/source/upload',{method:'POST',body:fd});
+  const up=await r.json().catch(()=>null);
+  if(!r.ok)throw new Error(up?.detail?String(up.detail):'Source upload failed (HTTP '+r.status+').');
+  if(!up?.session)throw new Error('The backend did not return a source session. Retry the upload.');
+  if(document.getElementById('srczip')!==input)throw new Error('Source selection changed. Start the new review again.');
   _srcSession=up.session;
-  let h='<div class="hint">Files: <b>'+up.files_indexed+'</b> · Functions: <b>'+up.functions+'</b>'
-    +' · Entry points: <b>'+up.entry_points.count+'</b> ('+esc(up.entry_points.kind)+')'
-    +' · Indirect call sites: <b>'+up.indirect_call_sites+'</b></div>'
-    +'<div class="hint" style="margin-top:6px">Languages: '+esc(Object.entries(up.languages||{}).map(([l,n])=>l+' ('+n+')').join(', ')||'None detected')+'<br>'+esc(up.note)+'</div>';
-  if(up.upload.truncated) h+='<div class="err" style="margin-top:6px">Processing limit reached; some files were not indexed: '+esc(up.upload.truncated)+'</div>';
-  h+='<div class="hint">Build databases: '+up.build.compilation_databases.length+' · Mapped translation units: '+up.build.translation_units.length+' · Unresolved entries: '+up.build.unresolved_entries.length+'</div>';
-  out.innerHTML=h+'<div style="margin-top:10px"><button class="primary" onclick="judgeSource()">Review patches, build and source →</button></div><div id="srcverdict" style="margin-top:12px"></div>';
+  const clangOption=document.querySelector('#srcengine option[value="clang"]');
+  const hasBuild=!!up.build?.configurations?.length;
+  if(clangOption)clangOption.disabled=!hasBuild;
+  if(!hasBuild&&document.getElementById('srcengine').value==='clang')document.getElementById('srcengine').value='auto';
+  let h='<p><b>Uploaded: '+esc(f.name)+'</b> · Files: '+up.files_indexed+' · Functions: '+up.functions+'</p>'
+    +'<p class="hint">Languages: '+esc(Object.entries(up.languages||{}).map(([l,n])=>l+' ('+n+')').join(', ')||'None detected')+'</p>';
+  if(up.upload?.truncated)h+='<p class="err">Some files were not indexed: '+esc(String(up.upload.truncated))+'</p>';
+  if(up.excluded_source_files?.length)h+='<p class="hint">Unsupported language files excluded: '+esc(up.excluded_source_files.join(', '))+'</p>';
+  out.innerHTML=h+'<div id="srcverdict" style="margin-top:12px"></div>';
+  return true;
+ }catch(e){out.innerHTML='<p class="err">'+esc(String(e))+'</p>';return false;}
+ finally{input.disabled=!!document.getElementById('start-product-review')?.disabled;}
 }
 
 async function judgeSource(){
   const v=document.getElementById('srcverdict');
   v.innerHTML='<span class="hint">Evaluating evidence…</span>';
-  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.source_required).map(f=>({cve:f.cve}));
+  const cves=(_lastVex&&_lastVex.cves||[]).filter(f=>_armResult.routes?.[f.cve]?.source_required||_armResult.routes?.[f.cve]?.source_review_available).map(f=>({cve:f.cve}));
   const r=await fetch('/api/source/judge',{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({session:_srcSession,item4_review_id:_item4ReviewId,cves:cves,engine:document.getElementById('srcengine').value,analysis_scope:document.getElementById('srcscope').value,
       entry_points:document.getElementById('srcentries').value.split(',').map(s=>s.trim()).filter(Boolean),tree_is_complete:document.getElementById('srccomplete').checked,
       product:_sbomProduct().name,simulation:!!_lastVex?.simulation})});
-  if(!r.ok){v.innerHTML='<span class="err">Evaluation failed: '+r.status+'</span>';return;}
+  if(!r.ok){v.innerHTML='<span class="err">Source analysis failed: '+r.status+'</span><button onclick="judgeSource()">Retry shared-source analysis</button>';return;}
   _armResult=await r.json();
   const compilerBacked=_armResult.cfg.engine==='clang-llvm-ir/1';
-  let details='<div class="hint">'+(compilerBacked?'Clang/LLVM source review · Selected build and declared roots.':'Multilingual source AST review · Syntax-derived call candidates; no runtime CFG or unreachability proof.')+' Missing coverage or unresolved calls block negative decisions. A path does not prove attacker control or exploitation.</div>';
+  const codeqlBacked=_armResult.cfg.engine==='codeql-sarif/1';
+  let details='<div class="hint">'+(codeqlBacked?'CodeQL source database and security query findings. CWE matches are candidates for CVE review; zero findings do not clear a CVE.':compilerBacked?'Clang/LLVM source review · Selected build and declared roots.':'Multilingual source AST review · Syntax-derived call candidates; no runtime CFG or unreachability proof.')+' Missing coverage or unresolved calls block negative decisions. A path does not prove attacker control or exploitation.</div>';
+  if(codeqlBacked)details+='<div class="card"><h3>CodeQL findings</h3><p>Total findings: '+(_armResult.cfg.findings||[]).length+'</p>' + (_armResult.cfg.findings||[]).map(f=>'<p><b>'+esc(f.rule_id)+' · '+esc((f.cwes||[]).join(', '))+'</b><br>'+esc(f.message)+'</p>').join('')+'</div>';
   details+='<div class="card"><b>'+esc(_armResult.cfg.tool?.version||_armResult.cfg.engine)+'</b><p>Scope: '+esc(_armResult.cfg.scope)
     +' · Analysis run: '+esc(_armResult.cfg.execution_status||'unknown')
     +' · '+(compilerBacked?'Translation units':'Source files')+': '+(_armResult.cfg.translation_units||[]).filter(t=>t.status==='completed').length+' / '+(_armResult.cfg.selected_units||0)
@@ -393,57 +445,98 @@ async function judgeSource(){
   }
   renderItem4Routes();
   if(_armResult.cfg.limitations)details+='<div class="card"><h3>Analysis limits</h3><ul>'+_armResult.cfg.limitations.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div>';
-  v.innerHTML=_verdictTable(_armResult,'Source evidence')+_groundedPipelineHtml(_armResult)+details;
+  const summary=_armResult.source_review_summary||{};
+  const observations='<section class="card"><h3>Source review findings</h3><p>Source checks completed: '+(summary.analysed_cves||0)+' / '+_armResult.total+' CVEs · Not analysed: '+(summary.not_analysed_cves||0)+' · Confirmed VEX decisions: '+(summary.final_statuses_confirmed||0)+'</p><p>Source parsing and final VEX decisions are separate. Uploading source does not establish a complete CVE-to-code mapping or deployed-build identity. Final asset-specific evidence requirements remain unresolved.</p><table><thead><tr><th>CVE</th><th>Source check</th><th>Observations / missing evidence</th></tr></thead><tbody>'+_armResult.statements.map(s=>{const o=s.source_observation||{};return '<tr><td>'+esc(s.cve)+'</td><td>'+esc(o.analysed?'Analysed':'Not analysed')+'</td><td>'+esc(o.reason||'')+(o.analysed?'<p>Candidate targets: '+esc((o.candidate_targets||[]).join(', ')||'Not identified')+' · Matching definitions: '+(o.matching_definitions||0)+' · Observed paths: '+(o.observed_paths||0)+'</p><details><summary>Missing evidence and analysis blockers</summary><pre>'+esc(JSON.stringify({missing:o.missing_evidence,blockers:o.blockers},null,2))+'</pre></details>':'')+'</td></tr>';}).join('')+'</tbody></table></section>';
+  v.innerHTML=observations+'<details class="review-disclosure"><summary>Standard VEX statuses and export</summary>'+_verdictTable(_armResult,'VEX status')+'</details><details class="review-disclosure"><summary>Detailed source evidence</summary>'+_groundedPipelineHtml(_armResult)+details+'</details>';
 }
 
 let _operationPlan=null;
 async function renderOcForm(box){
   _operationPlan=null;
-  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Generate questions for each CVE, then answer using actual configuration and operating records. Choose unknown when you cannot confirm a fact. Enter the installed product and version once per component.</p>'
+  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Enter the shared operating context and installed-version facts first. Add CVE-specific answers where known, then submit to view the assessment.</p>'
     +'<p class="hint">These answers support a review; they do not establish verified code absence.</p>'
-    +'<details class="review-help"><summary>How this review works</summary><p>Only CVEs routed to operational review enter this form. Questions cover common weakness-type checks and CVE-specific operating facts. Required-source cases remain under investigation until source analysis is completed. Questions use source-linked rule templates. Answers are summarized by deterministic rules and version-evidence checks. Only the final VEX explanation uses an LLM.</p></details>'
-    +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Generate questions for each CVE</button><div id="operation-questions"></div><div id="ocverdict"></div>';
+    +'<details class="review-help"><summary>How this review works</summary><p>For no-source products, operational context can support advisory estimates for all CVEs, including those with unresolved CWE routing. It does not substitute for required source, binary or runtime evidence. Questions cover common weakness-type checks and CVE-specific operating facts. Required-source cases remain under investigation until source analysis is completed. Questions use the tuned adapter and retrieved CVE evidence, with explicit rule fallback on failure. Answers are assessed by deterministic scope and version-evidence checks. The question generator and final VEX writer use an LLM; standard status gates remain deterministic.</p></details>'
+    +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Prepare operational questions</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
 async function generateOperationQuestions(){
   const box=document.getElementById('operation-questions'),button=document.getElementById('generate-operation-questions');
-  button.disabled=true;box.innerHTML='<p>Preparing source-linked rule questions…</p>';
+  button.disabled=true;box.innerHTML='<p>Preparing shared operating-context fields and safe source-linked baseline questions. Select a CVE to generate its tailored adapter questions; this avoids making the whole review wait.</p>';
   try{
     const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
     const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
     if(!r.ok)throw new Error(await r.text());
-    _operationPlan=await r.json();
-    box.innerHTML=renderComponentFacts(_operationPlan)+_operationPlan.cases.map((c,ci)=>'<section class="card operation-case" style="margin-top:14px"><div class="case-heading"><h3>'+esc(c.cve)+'</h3><span class="pill">Review items: '+esc(String(c.questions.filter(q=>!q.deprecated_version_field).length))+'</span></div><p class="hint">'+esc(c.generation.status==='validated'?'Source-linked draft questions. Review each question before answering.':'Question generation: '+c.generation.status)+'</p>'
+    _operationPlan=await r.json();button.hidden=true;
+    box.innerHTML=renderSharedOperationalContext(_operationPlan)+renderComponentFacts(_operationPlan)+'<section class="card" id="cve-operating-questions"><h3>CVE-specific answers</h3><p>Select a CVE, generate its tailored questions if needed, then enter the operating facts and supporting record below. Your other answers are retained.</p><label>CVE to review<select class="op-control" id="operation-case-select" onchange="showOperationalCase(this.value)">'+_operationPlan.cases.map(c=>'<option value="'+esc(c.cve)+'">'+esc(c.cve)+'</option>').join('')+'</select></label>'+_operationPlan.cases.map((c,ci)=>'<details id="operation_case_'+ci+'" class="card operation-case" '+(ci===0?'open':'hidden')+' style="margin-top:14px"><summary>'+esc(c.cve)+' · '+esc(String(c.questions.filter(q=>!q.deprecated_version_field).length))+' checks</summary><p>'+esc(c.description||'Review the cited CVE evidence before answering.')+'</p><p class="hint">'+esc(c.generation.fallback?'Model generation was unavailable or rejected. Showing rule-template questions.':c.generation.llm_used?'Generated for this CVE by the tuned adapter with retrieved evidence. Review before answering.':c.generation.tuned_question_status==='pending'?'Tailored adapter questions have not been generated yet.':'Source-linked rule questions.')+'</p>'
+      +(c.generation.tuned_question_status==='pending'?'<button class="primary" onclick="generateTunedQuestions(&#39;'+esc(c.cve)+'&#39;)">Generate tailored questions for '+esc(c.cve)+'</button><p class="hint">Usually about one minute. Generate before entering answers for this CVE.</p>':'')
       +'<details class="review-disclosure"><summary>Rule and source record</summary><p class="hint">Method: '+esc(c.generation.method||'Rule templates')+' · Attempts retained: '+esc(String((c.generation.attempts||[]).length))+'</p></details>'
       +((c.generation.normalizations||[]).length?'<p class="hint">Presentation normalization was applied. Original model output and exact changes are retained below.</p>':'')
       +(c.generation.status!=='validated'?'<p class="err">Model questions failed validation. No substitute questions or operational facts were fabricated. Regenerate or review the model output below.</p>':'')
       +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div class="operation-question"><span class="question-kind">'+esc(q.origin==='system'?'Installation record':q.scope==='common'?'Common check':'CVE-specific check')+'</span><label class="question-title" for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label>'
         +'<details class="question-evidence"><summary>Why we ask'+(q.evidence?' · View source':'')+'</summary><p>'+esc(q.purpose)+'</p>'+(q.evidence?'<blockquote>'+esc(q.evidence)+'</blockquote>':'')+'</details>'
-        +(q.answer_type==='text'?'<input class="op-control" type="text" id="oq_'+ci+'_'+qi+'" maxlength="500" placeholder="Enter the operational fact, or leave unknown">':'<select class="op-control" id="oq_'+ci+'_'+qi+'"><option value="unknown">Unknown / not answered</option><option value="yes">Yes</option><option value="no">No</option></select>')
-        +'<label class="record-label" for="oqe_'+ci+'_'+qi+'">Supporting record</label><input class="op-control" type="text" id="oqe_'+ci+'_'+qi+'" maxlength="1500" placeholder="Configuration record, update ID or inspection date"></div>').join('')
-      +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></section>').join('')
-      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Analyze answers and draft VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
+        +ynControl('oq_'+ci+'_'+qi,'답변')
+        +ynControl('oqe_'+ci+'_'+qi,'이 답변을 뒷받침하는 설정 또는 점검 기록이 있습니까?')+'</div>').join('')
+      +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></details>').join('')+'</section>'
+      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Assess operating context and estimate VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
     const saved=new Map((_armResult?.statements||[]).flatMap(s=>(s.operational_review?.questions_and_answers||[]).map(q=>[q.id,q.answer])));
-    _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{const a=saved.get(q.id);if(!a||q.deprecated_version_field)return;document.getElementById('oq_'+ci+'_'+qi).value=a.value;document.getElementById('oqe_'+ci+'_'+qi).value=a.evidence||'';}));
-    (_operationPlan.assets||[]).forEach((a,i)=>{const f=_armResult?.component_facts?.[a.ref];if(!f)return;for(const [field,key] of [['present','present'],['product','product_name'],['version','installed_version'],['evidence','evidence']])document.getElementById('of_'+field+'_'+i).value=f[key]||'';document.getElementById('of_attest_'+i).checked=!!f.attested;});
-  }catch(e){box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
+    _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{const a=saved.get(q.id);if(!a||q.deprecated_version_field)return;document.getElementById('oq_'+ci+'_'+qi).value=['yes','no','unknown'].includes(a.value)?a.value:'unknown';document.getElementById('oqe_'+ci+'_'+qi).value=a.record_available||'unknown';}));
+    (_operationPlan.assets||[]).forEach((a,i)=>{const f=_armResult?.component_facts?.[a.ref];if(!f)return;for(const [field,key] of [['present','present'],['matches','sbom_identity_matches'],['record','record_available']])document.getElementById('of_'+field+'_'+i).value=f[key]||'unknown';document.getElementById('of_attest_'+i).value=f.facts_checked||(f.attested?'yes':'unknown');});
+  }catch(e){button.hidden=false;box.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
+}
+async function generateTunedQuestions(cve){
+  const card=[..._operationPlan.cases].find(c=>c.cve===cve);if(!card||card.generation.tuned_question_status!=='pending')return;
+  const sharedInputs=new Map([...document.querySelectorAll('#operation-questions select')].filter(n=>!/^oqe?_/.test(n.id)).map(n=>[n.id,n.value]));
+  const previousAnswers=new Map(_operationPlan.cases.flatMap((c,ci)=>c.questions.map((q,qi)=>[q.id,{value:document.getElementById('oq_'+ci+'_'+qi)?.value,record:document.getElementById('oqe_'+ci+'_'+qi)?.value}])));
+  const button=[...document.querySelectorAll('#cve-operating-questions button')].find(b=>b.textContent.includes(cve));
+  if(button){button.disabled=true;button.textContent='Generating tailored questions…';}
+  try{
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions/'+encodeURIComponent(cve)+'/generate',{method:'POST'});
+    if(!r.ok)throw new Error(await r.text());
+    _operationPlan=await r.json();
+    // Re-render only before answers are entered for this CVE, as stated in the UI.
+    await generateOperationQuestions();
+    for(const [id,value] of sharedInputs){const control=document.getElementById(id);if(control)control.value=value;}
+    _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{const saved=previousAnswers.get(q.id);if(!saved||q.deprecated_version_field)return;document.getElementById('oq_'+ci+'_'+qi).value=saved.value||'unknown';document.getElementById('oqe_'+ci+'_'+qi).value=saved.record||'unknown';}));
+  }catch(e){if(button){button.disabled=false;button.textContent='Retry tailored questions';}alert(String(e));}
+}
+function renderSharedOperationalContext(plan){
+ const saved=_armResult?.operational_context||{};
+ const select=(id,label)=>ynControl('ctx_'+id,label,saved[id]);
+ return '<section class="card" id="shared-operating-context"><h3>Shared product operating context</h3><p>각 항목에 예·아니오·모름으로 답하세요. 확인하지 않은 항목은 모름으로 남겨 주세요.</p>'
+ +select('deployment_known','이 제품의 배치 위치와 활성화된 서비스를 확인했습니까?')
+ +select('scope_known','검토 대상 장비·인터페이스·데이터 경로의 범위를 알고 있습니까?')
+ +(plan.assets||[]).map((a,i)=>ynControl('ctx_component_'+i,esc(a.name||a.ref)+' Components를 실제로 확인했습니까?',(saved.component_refs||[]).includes(a.ref)?'yes':'unknown')).join('')
+ +select('network_access','Can untrusted parties or untrusted data reach these components over any network path, including intermediaries?')
+ +select('local_access','Can untrusted local users or processes access these components?')
+ +select('controls_enforced','Are the stated access restrictions actively enforced and checked?')
+ +select('record_available','설정·방화벽·점검 결과를 뒷받침하는 기록이 있습니까?')
+ +select('coverage_confirmed','답변이 선택한 Components의 관련 인터페이스와 데이터 경로 전체를 포함합니까?')
+ +select('facts_checked','실제 설정 또는 점검 기록과 대조해 답변했습니까?')+'</section>';
+}
+function ynControl(id,label,value){return '<label>'+label+'<select class="op-control" id="'+id+'">'+[['unknown','모름'],['yes','예'],['no','아니오']].map(([v,t])=>'<option value="'+v+'"'+(value===v?' selected':'')+'>'+t+'</option>').join('')+'</select></label>';}
+function collectOperationalContext(){
+ const result={};for(const k of ['deployment_known','scope_known','network_access','local_access','controls_enforced','record_available','coverage_confirmed','facts_checked'])result[k]=document.getElementById('ctx_'+k).value;
+ result.component_refs=(_operationPlan.assets||[]).filter((a,i)=>document.getElementById('ctx_component_'+i).value==='yes').map(a=>a.ref);return result;
 }
 function renderComponentFacts(plan){
  let html='<style>.op-control{display:block;width:100%;box-sizing:border-box;margin:6px 0 10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card2);color:var(--ink);font:inherit}.op-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}</style>'
   +'<section class="card"><h3>Shared component and installed-version facts</h3><p>Complete each actual component once. These facts are reused across its CVEs. Do not copy advisory versions as installed versions. Unselected or unknown components remain unresolved.</p>';
  (plan.assets||[]).forEach((a,i)=>{
   html+='<article class="card"><h4>'+esc(a.name)+'</h4><p class="hint">Component ref: '+esc(a.ref)+' · Original SBOM version: '+esc(a.reported_sbom_version||'unknown')+'</p><div class="op-facts">'
-   +'<label>Present in the reviewed asset?<select class="op-control" id="of_present_'+i+'"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No / not selected for this asset</option></select></label>'
-   +'<label>Actual manufacturer / product family<input type="text" class="op-control" id="of_product_'+i+'" list="of_options_'+i+'" maxlength="500" placeholder="Select the actual product family"><datalist id="of_options_'+i+'">'+(a.product_options||[]).map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist></label>'
-   +'<label>Observed installed firmware / build<input type="text" class="op-control" id="of_version_'+i+'" maxlength="160" placeholder="Read from device or inventory record"></label>'
-   +'<label>Supporting record and inspection date<input type="text" class="op-control" id="of_evidence_'+i+'" maxlength="1500" placeholder="Device record, inventory ID or update record"></label></div>'
-   +'<label><input type="checkbox" id="of_attest_'+i+'"> I checked this product and installed version against the stated record. This is an operator attestation, not independent machine verification.</label></article>';
+   +ynControl('of_present_'+i,'이 Components가 검토 대상 장비에 있습니까?')
+   +ynControl('of_matches_'+i,'실제 제품과 버전이 위 SBOM 정보와 일치합니까?')
+   +ynControl('of_record_'+i,'제품·설치 버전을 확인할 수 있는 기록이 있습니까?')+'</div>'
+   +ynControl('of_attest_'+i,'실제 장비 또는 기록과 대조해 확인했습니까?')+'</article>';
  });
  return html+'</section>';
 }
 function collectComponentFacts(){
  const out={};(_operationPlan.assets||[]).forEach((a,i)=>{out[a.ref]={present:document.getElementById('of_present_'+i).value,
- product_name:document.getElementById('of_product_'+i).value,installed_version:document.getElementById('of_version_'+i).value,
- evidence:document.getElementById('of_evidence_'+i).value,attested:document.getElementById('of_attest_'+i).checked};});return out;
+ product_name:document.getElementById('of_matches_'+i).value==='yes'?a.name:'',
+ installed_version:document.getElementById('of_matches_'+i).value==='yes'?(a.reported_sbom_version||''):'',
+ sbom_identity_matches:document.getElementById('of_matches_'+i).value,
+ record_available:document.getElementById('of_record_'+i).value,
+ facts_checked:document.getElementById('of_attest_'+i).value,
+ evidence:'',attested:document.getElementById('of_attest_'+i).value==='yes'};});return out;
 }
 function downloadSbomVex(){
  if(!_armResult?.sbom_vex){alert('No original CycloneDX SBOM was linked to this review.');return;}
@@ -453,16 +546,42 @@ function downloadSbomVex(){
 async function judgeOc(){
   if(!_operationPlan)return;
   const v=document.getElementById('ocverdict'),button=document.getElementById('submit-operation-answers'),answers={};
-  _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{if(q.deprecated_version_field)return;answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,evidence:document.getElementById('oqe_'+ci+'_'+qi).value};}));
-  button.disabled=true;v.innerHTML='<p>Comparing operator reports with CVE evidence and writing VEX drafts locally...</p>';
+  _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{if(q.deprecated_version_field)return;answers[q.id]={value:document.getElementById('oq_'+ci+'_'+qi).value,record_available:document.getElementById('oqe_'+ci+'_'+qi).value};}));
+  button.disabled=true;v.innerHTML='<p>Comparing scoped operating records and installed versions with CVE evidence...</p>';
   try{
-    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts()})});
+    const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/answers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan_id:_operationPlan.id,answers,component_facts:collectComponentFacts(),operational_context:collectOperationalContext()})});
     if(!r.ok)throw new Error(await r.text());
     _armResult=await r.json();
     renderItem4Routes();
-    v.innerHTML=_verdictTable(_armResult,'Operational questionnaire')+_armResult.statements.filter(s=>s.operational_review).map(s=>'<section class="card"><div class="case-heading"><h3>'+esc(s.cve)+'</h3><span class="pill">'+esc(_statLabel(s.operational_assessment))+'</span></div><p>Standard VEX: <span class="verdict-state">'+esc(_statLabel(s.status))+'</span></p><p>'+esc(s.operational_review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p><details><summary>Questions, answers, evidence and assessment checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(s.operational_review,null,2))+'</pre></details></section>').join('')+_groundedPipelineHtml(_armResult)
-      +'<button onclick="downloadOcReview()">Download review log (JSON)</button>';
+    v.innerHTML=renderOperationalResults(_armResult);
   }catch(e){v.innerHTML='<p class="err">'+esc(String(e))+'</p>';}finally{button.disabled=false;}
+}
+
+function showOperationalCase(cve){
+ (_operationPlan?.cases||[]).forEach((c,i)=>{const node=document.getElementById('operation_case_'+i);if(node){node.hidden=c.cve!==cve;node.open=c.cve===cve;}});
+}
+function editOperationalCase(cve){
+ if(!_operationPlan)return;
+ const selector=document.getElementById('operation-case-select');if(selector)selector.value=cve;
+ showOperationalCase(cve);
+ const i=_operationPlan.cases.findIndex(c=>c.cve===cve);const node=document.getElementById('operation_case_'+i);
+ if(node){node.scrollIntoView({behavior:'smooth',block:'start'});const control=node.querySelector('.op-control');control?.focus({preventScroll:true});}
+}
+function editOperationalContext(){
+ document.getElementById('shared-operating-context')?.scrollIntoView({behavior:'smooth',block:'start'});
+ document.getElementById('ctx_deployment_known')?.focus({preventScroll:true});
+}
+function renderOperationalResults(result){
+ return '<section class="card"><h3>Assessment results</h3><p>These are saved assessment results. Edit the input form to change an answer, then submit again.</p><button onclick="editOperationalContext()">Edit operating context</button></section>'
+ +result.statements.filter(s=>s.operational_review).map(s=>{
+  const review=s.operational_review;const rows=review.questions_and_answers.filter(q=>!q.deprecated_version_field);
+  const recorded=rows.filter(q=>q.answer?.value&&q.answer.value!=='unknown').length;
+  return '<section class="card"><div class="case-heading"><h3>'+esc(s.cve)+'</h3><span class="pill">'+esc(_statLabel(s.operational_assessment))+'</span></div>'
+   +'<p>Answered: '+recorded+' / '+rows.length+' · Standard VEX: '+esc(_statLabel(s.status))+'</p><p>'+esc(review.effective_assessment?.explanation||'No accepted effective assessment.')+'</p>'
+   +'<button onclick="editOperationalCase(&#39;'+esc(s.cve)+'&#39;)">Edit answers for this CVE</button>'
+   +'<table><thead><tr><th>Question</th><th>Saved answer</th><th>Supporting record</th></tr></thead><tbody>'+rows.map(q=>'<tr><td>'+esc(q.question)+'</td><td>'+esc(!q.answer?.value||q.answer.value==='unknown'?'Not answered / unknown':q.answer.value)+'</td><td>'+esc(q.answer?.evidence||'Not provided')+'</td></tr>').join('')+'</tbody></table>'
+   +'<details><summary>Technical assessment record (JSON)</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(review,null,2))+'</pre></details></section>';
+ }).join('')+'<details><summary>Standard VEX statuses and export</summary>'+_verdictTable(result,'Operational questionnaire')+'</details><button onclick="downloadOcReview()">Download review log (JSON)</button>';
 }
 
 function downloadOcReview(){
@@ -488,8 +607,8 @@ function _versionEvidenceHtml(result){
 
 function _groundedPipelineHtml(result){
   if(!result.pipeline)return '';
-  let html='<div class="card"><h3>Rule analysis and VEX authoring</h3><p>Rule-based extraction → evidence decision → final LLM VEX explanation</p>'
-    +'<p>Complete model chains: '+result.pipeline.complete_cases+' / '+(result.pipeline.model_eligible_cases??result.pipeline.case_count)+'. Generated text is a draft for review.</p></div>';
+  let html='<div class="card"><h3>Analysis execution status</h3><p>Source analysis → CVE evidence extraction → evidence review → VEX explanation</p>'
+    +'<p>Source analyses completed: '+(result.source_review_summary?.analysed_cves||0)+' · CVE extractions completed: '+result.statements.filter(s=>s.extraction?.status&&s.extraction.status!=="not_run").length+' · VEX explanations completed: '+result.pipeline.complete_cases+'</p><p>VEX explanation may wait for operating answers or missing evidence after source analysis has completed.</p></div>';
   for(const s of result.statements){
     if(s.extraction?.status==='not_run' && s.authoring?.status==='not_run')continue;
     const x=s.extraction||{},w=s.authoring||{},draft=s.document_draft;
@@ -1060,6 +1179,9 @@ function exportCsaf(){
     if(st==='not_affected'){
       // CSAF carries a justification as flags[].label. Nothing reaches here without grounds.
       v.flags=[{label:_justOrNull(r),product_ids:[cpid]}];
+      const explanations={component_not_present:'The vulnerable component is absent from the assessed product.',vulnerable_code_not_present:'The component is present, but the CVE-specific vulnerable code is absent.',vulnerable_code_not_in_execute_path:'The CVE-specific vulnerable code is outside the assessed execution paths.',vulnerable_code_cannot_be_controlled_by_adversary:'An adversary cannot control the vulnerable code under the assessed conditions.',inline_mitigations_already_exist:'Built-in inline mitigations prevent exploitation under the assessed conditions.'};
+      const impact=[explanations[_justOrNull(r)],r.impact_statement||r.action_statement||r.basis].filter(Boolean).join(' ');
+      v.threats=[{category:'impact',details:impact,product_ids:[cpid]}];
       if(r.action_statement)notes.push({category:'description',title:'Impact',text:r.action_statement});}
     else if(st==='affected'){
       v.remediations=[{category:_remedCsaf(r.remediation),
@@ -1075,7 +1197,7 @@ function exportCsaf(){
       if(r.missing_evidence)bits.push('Missing evidence: '+r.missing_evidence);
       if(r.planned_update)bits.push('Planned update: '+r.planned_update);
       if(bits.length)notes.push({category:'details',title:'Investigation',text:bits.join(' | ')});}
-    if(r.kev)v.threats=[{category:'exploit_status',details:'Listed in CISA KEV (known exploited)',product_ids:[cpid]}];
+    if(r.kev)v.threats=[...(v.threats||[]),{category:'exploit_status',details:'Listed in CISA KEV (known exploited)',product_ids:[cpid]}];
     v.notes=notes; return v;});
   const comps=_componentPids().list.filter(c=>used[c.product_id]);
   const fpn=[Object.assign({product_id:pid,name:p.name},p.purl?{product_identification_helper:{purl:p.purl}}:{})]
@@ -1190,11 +1312,13 @@ async function publishedVex(){
     const rows=(d&&d.rows)||[];const bj=(d&&d.by_justification)||{};
     const hint=document.getElementById('pv-hint');
     if(hint)hint.textContent=d?(d.advisories+' advisories · '+d.pairs+' (ICSA×CVE) pairs'):'';
+    const snapshot=document.getElementById('pv-snapshot');if(snapshot)snapshot.textContent=d.available?('Collected snapshot: '+d.source_snapshot+' · Documents scanned: '+d.documents_scanned):'No collected CSAF snapshot available.';
+    const environmentCount=(bj.vulnerable_code_cannot_be_controlled_by_adversary||0)+(bj.inline_mitigations_already_exist||0);
     document.getElementById('pv-kpis').innerHTML=
       '<div class="kpi"><b>'+(d.advisories||0)+'</b><span>advisories (documents)</span></div>'+
       '<div class="kpi"><b>'+(d.pairs||0)+'</b><span>ICSA × CVE pairs</span></div>'+
       '<div class="kpi"><b>'+(d.label_instances||0)+'</b><span>label instances<br><span class="hint" style="font-size:11px">one CVE may carry 2 labels</span></span></div>'+
-      '<div class="kpi"><b style="color:var(--und)">0</b><span>environment-based<br><span class="hint" style="font-size:11px">all labels are code/build</span></span></div>';
+      '<div class="kpi"><b style="color:var(--und)">'+environmentCount+'</b><span>environment-related label instances</span></div>';
     // justification distribution
     let ch='<div class="ct">Justification distribution (label instances)</div>';
     const tot=Object.values(bj).reduce((a,b)=>a+b,0)||1;
