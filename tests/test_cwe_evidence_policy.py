@@ -26,8 +26,9 @@ def test_all_944_profiles_preserve_official_records_without_method_assignment():
         assert row['source_requirement']==row['operational_requirement']=='undetermined'
         assert row['resolution']=='unresolved'
         assert not row['matched_rules'] and not row['required_facts'] and not row['question_profiles']
-        assert row['cve_mapping_gate']['advisory_only']
-        assert not row['cve_mapping_gate']['blocked_for_cve_routing']
+        assert 'cve_mapping_gate' not in row
+        assert 'mapping_usage' not in row['official_metadata']
+        assert 'mapping_rationale' not in row['official_metadata']
         for present in (False,True):
             r=classify(cwe_case(cid),source_available=present)
             assert r['workflow_branch']=='routing_unknown'

@@ -44,7 +44,7 @@ def control_cases():
       ('embedded-key','CWE-1394','The device uses a hardcoded default cryptographic key.','하드코딩된 키로 메커니즘 보정'),
       ('java-declaration','CWE-493','A critical public variable lacks the final modifier.','Java 선언 속성의 직접 예외'),
       ('hardware','CWE-1252','The CPU hardware is not configured for the required memory protection.','하드웨어 전문 증거 요구'),
-      ('mapping-advisory','CWE-119','A buffer overflow occurs.','Discouraged도 기존 CWE를 유지하고 메모리 증거로 진행'),
+      ('reported-cwe-preserved','CWE-119','A buffer overflow occurs.','입력에 기록된 CWE-119 유지'),
       ('mixed-unknown',['CWE-787','CWE-999999'],'A remote buffer overflow occurs.','여러 CWE 중 미확정 항목 보존'),
     ]
     return [{'id':'control-'+key,'kind':'constructed_control_not_real_CVE','title':title,
@@ -70,12 +70,10 @@ def build_results(as_of='2026-11-06',data=None):
         pillars.append({'pillar':pid,'name':aggregate['name'],'korean_label':PILLAR_KO[pid],
             'memberships':len(members),'by_source_requirement':dict(Counter(r['source_requirement'] for r in members)),
             'by_resolution':dict(Counter(r['resolution'] for r in members)),
-            'official_mapping_usage':dict(Counter(r['cve_mapping_gate']['usage'] for r in members)),
             'members':[{'cwe':r['cwe'],'name':r['name'],'pillars':r['pillars'],
                 'definition_url':r['definition_url'],'source_requirement':r['source_requirement'],
                 'operational_requirement':r['operational_requirement'],'required_facts':r['required_facts'],
-                'matched_rules':r['matched_rules'],'resolution':r['resolution'],
-                'mapping_usage':r['cve_mapping_gate']['usage']} for r in members]})
+                'matched_rules':r['matched_rules'],'resolution':r['resolution']} for r in members]})
     assert len(pillars)==10 and sum(p['memberships'] for p in pillars)==1201
     assert {m['cwe'] for p in pillars for m in p['members']}==set(profiles)
 

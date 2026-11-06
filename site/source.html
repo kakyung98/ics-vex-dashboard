@@ -312,7 +312,6 @@ function cweRoutingDetails(route){
   h+='<p>Source requirement: '+esc(d.source_requirement||'undetermined')+' · Assignment: '+esc(d.resolution||'unknown')+'</p><ul>';
   for(const f of d.required_facts||[])h+='<li>'+esc(f.label)+' <small>('+esc(f.location)+')</small></li>';
   h+='</ul>';
-  if(d.cve_mapping_gate)h+='<p>CVE mapping usage: '+esc(d.cve_mapping_gate.usage)+(d.cve_mapping_gate.requires_mapping_review?' · Assignment caution only; does not block analysis.':'')+'</p>';
   if(d.official_metadata?.detection_methods?.length)h+='<details><summary>Official detection suggestions (not mandatory routing rules)</summary><ul>'+d.official_metadata.detection_methods.map(m=>'<li>'+esc(m.method)+': '+esc(m.description)+'</li>').join('')+'</ul></details>';
   for(const m of d.matched_rules||[])h+='<p>Rule: '+esc(m.rule_id)+'<br>'+esc((m.anchors||[]).map(a=>a.path.join(' → ')).join('; '))+'</p>';
   for(const e of d.evidence||[])h+='<blockquote>'+esc(e.quote)+'</blockquote>';
