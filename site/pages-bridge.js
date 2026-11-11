@@ -14,12 +14,10 @@
   }
   try{if(backend)backend=validated(backend)}catch(_){backend='';sessionStorage.removeItem(key)}
   const files={
-    '/api/summary':'cve_level.json','/api/source_available':'source_available.json',
+    '/api/summary':'cve_level.json',
     '/api/by_year':'by_year.json','/api/advisories':'advisories.json',
     '/api/advisories/list':'advisories_list.json','/api/sbom_index':'sbom_index.json',
-    '/api/published_vex':'published_vex.json','/api/verify_results':'verify_results.json',
-    '/api/verify_coverage':'verify_coverage.json',
-    '/api/item4/cwe-policy':'cwe_routing_profiles.json'
+    '/api/published_vex':'published_vex.json'
   };
   const asJson=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   let index;
@@ -54,7 +52,6 @@
     if(u.pathname==='/api/cves'){
       const dim=u.searchParams.get('dim'),value=u.searchParams.get('value'),scope=u.searchParams.get('scope')||'corpus';
       const selected=(await cves()).filter(r=>{
-        if(scope==='source_available'&&!r.source_available)return false;
         if(dim==='vendor')return (r.vendors||[]).includes(value);
         if(dim==='device_type')return (r.device_types||[]).includes(value);
         return String(r[dim]??'')===value;
@@ -65,7 +62,7 @@
   }
   window.fetch=async function(input,options){
     const u=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
-    const assetPath=u.pathname.match(/\/(reverse_sbom\/[^/]+|results\/verify_evidence\/.*)$/);
+    const assetPath=u.pathname.match(/\/(reverse_sbom\/[^/]+)$/);
     if(u.origin!==location.origin||(!u.pathname.startsWith('/api/')&&!assetPath))return net(input,options);
     if(backend){
       const local=loopback(new URL(backend));
