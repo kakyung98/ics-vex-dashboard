@@ -22,6 +22,7 @@
   const asJson=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   let index;
   let sboms;
+  let corpusIndex;
   async function sbomDocument(path){
     if(!sboms)sboms=net(new URL('sbom_index.json',location.href)).then(r=>r.json());
     const name=decodeURIComponent(path.split('/').pop());
@@ -36,6 +37,16 @@
   async function cves(){if(!index)index=net(new URL('cve_index.json',location.href)).then(r=>r.json());return index}
   function project(r){return {...r,vendor:(r.vendors||[]).slice(0,2).join(', ')}}
   async function snapshot(u){
+    if(u.pathname==='/api/operational-workflow/corpus/summary')return net(new URL('operational_corpus_summary.json',location.href));
+    if(u.pathname==='/api/operational-workflow/corpus/clusters')return net(new URL('operational_corpus_clusters.json',location.href));
+    if(u.pathname==='/api/operational-workflow/corpus/cves'){
+      if(!corpusIndex)corpusIndex=net(new URL('operational_corpus_cves.json',location.href)).then(r=>r.json());
+      const q=(u.searchParams.get('q')||'').toUpperCase(),state=u.searchParams.get('state'),cluster=u.searchParams.get('cluster');
+      const offset=Number(u.searchParams.get('offset')||0),limit=Number(u.searchParams.get('limit')||50);
+      if(!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||limit<1||limit>200)return asJson({detail:'Invalid corpus pagination'},422);
+      const filtered=(await corpusIndex).filter(r=>(!q||r.cve.includes(q))&&(!state||r.state===state)&&(!cluster||r.cluster_ids.includes(cluster)));
+      return asJson({total:filtered.length,offset,limit,rows:filtered.slice(offset,offset+limit)});
+    }
     if(files[u.pathname])return net(new URL(files[u.pathname],location.href));
     if(u.pathname.startsWith('/api/advisory/')){
       const aid=decodeURIComponent(u.pathname.split('/').pop());
