@@ -1,4 +1,4 @@
-"""Vendor-scoped product candidates: BM25 + character trigrams + RRF.
+"""Vendor-scoped product candidates: structured lookup + BM25 + sparse vector cosine + RRF.
 
 Retrieval scores are ranking signals, never probabilities or acceptance evidence.
 All returned identities originate from the supplied dictionary snapshot.
@@ -24,7 +24,7 @@ def vendor_key(text):
 
 class ProductIndex:
     def __init__(self,rows,*,snapshot_hash=None,aliases=None):
-        grouped={};self.by_cpe={};self.by_product=defaultdict(set);self.by_vendor=defaultdict(set);self.by_identity={}
+        grouped={};self.by_cpe={};self.by_product=defaultdict(set);self.by_vendor=defaultdict(set);self.by_identity={};self.by_release=defaultdict(list)
         self.snapshot_hash=snapshot_hash
         self.aliases=[]
         for a in aliases or []:
@@ -40,6 +40,7 @@ class ProductIndex:
             title=r.get('title','')
             if isinstance(title,str) and len(doc['titles'])<3:doc['titles'].add(title)
             doc['release_count']+=1;self.by_cpe[cpe]=rid
+            self.by_release[(rid,re.sub(r'^[vV](?=\d)','',p[5]))].append(cpe)
         self.docs={rid:{**r,'titles':sorted(r['titles'])} for rid,r in grouped.items()}
         self.words=defaultdict(dict);self.trigrams=defaultdict(set);self.lengths={}
         for rid,r in self.docs.items():
@@ -49,6 +50,8 @@ class ProductIndex:
             self.lengths[rid]=sum(counts.values())
             for w,n in counts.items():self.words[w][rid]=n
             for g in grams(r['product']):self.trigrams[g].add(rid)
+        from src.identity_vector_index import CharacterVectorIndex
+        self.vector_index=CharacterVectorIndex(self.trigrams,len(self.docs))
         self.avglen=sum(self.lengths.values())/max(1,len(self.docs))
 
     def check_cpes(self,component):
@@ -71,6 +74,7 @@ class ProductIndex:
             checks.append({'input':value,'status':status,'candidate_id':rid,
                            'dictionary_status':dictionary_status,
                            'identity_in_dictionary':rid is not None,
+                           'usable_product_identity':rid is not None and status in {'exact_dictionary_entry','dictionary_product_identity','product_found_release_or_attributes_unverified'},
                            'usable_identity':rid is not None and status in {'exact_dictionary_entry','dictionary_product_identity'},
                            'suggested_dictionary_entries':corrections,'automatically_corrected':False})
         return checks
@@ -120,11 +124,14 @@ class ProductIndex:
             posting=self.trigrams[g];weight=math.log(1+n/(1+len(posting)))
             for rid in posting:char[rid]+=weight
         lexical=bm.most_common(100);characters=char.most_common(100);rrf=Counter()
-        for ranked in [lexical,characters]:
+        vectors=self.vector_index.search(query_grams)
+        vector_scores=dict(vectors)
+        for ranked in [lexical,characters,vectors]:
             for rank,(rid,_) in enumerate(ranked,1):rrf[rid]+=1/(60+rank)
         exact=set().union(*(self.by_product.get(f,set()) for f in forms)) if forms else set()
         cpe_checks=self.check_cpes(component)
-        cpe_ids={c['candidate_id'] for c in cpe_checks if c['usable_identity']}
+        cpe_ids={c['candidate_id'] for c in cpe_checks if c['usable_product_identity']}
+        verified_cpe_ids={c['candidate_id'] for c in cpe_checks if c['usable_identity']}
         # Also recognize canonical "vendor product" names without a supplier field.
         for rid,_ in lexical[:100]:
             r=self.docs[rid]
@@ -143,12 +150,13 @@ class ProductIndex:
             purl=versions.get('purl')
             if purl and exact and norm(purl['name']) in self.by_product and not self.by_product[norm(purl['name'])]&exact:
                 conflicts.append('purl_name_and_component_name_disagree')
-            features={'exact_product':rid in exact,'dictionary_verified_input_cpe':rid in cpe_ids,
+            features={'exact_product':rid in exact,'dictionary_verified_input_cpe':rid in verified_cpe_ids,
+                'dictionary_known_input_cpe_identity':rid in cpe_ids,
                 'llm_query_proposal':rid in proposal_pool,
                 'reviewed_vendor_scoped_alias':rid in alias_evidence,
                 'purl_name_matches_product':bool((versions.get('purl') or {}).get('name') and norm(versions['purl']['name'])==norm(r['product'])),
                 'manufacturer_match':bool(manufacturer and manufacturer==v),'supplier_match':bool(supplier and supplier==v),
-                'vendor_named_in_component':name_vendor,'bm25':round(bm[rid],6),'character_overlap':round(char[rid],6),
+                'vendor_named_in_component':name_vendor,'bm25':round(bm[rid],6),'character_overlap':round(char[rid],6),'vector_cosine':round(vector_scores.get(rid,0),6),
                 'rrf':round(rrf[rid],6)}
             score=rrf[rid]+.08*(rid in exact)+.08*(rid in alias_evidence)+.10*(rid in cpe_ids)+.03*features['manufacturer_match']+.01*features['supplier_match']+.03*name_vendor
             ranked.append({**r,'features':features,'ranking_score':round(score,6),'conflicts':conflicts,'notes':notes,
@@ -160,7 +168,9 @@ class ProductIndex:
         # Preserve all exact competitors for ambiguity checks even if display is top-k.
         mandatory=exact|cpe_ids|alias_candidates|proposal_pool
         kept=ranked[:k]+[r for r in ranked[k:] if r['candidate_id'] in mandatory]
-        return {'candidates':kept,'query_forms':sorted(forms),'algorithm':'BM25 + character-trigram retrieval + reciprocal-rank fusion',
+        return {'candidates':kept,'query_forms':sorted(forms),'algorithm':'structured lookup + BM25 + character TF-IDF vector cosine + reciprocal-rank fusion',
+                'indexes':{'structured':True,'bm25':True,'vector':True,
+                           'vector_type':'sparse_character_trigram_tfidf_cosine','semantic_embedding_model':None},
                 'query_expansions':sorted(expansions),'model_proposals_are_identity_evidence':False,
                 'input_cpe_checks':cpe_checks,
                 'top_k':k,'snapshot_sha256':self.snapshot_hash,'dictionary_identities':n,

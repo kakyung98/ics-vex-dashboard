@@ -41,7 +41,7 @@ def structured_product_match(name, vendor, product):
 def structured_records(component, vendor, aid, row):
     """Pinned CSAF product tree supplies per-CVE family associations."""
     if row.get('source')!='CISA CSAF':return []
-    from src.cve_source_evidence import documents
+    from src.cve_evidence import documents
     from src.operational_versions import products
     out=[]
     for cve in row.get('cves',[]):

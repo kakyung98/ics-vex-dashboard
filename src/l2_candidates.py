@@ -1,4 +1,4 @@
-"""L2 candidate-ID ranking: preserve source model identifiers, never generate names."""
+"""P2 candidate-ID ranking: preserve source model identifiers, never generate names."""
 import re
 from copy import deepcopy
 from src.identity_evidence import digest

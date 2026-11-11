@@ -27,8 +27,10 @@ def test_model_metadata_and_navigation():
     assert 'id="candidate-workspace"' in root
     assert 'id="candidate-vex"' in root
     assert 'side-brand' in root and 'SSRC' in root
-    assert '/api/source/upload' in root
-    assert '/api/item4/start' in root and '/questions' in root and '/answers' in root
+    assert '/api/source/upload' not in root
+    assert '/api/operational-workflow/source' in root and '/api/operational-workflow/compile' in root
+    assert 'icsvex:operational-handoff' in root and 'Download Context BOM' in root
+    assert '/api/item4/start' not in root
     redirect=client.get('/cve-matcher.html',follow_redirects=False)
     assert redirect.status_code==307 and redirect.headers['location']=='/'
     page=client.get('/cve-matcher.html').text

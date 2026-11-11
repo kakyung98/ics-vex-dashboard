@@ -1,0 +1,950 @@
+{
+  "schema_version": "2.0",
+  "policy": "operational_evidence; source availability is informational",
+  "fields": [
+    {
+      "group": "CSAF 표준",
+      "path": "document.category",
+      "type": "string",
+      "required": "필수",
+      "description": "CSAF VEX 프로파일",
+      "example": "csaf_vex"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.csaf_version",
+      "type": "string",
+      "required": "필수",
+      "description": "표준 문서 버전",
+      "example": "\"2.0\""
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.title",
+      "type": "string",
+      "required": "필수",
+      "description": "문서 제목",
+      "example": "운영 근거 기반 자산 VEX"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.lang",
+      "type": "string",
+      "required": "선택",
+      "description": "문서 언어",
+      "example": "ko-KR"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.publisher.category",
+      "type": "string",
+      "required": "필수",
+      "description": "발행자 유형",
+      "example": "other"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.publisher.name",
+      "type": "string",
+      "required": "필수",
+      "description": "발행 조직 또는 개인",
+      "example": "발행 조직"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.publisher.namespace",
+      "type": "URI",
+      "required": "필수",
+      "description": "발행자 네임스페이스",
+      "example": "https://example.org/vex"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.publisher.contact_details",
+      "type": "string",
+      "required": "선택",
+      "description": "제공된 발행자 연락처",
+      "example": "미제공 시 생략"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.id",
+      "type": "string",
+      "required": "필수",
+      "description": "문서의 고유 식별자",
+      "example": "ics-vex:<판정 해시>"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.status",
+      "type": "enum",
+      "required": "필수",
+      "description": "발행 상태",
+      "example": "draft / interim / final"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.version",
+      "type": "string",
+      "required": "필수",
+      "description": "문서 개정 번호",
+      "example": "1"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.initial_release_date",
+      "type": "date-time",
+      "required": "필수",
+      "description": "최초 발행시각",
+      "example": "ISO 8601"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.current_release_date",
+      "type": "date-time",
+      "required": "필수",
+      "description": "현재 개정 발행시각",
+      "example": "ISO 8601"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.revision_history[].number",
+      "type": "string",
+      "required": "필수",
+      "description": "누적 개정 이력 번호",
+      "example": "1"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.revision_history[].date",
+      "type": "date-time",
+      "required": "필수",
+      "description": "해당 개정시각",
+      "example": "ISO 8601"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "document.tracking.revision_history[].summary",
+      "type": "string",
+      "required": "필수",
+      "description": "해당 개정의 내용",
+      "example": "근거 변경 또는 재평가"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.full_product_names[].product_id",
+      "type": "string",
+      "required": "필수",
+      "description": "자산·제품·빌드·설정·모드별 식별자",
+      "example": "urn:ics-vex:scope:..."
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.full_product_names[].name",
+      "type": "string",
+      "required": "필수",
+      "description": "검토 대상 제품 이름",
+      "example": "제품 + 빌드 + 자산"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.full_product_names[].product_identification_helper.cpe",
+      "type": "string",
+      "required": "선택",
+      "description": "제공된 CPE",
+      "example": "알 수 없으면 생략"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.full_product_names[].product_identification_helper.purl",
+      "type": "URI",
+      "required": "선택",
+      "description": "제공된 Package URL",
+      "example": "pkg:generic/library@1"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.full_product_names[].product_identification_helper.sbom_urls[]",
+      "type": "URI",
+      "required": "선택",
+      "description": "제공된 SBOM URL",
+      "example": "알 수 없으면 생략"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.relationships[].category",
+      "type": "enum",
+      "required": "조건부",
+      "description": "컴포넌트가 자산에 포함되는 관계",
+      "example": "default_component_of"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.relationships[].product_reference",
+      "type": "string",
+      "required": "조건부",
+      "description": "관계의 컴포넌트 ID",
+      "example": "component product_id"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.relationships[].relates_to_product_reference",
+      "type": "string",
+      "required": "조건부",
+      "description": "관계의 자산 제품 ID",
+      "example": "host product_id"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.relationships[].full_product_name.product_id",
+      "type": "string",
+      "required": "조건부",
+      "description": "상태가 참조할 컴포넌트·자산 조합 ID",
+      "example": "relationship product_id"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "product_tree.relationships[].full_product_name.name",
+      "type": "string",
+      "required": "조건부",
+      "description": "조합 제품의 이름",
+      "example": "library in controller"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].cve",
+      "type": "string",
+      "required": "조건부",
+      "description": "실제 CVE 식별자. 내부 합성 시연은 ids 사용",
+      "example": "CVE-YYYY-NNNN"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].ids[].system_name",
+      "type": "string",
+      "required": "선택",
+      "description": "내부 식별자 체계",
+      "example": "ICS-VEX internal synthetic demonstration"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].ids[].text",
+      "type": "string",
+      "required": "선택",
+      "description": "내부 취약점 ID",
+      "example": "SIM-PLC-A"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].title",
+      "type": "string",
+      "required": "선택",
+      "description": "제공된 취약점 제목",
+      "example": "미제공 시 생략"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].product_status.known_affected[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "검토된 제품 영향 근거와 대응조치가 있는 제품",
+      "example": "affected"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].product_status.known_not_affected[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "검토된 비영향 또는 완전한 구조적 반증",
+      "example": "not_affected"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].product_status.fixed[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "CVE 수정 매핑과 현재 실행 빌드 확인",
+      "example": "fixed"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].product_status.under_investigation[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "근거 부족·조건 미확인·근거 충돌",
+      "example": "under_investigation"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].notes[].category",
+      "type": "enum",
+      "required": "필수",
+      "description": "설명 항목의 분류",
+      "example": "description / details"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].notes[].title",
+      "type": "string",
+      "required": "필수",
+      "description": "설명 제목",
+      "example": "자산 또는 판정 추적"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].notes[].text",
+      "type": "string",
+      "required": "필수",
+      "description": "판정 사유·범위·질문과 증거 추적",
+      "example": "원문 또는 JSON 설명"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].flags[].label",
+      "type": "enum",
+      "required": "조건부",
+      "description": "검토된 비영향 사유. 알 수 없으면 생성하지 않음",
+      "example": "vulnerable_code_not_in_execute_path"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].flags[].product_ids[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "이 비영향 사유가 적용되는 제품",
+      "example": "known_not_affected 제품"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].threats[].category",
+      "type": "enum",
+      "required": "조건부",
+      "description": "영향 또는 위협의 유형",
+      "example": "impact"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].threats[].details",
+      "type": "string",
+      "required": "조건부",
+      "description": "검토된 영향 설명",
+      "example": "비영향의 상세 설명 포함"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].threats[].product_ids[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "영향 설명의 제품 범위",
+      "example": "조합 또는 제품 ID"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].remediations[].category",
+      "type": "enum",
+      "required": "조건부",
+      "description": "대응조치 유형",
+      "example": "mitigation / vendor_fix"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].remediations[].details",
+      "type": "string",
+      "required": "조건부",
+      "description": "검토되거나 제공된 대응조치",
+      "example": "검토된 조치 문장"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].remediations[].product_ids[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "대응조치의 적용 제품",
+      "example": "조합 또는 제품 ID"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].remediations[].url",
+      "type": "URI",
+      "required": "선택",
+      "description": "제공된 패치·대응조치 URL",
+      "example": "미제공 시 생략"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].scores[].cvss_v3",
+      "type": "object",
+      "required": "선택",
+      "description": "제공된 표준 CVSS 3.0/3.1 객체. v2는 cvss_v2 사용",
+      "example": "version / vectorString / baseScore / baseSeverity"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].scores[].products[]",
+      "type": "product_id",
+      "required": "조건부",
+      "description": "점수의 적용 제품",
+      "example": "조합 또는 제품 ID"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].references[].category",
+      "type": "enum",
+      "required": "선택",
+      "description": "참조 유형",
+      "example": "external / self"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].references[].summary",
+      "type": "string",
+      "required": "선택",
+      "description": "참조 자료 설명",
+      "example": "공급사 권고문"
+    },
+    {
+      "group": "CSAF 표준",
+      "path": "vulnerabilities[].references[].url",
+      "type": "URI",
+      "required": "선택",
+      "description": "제공된 참조 URL",
+      "example": "미제공 시 생략"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis",
+      "type": "object",
+      "required": "필수",
+      "description": "운영 근거 기반 판정의 프로젝트 확장",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.schema_version",
+      "type": "string",
+      "required": "필수",
+      "description": "분석 확장 계약 버전",
+      "example": "\"2.0\""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.method",
+      "type": "string",
+      "required": "필수",
+      "description": "공식 상태의 판정 방식",
+      "example": "\"operational_evidence\""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.source_code_available",
+      "type": "boolean | null",
+      "required": "필수",
+      "description": "모든 제품에서 같으면 해당 값, 서로 다르거나 미확인이면 null. 정보용",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation",
+      "type": "object",
+      "required": "필수",
+      "description": "보조 의미 추정. 공식 VEX 상태를 직접 결정하지 않음",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.status",
+      "type": "string",
+      "required": "필수",
+      "description": "보조 추정 분류",
+      "example": "likely_affected / likely_not_affected / likely_mitigated / likely_cannot_determine"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.rationale",
+      "type": "string",
+      "required": "필수",
+      "description": "추정 이유와 미확인 사항",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.evidence",
+      "type": "array",
+      "required": "필수",
+      "description": "의미 추정의 근거 신호",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.evidence[].signal",
+      "type": "string",
+      "required": "필수",
+      "description": "신호 이름",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.evidence[].value",
+      "type": "any",
+      "required": "필수",
+      "description": "출력값",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.evidence[].supports",
+      "type": "string",
+      "required": "필수",
+      "description": "지지하는 추정",
+      "example": "likely_affected / likely_not_affected / likely_mitigated / likely_cannot_determine"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.semantic_estimation.evidence[].source",
+      "type": "string",
+      "required": "필수",
+      "description": "해당 신호의 출처",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses",
+      "type": "array",
+      "required": "필수",
+      "description": "제품별 독립 판정·질문·근거 추적",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].product_id",
+      "type": "string",
+      "required": "필수",
+      "description": "product_tree에 정의된 제품 또는 관계 조합 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].source_code_available",
+      "type": "boolean | null",
+      "required": "필수",
+      "description": "소스코드 가용성 참고 정보. null은 미확인. 상태 결정의 필수 전제가 아님",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope",
+      "type": "object",
+      "required": "필수",
+      "description": "이 판정이 유효한 자산·제품·빌드·설정·모드·시점",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.cve",
+      "type": "string",
+      "required": "선택",
+      "description": "해당 CVE 또는 내부 취약점 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.asset_ref",
+      "type": "string",
+      "required": "필수",
+      "description": "자산 식별자",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.product",
+      "type": "string",
+      "required": "필수",
+      "description": "검토 대상 제품",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.build",
+      "type": "string",
+      "required": "필수",
+      "description": "현재 실행 빌드",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.config_baseline",
+      "type": "string",
+      "required": "필수",
+      "description": "설정 기준선",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.mode",
+      "type": "string",
+      "required": "필수",
+      "description": "운영 모드",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].scope.evaluated_at",
+      "type": "string",
+      "required": "필수",
+      "description": "실제 평가시각",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].formal_status",
+      "type": "string",
+      "required": "필수",
+      "description": "증거 판정기의 공식 VEX 상태",
+      "example": "affected / not_affected / fixed / under_investigation"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].condition_values",
+      "type": "object",
+      "required": "필수",
+      "description": "조건 ID별 참·거짓·미확인",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].condition_definitions",
+      "type": "array",
+      "required": "필수",
+      "description": "조건 ID·predicate·대상·필수성·원문 구절·검토 상태",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].formula",
+      "type": "object | null",
+      "required": "필수",
+      "description": "원문의 AND/OR/NOT 관계와 검토 정보. 관계를 모르면 null",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].formula_value",
+      "type": "string",
+      "required": "필수",
+      "description": "조건 또는 논리식의 3값 평가",
+      "example": "true / false / unknown"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].formula_complete",
+      "type": "boolean",
+      "required": "필수",
+      "description": "대체 경로를 포함한 논리식의 완전성 검토 여부",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].answer_conflicts",
+      "type": "array",
+      "required": "필수",
+      "description": "서로 모순되는 응답을 가진 조건 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan",
+      "type": "object",
+      "required": "필수",
+      "description": "공통 질문 재사용과 CVE별 잔여 특수 질문의 추적",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.plan_id",
+      "type": "string | null",
+      "required": "필수",
+      "description": "조건·질문·원문 버전을 고정한 계획 해시",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers",
+      "type": "array",
+      "required": "필수",
+      "description": "공통 질문에서 전달된 답변",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].question_id",
+      "type": "string",
+      "required": "필수",
+      "description": "CVE별 원래 질문 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].question_text",
+      "type": "string | null",
+      "required": "필수",
+      "description": "질문 문구. 알려지지 않은 질문 ID이면 null",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].target",
+      "type": "string | null",
+      "required": "필수",
+      "description": "질문이 검증하는 구체적 대상",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].condition_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "이 질문이 연결된 원문 조건 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].value",
+      "type": "string",
+      "required": "필수",
+      "description": "운영자 응답",
+      "example": "yes / no / unknown"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].evidence_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "이 응답이 참조한 증거 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.common_answers[].common_question_id",
+      "type": "string | null",
+      "required": "필수",
+      "description": "공통 질문 ID. 특수 질문이면 null",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers",
+      "type": "array",
+      "required": "필수",
+      "description": "CVE별 개별 질문 답변",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].question_id",
+      "type": "string",
+      "required": "필수",
+      "description": "CVE별 원래 질문 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].question_text",
+      "type": "string | null",
+      "required": "필수",
+      "description": "질문 문구. 알려지지 않은 질문 ID이면 null",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].target",
+      "type": "string | null",
+      "required": "필수",
+      "description": "질문이 검증하는 구체적 대상",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].condition_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "이 질문이 연결된 원문 조건 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].value",
+      "type": "string",
+      "required": "필수",
+      "description": "운영자 응답",
+      "example": "yes / no / unknown"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].evidence_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "이 응답이 참조한 증거 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.specific_answers[].common_question_id",
+      "type": "string | null",
+      "required": "필수",
+      "description": "공통 질문 ID. 특수 질문이면 null",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.remaining_condition_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "현재 답변 후에도 논리식 결과를 바꿀 수 있는 미확인 조건",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.next_common_question_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "추가로 물어야 할 공통 질문 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].question_plan.next_specific_question_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "추가로 물어야 할 CVE별 특수 질문 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].evidence",
+      "type": "object",
+      "required": "필수",
+      "description": "공식 상태의 근거와 검사 이력",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].evidence.accepted_ids",
+      "type": "array",
+      "required": "필수",
+      "description": "최종 상태에 채택한 증거 ID",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].evidence.proofs",
+      "type": "array",
+      "required": "필수",
+      "description": "지지됨·거부됨을 포함한 판정 후보 근거",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].evidence.decision_trace",
+      "type": "array",
+      "required": "필수",
+      "description": "범위·조건·근거·충돌 검사 단계",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].decision_reason",
+      "type": "string",
+      "required": "필수",
+      "description": "현재 공식 상태의 설명",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].missing_evidence",
+      "type": "array",
+      "required": "필수",
+      "description": "판정을 위해 추가로 필요한 근거",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation",
+      "type": "object",
+      "required": "필수",
+      "description": "보조 의미 추정. 공식 VEX 상태를 직접 결정하지 않음",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.status",
+      "type": "string",
+      "required": "필수",
+      "description": "보조 추정 분류",
+      "example": "likely_affected / likely_not_affected / likely_mitigated / likely_cannot_determine"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.rationale",
+      "type": "string",
+      "required": "필수",
+      "description": "추정 이유와 미확인 사항",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.evidence",
+      "type": "array",
+      "required": "필수",
+      "description": "의미 추정의 근거 신호",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.evidence[].signal",
+      "type": "string",
+      "required": "필수",
+      "description": "신호 이름",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.evidence[].value",
+      "type": "any",
+      "required": "필수",
+      "description": "출력값",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.evidence[].supports",
+      "type": "string",
+      "required": "필수",
+      "description": "지지하는 추정",
+      "example": "likely_affected / likely_not_affected / likely_mitigated / likely_cannot_determine"
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].semantic_estimation.evidence[].source",
+      "type": "string",
+      "required": "필수",
+      "description": "해당 신호의 출처",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].epss",
+      "type": "string",
+      "required": "선택",
+      "description": "제공된 EPSS. 미제공이면 생략; 실제 0은 보존",
+      "example": ""
+    },
+    {
+      "group": "운영 분석 v2",
+      "path": "vulnerabilities[].analysis.product_analyses[].hbom_evidence",
+      "type": "array",
+      "required": "선택",
+      "description": "제공된 보조 HBOM 근거",
+      "example": ""
+    }
+  ]
+}

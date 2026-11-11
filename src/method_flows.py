@@ -14,6 +14,7 @@ STYLE = '''<style>
 .method-flow [data-role="llm"].mf-step{border-top:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 5%,var(--card))}
 .method-flow [data-role="llm"]>.mf-kind,.method-flow .mf-inline-llm{color:var(--accent)}
 .method-flow [data-role="human"]>.mf-kind{color:var(--und)}
+.method-flow .mf-branches{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px;border:1px dashed var(--line);border-radius:9px;padding:18px}
 .method-flow .mf-rail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px}
 .method-flow .mf-rail>.mf-step:not(:last-child)::after{content:'→';position:absolute;right:-27px;top:50%;transform:translateY(-50%);font-size:22px;color:var(--ink3);width:24px;text-align:center}
 .method-flow .mf-down{position:relative;width:1px;height:20px;margin:7px auto;background:var(--ink3)}
@@ -99,48 +100,20 @@ def header(identifier,title,subtitle):
 def identification_flow():
     return header('sbom-cve-flow','How your SBOM becomes a CVE shortlist','Follow the product, version and identity checks. Open a stage below for the technical detail.')+(
         '<div class="mf-entry">'+node('SBOM','Original names, identifiers and versions','data','INPUT')+'</div>'+DOWN
-        +rail(node('L2 · Find product candidates','Original names + dictionary retrieval','code','RULES'),
-              node('L3 · Preserve the version','Source / revision / conflict checks','code','RULES'),
-              node('L4 · Verify the product','Unique dictionary identity + original evidence','code','RULES'))
-        +DOWN+'<div class="mf-gate"><span class="mf-kind">CODE · SHARED EVIDENCE GATES</span>'
+        +rail(node('Parse SBOM','Preserve each component and its source fields','data','PARSING'),
+              node('Orchestrator','Route missing names to P2, version issues to P3, identifier issues to P4','code','CONDITIONAL ROUTING'),
+              node('Hybrid RAG','Shared structured index, BM25 and sparse TF-IDF vector index','data','RETRIEVAL'))+DOWN
+        +'<div class="mf-branches" aria-label="Conditional agent branches">'
+        +node('P2 · Rank product candidates','When the name is missing, ambiguous or unsupported','llm','CONDITIONAL P2')
+        +node('P3 · Classify version evidence','When version evidence is missing, noncanonical or conflicting','llm','CONDITIONAL P3')
+        +node('P4 · Select the identity','When CPE/PURL is missing, unverified or inconsistent','llm','CONDITIONAL P4')
+        +'</div><p class="mf-explanation">Sufficient structured evidence → direct validation. Multiple issues → required agents in order.</p>'
+        +DOWN+'<div class="mf-gate"><span class="mf-kind">DECISION VALIDATOR · SHARED EVIDENCE GATES</span>'
         +'<strong class="mf-title">Require original evidence and a unique identity</strong>'
         +'<span class="mf-sub">Keep competing identities, version conflicts and unsupported claims unresolved.</span></div>'+DOWN
-        +rail(node('Query NVD & CISA','Product-level candidates; version checks remain explicit'),
+        +rail(node('Query NVD & CISA','Verified release CPE / product candidates; explicit version conditions'),
               node('Link CVEs to components','Retain case IDs and all stage checks'),
               node('Continue to VEX review','Candidate matches are not exploitability findings','data','HANDOFF'))
-        +'<div class="mf-foot"><p>Identification uses deterministic rules. Only final VEX explanation writing uses an LLM.</p>'
+        +'<div class="mf-foot"><p>Conditional routing runs only the required P2, P3 and P4 agents. Multiple required agents run in order; P3 changes trigger fresh retrieval and routing. Sufficient structured evidence bypasses agents. Every path passes the decision validator before CVE matching.</p>'
         +'<a href="vex-decision.html#vex-review-flow">CVE → VEX workflow →</a></div></figure>')
 
-
-def vex_flow():
-    source=chain(
-        node('Is the required source supplied?', 'No → under_investigation immediately'),
-        node('Parse multilingual source', 'C/C++ · Python · Java · SQL · JavaScript · Go · R · Ruby', 'code', 'SOURCE AST'),
-        node('Inspect targets & call evidence', 'Tree-sitter syntax candidates; Clang CFG for configured C/C++ builds'))
-    operational=chain(
-        node('Extract supported conditions', 'Pattern matches with original source spans', 'code', 'RULES'),
-        node('Common + specific questions', 'CWE-specific source-linked templates', 'code', 'RULE TEMPLATES'),
-        node('Answers & assessment', 'Operator facts + deterministic evidence gates', 'human', 'USER + RULES'))
-    return header('vex-review-flow','From a candidate to a VEX assessment','Four workflows share one CVE review. Source and operating evidence can be required together.')+(
-        rail(node('CVE cases', 'Component-linked candidates', 'data', 'INPUT'),
-             node('Resolve CWE → Pillars', 'Pinned official hierarchy; keep every path'),
-             node('Read the evidence collection plan', 'Entry-specific methods; final requirements need CVE context'))
-        +'<aside class="mf-side-note"><strong>Unresolved routing → under_investigation.</strong>'
-        +'<span>Automatic routing disabled. The branches below describe retained execution capabilities, not currently assigned CWE routes.</span></aside>'
-        +'<div class="mf-fork-title">Which evidence is required?</div>'
-        +lanes('Yes <small>Source required</small>',source,'No <small>Operator review</small>',operational)
-        +'<div class="mf-explanation"><ol><li><strong>Source only:</strong> supplied source → build / path analysis.</li>'
-        +'<li><strong>Source → operating context:</strong> source analysis → required exposure, authentication or configuration records.</li>'
-        +'<li><strong>Required source missing:</strong> under_investigation; operator reports cannot bypass the requirement.</li>'
-        +'<li><strong>Operating context only:</strong> supported rule questions → operating and installed-build records.</li></ol>'
-        +'<p>Both evidence branches retain the same case ID. A missing required branch or conflicting conclusions keeps the case under investigation. The writer runs after evidence collection; identical evidence is not authored again.</p></div>'
-        +DOWN+'<div class="mf-gate"><span class="mf-kind">CODE · EVIDENCE GATES</span>'
-        +'<strong class="mf-title">Lock status, evidence &amp; scope</strong>'
-        +'<span class="mf-sub">Source-required cases cannot bypass missing source through operator answers.</span></div>'+DOWN
-        +rail(node('Write the explanation', 'After evidence analysis; keep assigned status', 'llm', 'LLM · TUNED'),
-              node('Validate the draft', 'JSON · IDs · citations · repetition'),
-              node('Merge & export', 'Original SBOM + VEX · OpenVEX · CSAF', 'data', 'OUTPUT'))
-        +'<details class="mf-explanation"><summary>What happens when evidence is missing?</summary>'
-        +'<p>Missing required source or unresolved routing produces a code-only under_investigation statement. Source-required cases that also need operating context enter the questionnaire after source analysis. Operating-only cases do not escalate to source review from questionnaire answers. Unknown answers remain unknown; completing a form does not prove exploitability.</p></details>'
-        +'<div class="mf-foot"><p>Code assigns the standard status. LLM output remains a review draft. A rejected explanation does not erase the evidence.</p>'
-        +'<a href="sbom-to-cve.html#sbom-cve-flow">← SBOM → CVE workflow</a></div></figure>')

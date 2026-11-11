@@ -18,13 +18,31 @@ _jobs={}
 
 
 def model_status():
+    from src.identification_agent_flow import configured_mode
+    from src.unified_identification import ARCHITECTURE,RULE_ARCHITECTURE
     available=(ROOT/'data/cpe_dictionary.jsonl').is_file()
-    tasks=[{'task':t,'ready':available,'method':'deterministic_rules','llm_used':False,'active_in_unified':False} for t in ['L2','L3','L4']]
-    return {'model':None,'version':'deterministic-v1','ready':available,'tasks':tasks,
-            'scope':'Rule-based identification; LLM is used only for final VEX writing.',
+    mode=configured_mode();base_ready=False
+    try:
+        adapter=json.loads((ROOT/'models/vex-writer-qwen3-8b-v1/adapter_config.json').read_text(encoding='utf-8'))
+        base=Path(adapter['base_model_name_or_path'])
+        shards=base/'model.safetensors.index.json'
+        needed=set(json.loads(shards.read_text(encoding='utf-8'))['weight_map'].values()) if shards.is_file() else {'model.safetensors'}
+        base_ready=(base/'config.json').is_file() and all((base/name).is_file() for name in needed)
+    except (OSError,KeyError,ValueError):pass
+    ready=available and (base_ready or mode=='rules')
+    tasks=[{'task':t,'ready':ready,'method':'grounded_local_llm' if mode=='agents' else 'deterministic_rules',
+            'llm_enabled':mode=='agents','active_in_unified':mode=='agents','fine_tuned_for_contract':False}
+           for t in ['L2','L3','L4']]
+    return {'model':'Qwen3-8B base' if mode=='agents' else None,
+            'version':ARCHITECTURE if mode=='agents' else RULE_ARCHITECTURE,
+            'identification_mode':mode,'ready':ready,'tasks':tasks,
+            'scope':'Conditional P2/P3/P4 routing with original-evidence guards; question/writer adapters stay separate.',
+            'routing_policy':'item3-conditional-routing-v1','routing_engine':'langgraph.StateGraph',
+            'base_weights_available':base_ready,'legacy_identification_adapters_used':False,
             'local_snapshot_available':available and (ROOT/'data/cpe_index.json').is_file(),
-            'unified':{'default_method':'unified','trained_roles':[],'dictionary_available':available,'independent_accuracy_evaluated':False},
-            'evidence_v3':{'available':available,'llm_review':'disabled'},'llm_policy':'final_vex_writer_only'}
+            'unified':{'default_method':'unified','trained_roles':[],'runtime_roles':['L2','L3','L4'] if mode=='agents' else [],
+                       'dictionary_available':available,'independent_accuracy_evaluated':False},
+            'evidence_v3':{'available':available,'llm_review':mode},'llm_policy':'grounded_identification_questions_and_locked_vex_writer'}
 
 
 def submit(sbom,agent_mode='unified',lookup_mode='local'):
@@ -44,7 +62,7 @@ def submit(sbom,agent_mode='unified',lookup_mode='local'):
         _jobs[job_id]={'id':job_id,'status':'queued','created':time.time(),
             'input_sbom':deepcopy(sbom),
             'progress':{'done':0,'total':len(components),'stage':'queued','component':''},
-            'agent_mode':agent_mode,'lookup_mode':lookup_mode,'model_version':'deterministic-v1'}
+            'agent_mode':agent_mode,'lookup_mode':lookup_mode,'model_version':model_status()['version']}
         STORE.put('job',job_id,_jobs[job_id],7*86400)
     def work():
         with _lock:_jobs[job_id].update(status='running',started=time.time())
@@ -52,7 +70,7 @@ def submit(sbom,agent_mode='unified',lookup_mode='local'):
             with _lock:_jobs[job_id]['progress']={'done':done,'total':total,'stage':stage,'component':component}
         try:
             result=match_candidates(sbom,agent_mode=agent_mode,lookup_mode=lookup_mode,progress=progress)
-            result['model_version']='deterministic-v1'
+            result['model_version']=result['architecture']
             with _lock:_jobs[job_id].update(status='completed',result=result,finished=time.time())
             with _lock:STORE.put('job',job_id,_jobs[job_id],7*86400)
         except Exception as exc:

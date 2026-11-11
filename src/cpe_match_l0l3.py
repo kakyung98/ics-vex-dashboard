@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""L0 + L3 — expanded CPE identity index with precision guards.
+"""L0 + P3 — expanded CPE identity index with precision guards.
 
 L0  Match SBOM components against the full NVD CPE product index
     (data/cpe_index.json, built by tools/build_cpe_index.py), not just the
     42-entry OSS knowledge base. This lifts recall: thousands of products
     instead of 42.
 
-L3  The guards that keep that wider net from turning shared-code CPEs into false
+P3  The guards that keep that wider net from turning shared-code CPEs into false
     positives. A CPE is `cpe:2.3:a:VENDOR:PRODUCT:VERSION`; when vulnerable code
     lives in shared OSS, NVD attaches one CPE per vendor that ships it, so a
     single CVE carries zlib:zlib AND netapp:ontap AND oracle:db AND apple:macos.
@@ -225,7 +225,7 @@ def identify_product(component):
     return None, ("ambiguous (%s %.3f/next %.3f)" % (prod, ratio, runner) if prod else "no candidate")
 
 
-# --- L3 GUARD ----------------------------------------------------------------
+# --- P3 GUARD ----------------------------------------------------------------
 # Product-token allowlist normaliser: an OSS project's own vendor token often
 # equals or embeds the product ("openssl:openssl", "gnu:glibc" via _norm_pkg).
 def _norm(s):

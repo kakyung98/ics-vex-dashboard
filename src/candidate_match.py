@@ -5,6 +5,8 @@ from ics_agent_matcher_full.ics_agent_matcher.matcher import NVD, extract, run
 def match_candidates(sbom, offline=False, nvd=None, agent_mode='unified',lookup_mode=None,progress=None):
     if not isinstance(sbom, dict):
         raise ValueError('SBOM must be a JSON object')
+    from src.project_input_contract import to_analysis_input
+    sbom=to_analysis_input(sbom)
     components = extract(sbom)
     if len(components) > 100:
         raise ValueError('At most 100 components per candidate lookup')
@@ -19,9 +21,10 @@ def match_candidates(sbom, offline=False, nvd=None, agent_mode='unified',lookup_
         else:nvd=NVD(offline=lookup_mode=='none')
     requested_mode=agent_mode
     from src.unified_identification import run_unified
-    result=run_unified(sbom,nvd,progress=progress)
+    result=run_unified(sbom,nvd,progress=progress,mode='rules' if agent_mode=='rules' else None)
     result['requested_agent_mode']=requested_mode
-    result['identity_notice']='Deterministic product/version/identifier checks. Legacy method names alias this rule path; no identification model runs.'
+    result['identity_notice']=('Local P2/P3/P4 agents review supplied evidence; source, dictionary and version checks guard every accepted output. Agent failures remain visible and unresolved.'
+        if result['identification_mode']=='agents' else 'Deterministic product/version/identifier checks; no identification model runs.')
     asset=(sbom.get('metadata') or {}).get('component') or {}
     if sbom.get('bomFormat')=='CycloneDX' and asset.get('cpe'):
         from copy import deepcopy
@@ -33,9 +36,11 @@ def match_candidates(sbom, offline=False, nvd=None, agent_mode='unified',lookup_
         else:
             envelope={'bomFormat':'CycloneDX','components':[asset_input],
                       'metadata':deepcopy(sbom.get('metadata',{})),'properties':deepcopy(sbom.get('properties',[]))}
-            result['asset_analysis']=run_evidence(envelope,nvd)['components'][0]
+            asset_result=run_unified(envelope,nvd,mode=result['identification_mode'],progress=progress)
+            result['asset_analysis']=asset_result['components'][0]
+            result['llm_used']=result['llm_used'] or asset_result['llm_used']
             result['asset_analysis']['analysis_role']='representative_asset'
-            result['asset_analysis']['architecture']='evidence-v3'
+            result['asset_analysis']['architecture']=result['architecture']
     analyzed_rows=list(result['components'])+([result['asset_analysis']] if result.get('asset_analysis') else [])
     if lookup_mode!='none':
         from src.candidate_advisories import retrieve
@@ -48,7 +53,10 @@ def match_candidates(sbom, offline=False, nvd=None, agent_mode='unified',lookup_
                     existing[record['cve_id']].setdefault('advisory_evidence',[]).append(record['evidence'])
                 else:existing[record['cve_id']]=record
             row['cves']=list(existing.values())
-    result['agent_mode']='deterministic'
+    from src.identification_output import split_findings
+    for row in analyzed_rows:
+        row['confirmed_cves'],row['review_candidates']=split_findings(row.get('cves',[]))
+    result['agent_mode']='llm_agents' if result['identification_mode']=='agents' else 'deterministic'
     result['lookup_mode']=lookup_mode
     asset=sbom.get('metadata',{}).get('component',{})
     result['asset']={k:asset[k] for k in ('name','bom-ref','purl','version','type') if k in asset}
@@ -60,7 +68,7 @@ def match_candidates(sbom, offline=False, nvd=None, agent_mode='unified',lookup_
     if any(p.get('name')=='dataset:synthetic-inventory' and str(p.get('value')).lower()=='true' for p in properties):
         result['input_notice']='This input is marked as an advisory-derived synthetic SBOM. Retrieving the same advisory corpus is not an independent model-performance test.'
     if lookup_mode=='local':
-        result['lookup_notice']='The local NVD index does not retain full platform and AND/OR conditions. Retrieved CVEs remain unknown; installed-version applicability is not confirmed.'
+        result['lookup_notice']='Declared SBOM versions and ranges are compared with local product/version conditions. Full platform and AND/OR configuration applicability remains separate.'
     result['summary'] = {
         'components': len(result['components']),
         'validated': sum(c.get('validation', {}).get('status') == 'validated'
@@ -70,10 +78,12 @@ def match_candidates(sbom, offline=False, nvd=None, agent_mode='unified',lookup_
         'errors':sum('error' in c for c in result['components']),
         'optional_ranking_errors':sum((c.get('l2',{}).get('agent') or {}).get('status') in {'unavailable','rejected'} for c in result['components']) if agent_mode=='evidence_llm' else 0,
         'model_stage_errors':sum((c.get(key,{}).get('agent') or {}).get('status') in {'unavailable','rejected'}
-                                 for c in result['components'] for key in ('l2','l3','l4')),
+                                 for c in analyzed_rows for key in ('l2','l3','l4')),
         'advisory_linked':sum(bool(c.get('advisory_evidence')) for c in result['components']),
         'unknown_records':sum(v.get('match_status')=='unknown' for c in result['components'] for v in c.get('cves',[])),
         'matched_records':sum(v.get('match_status')=='match' for c in result['components'] for v in c.get('cves',[])),
+        'confirmed_mapping_records':sum(len(c['confirmed_cves']) for c in result['components']),
+        'review_candidate_records':sum(len(c['review_candidates']) for c in result['components']),
     }
     from src.identification_diagnostics import explain_identification
     return explain_identification(result,sbom)

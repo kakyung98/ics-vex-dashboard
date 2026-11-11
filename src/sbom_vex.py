@@ -74,11 +74,31 @@ def merge(sbom,review,cases):
             record['id']=s['cve'];record['bom-ref']='vex-'+hashlib.sha256((s['cve']+'|'+ref).encode()).hexdigest()[:24]
             record.setdefault('source',{'name':'NVD','url':'https://nvd.nist.gov/vuln/detail/'+s['cve']})
             r=version_rows.get(ref);status=s['status'];just=s.get('justification')
-            if r and s.get('evidence_progress',{}).get('ready_for_authoring',True) and not s.get('branch_evidence',{}).get('source'):
+            scoped = next((e for e in s.get('evidence_decision', {}).get('components', [])
+                           if e['asset_ref'] == ref or position_refs.get(e['asset_ref']) == ref), None)
+            if s.get('evidence_decision'):
+                status = scoped['status'] if scoped else 'under_investigation'
+                just = scoped.get('justification') if scoped else None
+                if scoped and status != 'under_investigation' and scoped.get('binding', {}).get('build') != refs[ref].get('version'):
+                    raw_case = review.get('evidence_reviews', {}).get(s['cve'], {}).get(scoped['asset_ref'], {}).get('case', {})
+                    valid_ids = {e['id'] for e in scoped.get('evidence_validation', []) if e['valid']}
+                    installed = any(e['kind']=='installation_record' and e['id'] in valid_ids for e in raw_case.get('evidence', []))
+                    if installed:
+                        c=refs[ref]
+                        c.setdefault('properties', []).append({'name':'ics-vex:original-version','value':str(c.get('version',''))})
+                        c['version']=scoped['binding']['build']
+                        c['properties'].append({'name':'ics-vex:version-provenance','value':'Scoped reviewed installation record; human declaration'})
+                    else:
+                        status='under_investigation';just=None
+            elif r and s.get('evidence_progress',{}).get('ready_for_authoring',True) and not s.get('branch_evidence',{}).get('source'):
                 if r['state']=='listed_fixed' and r['operator_attested'] and r['operator_evidence']:status='fixed';just=None
                 else:status='under_investigation';just=None
             draft=s.get('document_draft');text=draft.get('impact_statement') if draft else s.get('reason','Evidence incomplete.')
-            if status!=s['status']:text='Component-specific version review: '+str(r.get('state') if r else 'unknown')+'. Operator report requires review.'
+            if scoped:text=(scoped.get('impact_statement') or scoped['reason'])+' Scope: '+json.dumps(scoped.get('binding', {}),ensure_ascii=False)
+            elif s.get('evidence_decision'):text='No current scoped evidence assessment for this component.'
+            elif status!=s['status']:text='Component-specific version review: '+str(r.get('state') if r else 'unknown')+'. Operator report requires review.'
+            if scoped and status != scoped['status']:text+=' Input SBOM build differs; a valid installation record is required before binding this result to its inventory component.'
+            if scoped and scoped.get('action_statement'):text+=' Action: '+scoped['action_statement']
             if case.get('simulation') and 'simulat' not in text.lower():text='Simulated inventory review. '+text
             if r:text+=' Product/version: '+str(r['product_name'])+' / '+str(r['installed_version'])+'.'
             text+=' Draft for review; independent deployment verification has not been performed.'
@@ -88,9 +108,10 @@ def merge(sbom,review,cases):
             props=[p for p in record.get('properties',[]) if not p.get('name','').startswith('ics-vex:')]
             props.extend([{'name':'ics-vex:case-id','value':s['case_id']},
                 {'name':'ics-vex:standard-status','value':status},{'name':'ics-vex:review-required','value':'true'},
-                {'name':'ics-vex:explanation-origin','value':'validated_model_draft' if draft and status==s['status'] else 'component_or_rule_summary'},
+                {'name':'ics-vex:explanation-origin','value':'reviewed_evidence_rule_summary' if scoped else 'validated_model_draft' if draft and status==s['status'] else 'component_or_rule_summary'},
                 {'name':'ics-vex:authoring-status','value':s.get('authoring',{}).get('status','unavailable')}])
-            if draft:props.append({'name':'ics-vex:evidence-refs','value':json.dumps(draft.get('evidence_refs',[]))})
+            if scoped:props.append({'name':'ics-vex:evidence-refs','value':json.dumps(scoped.get('accepted_evidence_ids',[]))})
+            elif draft:props.append({'name':'ics-vex:evidence-refs','value':json.dumps(draft.get('evidence_refs',[]))})
             record['properties']=props;vulnerabilities.append(record)
     out['vulnerabilities']=vulnerabilities
     out.setdefault('properties',[]).append({'name':'ics-vex:review-required','value':'true'})

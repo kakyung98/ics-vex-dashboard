@@ -1,22 +1,21 @@
 # ICS-VEX API server (src/api_server.py) — runtime deps.
-# The matcher, index builder and data tools use only the Python standard library.
+# Includes the data tools' pinned CISA HTML evidence parser.
 fastapi>=0.110
 uvicorn[standard]>=0.29
 pydantic>=2.0
 langgraph>=1.0,<2
 requests>=2.32,<3
+beautifulsoup4==4.14.3
 packaging>=24,<27
 packageurl-python>=0.17.6,<1
 python-debian>=0.1.40,<2
 jsonschema>=4.23,<5
 lm-format-enforcer==0.11.3
-pycparser>=2.22,<4
-llvmlite>=0.45,<0.48
-tree-sitter-language-pack==0.13.0
-
-# VEX-v2 judgment pipeline (tools/vex_judge_v2.py and steps):
-#   z3 = controllability engine; the LLM agent uses a local Ollama (installed separately).
-z3-solver>=4.12
 
 # Safely read the pinned official CWE XML catalog.
 defusedxml>=0.7.1,<1
+
+# Prerequisite path clustering and local CPU semantic embeddings.
+numpy>=1.26,<3
+scikit-learn>=1.5,<2
+sentence-transformers>=3,<7

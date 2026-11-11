@@ -18,6 +18,19 @@ def clean(value):
     if value.lower() in UNKNOWN:return None
     return re.sub(r'^[vV](?=\d)','',value)
 
+
+def declared_interval(value):
+    pieces=re.split(r'\s*,\s*',str(value).strip())
+    result={'lower':None,'lower_inclusive':False,'upper':None,'upper_inclusive':False,'raw':str(value)}
+    if not 1<=len(pieces)<=2:return None
+    for piece in pieces:
+        match=re.fullmatch(r'\s*(<=|>=|<|>)\s*([vV]?\d[0-9A-Za-z.+:~_-]*)\s*',piece)
+        if not match:return None
+        key='lower' if match[1].startswith('>') else 'upper'
+        if result[key] is not None:return None
+        result[key]=clean(match[2]);result[key+'_inclusive']='=' in match[1]
+    return result
+
 def version_info(component,*,synthetic=False,llm_spans=None):
     observations=[];missing=[];invalid=[];purl=purl_parts(component.get('purl'))
     def add(value,source,text,start=0,end=None,kind='exact',operator=None):
@@ -55,26 +68,50 @@ def version_info(component,*,synthetic=False,llm_spans=None):
         add(value,span['source'],text,a,b,'range' if re.match(r'\s*[<>~^]',text[max(0,a-2):a]) else 'exact')
     observations=list({(o['source'],o['span'][0],o['span'][1],o['value']):o for o in observations}.values())
     explicit=[o for o in observations if o['source']!='name' and o['kind']=='exact']
+    # A shorter numeric release line in the name may coexist with a fully
+    # specified installed version. Retain it as a constraint, not a competing
+    # installed value. Explicit fields must still agree with one another.
+    explicit_values={o['value'] for o in explicit}
+    release_lines=[]
+    if len(explicit_values)==1:
+        installed=next(iter(explicit_values))
+        if re.fullmatch(r'\d+(?:\.\d+)*',installed):
+            full=tuple(map(int,installed.split('.')))
+            for o in observations:
+                if o['source']=='name' and o['kind']=='exact' and re.fullmatch(r'\d+(?:\.\d+)*',o['value']):
+                    prefix=tuple(map(int,o['value'].split('.')))
+                    if len(prefix)<len(full) and full[:len(prefix)]==prefix:
+                        o['kind']='release_line';release_lines.append(o)
     named=[o for o in observations if o['source']=='name' and o['kind']=='exact']
     values={o['value'] for o in explicit};all_values={o['value'] for o in explicit+named}
     conflicts=[]
     if len(all_values)>1:conflicts.append('version_sources_disagree')
     if any(o['kind']=='range' for o in observations):missing.append('range_is_not_an_installed_version')
-    normalized=next(iter(values)) if len(values)==1 and not conflicts and not synthetic else None
+    normalized=next(iter(values)) if len(values)==1 and not conflicts else None
     comparison_version=next((o['raw'].strip() for o in explicit if o['source']=='version'),explicit[0]['raw'].strip() if explicit else None) if normalized else None
     status='conflict' if conflicts else 'reported' if normalized else 'provisional' if observations else 'unknown'
     if not normalized:missing.append('installed_version_unconfirmed')
-    if synthetic:missing.append('synthetic_inventory_is_not_deployment_evidence')
     scheme={'pypi':'pep440','npm':'semver','cargo':'semver','golang':'semver','deb':'debian','rpm':'rpm'}.get(purl['type']) if purl else None
+    interval=declared_interval(raw)
+    if interval and not conflicts:
+        status='declared_range'
+        missing=[m for m in missing if m!='installed_version_unconfirmed']
     return {'raw':raw,'normalized':normalized,'status':status,'observations':observations,'conflicts':conflicts,
+            'declared_range':interval if not conflicts else None,
             'comparison_version':comparison_version,
             'provisional_values':sorted({o['value'] for o in named}),'purl':purl,'scheme':scheme or 'unknown',
+            'name_release_line_observations':release_lines,
             'missing_evidence':missing,'rejected_spans':invalid,'deployment_verified':False,
+            'synthetic_inventory':synthetic,'comparison_basis':'declared_SBOM_version',
             'comparison_policy':'No universal ordering is assumed; unsupported schemes remain unknown.'}
 
 def compare_versions(a,b,scheme):
     """Never apply PEP440 or lexical ordering to an unidentified version scheme."""
     if a==b:return 0
+    if scheme in {'unknown','numeric'} and re.fullmatch(r'[vV]?\d+(?:\.\d+)*',a) and re.fullmatch(r'[vV]?\d+(?:\.\d+)*',b):
+        x=tuple(map(int,a.lstrip('vV').split('.')));y=tuple(map(int,b.lstrip('vV').split('.')))
+        width=max(len(x),len(y));x+= (0,)*(width-len(x));y+= (0,)*(width-len(y))
+        return (x>y)-(x<y)
     if scheme=='pep440':
         try:x,y=Version(a),Version(b);return (x>y)-(x<y)
         except InvalidVersion:return None
@@ -144,7 +181,37 @@ def rpm_compare(a,b):
     if left[0]!=right[0]:return (left[0]>right[0])-(left[0]<right[0])
     return cmp_component(left[1],right[1]) or cmp_component(left[2],right[2])
 
-def evaluate_configurations(nodes,vendor,product,version,scheme,part=None):
+def interval_condition(declared,item,fields,scheme):
+    """Whole range contained -> true, disjoint -> false, partial -> unknown."""
+    target={'lower':None,'upper':None,'lower_inclusive':False,'upper_inclusive':False}
+    if fields[5] not in {'*','-'}:
+        target.update(lower=fields[5],upper=fields[5],lower_inclusive=True,upper_inclusive=True)
+    else:
+        for field,side,inclusive in [('versionStartIncluding','lower',True),('versionStartExcluding','lower',False),
+                                     ('versionEndIncluding','upper',True),('versionEndExcluding','upper',False)]:
+            if field in item:target[side]=str(item[field]);target[side+'_inclusive']=inclusive
+    def before(left,right):
+        if left['upper'] is None or right['lower'] is None:return False
+        c=compare_versions(left['upper'],right['lower'],scheme)
+        if c is None:return None
+        return c<0 or (c==0 and not (left['upper_inclusive'] and right['lower_inclusive']))
+    # Empty/contradictory declared intervals are not evidence of non-applicability.
+    if declared['lower'] is not None and declared['upper'] is not None:
+        c=compare_versions(declared['lower'],declared['upper'],scheme)
+        if c is None or c>0 or (c==0 and not (declared['lower_inclusive'] and declared['upper_inclusive'])):return 'unknown'
+    if before(declared,target) or before(target,declared):return 'false'
+    subset=[]
+    for side in ['lower','upper']:
+        if target[side] is None:subset.append(True);continue
+        if declared[side] is None:subset.append(False);continue
+        c=compare_versions(declared[side],target[side],scheme)
+        if c is None:subset.append(False);continue
+        subset.append((c>0 if side=='lower' else c<0) or
+                      (c==0 and (not declared[side+'_inclusive'] or target[side+'_inclusive'])))
+    return 'true' if all(subset) else 'unknown'
+
+
+def evaluate_configurations(nodes,vendor,product,version,scheme,part=None,declared_range=None):
     from ics_agent_matcher_full.ics_agent_matcher.matcher import cpe_parts
     def combine(vs,operator):
         if not vs:return 'unknown'
@@ -157,7 +224,14 @@ def evaluate_configurations(nodes,vendor,product,version,scheme,part=None):
             if not parts or (parts[3],parts[4])!=(vendor,product) or (part and parts[2]!=part):values.append('unknown');continue
             # Non-vulnerable product predicates may be platform requirements, not refutations.
             if not item.get('vulnerable'):values.append('unknown');continue
-            if not version:values.append('unknown');continue
+            if not version and declared_range:
+                values.append(interval_condition(declared_range,item,parts,scheme));continue
+            if not version:
+                # All-release predicates need no invented installed version.
+                # Qualifiers, bounds and separate platform requirements stay unknown.
+                bounds=('versionStartIncluding','versionStartExcluding','versionEndIncluding','versionEndExcluding')
+                unconstrained=(parts[5]=='*' and all(v=='*' for v in parts[6:]) and not any(k in item for k in bounds))
+                values.append('true' if unconstrained else 'unknown');continue
             if parts[5] not in {'*','-'}:
                 d=compare_versions(version,parts[5],scheme)
                 values.append('unknown' if d is None else 'true' if d==0 else 'false');continue

@@ -1,6 +1,6 @@
 """Bind operator version facts to component refs and authoritative product scope."""
 import re
-from src.cve_source_evidence import documents
+from src.cve_evidence import documents
 
 def norm(v):return re.sub(r'[^a-z0-9]+',' ',str(v or '').lower()).strip()
 def version(v):return re.sub(r'^[vV](?=\d)','',str(v or '').strip())
@@ -38,12 +38,17 @@ def validate_facts(assets,facts):
     out={}
     for a in assets:
         f=facts.get(a['ref'],{})
-        if not isinstance(f,dict) or set(f)-{'present','product_name','installed_version','evidence','attested'}:raise ValueError('Invalid component fact fields.')
+        if not isinstance(f,dict) or set(f)-{'present','product_name','installed_version','evidence','attested','execution_verified','sbom_identity_matches','record_available','facts_checked'}:raise ValueError('Invalid component fact fields.')
         if any(not isinstance(f.get(k,''),str) for k in ['product_name','installed_version','evidence']):raise ValueError('Component fact values must be text.')
         v={'present':f.get('present') or 'unknown','product_name':f.get('product_name','').strip(),
-            'installed_version':f.get('installed_version','').strip(),'evidence':f.get('evidence','').strip(),'attested':f.get('attested',False)}
+            'installed_version':f.get('installed_version','').strip(),'evidence':f.get('evidence','').strip(),'attested':f.get('attested',False),
+            'execution_verified':f.get('execution_verified',False)}
+        if type(v['execution_verified']) is not bool:raise ValueError('Active running build confirmation must be boolean.')
         if v['present'] not in {'unknown','yes','no'} or type(v['attested']) is not bool:raise ValueError('Invalid component presence/attestation.')
         if any(not isinstance(v[k],str) or len(v[k])>limit for k,limit in [('product_name',500),('installed_version',160),('evidence',1500)]):raise ValueError('Invalid component fact length/type.')
+        for key in ('sbom_identity_matches','record_available','facts_checked'):
+            v[key]=f.get(key,'unknown')
+            if v[key] not in {'yes','no','unknown'}:raise ValueError('Use yes, no or unknown for '+key)
         out[a['ref']]=v
     return out
 
@@ -85,19 +90,26 @@ def compare_case(case,assets,facts):
                         states.append('listed_fixed');evidence.append({'state':'listed_fixed','source':d['url'],'sha256':d['sha256'],
                             'product':scoped[0]['vendor']+' '+target_family,'quote':text,'method':'exact_explicit_vendor_fix_version'})
             state=next(iter(set(states))) if len(set(states))==1 else 'conflict' if len(set(states))>1 else 'unknown'
+        mapping=[m for m in case.get('mappings',[]) if str(m.get('component_id') or 'asset')==ref]
+        if state=='unknown' and fact.get('sbom_identity_matches')=='yes' and mapping and all(m.get('match_status')=='match' and version(m.get('version',''))==version(fact['installed_version']) for m in mapping):
+            state='listed_affected'
+            evidence.append({'source':'SBOM identification handoff','method':'declared_product_version_condition_match',
+                             'scope':'product/version applicability, not exploitability'})
         records.append({'component_ref':ref,'product_name':fact['product_name'],'installed_version':fact['installed_version'] or None,
             'state':state,'operator_attested':fact['attested'],'operator_evidence':fact['evidence'],'deployment_independently_verified':False,
+            'execution_verified':fact.get('execution_verified',False),
+            'operator_record_reported':fact.get('record_available')=='yes',
             'source_evidence':evidence,'missing_evidence':[] if state.startswith('listed_') else ['Confirmed product/version applicability']})
     active=[r for r in records if r['state']!='not_selected']
     compared=bool(active) and all(r['state'].startswith('listed_') for r in active)
-    decided=compared and all(r['operator_attested'] and r['operator_evidence'] for r in active)
-    return {'components':records,'version_decided':bool(decided),'reported_versions_compared':compared,'source':'pinned_CISA_CSAF',
-        'comparison_policy':'Exact scoped product statuses / explicit fix versions only; unlisted versions or unsupported ordering stay unknown. No lexical version guessing.'}
+    decided=compared and all(r['operator_attested'] and (r['operator_evidence'] or r['operator_record_reported']) for r in active)
+    return {'components':records,'version_decided':bool(decided),'reported_versions_compared':compared,'source':'pinned_vendor_and_SBOM_identification_evidence',
+        'comparison_policy':'Scoped vendor statuses and confirmed declared-SBOM product/version matches; unsupported ordering remains unknown. Reported record availability is not independently inspected record content.'}
 
 def formal_version_status(evaluation):
     active=[r for r in evaluation['components'] if r['state']!='not_selected']
     if not active or not all(r['operator_attested'] and r['operator_evidence'] and r['state'].startswith('listed_') for r in active):return 'under_investigation',None
-    if all(r['state']=='listed_fixed' for r in active):return 'fixed',None
+    if all(r['state']=='listed_fixed' and r.get('execution_verified') is True for r in active):return 'fixed',None
     # A negative VEX justification is not invented from a version status alone.
     # A vulnerable version is applicability evidence, not runtime exploitability proof.
     return 'under_investigation',None

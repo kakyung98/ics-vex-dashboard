@@ -15,7 +15,7 @@ Two defects in the previous matching cost most of the precision:
    CVE that component ever had - so `zlib 1.2.13` returned all of zlib's CVEs.
    Here the version is tested against the NVD affected RANGE
    (data/cve_version_ranges.json). That method is measured:
-   tools/eval_version_match.py scores precision 100.0% / recall 98.3% /
+   Historical version-range diagnostics recorded precision 100.0% / recall 98.3% /
    macro-F1 0.99 over 125 CVEs.
 
 When the version cannot be decided (absent, NOASSERTION, no cached range), the

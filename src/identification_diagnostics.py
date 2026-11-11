@@ -17,13 +17,13 @@ def explain_identification(result, sbom):
         verified=any(c.get('features',{}).get('dictionary_verified_input_cpe') for c in candidates)
         valid=validation.get('status')=='validated'
         stages=[]
-        for key,title in [('l2','L2 · Product retrieval'),('l3','L3 · Installed version'),('l4','L4 · Product identity')]:
+        for key,title in [('l2','P2 · Product retrieval'),('l3','P3 · Installed version'),('l4','P4 · Product identity')]:
             stage=row.get(key) or {};agent=stage.get('agent') or {}
             if key=='l2':
                 observed=stage.get('normalized') or 'No product-name proposal'
                 meaning='A model name proposal expands the search. It is not a verified product identity.' if agent else 'Dictionary retrieval uses this item’s own identifiers and name. A ranked candidate alone is not an accepted identity.'
                 if stage.get('structured_input'):
-                    meaning='Rules preserve the original model identifier and rank dictionary candidates. No model inference or replacement product-name generation occurs.'
+                    meaning='A local LLM ranks only supplied dictionary candidate IDs; original model identifiers and independent identity gates are preserved.' if agent.get('llm_used') else 'Rules preserve the original model identifier and rank dictionary candidates.'
                 action='Compare the original manufacturer, product name and identifiers with the dictionary candidates.'
             elif key=='l3':
                 observed=stage.get('normalized') or 'Installed version unconfirmed'

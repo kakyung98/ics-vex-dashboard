@@ -1,0 +1,469 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:ics-vex:schema:operational-csaf-output:2.0",
+  "title": "ICS-VEX 운영 근거 기반 CSAF 출력 v2.0",
+  "description": "공식 VEX 상태는 검토된 자산 증거로 결정한다. 소스코드 가용성은 상태를 강제 변경하지 않는다.",
+  "allOf": [
+    {
+      "$ref": "https://docs.oasis-open.org/csaf/csaf/v2.0/csaf_json_schema.json"
+    }
+  ],
+  "properties": {
+    "vulnerabilities": {
+      "items": {
+        "required": [
+          "analysis"
+        ],
+        "properties": {
+          "analysis": {
+            "$ref": "#/$defs/Analysis"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Analysis": {
+      "type": "object",
+      "description": "운영 근거 기반 판정의 프로젝트 확장",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "description": "분석 확장 계약 버전",
+          "const": "2.0"
+        },
+        "method": {
+          "type": "string",
+          "description": "공식 상태의 판정 방식",
+          "const": "operational_evidence"
+        },
+        "source_code_available": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "모든 제품에서 같으면 해당 값, 서로 다르거나 미확인이면 null. 정보용"
+        },
+        "semantic_estimation": {
+          "$ref": "#/$defs/SemanticEstimation"
+        },
+        "product_analyses": {
+          "type": "array",
+          "description": "제품별 독립 판정·질문·근거 추적",
+          "items": {
+            "$ref": "#/$defs/ProductAnalysis"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "method",
+        "source_code_available",
+        "semantic_estimation",
+        "product_analyses"
+      ],
+      "additionalProperties": false
+    },
+    "ProductAnalysis": {
+      "type": "object",
+      "description": "하나의 제품 범위에 대한 VEX 판정과 설명",
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "description": "product_tree에 정의된 제품 또는 관계 조합 ID"
+        },
+        "source_code_available": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "소스코드 가용성 참고 정보. null은 미확인. 상태 결정의 필수 전제가 아님"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "formal_status": {
+          "type": "string",
+          "description": "증거 판정기의 공식 VEX 상태",
+          "enum": [
+            "affected",
+            "not_affected",
+            "fixed",
+            "under_investigation"
+          ]
+        },
+        "condition_values": {
+          "type": "object",
+          "description": "조건 ID별 참·거짓·미확인",
+          "additionalProperties": {
+            "type": "string",
+            "description": "조건 또는 논리식의 3값 평가",
+            "enum": [
+              "true",
+              "false",
+              "unknown"
+            ]
+          }
+        },
+        "condition_definitions": {
+          "type": "array",
+          "description": "조건 ID·predicate·대상·필수성·원문 구절·검토 상태",
+          "items": {
+            "type": "object"
+          }
+        },
+        "formula": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "원문의 AND/OR/NOT 관계와 검토 정보. 관계를 모르면 null"
+        },
+        "formula_value": {
+          "type": "string",
+          "description": "조건 또는 논리식의 3값 평가",
+          "enum": [
+            "true",
+            "false",
+            "unknown"
+          ]
+        },
+        "formula_complete": {
+          "type": "boolean",
+          "description": "대체 경로를 포함한 논리식의 완전성 검토 여부"
+        },
+        "answer_conflicts": {
+          "type": "array",
+          "description": "서로 모순되는 응답을 가진 조건 ID",
+          "items": {
+            "type": "string",
+            "description": "서로 모순되는 응답을 가진 조건 ID"
+          }
+        },
+        "question_plan": {
+          "$ref": "#/$defs/QuestionPlan"
+        },
+        "evidence": {
+          "$ref": "#/$defs/Evidence"
+        },
+        "decision_reason": {
+          "type": "string",
+          "description": "현재 공식 상태의 설명"
+        },
+        "missing_evidence": {
+          "type": "array",
+          "description": "판정을 위해 추가로 필요한 근거",
+          "items": {
+            "type": "string",
+            "description": "판정을 위해 추가로 필요한 근거"
+          }
+        },
+        "semantic_estimation": {
+          "$ref": "#/$defs/SemanticEstimation"
+        },
+        "epss": {
+          "type": "string",
+          "description": "제공된 EPSS. 미제공이면 생략; 실제 0은 보존"
+        },
+        "hbom_evidence": {
+          "type": "array",
+          "description": "제공된 보조 HBOM 근거",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "product_id",
+        "source_code_available",
+        "scope",
+        "formal_status",
+        "condition_values",
+        "condition_definitions",
+        "formula",
+        "formula_value",
+        "formula_complete",
+        "answer_conflicts",
+        "question_plan",
+        "evidence",
+        "decision_reason",
+        "missing_evidence",
+        "semantic_estimation"
+      ],
+      "additionalProperties": false
+    },
+    "Scope": {
+      "type": "object",
+      "description": "이 판정이 유효한 자산·제품·빌드·설정·모드·시점",
+      "properties": {
+        "cve": {
+          "type": "string",
+          "description": "해당 CVE 또는 내부 취약점 ID",
+          "minLength": 1
+        },
+        "asset_ref": {
+          "type": "string",
+          "description": "자산 식별자",
+          "minLength": 1
+        },
+        "product": {
+          "type": "string",
+          "description": "검토 대상 제품",
+          "minLength": 1
+        },
+        "build": {
+          "type": "string",
+          "description": "현재 실행 빌드",
+          "minLength": 1
+        },
+        "config_baseline": {
+          "type": "string",
+          "description": "설정 기준선",
+          "minLength": 1
+        },
+        "mode": {
+          "type": "string",
+          "description": "운영 모드",
+          "minLength": 1
+        },
+        "evaluated_at": {
+          "type": "string",
+          "description": "실제 평가시각",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "asset_ref",
+        "product",
+        "build",
+        "config_baseline",
+        "mode",
+        "evaluated_at"
+      ],
+      "additionalProperties": false
+    },
+    "QuestionPlan": {
+      "type": "object",
+      "description": "공통 질문 재사용과 CVE별 잔여 특수 질문의 추적",
+      "properties": {
+        "plan_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "조건·질문·원문 버전을 고정한 계획 해시"
+        },
+        "common_answers": {
+          "type": "array",
+          "description": "공통 질문에서 전달된 답변",
+          "items": {
+            "$ref": "#/$defs/Answer"
+          }
+        },
+        "specific_answers": {
+          "type": "array",
+          "description": "CVE별 개별 질문 답변",
+          "items": {
+            "$ref": "#/$defs/Answer"
+          }
+        },
+        "remaining_condition_ids": {
+          "type": "array",
+          "description": "현재 답변 후에도 논리식 결과를 바꿀 수 있는 미확인 조건",
+          "items": {
+            "type": "string",
+            "description": "현재 답변 후에도 논리식 결과를 바꿀 수 있는 미확인 조건"
+          }
+        },
+        "next_common_question_ids": {
+          "type": "array",
+          "description": "추가로 물어야 할 공통 질문 ID",
+          "items": {
+            "type": "string",
+            "description": "추가로 물어야 할 공통 질문 ID"
+          }
+        },
+        "next_specific_question_ids": {
+          "type": "array",
+          "description": "추가로 물어야 할 CVE별 특수 질문 ID",
+          "items": {
+            "type": "string",
+            "description": "추가로 물어야 할 CVE별 특수 질문 ID"
+          }
+        }
+      },
+      "required": [
+        "plan_id",
+        "common_answers",
+        "specific_answers",
+        "remaining_condition_ids",
+        "next_common_question_ids",
+        "next_specific_question_ids"
+      ],
+      "additionalProperties": false
+    },
+    "Answer": {
+      "type": "object",
+      "description": "질문별 응답 이력. 근거의 채택 여부는 accepted_ids와 판정 추적으로 확인",
+      "properties": {
+        "question_id": {
+          "type": "string",
+          "description": "CVE별 원래 질문 ID"
+        },
+        "question_text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "질문 문구. 알려지지 않은 질문 ID이면 null"
+        },
+        "target": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "질문이 검증하는 구체적 대상"
+        },
+        "condition_ids": {
+          "type": "array",
+          "description": "이 질문이 연결된 원문 조건 ID",
+          "items": {
+            "type": "string",
+            "description": "이 질문이 연결된 원문 조건 ID"
+          }
+        },
+        "value": {
+          "type": "string",
+          "description": "운영자 응답",
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "description": "이 응답이 참조한 증거 ID",
+          "items": {
+            "type": "string",
+            "description": "이 응답이 참조한 증거 ID"
+          }
+        },
+        "common_question_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "공통 질문 ID. 특수 질문이면 null"
+        }
+      },
+      "required": [
+        "question_id",
+        "question_text",
+        "target",
+        "condition_ids",
+        "value",
+        "evidence_ids",
+        "common_question_id"
+      ],
+      "additionalProperties": false
+    },
+    "Evidence": {
+      "type": "object",
+      "description": "공식 상태의 근거와 검사 이력",
+      "properties": {
+        "accepted_ids": {
+          "type": "array",
+          "description": "최종 상태에 채택한 증거 ID",
+          "items": {
+            "type": "string",
+            "description": "최종 상태에 채택한 증거 ID"
+          }
+        },
+        "proofs": {
+          "type": "array",
+          "description": "지지됨·거부됨을 포함한 판정 후보 근거",
+          "items": {
+            "type": "object"
+          }
+        },
+        "decision_trace": {
+          "type": "array",
+          "description": "범위·조건·근거·충돌 검사 단계",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "accepted_ids",
+        "proofs",
+        "decision_trace"
+      ],
+      "additionalProperties": false
+    },
+    "SemanticEstimation": {
+      "type": "object",
+      "description": "보조 의미 추정. 공식 VEX 상태를 직접 결정하지 않음",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "보조 추정 분류",
+          "enum": [
+            "likely_affected",
+            "likely_not_affected",
+            "likely_mitigated",
+            "likely_cannot_determine"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "description": "추정 이유와 미확인 사항"
+        },
+        "evidence": {
+          "type": "array",
+          "description": "의미 추정의 근거 신호",
+          "items": {
+            "type": "object",
+            "description": "보조 신호",
+            "properties": {
+              "signal": {
+                "type": "string",
+                "description": "신호 이름"
+              },
+              "value": {},
+              "supports": {
+                "type": "string",
+                "description": "지지하는 추정",
+                "enum": [
+                  "likely_affected",
+                  "likely_not_affected",
+                  "likely_mitigated",
+                  "likely_cannot_determine"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "description": "해당 신호의 출처"
+              }
+            },
+            "required": [
+              "signal",
+              "value",
+              "supports",
+              "source"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "status",
+        "rationale",
+        "evidence"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

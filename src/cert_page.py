@@ -10,22 +10,28 @@ Two things the page must make legible rather than hide:
   * Item #3 runs for minutes. The Run button starts a job and the page polls
     /api/cert/job/<id>, showing component progress, so a long run looks like work
     rather than a hang.
-  * Item #4's figure depends on the scope. The three scopes are offered as an
-    explicit choice with the circularity disclosure attached to the result, not as
-    one headline number the reader has to take on trust.
+  * Current item #4 uses the source-reviewed pattern workbench. Its independent
+    real-asset precision and controlled execution results are disclosed separately.
 """
 
 CERT_PAGE = """
 <h1 style="margin:0 0 6px">Certification performance metrics</h1>
 <p class="hint" style="margin:0 0 18px">
-Run test item <b>#3 (SBOM-based public vulnerability identification precision)</b> and
-<b>#4 (VEX affected-judgment precision)</b> directly from this page, against the bundled
+Run test item <b>#3 (SBOM-based public vulnerability identification precision)</b>
+directly from this page, against the bundled
 ground truth or a <code>.jsonl</code> you upload in the same schema.
 Scoring calls the <b>same functions</b> the CLI measurement tools do
-(<code>tools/eval_cpe_match_precision.score</code>, <code>tools/eval_vex_precision.score</code>),
+(<code>tools/eval_cpe_match_precision.score</code>),
 so these figures are identical to the measured ones by construction &mdash; and a run on the
 bundled dataset also reports whether it landed on the recorded figure.
 </p>
+
+<div class="card" style="margin-bottom:18px">
+  <h2>#4 · 원문 조건 패턴과 자산 VEX 평가</h2>
+  <p>현재 방법론의 실제 정밀도·정답 커버리지와 별도 합성 실행 평가를 질문 검토 화면에서 확인합니다.
+  독립된 실제 자산 정답이 없는 경우 정밀도와 85% 목표 달성 여부는 미측정입니다.</p>
+  <a href="question-mining.html">공통·특수 질문 검토 및 #4 성능 평가 열기</a>
+</div>
 
 <div id="certItems"></div>
 
