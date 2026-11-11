@@ -22,6 +22,7 @@ PAGES={'index.html':'analyzer','sbom-to-cve.html':'sbom-to-cve','vex-decision.ht
        'vex-method.html':'vex-decision','asset-vex.html':'vex-decision','dataset.html':'dataset',
        'corpus.html':'dataset','collectable.html':'dataset','ics-sbom.html':'ics-sbom',
        'source.html':'source','published-vex.html':'published-vex'}
+PAGES['question-mining.html']='vex-decision'
 BANNER='''<section class="card" id="pages-backend" style="margin-bottom:22px">
 <h2 style="font-size:18px;margin:0 0 8px">Connect local backend</h2>
 <p class="hint" id="pages-backend-status">Public data is available. Connect the local backend for analysis.</p>
@@ -51,23 +52,45 @@ def write_asset(path,text):
 
 def build():
     SITE.mkdir(exist_ok=True);files=[]
+    for name in ('source_available.json', 'verify_results.json', 'verify_coverage.json',
+                 'vex_v2.json', 'cwe_routing_profiles.json'):
+        retired = (SITE / name).resolve()
+        if retired.parent != SITE.resolve():
+            raise ValueError('Retired public asset is outside the site directory.')
+        retired.unlink(missing_ok=True)
     bridge=(ROOT/'src/pages_bridge.js').read_text(encoding='utf-8')
     write_asset(SITE/'pages-bridge.js',bridge);files.append('pages-bridge.js')
     for file,page in PAGES.items():
         html=make_page(page)
         html=html.replace('</head>','<script src="pages-bridge.js"></script></head>')
         html=html.replace(TOPBAR,TOPBAR+BANNER,1)
+        if 'id="pages-backend"' not in html:
+            html=html.replace('<main>','<main>'+BANNER,1)
         assert 'id="pages-backend"' in html and 'Test items #3 / #4' not in html
         write_asset(SITE/file,html);files.append(file)
     # Known public corpus snapshots follow the local store. Preserve the existing
     # SBOM archive index when the original local index was removed during cleanup.
-    exports={'cve_level.json':STORE.cve_level,'source_available.json':STORE.tier_a,
+    exports={'cve_level.json':STORE.cve_level,
              'by_year.json':{'total_cves':sum(STORE.by_year.values()),'by_year':STORE.by_year},
              'advisories.json':STORE.advisories,'advisories_list.json':{'count':len(STORE.advisories_list),'advisories':STORE.advisories_list},
-             'cve_index.json':list(STORE.cve_index.values()),'verify_results.json':STORE.verify,
-             'verify_coverage.json':STORE.verify_coverage}
-    from src.cwe_evidence_policy import catalog
-    exports['cwe_routing_profiles.json']=catalog()
+             'cve_index.json':list(STORE.cve_index.values())}
+    from src.published_vex import collect
+    from src import operational_corpus
+    if operational_corpus.DATABASE.is_file():
+        corpus_summary=operational_corpus.summary()
+        corpus_summary['snapshot_only']=True
+        exports['operational_corpus_summary.json']=corpus_summary
+        exports['operational_corpus_clusters.json']=operational_corpus.clusters()
+        catalogue=[]
+        for offset in range(0,corpus_summary['population'],200):
+            catalogue.extend(operational_corpus.search(offset=offset,limit=200)['rows'])
+        if len({r['cve'] for r in catalogue})!=corpus_summary['population']:raise ValueError('Public corpus export lost CVEs')
+        exports['operational_corpus_cves.json']=catalogue
+    exports['published_vex.json']=collect()
+    from src.published_vex import evidence
+    for aid in sorted({r['advisory'] for r in exports['published_vex.json']['rows']}):
+        (SITE/'published_csaf').mkdir(exist_ok=True)
+        exports['published_csaf/'+aid+'.json']=evidence(aid)
     if STORE.sbom_index.get('assets'):
         sbom_index=json.loads(json.dumps(STORE.sbom_index))
         from src.dataset_paths import public_sbom_directory

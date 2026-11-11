@@ -52,13 +52,27 @@ def source(payload:dict):
             if not origin:raise ValueError('Provide the advisory URL or document identifier')
             record=dict(cve=cve,sources=[dict(id='advisory',text=text,url=origin,text_sha256=hashlib.sha256(text.encode()).hexdigest())])
         else:
-            from .question_mining_api import data
-            record=deepcopy(data()['records'].get(cve))
+            from . import operational_corpus
+            try:catalogued=operational_corpus.detail(cve)
+            except OSError:catalogued=None
+            record=deepcopy(catalogued['record']) if catalogued else None
+            if not record:
+                from .question_mining_api import data
+                record=deepcopy(data()['records'].get(cve))
             if not record:raise ValueError('CVE not available locally. Paste its advisory text and source URL.')
         inferred=infer_record(record)
         mode=payload.get('extraction_mode','source_clauses')
-        if mode not in {'source_clauses','llm'}:raise ValueError('Unknown extraction mode')
+        if mode not in {'source_clauses','llm','cached_model'}:raise ValueError('Unknown extraction mode')
         draft=extract_conditions(record) if mode=='llm' else None
+        if mode=='cached_model':
+            from .operational_corpus import detail
+            stored=detail(cve)
+            if not stored:raise ValueError('No cached source model record for this CVE')
+            raw=stored['draft']
+            conditions=[{**c,'role':'necessary_condition','question':'','yes_means':'true'} for c in raw['conditions'] if c['proposed_necessity']=='explicitly_required']
+            draft=dict(conditions=conditions,formula=None,nonrequirements=raw['nonrequirements'],unknowns=raw['unknowns'],
+                warnings=['Source reading: '+raw['state']+'. Bind targets and review the Boolean formula; candidates are not approved.'],
+                model='Cached local source model; unreviewed proposals',coverage_complete=False,validation_status='pending_review')
         sid=uuid.uuid4().hex
         review_store.put('operational-source',sid,record)
         return dict(source_id=sid,record=record,inference=inferred,structured_draft=draft,

@@ -747,6 +747,8 @@ def build_app():
     app.include_router(question_mining_router)
     from src.operational_workflow_api import router as operational_workflow_router
     app.include_router(operational_workflow_router)
+    from src.operational_corpus_api import router as operational_corpus_router
+    app.include_router(operational_corpus_router)
     from fastapi.middleware.cors import CORSMiddleware
     pages_origins=['https://kakyung98.github.io']
     app.add_middleware(CORSMiddleware,allow_origins=pages_origins,

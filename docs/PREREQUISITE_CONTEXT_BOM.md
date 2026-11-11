@@ -11,6 +11,26 @@ The dashboard keeps identification and operational review in one workspace:
 
 The Context BOM envelope (`ics-vex-context-bom/1`) is a research-defined format. It preserves the original uploaded BOM, its digest, component/CVE mappings, source reviews, signed paths, templates, observations and decisions. SPDX remains intact in the envelope. The separate CycloneDX export is checked against the locally cached official schema. Unreviewed CVEs and other component/build combinations remain under investigation.
 
+## Full 12,418-CVE corpus
+
+The dashboard also has a separate, paginated full-population catalogue. Its SQLite index retains every pinned CVE, including those without conditions, incomplete source reading, identity ambiguity and invalid evidence spans. Search, state/cluster filters, original-source review and streaming NDJSON export cover the entire population. The 500-CVE asset-review basket limit does not limit corpus ingestion or global clustering.
+
+```powershell
+python tools/build_operational_corpus.py --mode semantic
+```
+
+The corpus builder verifies the source-population digest and every source passage. It clusters the available **unreviewed necessary-condition candidates**, using L2-normalized semantic vectors and spherical k-means with candidate K values. It does not invent AND relationships or path completeness. CVEs without eligible conditions remain explicitly unassigned. Sampled silhouette scores, selected K, exception counts and candidate-level Support are recorded. Corpus cluster drafts cannot grant automatic answer reuse or VEX status; reviewed asset formulas remain a separate execution gate. Per-condition embedding caching avoids re-encoding unchanged conditions on subsequent builds.
+
+The interrupted local source-model run can be resumed from its existing packet cache:
+
+```powershell
+python tools/resume_full_corpus.py
+```
+
+This requires the existing pinned source/packet manifests, extraction cache and local model weights. The worker respects the GPU lease, uses two-item batches with out-of-memory splitting, and checkpoints each packet. It periodically publishes source-reading snapshots and rebuilds the corpus after a terminal extraction pass. Creating `results/ics_sentence_conditions_v1/STOP` stops the worker after its current batch. A stopped or failed run is never represented as a complete extraction.
+
+The dashboard shows **indexed population**, **snapshot source-reading completion**, **unreviewed condition candidates**, **cluster coverage** and **live extraction packet progress** separately. GitHub Pages includes the complete CVE list and cluster/summary snapshots for browsing without a backend. Source review, rebuild controls and complete source-linked exports require the local backend. Public snapshots contain no asset observations or runtime session data.
+
 ## Model configuration
 
 Semantic embeddings run on CPU from a local model cache; the default is `BAAI/bge-base-en-v1.5`. Override with `ICS_PREREQUISITE_EMBEDDING_MODEL`. Structured predicate/value/polarity vectors remain an explicitly named alternative. Neither mode embeds product/manufacturer identity. These are research designs, not independently validated clustering thresholds.
