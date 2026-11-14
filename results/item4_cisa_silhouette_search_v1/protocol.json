@@ -1,0 +1,66 @@
+{
+  "schema": "item4-cisa-silhouette-search/1",
+  "population": 12418,
+  "source_sha256": "2181349bb3c29c16d9057c9e616a96acc0bc6d77306c6cdeba567122e0bec217",
+  "advisory_cache_sha256": "d61c155fdf70752ff1750a4016d7c5c96da1248c5d23634dcaa56fd5291186e6",
+  "reference": "Original full-population mixed-source SVD256, frozen",
+  "input_views": [
+    "current_mix",
+    "cisa_scoped",
+    "cisa_context",
+    "cisa_advisory_pool",
+    "balanced_views"
+  ],
+  "representations": [
+    "raw64",
+    "raw128",
+    "raw256",
+    "dae32",
+    "dae64",
+    "neighbor32",
+    "neighbor64"
+  ],
+  "training_labels": [],
+  "llm_used": false,
+  "pretrained_language_model_used": false,
+  "screening_k": [
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "kmeans_init": 3,
+  "kmeans_iterations": 80,
+  "min_cluster": 30,
+  "small_cluster_policy": "Merge small clusters into closest large centroid; retain every point",
+  "screen_query_count": 1000,
+  "confirmation_query_count": 1000,
+  "primary_selection": "Reference silhouette on search queries; full retention; largest share <= .65",
+  "secondary_selection": "Native-space silhouette retained separately; not declared semantic improvement",
+  "hierarchy_max_depth": 6,
+  "cwe_depth_reference": {
+    "max_depth": 6,
+    "longest_path": [
+      "CWE-664",
+      "CWE-669",
+      "CWE-212",
+      "CWE-226",
+      "CWE-1272",
+      "CWE-1239"
+    ],
+    "root_convention": "CWE roots=1; synthetic all-CVE root=0",
+    "version": "5.0",
+    "view": "CWE-1000",
+    "relation": "ChildOf in View 1000",
+    "meaning": "Structural cap only; learned levels are not CWE abstraction labels"
+  },
+  "dae_epochs": 100,
+  "neighbor_epochs": 50,
+  "sources": {
+    "tools\\search_item4_cisa_silhouette.py": "9952701afda17753411164316dcaab9b6d381a4e39bad93b4febd4e6e6b05d1b",
+    "src\\item4_silhouette_search.py": "1a0a9dbcfe4ccf3cb824416fa9eab8fb72fdd286dbc378578d6b9116898f5ddb",
+    "src\\item4_ssl_hierarchy.py": "ccc590c8abfa27cceeb7e0300c0c6c1616938ad8c649ad616a50eccb24fb2040"
+  }
+}

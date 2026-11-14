@@ -1,0 +1,8 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>#4 전역 군집 기반 계층</title>
+<style>body{font:16px system-ui;max-width:1300px;margin:36px auto;padding:0 20px;line-height:1.6}table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:8px}</style>
+<h1>12,418개 전수: 전역 잎 군집 + 프로토타입 계층</h1>
+<p>먼저 전역 군집을 생성하고 그 군집 중심에 Ward 상위 계층을 구성했습니다. 원래 중심 병합 이력은 더 깊을 수 있지만 저장한 모델은 여섯 개 중첩 해상도로 축약했습니다. 첫 전체 루트는 0이며 저장한 부모·자식 계층의 실제 깊이는 최대 6입니다. 해상도 번호는 실제 부모 간선 깊이와 다를 수 있으며, 기존 재귀 분할의 같은 숫자 깊이와 동일한 척도로 해석하지 않습니다. 각 단계가 CWE 의미 수준이라는 뜻은 아닙니다.</p>
+<p>최종 잎 군집을 그대로 유지하므로 평면 단계의 점수를 계층이 독립적으로 재발견했다는 뜻이 아닙니다. 중간 계층의 실제 군집 수와 점수도 모두 저장합니다. 12,418개 CVE는 빠짐없이 배정하며 최종 Silhouette는 12,418개 전체를 질의점과 비교 대상으로 사용합니다.</p>
+<p>입력·표현을 바꾼 native 점수와 고정 참조 점수를 구분합니다. 권고문을 공유하는 CVE의 정보 중복이 native 점수를 높일 수 있습니다. 높은 점수가 곧 운영 질문·악용 가능성·VEX 정확도라는 주장은 하지 않습니다.</p>
+<table><tr><th>선택 기준</th><th>표현</th><th>실제 잎 군집 수</th><th>Native 전수 Silhouette</th><th>Reference 전수 Silhouette</th><th>CVE 수</th></tr><tr><td>best_reference</td><td>current_mix_raw256_seed42</td><td>119</td><td>0.1747</td><td>0.1747</td><td>12418</td></tr><tr><td>best_trained_reference</td><td>current_mix_dae64_seed42</td><td>125</td><td>0.2017</td><td>0.1521</td><td>12418</td></tr><tr><td>best_native</td><td>cisa_advisory_pool_dae32_seed42</td><td>114</td><td>0.4308</td><td>0.0594</td><td>12418</td></tr><tr><td>best_cisa_reference</td><td>cisa_scoped_raw256_seed42</td><td>119</td><td>0.1616</td><td>0.1071</td><td>12418</td></tr></table>
+<p>각 후보 디렉터리에 전수 배정 cve_assignments.jsonl, 깊이별 전수 지표 full_population_metrics.json, 계층 tree.json과 structure.json을 저장합니다. stability_summary.json은 초기값 5회와 표현 고정 재표집 10회의 깊이별 ARI입니다. 표현을 포함한 seed 반복과 표현 고정 재표집을 구분하며, 이 후속 실험은 전처리부터 재표집한 일반화 시험이 아닙니다.</p></html>
