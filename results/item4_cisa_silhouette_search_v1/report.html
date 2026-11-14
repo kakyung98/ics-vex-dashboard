@@ -1,0 +1,38 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>#4 CISA 입력·표현 탐색</title>
+<style>body{font:15px system-ui;max-width:1300px;margin:36px auto;padding:0 20px;line-height:1.6}td,th{border:1px solid #ccc;padding:7px}table{border-collapse:collapse;width:100%}pre{white-space:pre-wrap}</style>
+<h1>12,418개 전수: CISA 입력·자기지도 표현 탐색</h1>
+<p>어려운 CVE·모호한 식별자·낮은 점수를 이유로 제외하지 않습니다. 모든 유효 후보는 12,418개를 배정합니다. 작은 군집은 점을 버리지 않고 가까운 큰 군집에 병합합니다. 재표집은 안정성 평가에서만 사용합니다.</p>
+<p>현재 혼합 입력, CISA CVE별 설명, CISA 공유 맥락 추가, 권고문 임베딩의 CVE별 평균, 두 입력의 균형 결합을 비교합니다. raw는 자기지도학습 없는 기준선, dae는 Denoising Autoencoder, neighbor는 특성 이웃을 양성 쌍으로 삼는 대조 자기지도학습입니다. LLM·사전학습 언어모델·CWE 정답 라벨은 쓰지 않습니다.</p>
+<p>권고문 공유 맥락과 문서 임베딩은 여러 CVE에 반복될 수 있습니다. 높은 native Silhouette가 문서·제품 공유를 반영할 수 있으므로 공통 참조 점수와 함께 해석해야 합니다. 공유 맥락을 CVE별 악용 전제조건으로 주장하지 않습니다.</p>
+<p>GPU 평면 K-means는 1차 탐색입니다. 선택 후보는 최대 깊이 6의 실제 계층으로 다시 평가합니다. 비교 깊이는 사전에 6으로 고정하며 모든 깊이의 결과를 저장합니다. 탐색·확인 질의점은 각각 1,000개로 분리했습니다. 모델 자체는 전수 학습이므로 새로운 CVE에 대한 독립 일반화 시험은 아닙니다. 최종 두 후보에는 12,418개 전수 Silhouette도 계산합니다.</p>
+<p><strong>입력·표현 공간을 바꿔 얻은 native 점수와 고정 참조 점수를 혼용하지 않습니다. 분리도·안정성은 운영 질문·악용 가능성·VEX 정확도의 정답 평가가 아닙니다.</strong></p>
+<h2>best_reference</h2><pre>{
+  &quot;representation&quot;: &quot;balanced_views_raw128_seed42&quot;,
+  &quot;method&quot;: &quot;ward&quot;,
+  &quot;depth6&quot;: {
+    &quot;depth&quot;: 6,
+    &quot;clusters&quot;: 146,
+    &quot;population&quot;: 12418,
+    &quot;query_population&quot;: 12418,
+    &quot;min_cluster_size&quot;: 30,
+    &quot;max_cluster_size&quot;: 691,
+    &quot;largest_cluster_share&quot;: 0.05564503140602351,
+    &quot;native_cosine_silhouette&quot;: 0.1295815624555039,
+    &quot;reference_cosine_silhouette&quot;: 0.11045078091640227
+  }
+}</pre><h2>best_native</h2><pre>{
+  &quot;representation&quot;: &quot;cisa_advisory_pool_dae32_seed42&quot;,
+  &quot;method&quot;: &quot;ward&quot;,
+  &quot;depth6&quot;: {
+    &quot;depth&quot;: 6,
+    &quot;clusters&quot;: 153,
+    &quot;population&quot;: 12418,
+    &quot;query_population&quot;: 12418,
+    &quot;min_cluster_size&quot;: 30,
+    &quot;max_cluster_size&quot;: 367,
+    &quot;largest_cluster_share&quot;: 0.029553873409566757,
+    &quot;native_cosine_silhouette&quot;: 0.37579553781733577,
+    &quot;reference_cosine_silhouette&quot;: 0.015011301856248554
+  }
+}</pre><p><strong>Execution scope:</strong> This run completed screening and recursive hierarchy evaluation (search_complete). Additional stability for these two recursive winners was not run; the selected global-leaf prototype candidates were validated separately in item4_prototype_hierarchy_v1 and item4_cisa_lowrank_v1. Balanced raw prefixes below 256 dimensions use only the first mixed-source view; do not interpret them as two-view fusion. Corrected balanced raw controls are in item4_balanced_prefix_correction_v1.</p><table><tr><th>표현</th><th>요청 K</th><th>실제 군집</th><th>Native(탐색)</th><th>Reference(탐색)</th><th>CVE 수</th></tr><tr><td>current_mix_raw256_seed42</td><td>128</td><td>119</td><td>0.1825</td><td>0.1825</td><td>12418</td></tr><tr><td>current_mix_raw128_seed42</td><td>128</td><td>121</td><td>0.2292</td><td>0.1772</td><td>12418</td></tr><tr><td>balanced_views_raw128_seed42</td><td>128</td><td>121</td><td>0.2292</td><td>0.1772</td><td>12418</td></tr><tr><td>current_mix_dae64_seed42</td><td>128</td><td>125</td><td>0.2173</td><td>0.1599</td><td>12418</td></tr><tr><td>current_mix_dae32_seed42</td><td>128</td><td>126</td><td>0.2382</td><td>0.1511</td><td>12418</td></tr><tr><td>current_mix_raw64_seed42</td><td>128</td><td>124</td><td>0.2367</td><td>0.1445</td><td>12418</td></tr><tr><td>balanced_views_raw64_seed42</td><td>128</td><td>124</td><td>0.2367</td><td>0.1445</td><td>12418</td></tr><tr><td>current_mix_neighbor64_seed42</td><td>128</td><td>126</td><td>0.2240</td><td>0.1352</td><td>12418</td></tr><tr><td>cisa_scoped_raw256_seed42</td><td>128</td><td>119</td><td>0.1724</td><td>0.1192</td><td>12418</td></tr><tr><td>current_mix_neighbor32_seed42</td><td>128</td><td>126</td><td>0.2312</td><td>0.1168</td><td>12418</td></tr><tr><td>cisa_scoped_raw128_seed42</td><td>128</td><td>121</td><td>0.2145</td><td>0.1161</td><td>12418</td></tr><tr><td>cisa_scoped_dae64_seed42</td><td>128</td><td>126</td><td>0.2117</td><td>0.1076</td><td>12418</td></tr><tr><td>cisa_scoped_dae32_seed42</td><td>128</td><td>127</td><td>0.2310</td><td>0.1028</td><td>12418</td></tr><tr><td>cisa_scoped_neighbor64_seed42</td><td>128</td><td>128</td><td>0.2253</td><td>0.0941</td><td>12418</td></tr><tr><td>balanced_views_raw256_seed42</td><td>128</td><td>117</td><td>0.2258</td><td>0.0917</td><td>12418</td></tr><tr><td>balanced_views_dae64_seed42</td><td>128</td><td>124</td><td>0.2600</td><td>0.0891</td><td>12418</td></tr><tr><td>balanced_views_dae32_seed42</td><td>128</td><td>127</td><td>0.2628</td><td>0.0869</td><td>12418</td></tr><tr><td>cisa_scoped_raw64_seed42</td><td>128</td><td>126</td><td>0.2333</td><td>0.0829</td><td>12418</td></tr><tr><td>cisa_scoped_neighbor32_seed42</td><td>128</td><td>127</td><td>0.2339</td><td>0.0785</td><td>12418</td></tr><tr><td>cisa_advisory_pool_dae32_seed42</td><td>128</td><td>114</td><td>0.4359</td><td>0.0681</td><td>12418</td></tr><tr><td>balanced_views_neighbor64_seed42</td><td>128</td><td>128</td><td>0.2489</td><td>0.0668</td><td>12418</td></tr><tr><td>balanced_views_neighbor32_seed42</td><td>128</td><td>125</td><td>0.2540</td><td>0.0656</td><td>12418</td></tr><tr><td>cisa_advisory_pool_raw128_seed42</td><td>64</td><td>63</td><td>0.3337</td><td>0.0613</td><td>12418</td></tr><tr><td>cisa_advisory_pool_raw256_seed42</td><td>8</td><td>8</td><td>0.2311</td><td>0.0526</td><td>12418</td></tr><tr><td>cisa_advisory_pool_dae64_seed42</td><td>8</td><td>8</td><td>0.2592</td><td>0.0524</td><td>12418</td></tr><tr><td>cisa_advisory_pool_raw64_seed42</td><td>64</td><td>63</td><td>0.3665</td><td>0.0521</td><td>12418</td></tr><tr><td>cisa_context_dae64_seed42</td><td>8</td><td>8</td><td>0.1815</td><td>0.0516</td><td>12418</td></tr><tr><td>cisa_context_dae32_seed42</td><td>4</td><td>4</td><td>0.2592</td><td>0.0449</td><td>12418</td></tr><tr><td>cisa_advisory_pool_neighbor32_seed42</td><td>128</td><td>125</td><td>0.4101</td><td>0.0374</td><td>12418</td></tr><tr><td>cisa_advisory_pool_neighbor64_seed42</td><td>4</td><td>4</td><td>0.1315</td><td>0.0373</td><td>12418</td></tr><tr><td>cisa_context_raw128_seed42</td><td>64</td><td>63</td><td>0.3246</td><td>0.0252</td><td>12418</td></tr><tr><td>cisa_context_raw64_seed42</td><td>32</td><td>32</td><td>0.3453</td><td>0.0240</td><td>12418</td></tr><tr><td>cisa_context_raw256_seed42</td><td>64</td><td>61</td><td>0.2696</td><td>0.0207</td><td>12418</td></tr><tr><td>cisa_context_neighbor32_seed42</td><td>128</td><td>126</td><td>0.2805</td><td>0.0154</td><td>12418</td></tr><tr><td>cisa_context_neighbor64_seed42</td><td>4</td><td>4</td><td>0.0551</td><td>-0.0012</td><td>12418</td></tr></table>
+<p>전체 탐색값은 screening_results.jsonl, 계층 결과는 hierarchy_results.json, 최종 전수 배정은 final/*/cve_assignments.jsonl, 반복·재표집은 selected_stability.json을 확인합니다.</p></html>

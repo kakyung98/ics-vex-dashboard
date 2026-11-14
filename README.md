@@ -7,6 +7,63 @@ Updated **2026-11-06 (KST)**. Retained experiments are not current independent a
 analysis, condition/function extraction, operational questions and answer
 assessment use deterministic rules. Only the final VEX explanation uses an LLM.
 
+
+## #4 최신 실험 결과 — 2026-11-15
+
+
+**12,418개 CVE 전체**를 CISA 권고문 기반 이웃 대조학습으로 임베딩하고, GPU K-means와 잎 중심의 Ward 병합으로 **126개 잎 군집·최대 깊이 6**의 계층을 구성했습니다. 전수 native Silhouette는 **0.4474**, 공통 참조 Silhouette는 **0.0256**, seed 반복 ARI는 **0.6876**, 표현 고정 재표집 ARI는 **0.7527**입니다. 별도 출처 분리·재학습한 자기지도 쌍 판별 시험은 Accuracy **0.7784**, Precision **0.7143**, Recall **0.9281**, F1 **0.8073**이며 취약점 유형 정확도와 구분합니다. 상세 조건과 한계는 아래 #4 절과 실험 문서에 기록했습니다.
+
+| 자료 | 프로젝트 내 위치 / 바로가기 |
+| --- | --- |
+| 군집화 실험 결과 폴더 | `results/item4_cisa_lowrank_v1/` |
+| 전수 군집 CSV·평가 자료 폴더 안내 | [results/item4_cisa_lowrank_v1/export/README.md](results/item4_cisa_lowrank_v1/export/README.md) |
+| 기본 자기지도 CISA 군집 CSV — 12,418행 | [cve_clusters_cisa_self_supervised.csv](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv) |
+| 자기지도 모델 과제 평가 폴더 안내 | [results/item4_ssl_pretext_evaluation_v1/README.md](results/item4_ssl_pretext_evaluation_v1/README.md) |
+| Accuracy·Precision·Recall·F1 원시 결과 | [metrics.json](results/item4_ssl_pretext_evaluation_v1/metrics.json) |
+| #4 전체 실험 방법·비교 결과 | [docs/item4_ssl_hierarchy/README.md](docs/item4_ssl_hierarchy/README.md) |
+
+현재 로컬 프로젝트 경로는 `C:\Users\user\Desktop\ICS-VEX`이며 위 위치는 이 폴더를 기준으로 합니다.
+
+### 실험 방법과 비교 결과
+
+**2026-11-15 현재 완료된 실험 요약**입니다. 이 절은 CVE 텍스트의 표현 학습·군집화 실험을 설명합니다. SBOM·운영자 응답을 군집화 입력으로 사용하지 않았으며, 아래 군집을 이용한 운영 질문 생성·VEX 판단의 정확도는 검증하지 않았습니다.
+
+| 항목 | 실제 수행 내용 |
+| --- | --- |
+| 대상 | 고정된 **12,418개 CVE 전체**, 최종 배정 누락·중복 없음 |
+| 최종 자기지도 CISA 후보 입력 | CVE에 연결된 CISA ICS 권고문 텍스트. 권고문별 TF-IDF/SVD256 벡터를 CVE별로 평균·정규화 |
+| 자기지도 알고리즘 | 무작위 초기화 MLP의 **이웃 기반 대조학습**. 양성 이웃 대칭 InfoNCE + 코사인 관계 보존 MSE, 잠재 차원 16 |
+| 군집화 | 잠재벡터의 GPU K-means로 잎 군집 생성 후, 잎 중심의 Ward 병합으로 최대 깊이 6의 상위 계층 구성 |
+| 최종 군집 수 | 요청 K=128에서 작은 군집을 병합한 **126개 잎 군집**. 10개 고정 또는 보고서 20개 범주 배정 실험이 아님 |
+| 군집 평가 | 전수 native Silhouette **0.4474**, 공통 참조 **0.0256**. seed 5회 ARI **0.6876**, 표현 고정 재표집 10회 ARI **0.7527** |
+| 자기지도 과제 평가 | 출처 분리 후 평가용 별도 재학습: Accuracy **0.7784**, Precision **0.7143**, Recall **0.9281**, F1 **0.8073**. 취약점 유형 정답률과 구분 |
+| 저장 결과 | [전수 군집 CSV](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv), [실험 상세](docs/item4_ssl_hierarchy/README.md), [자기지도 평가](results/item4_ssl_pretext_evaluation_v1/README.md) |
+
+이 실험에서는 LLM·Sentence Transformer·사전학습 언어모델·CWE 정답 라벨을 사용하지 않았습니다. 인코더 학습이 끝난 뒤 표현을 고정해 군집화했습니다. 아래에는 초기 비교부터 최종 후보까지의 결과와 한계를 구분해 기록합니다.
+
+2026-11-14부터 CVE **12,418개**의 출처 텍스트를 대상으로 `TF-IDF/SVD + 재귀 K-means`, `Denoising Autoencoder + 같은 재귀 K-means`, `동일 잠재벡터 + 재귀 Ward 분할`을 비교했습니다.
+
+초기 혼합 입력에는 검증된 CISA CSAF의 CVE별 설명이 **8,926개 CVE**에 포함돼 있었습니다. 세 방법은 같은 혼합 입력에서 학습·분할 방식을 비교했습니다. 위 최종 후보의 권고문 풀링 입력과 구분합니다.
+
+후속으로 `results/item4_cisa_silhouette_search_v1`부터 CISA 중심 입력·자기지도 표현을 반복 탐색했습니다. **모든 전수 후보에 12,418개 CVE를 실제로 배정했으며 제외를 통한 점수 개선은 허용하지 않았습니다.** 탐색용 평면 군집과 최대 깊이 6의 최종 계층 평가를 구분하고, 최종 후보에는 전수 Silhouette와 반복·재표집 ARI를 함께 보고합니다. 자세한 입력·선별·범위 표시 기준은 같은 #4 실험 README에 기록합니다.
+
+최대 깊이는 고정한 CWE v5.0 / CWE-1000 `ChildOf` 그래프의 최장 경로에서 계산한 **6**입니다. 가상 전체 루트는 깊이 0이며, 학습 군집의 단계가 CWE 추상화 수준에 대응한다는 뜻은 아닙니다. 조기 종료한 가지는 이후 깊이에도 유지합니다.
+
+각 깊이에서 native 공간과 공통 참조 공간의 Silhouette를 병기하고, 초기값 반복·표현 고정 재표집·전처리와 학습부터 재실행한 재표집의 ARI를 구분합니다. ARI는 실행 쌍의 공통 CVE를 정렬해 계산합니다. 자세한 설계·파라미터·실행과 재개 방법은 [#4 실험 README](docs/item4_ssl_hierarchy/README.md)에 기록합니다. 현재 실행 상태는 `results/item4_ssl_hierarchy_v1/status.json`을 확인합니다.
+
+기존 고정 조건의 **105개 계층 결과는 완료**됐고 전수 실행의 12,418개 보존을 확인했습니다. 최대 깊이 6의 평균 공통 참조 Silhouette는 기준선 0.0971, 자기지도 K-means 0.0880, 자기지도 Ward 0.0857이었습니다. 자기지도학습의 개선을 확인한 결과는 아니며, 세부 반복·재표집 지표와 후속 CISA 탐색은 #4 README에서 구분합니다.
+
+후속 탐색은 평면 **363개 조건**과 선택 후보의 계층·반복 평가까지 완료했습니다. 전역 잎 군집에 최대 6단계의 프로토타입 상위 계층을 구성한 결과, **자기지도 CISA 후보는 native Silhouette 0.4474, seed ARI 0.6876, 재표집 ARI 0.7527**이었습니다. 자기지도학습 없는 CISA 맥락 SVD16 기준선은 native 0.5866이었습니다. 두 후보의 공통 참조 점수는 각각 0.0256·0.0172이므로 원래 혼합 입력의 거리 기준에서 같은 개선을 의미하지 않습니다. 공통 참조 기준 최고 후보는 0.1918이었습니다. native 공간·군집 수·알고리즘을 구분한 전수 표와 [결과 비교](results/item4_cisa_lowrank_v1/report.html)를 제공합니다.
+
+파일을 다시 읽어 평면 363개 조건의 라벨 배열과 최종 전수 배정 파일 11개 모두 **12,418개 CVE 포함, 중복·누락 없음**을 확인했습니다. 수정한 두 입력 결합 기준선과 해상도 단계·실제 부모 간선 깊이의 차이도 #4 README에 기록했습니다.
+
+ARI 0.6876은 전수 자료의 seed 5회 결과를 비교한 10쌍 평균, 0.7527은 표현을 고정한 약 80% 그룹 재표집 10회의 45쌍 평균입니다. 최종 잎 군집의 안정성 지표이며 정답률이나 계층 전체 평균이 아닙니다. [기본 자기지도 CISA 군집 CSV](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv)와 [후보별 CSV·평가 자료](results/item4_cisa_lowrank_v1/export/README.md)를 저장했습니다. 후보별 군집 CSV 네 개는 각각 고유 CVE 12,418개를 모두 포함합니다.
+
+자기지도 모델의 과제 평가도 별도로 수행했습니다. CISA 출처를 분리하고 전처리·인코더를 학습 자료만으로 재학습한 시험에서 이웃 쌍 판별 **Accuracy 0.7784, Precision 0.7143, Recall 0.9281, F1 0.8073**이었습니다. 학습 전 인코더 F1 0.7283보다 높지만 원본 SVD 기준선 0.8293보다 낮았습니다. 입력 이웃을 정답으로 만든 자기지도 과제 성능이며 취약점 유형 정확도가 아닙니다. [자기지도 과제 평가 방법·결과](results/item4_ssl_pretext_evaluation_v1/README.md)에 분할·기준선·한계를 명시했습니다. 기존 12,418개 전수 군집은 유지했습니다.
+
+이 실험은 군집의 분리도·안정성과 자기지도 과제를 평가하며 공인시험 #4의 Affected 정밀도, 운영 질문 호환성, 악용 가능성 또는 VEX 정확도 검증을 대신하지 않습니다.
+
+
 ## Run
 
 ```powershell

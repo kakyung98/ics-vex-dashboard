@@ -1,0 +1,39 @@
+{
+  "population": 12418,
+  "encoded_population": 12418,
+  "split": {
+    "cve_counts": [
+      8692,
+      1863,
+      1863
+    ],
+    "source_components": 3351,
+    "largest_component": 4081,
+    "advisory_overlap": 0,
+    "exact_document_overlap": 0,
+    "exact_projected_input_overlap": 0,
+    "split_refinement_rounds": 1
+  },
+  "unique_input_counts": [
+    1815,
+    1053,
+    1057
+  ],
+  "seed": 42,
+  "epochs": 50,
+  "latent": 16,
+  "target": "Within-split original-input nearest five = positive; non-neighbor random or ranks 6..50 = negative",
+  "augmentation": "Independent 10% feature masks for left/right; one fixed evaluation draw per split",
+  "evaluation_unit": "Directed pairs of unique pooled advisory vectors, not independent CVEs; repeated anchors and duplicated positive pairs across strata are dependent",
+  "fitting": "TF-IDF/SVD and encoder fitted on training sources only; evaluation-only retraining, original production clustering unchanged",
+  "limitation": "Heuristic neighbor targets; raw-input baseline favored by target construction; no semantic vulnerability-class accuracy or VEX validation",
+  "original_full_population_clustering": "All 12,418 assignments retained; this split only evaluates representation learning",
+  "device": "NVIDIA GeForce RTX 4070 Ti SUPER",
+  "sources": {
+    "results\\item4_cisa_silhouette_search_v1\\cve_advisory_links.jsonl": "95dbbf1a6d19eb7458bd6410a2ee58e3f18efc2f7cc5db16003028aa9f42375f",
+    "results\\item4_cisa_silhouette_search_v1\\advisory_documents.jsonl": "322a4b2cd33afa5476bd7694d2d595045fc9255f547c456bd37372275601e8e1",
+    "tools\\evaluate_item4_ssl_pretext.py": "9aa587c5e0fd2d90b8e6204a9e45b6e23f026086d52bf15fb017b89b00a2e07b",
+    "src\\item4_silhouette_search.py": "1a0a9dbcfe4ccf3cb824416fa9eab8fb72fdd286dbc378578d6b9116898f5ddb",
+    "src\\item4_ssl_hierarchy.py": "ccc590c8abfa27cceeb7e0300c0c6c1616938ad8c649ad616a50eccb24fb2040"
+  }
+}
