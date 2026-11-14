@@ -8,33 +8,53 @@ analysis, condition/function extraction, operational questions and answer
 assessment use deterministic rules. Only the final VEX explanation uses an LLM.
 
 
-## #4 최신 실험 결과 — 2026-11-15
+## #4 최종 선택과 전체 실험 — 2026-11-15
 
 
-**12,418개 CVE 전체**를 CISA 권고문 기반 이웃 대조학습으로 임베딩하고, GPU K-means와 잎 중심의 Ward 병합으로 **126개 잎 군집·최대 깊이 6**의 계층을 구성했습니다. 전수 native Silhouette는 **0.4474**, 공통 참조 Silhouette는 **0.0256**, seed 반복 ARI는 **0.6876**, 표현 고정 재표집 ARI는 **0.7527**입니다. 별도 출처 분리·재학습한 자기지도 쌍 판별 시험은 Accuracy **0.7784**, Precision **0.7143**, Recall **0.9281**, F1 **0.8073**이며 취약점 유형 정확도와 구분합니다. 상세 조건과 한계는 아래 #4 절과 실험 문서에 기록했습니다.
+**최종 선택: CISA 권고문 맥락 텍스트 → TF-IDF → SVD16 → GPU K-means. 군집은 16개, 전수 native cosine Silhouette는 0.5866171296755885입니다.** 대상 **12,418개 CVE 전체**를 배정했습니다. 전수 평가한 최종 잎 분할 후보들의 native Silhouette를 기준으로 선택했으며, 자기지도학습은 사용하지 않았습니다. 공통 참조 Silhouette는 **0.017200194323733996**, seed 5회 ARI는 **0.8479**, 표현 고정 재표집 10회 ARI는 **0.8362**입니다. Ward 상위 계층을 추가해도 최종 16개 배정은 유지합니다.
+
+자기지도 대조학습 후보는 **126개 군집·native Silhouette 0.4474**인 비교 결과로 보존합니다. 별도로 재학습한 자기지도 과제 F1 **0.8073**은 최종 선택한 16개 군집 방법의 성능이 아닙니다. 서로 다른 공간의 native 점수만으로 의미적 정확도가 개선됐다고 주장하지 않습니다. 모든 방법·설정·결과는 [실험 README](docs/item4_ssl_hierarchy/README.md)에 기록했습니다.
+
+### 수행한 방법 전체 요약
+
+| 방법군 / 단계 | 방법론 | 수행 범위와 결과 |
+| --- | --- | --- |
+| 초기 기준선 | 혼합 출처 → TF-IDF/SVD256 → 재귀 K-means | 최대 깊이 6, 마지막 깊이 평균 참조 Silhouette 0.0971 |
+| 초기 자기지도 표현 비교 | 같은 SVD256 → 잡음 복원 DAE64 → 같은 재귀 K-means | 마스킹·Gaussian 잡음에서 MSE 복원. 마지막 깊이 평균 참조 0.0880 |
+| 초기 군집화 알고리즘 비교 | 동일 DAE64 → 재귀 Ward | 마지막 깊이 평균 참조 0.0857. 위 3방법의 seed·표현 고정 및 전체 파이프라인 재표집 합계 **105개 계층 결과** |
+| 1차 입력·표현 탐색 | 입력 5종 × SVD64/128/256·DAE32/64·이웃 대조학습32/64 × K 6종 | **210개 평면 조건**, 선별 표현 5종 × 재귀 K-means/Ward = 10개 계층 비교 |
+| 전역 잎 + 프로토타입 계층 | 전역 GPU K-means → 잎 중심 Ward 병합 | 혼합 SVD256 119개, 혼합 DAE64 125개, CISA 풀링 DAE32 114개, CISA 설명 SVD256 119개 군집. 각 전수·seed 5회·재표집 10회 |
+| 2차 저차원·K 확대 탐색 | 입력 5종 × SVD16/32·DAE16·이웃 대조학습16 × K 6종 + 기존 3표현 K 확대 | **129개 추가 조건**. 승격 후보의 최종 군집 수 164 / 204 / **16** / 126개. 각각 전수·seed 5회·재표집 10회 |
+| 결합 입력 수정 대조군 | 혼합·CISA 맥락의 차원을 절반씩 유지한 SVD16/32/64/128 × K 6종 | **24개 조건**. 단순 prefix가 첫 입력만 남기는 문제를 수정·검증. 최종 선택을 대체하지 않음 |
+| 자기지도 과제 자체 평가 | CISA 권고문 풀링 → 학습 출처만으로 전처리·이웃 대조학습 → 양성/음성 쌍 판별 | CVE 학습/검증/시험 8,692/1,863/1,863. 혼합 시험 F1: 원본 0.8293 / 학습 전 0.7283 / 학습 후 0.8073. 군집 정확도와 구분 |
+
+### 결과 파일
 
 | 자료 | 프로젝트 내 위치 / 바로가기 |
 | --- | --- |
 | 군집화 실험 결과 폴더 | `results/item4_cisa_lowrank_v1/` |
 | 전수 군집 CSV·평가 자료 폴더 안내 | [results/item4_cisa_lowrank_v1/export/README.md](results/item4_cisa_lowrank_v1/export/README.md) |
-| 기본 자기지도 CISA 군집 CSV — 12,418행 | [cve_clusters_cisa_self_supervised.csv](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv) |
+| **최종 선택 16개 군집 CSV — 12,418행** | [cve_clusters_cisa_context_svd16.csv](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_context_svd16.csv) |
+| 비교용 자기지도 126개 군집 CSV — 12,418행 | [cve_clusters_cisa_self_supervised.csv](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv) |
 | 자기지도 모델 과제 평가 폴더 안내 | [results/item4_ssl_pretext_evaluation_v1/README.md](results/item4_ssl_pretext_evaluation_v1/README.md) |
 | Accuracy·Precision·Recall·F1 원시 결과 | [metrics.json](results/item4_ssl_pretext_evaluation_v1/metrics.json) |
 | #4 전체 실험 방법·비교 결과 | [docs/item4_ssl_hierarchy/README.md](docs/item4_ssl_hierarchy/README.md) |
 
 현재 로컬 프로젝트 경로는 `C:\Users\user\Desktop\ICS-VEX`이며 위 위치는 이 폴더를 기준으로 합니다.
 
-### 실험 방법과 비교 결과
+### 상세 비교와 평가
 
 **2026-11-15 현재 완료된 실험 요약**입니다. 이 절은 CVE 텍스트의 표현 학습·군집화 실험을 설명합니다. SBOM·운영자 응답을 군집화 입력으로 사용하지 않았으며, 아래 군집을 이용한 운영 질문 생성·VEX 판단의 정확도는 검증하지 않았습니다.
+
+**최종 채택은 `cisa_context_raw16_seed42`: TF-IDF → SVD16 → GPU K-means, 16개 군집 / native Silhouette 0.5866171296755885 / CVE 12,418개 전수 포함입니다.** 아래 표의 126개 군집은 자기지도 비교 후보입니다. 전체 방법 총괄과 최종 선택의 정확한 실행 설정은 [실험 README](docs/item4_ssl_hierarchy/README.md)에 기록했습니다.
 
 | 항목 | 실제 수행 내용 |
 | --- | --- |
 | 대상 | 고정된 **12,418개 CVE 전체**, 최종 배정 누락·중복 없음 |
-| 최종 자기지도 CISA 후보 입력 | CVE에 연결된 CISA ICS 권고문 텍스트. 권고문별 TF-IDF/SVD256 벡터를 CVE별로 평균·정규화 |
+| 자기지도 비교 후보 입력 | CVE에 연결된 CISA ICS 권고문 텍스트. 권고문별 TF-IDF/SVD256 벡터를 CVE별로 평균·정규화 |
 | 자기지도 알고리즘 | 무작위 초기화 MLP의 **이웃 기반 대조학습**. 양성 이웃 대칭 InfoNCE + 코사인 관계 보존 MSE, 잠재 차원 16 |
 | 군집화 | 잠재벡터의 GPU K-means로 잎 군집 생성 후, 잎 중심의 Ward 병합으로 최대 깊이 6의 상위 계층 구성 |
-| 최종 군집 수 | 요청 K=128에서 작은 군집을 병합한 **126개 잎 군집**. 10개 고정 또는 보고서 20개 범주 배정 실험이 아님 |
+| 자기지도 비교 후보 군집 수 | 요청 K=128에서 작은 군집을 병합한 **126개 잎 군집**. 최종 채택 SVD16 기준선은 **16개 군집** |
 | 군집 평가 | 전수 native Silhouette **0.4474**, 공통 참조 **0.0256**. seed 5회 ARI **0.6876**, 표현 고정 재표집 10회 ARI **0.7527** |
 | 자기지도 과제 평가 | 출처 분리 후 평가용 별도 재학습: Accuracy **0.7784**, Precision **0.7143**, Recall **0.9281**, F1 **0.8073**. 취약점 유형 정답률과 구분 |
 | 저장 결과 | [전수 군집 CSV](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv), [실험 상세](docs/item4_ssl_hierarchy/README.md), [자기지도 평가](results/item4_ssl_pretext_evaluation_v1/README.md) |
@@ -57,7 +77,7 @@ assessment use deterministic rules. Only the final VEX explanation uses an LLM.
 
 파일을 다시 읽어 평면 363개 조건의 라벨 배열과 최종 전수 배정 파일 11개 모두 **12,418개 CVE 포함, 중복·누락 없음**을 확인했습니다. 수정한 두 입력 결합 기준선과 해상도 단계·실제 부모 간선 깊이의 차이도 #4 README에 기록했습니다.
 
-ARI 0.6876은 전수 자료의 seed 5회 결과를 비교한 10쌍 평균, 0.7527은 표현을 고정한 약 80% 그룹 재표집 10회의 45쌍 평균입니다. 최종 잎 군집의 안정성 지표이며 정답률이나 계층 전체 평균이 아닙니다. [기본 자기지도 CISA 군집 CSV](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv)와 [후보별 CSV·평가 자료](results/item4_cisa_lowrank_v1/export/README.md)를 저장했습니다. 후보별 군집 CSV 네 개는 각각 고유 CVE 12,418개를 모두 포함합니다.
+ARI 0.6876은 전수 자료의 seed 5회 결과를 비교한 10쌍 평균, 0.7527은 표현을 고정한 약 80% 그룹 재표집 10회의 45쌍 평균입니다. 최종 잎 군집의 안정성 지표이며 정답률이나 계층 전체 평균이 아닙니다. [비교용 자기지도 CISA 군집 CSV](results/item4_cisa_lowrank_v1/export/cve_clusters_cisa_self_supervised.csv)와 [후보별 CSV·평가 자료](results/item4_cisa_lowrank_v1/export/README.md)를 저장했습니다. 후보별 군집 CSV 네 개는 각각 고유 CVE 12,418개를 모두 포함합니다.
 
 자기지도 모델의 과제 평가도 별도로 수행했습니다. CISA 출처를 분리하고 전처리·인코더를 학습 자료만으로 재학습한 시험에서 이웃 쌍 판별 **Accuracy 0.7784, Precision 0.7143, Recall 0.9281, F1 0.8073**이었습니다. 학습 전 인코더 F1 0.7283보다 높지만 원본 SVD 기준선 0.8293보다 낮았습니다. 입력 이웃을 정답으로 만든 자기지도 과제 성능이며 취약점 유형 정확도가 아닙니다. [자기지도 과제 평가 방법·결과](results/item4_ssl_pretext_evaluation_v1/README.md)에 분할·기준선·한계를 명시했습니다. 기존 12,418개 전수 군집은 유지했습니다.
 

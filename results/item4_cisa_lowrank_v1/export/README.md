@@ -2,12 +2,14 @@
 
 기준일: 2026-11-15 KST. 이미 계산한 결과를 CSV로 내보낸 자료다. 모델을 새로 학습하거나 군집을 변경하지 않았다. **군집 CSV 네 개는 각각 고유 CVE 12,418개를 모두 포함**한다. 첫 줄은 헤더이며 데이터는 12,418행이다.
 
+**최종 선택은 TF-IDF → SVD16 → GPU K-means, 16개 군집, native cosine Silhouette 0.5866171296755885이다.** 해당 CSV는 `cve_clusters_cisa_context_svd16.csv`이다. 자기지도 126개 군집과 F1 0.8073은 비교용 다른 모델의 결과다.
+
 ## 군집 배정 CSV
 
 | 파일 | 내용 | 최종 군집 수 | 데이터 행 |
 | --- | --- | ---: | ---: |
-| [cve_clusters_cisa_self_supervised.csv](cve_clusters_cisa_self_supervised.csv) | 기본 파일. CISA 권고문 풀링 + 이웃 기반 대조 자기지도학습 16차원 | 126 | 12,418 |
-| [cve_clusters_cisa_context_svd16.csv](cve_clusters_cisa_context_svd16.csv) | CISA 맥락 + SVD16. 자기지도학습 없는 기준선 | 16 | 12,418 |
+| [cve_clusters_cisa_self_supervised.csv](cve_clusters_cisa_self_supervised.csv) | 비교용. CISA 권고문 풀링 + 이웃 기반 대조 자기지도학습 16차원 | 126 | 12,418 |
+| [cve_clusters_cisa_context_svd16.csv](cve_clusters_cisa_context_svd16.csv) | **최종 선택: CISA 맥락 → TF-IDF → SVD16 → GPU K-means** | 16 | 12,418 |
 | [cve_clusters_mixed_svd256.csv](cve_clusters_mixed_svd256.csv) | 혼합 입력 + SVD256. 공통 참조 공간 기준 후보 | 164 | 12,418 |
 | [cve_clusters_mixed_dae64.csv](cve_clusters_mixed_dae64.csv) | 혼합 입력 + Denoising Autoencoder 64차원 | 204 | 12,418 |
 
@@ -37,12 +39,12 @@ UTF-8 BOM·쉼표 구분·CRLF 형식이다. 최종 군집 ID, CVE ID 순으로 
 | [evaluation_summary.csv](evaluation_summary.csv) | 네 후보의 전수 Silhouette, 군집 수, 반복·재표집 ARI 요약 |
 | [stability_by_resolution.csv](stability_by_resolution.csv) | 후보별·실험별·해상도별 ARI 평균·표준편차·범위·공통 CVE 수. 48행 |
 | [ari_pairwise.csv](ari_pairwise.csv) | 네 후보의 모든 실행 쌍·해상도별 원시 ARI. 1,320행 |
-| [cluster_summary_cisa_self_supervised.csv](cluster_summary_cisa_self_supervised.csv) | 기본 후보 126개 군집의 CVE 수·깊이·CVE ID 예시. 예시는 사전순이며 대표성 평가가 아님 |
+| [cluster_summary_cisa_self_supervised.csv](cluster_summary_cisa_self_supervised.csv) | 자기지도 비교 후보 126개 군집의 CVE 수·깊이·CVE ID 예시. 예시는 사전순이며 대표성 평가가 아님 |
 | [evaluation_summary.json](evaluation_summary.json) | 네 후보의 전수 지표·선택 조건·계층 구조·안정성 원본 값 |
-| [stability_explanation.json](stability_explanation.json) | 기본 후보의 ARI 정의와 두 실험 조건 |
-| `cisa_self_supervised_ari_pairs.jsonl` | 기본 후보의 원시 실행 쌍 비교 |
-| `cisa_self_supervised_stability_summary.json` | 기본 후보의 원시 안정성 집계 |
-| `cisa_self_supervised_selection.json`, `cisa_self_supervised_structure.json`, `cisa_self_supervised_tree.json` | 기본 후보 선택 조건과 저장 계층 |
+| [stability_explanation.json](stability_explanation.json) | 자기지도 비교 후보의 ARI 정의와 두 실험 조건 |
+| `cisa_self_supervised_ari_pairs.jsonl` | 자기지도 비교 후보의 원시 실행 쌍 비교 |
+| `cisa_self_supervised_stability_summary.json` | 자기지도 비교 후보의 원시 안정성 집계 |
+| `cisa_self_supervised_selection.json`, `cisa_self_supervised_structure.json`, `cisa_self_supervised_tree.json` | 자기지도 비교 후보 선택 조건과 저장 계층 |
 | [verification.json](verification.json), `export_manifest.json` | CSV 재읽기 검증과 파일 해시 |
 
 ## ARI 0.688과 0.753의 의미
@@ -54,11 +56,11 @@ UTF-8 BOM·쉼표 구분·CRLF 형식이다. 최종 군집 ID, CVE ID 순으로 
 | 초기값 반복 | 전처리·자료는 고정. seed 42~46에서 인코더를 재학습하고 군집화도 다시 수행. 매번 CVE 12,418개 전체 사용 | 5 | 10 | 0.6876356500551994 |
 | 표현 고정 재표집 | 전처리·학습된 인코더는 고정. 입력 벡터가 동일한 CVE 그룹의 약 80%를 복원 없이 뽑고 군집화만 다시 수행 | 10 | 45 | 0.7526760201472672 |
 
-재표집 실행 쌍은 **공통으로 포함된 CVE ID를 같은 순서로 정렬**해 비교한다. 기본 후보의 공통 CVE 수는 쌍마다 7,561~8,381개이며 평균 약 8,020.47개였다. 이는 안정성 평가의 교집합 크기이고 최종 전수 CSV의 CVE 수는 여전히 12,418개다. 군집 번호를 수동 대응하지 않는다.
+재표집 실행 쌍은 **공통으로 포함된 CVE ID를 같은 순서로 정렬**해 비교한다. 자기지도 비교 후보의 공통 CVE 수는 쌍마다 7,561~8,381개이며 평균 약 8,020.47개였다. 이는 안정성 평가의 교집합 크기이고 최종 전수 CSV의 CVE 수는 여전히 12,418개다. 군집 번호를 수동 대응하지 않는다.
 
 ARI=1은 번호 순열을 제외하고 같은 분할, 0 부근은 무작위 일치 수준을 뜻하며 음수도 가능하다. 0.688은 68.8% 정답률이 아니다. 두 번째 실험은 표현을 고정했으므로 더 높은 값이 더 정확하다는 뜻도 아니다. 실행 쌍은 서로 자료를 공유하며 표준편차·분위수는 신뢰구간이 아니다. 유형 의미·운영 질문 호환성·악용 가능성·VEX 정확도는 별도로 검증해야 한다.
 
-기본 후보의 전수 native Silhouette는 0.4473861074715556, 공통 참조 점수는 0.025647545640889037이다. native는 해당 후보의 벡터 공간 점수이며 다른 공간의 값과 직접 같은 품질로 해석하지 않는다.
+자기지도 비교 후보의 전수 native Silhouette는 0.4473861074715556, 공통 참조 점수는 0.025647545640889037이다. native는 해당 후보의 벡터 공간 점수이며 다른 공간의 값과 직접 같은 품질로 해석하지 않는다.
 
 상위 [실험 README](../../../docs/item4_ssl_hierarchy/README.md)에서 전체 방법과 비교 이력을 확인할 수 있다.
 
