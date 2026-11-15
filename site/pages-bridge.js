@@ -22,7 +22,8 @@
   const asJson=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   let index;
   let sboms;
-  let corpusIndex;
+  let assetCatalogue;
+  const scenarioShards=new Map();
   async function sbomDocument(path){
     if(!sboms)sboms=net(new URL('sbom_index.json',location.href)).then(r=>r.json());
     const name=decodeURIComponent(path.split('/').pop());
@@ -37,15 +38,25 @@
   async function cves(){if(!index)index=net(new URL('cve_index.json',location.href)).then(r=>r.json());return index}
   function project(r){return {...r,vendor:(r.vendors||[]).slice(0,2).join(', ')}}
   async function snapshot(u){
-    if(u.pathname==='/api/operational-workflow/corpus/summary')return net(new URL('operational_corpus_summary.json',location.href));
-    if(u.pathname==='/api/operational-workflow/corpus/clusters')return net(new URL('operational_corpus_clusters.json',location.href));
-    if(u.pathname==='/api/operational-workflow/corpus/cves'){
-      if(!corpusIndex)corpusIndex=net(new URL('operational_corpus_cves.json',location.href)).then(r=>r.json());
-      const q=(u.searchParams.get('q')||'').toUpperCase(),state=u.searchParams.get('state'),cluster=u.searchParams.get('cluster');
-      const offset=Number(u.searchParams.get('offset')||0),limit=Number(u.searchParams.get('limit')||50);
-      if(!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||limit<1||limit>200)return asJson({detail:'Invalid corpus pagination'},422);
-      const filtered=(await corpusIndex).filter(r=>(!q||r.cve.includes(q))&&(!state||r.state===state)&&(!cluster||r.cluster_ids.includes(cluster)));
-      return asJson({total:filtered.length,offset,limit,rows:filtered.slice(offset,offset+limit)});
+    if(u.pathname.startsWith('/api/asset-vulntology/')){
+      const prefix='/api/asset-vulntology/';
+      const endpoint=u.pathname.slice(prefix.length);
+      if(endpoint==='catalogue')return net(new URL('asset_vulntology/catalogue.json',location.href));
+      if(endpoint==='cves'){
+        if(!assetCatalogue)assetCatalogue=net(new URL('asset_vulntology/catalogue.json',location.href)).then(r=>r.json());
+        const data=await assetCatalogue,asset=u.searchParams.get('asset')||'',q=(u.searchParams.get('q')||'').toLowerCase();
+        const offset=Number(u.searchParams.get('offset')||0),limit=Number(u.searchParams.get('limit')||40);
+        if(!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||limit<1||limit>100||asset&&asset!=='unassigned'&&!data.assets.some(a=>a.asset_id===asset))return asJson({detail:'Invalid asset selection or pagination'},422);
+        const selected=data.cves.filter(r=>(!asset||(asset==='unassigned'?!r.asset_ids.length:r.asset_ids.includes(asset)))&&(!q||(r.cve+' '+r.description+' '+r.product_search).toLowerCase().includes(q)));
+        return asJson({total:selected.length,offset,rows:selected.slice(offset,offset+limit)});
+      }
+      const match=endpoint.match(/^cves\/(CVE-(\d{4})-\d{4,})$/);
+      if(match){
+        if(!scenarioShards.has(match[2]))scenarioShards.set(match[2],net(new URL('asset_vulntology/records_'+match[2]+'.json',location.href)).then(r=>r.ok?r.json():{}));
+        const record=(await scenarioShards.get(match[2]))[match[1]];
+        return record?asJson(record):asJson({detail:'CVE not in the source catalogue'},404);
+      }
+      return asJson({detail:'Connect the local backend to save, reassess or export an operator review.'},503);
     }
     if(files[u.pathname])return net(new URL(files[u.pathname],location.href));
     if(u.pathname.startsWith('/api/advisory/')){
