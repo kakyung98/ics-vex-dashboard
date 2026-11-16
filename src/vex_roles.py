@@ -86,6 +86,9 @@ def decision_packet(case,statement,result):
             'match_status':m.get('match_status'),'deployment_verified':False} for m in case['mappings']],ensure_ascii=False)})
     review=statement.get('operational_review')
     if review:
+        if review.get('operational_context'):
+            facts.append({'id':case_id+':operating-context',
+                          'text':'Scoped operator report, not independently verified: '+json.dumps(review['operational_context'],ensure_ascii=False)})
         for i,qa in enumerate(review['questions_and_answers']):
             if qa.get('deprecated_version_field'):continue
             facts.append({'id':qa['id'],'text':'Operator report (not independently verified): '+qa['question']+' '+__import__('json').dumps(qa['answer'],ensure_ascii=False)})
@@ -104,15 +107,9 @@ def decision_packet(case,statement,result):
     if case['extraction']['usable']:
         for i,c in enumerate(case['condition_candidates'][:4]):
             facts.append({'id':case_id+':quote:'+str(i),'text':'Quoted source condition candidate, not independently verified: '+c['evidence']})
-    if evidence.get('cfg'):
-        cfg=evidence['cfg']
-        facts.append({'id':case_id+':source','text':json.dumps({'engine':cfg['engine'],'scope':cfg['scope'],
-                     'present_targets':len(cfg.get('present_targets',[])),'paths':[p['path'] for p in cfg.get('reachable_paths',[])[:2]],
-                     'unreachable':cfg.get('unreachable',False),'blockers':len(cfg.get('blockers',[]))},ensure_ascii=False)})
-    else:
-        facts.append({'id':case_id+':context','text':json.dumps({'refutations':statement.get('refutations',[]),
-                     'mitigations':statement.get('mitigations',[]),'version_gate':statement.get('identification_gate'),
-                     'CWE_classification_only':True},ensure_ascii=False)})
+    facts.append({'id':case_id+':context','text':json.dumps({'refutations':statement.get('refutations',[]),
+                 'mitigations':statement.get('mitigations',[]),'version_gate':statement.get('identification_gate'),
+                 'CWE_classification_only':True},ensure_ascii=False)})
     return {'vulnerability':case['cve'],'product':case['product'],'scope':str(scope),
             'simulation':case['simulation'],'decision':{'status':statement['status'],'justification':statement.get('justification')},
             'evidence':facts,'missing_evidence':sorted(set(missing))}

@@ -139,9 +139,7 @@ def _dedupe(names):
             if not any(o != n and n in o for o in uniq)]
 
 
-# 서술문에서 함수 이름을 건지는 패턴. CFG 팔(src/cfg_vex.py)이 "무엇을 찾을지"를
-# 여기서 받는다. 이름을 못 찾으면 그 팔은 판정을 유보한다 - 찾을 대상을 모르는 채
-# "없다"고 말하는 것이 바로 거짓 해제의 전형이기 때문이다.
+# Advisory text may name a function; retain it as a quoted condition candidate.
 _FUNC_PAREN = re.compile(r"\b([a-zA-Z_][A-Za-z0-9_]{2,60})\s*\(\s*\)")
 _FUNC_WORD = re.compile(
     r"\b(?:the\s+)?([a-zA-Z_][A-Za-z0-9_]{2,60})\s+"

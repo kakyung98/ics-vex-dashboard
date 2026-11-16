@@ -1,5 +1,5 @@
 """Deterministic source-span extraction, operational templates and answer summaries."""
-from src.cve_source_evidence import catalog
+from src.cve_evidence import catalog
 from src.grounded_role_tasks import weak_conditions
 
 
@@ -51,22 +51,25 @@ def questions(case,sources):
     chosen={'rule_id':selected} if selected else matched[0] if matched else None
     quotes=[e['quote'] for d in matched for e in d.get('evidence',[])]
     refs=[s['id'] for s in usable if any(q in s['text'] for q in quotes)][:2] or [usable[0]['id']]
-    question,kind=TEMPLATES[chosen['rule_id']] if chosen else ('Which interfaces and services are used by the component named in the cited advisory?','discovery')
-    pairs=[('common','Which parties can access the interfaces described in the cited advisory?','network_path'),('specific',question,kind)]
+    question,kind=TEMPLATES[chosen['rule_id']] if chosen else ('Is the service or interface described in the advisory enabled or used on this asset?','discovery')
+    if question.startswith(('Which','What')):
+        question='Have you checked '+question[0].lower()+question[1:]
+    pairs=[('common','Can untrusted users or untrusted inputs reach the interfaces described in the advisory?','network_path'),('specific',question,kind)]
     byid={s['id']:s for s in usable};rows=[]
     for scope,text,topic in pairs:
         rows.append({'scope':scope,'question':'On this asset, '+text[0].lower()+text[1:],
             'purpose':'Record observable operating facts for '+case['cve']+'.',
             'evidence_ids':refs,'evidence':'\n'.join(byid[i]['text'] for i in refs),
             'source_provenance':[byid[i]['source'] for i in refs],
-            'kind':topic,'answer_type':'text' if text.startswith(('Which','What')) else 'yes_no_unknown',
+            'kind':topic,'answer_type':'yes_no_unknown',
             'origin':'rule','rule_id':chosen['rule_id'] if chosen else 'discovery',
             'semantic_review_required':False,'necessity':'not_established','can_refute':False})
     return {'prediction':{'questions':rows},'method':'rule_templates','llm_used':False,'fine_tuned_for_role':False},rows
 
 
 def assessment(questions,version_evaluation):
-    operating=[q for q in questions if q.get('origin')=='rule' and not q.get('deprecated_version_field')]
+    operating=[q for q in questions if q.get('origin') in {'rule','llm','fixed_template'} and not q.get('deprecated_version_field')
+               and q.get('purpose_category') != 'operational_impact']
     recorded=[q for q in operating if q['answer']['value'] not in {'unknown',''} and q['answer']['evidence'].strip()]
     explanation=f'{len(recorded)} operating answers have supporting records. These reports do not establish complete exploitability conditions.'
     pred={'assessment':'likely_cannot_determine','explanation':explanation,'answer_refs':[q['id'] for q in recorded][:4],

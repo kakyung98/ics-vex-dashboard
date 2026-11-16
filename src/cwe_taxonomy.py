@@ -41,3 +41,14 @@ def ancestry(cwe,taxonomy=None):
     return {'cwe':cwe,'name':records.get(cwe,{}).get('name'),'abstraction':records.get(cwe,{}).get('abstraction'),
         'ancestors':sorted(found),'pillars':sorted(pillars),'paths':paths,'errors':sorted(set(errors)),
         'taxonomy_version':taxonomy['version'],'taxonomy_xml_sha256':taxonomy.get('xml_sha256')}
+
+
+@lru_cache(maxsize=1)
+def display_names():
+    taxonomy=load();result={cid:r['name'] for cid,r in taxonomy['records'].items() if r.get('name')}
+    path=ROOT/'data/cwe_taxonomy'/('v'+taxonomy['version'])/'display_names.json'
+    if path.is_file():
+        cached=json.loads(path.read_text(encoding='utf-8'))
+        if cached.get('taxonomy_xml_sha256')!=taxonomy['xml_sha256']:raise ValueError('CWE display-name source differs from pinned taxonomy')
+        result.update({cid:r['name'] for cid,r in cached['records'].items() if r.get('name')})
+    return result

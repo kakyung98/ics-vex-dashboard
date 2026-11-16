@@ -1,0 +1,124 @@
+{
+  "passed": true,
+  "id": "CTX-4ab8248f3c5d88a27f447ff2110be9c4",
+  "source_packet": {
+    "mode": "source_conditioned_simulation",
+    "synthetic": true,
+    "cve": "CVE-2001-1340",
+    "evaluated_at": "2026-11-16T00:00:00+09:00",
+    "spec": {
+      "cve": "CVE-2001-1340",
+      "scenario_id": "scenario:f7d7a48aac7d8e556d7a3cf2",
+      "product": {
+        "key": "CVE-2001-1340:unresolved",
+        "name": "Product scope unresolved",
+        "asset_ids": [],
+        "binding": "unresolved",
+        "advisory_id": null,
+        "source_product_id": null
+      },
+      "source_record_digest": "8fc0ad81626856e136a900ec700863f43a3eb3b59060f6ffe7790c484ea55cf8",
+      "source_semantic_review": "pending",
+      "source": {
+        "id": "nvd:CVE-2001-1340",
+        "url": "https://nvd.nist.gov/vuln/detail/CVE-2001-1340",
+        "text_sha256": "1baf7926135e2c2bba7b07b98bac8dd6cf2301046ca742dfb380f4893f5771bc",
+        "clause": {
+          "source_id": "nvd:CVE-2001-1340",
+          "span": [
+            0,
+            233
+          ],
+          "quote": "Beck GmbH IPC@Chip TelnetD service supports only one connection and does not disconnect a user who does not complete the login process, which allows remote attackers to lock out the administrator account by connecting to the service."
+        }
+      },
+      "conditions": [
+        {
+          "id": "c1",
+          "original_id": "c:501241d7f26bf83db94b",
+          "statement": "remote attackers",
+          "kind": "network_access",
+          "operator_observable": true,
+          "question": "Can the assessed origin reach the source-described affected interface on this product?",
+          "source_ref": {
+            "source_id": "nvd:CVE-2001-1340",
+            "span": [
+              149,
+              165
+            ],
+            "quote": "remote attackers"
+          }
+        }
+      ],
+      "expression": {
+        "condition": "c1"
+      },
+      "simulation_assumptions": {
+        "selected_path_is_complete": true,
+        "selected_product_scope_applies": true,
+        "other_attack_paths_excluded": true,
+        "unobserved_requirements_satisfied": [],
+        "assumptions_verified_for_real_CVE": false
+      }
+    },
+    "observations": [
+      {
+        "condition_id": "c1",
+        "value": "true",
+        "binding": {
+          "cve": "CVE-2001-1340",
+          "asset_ref": "hypothetical-a832946096f4ea8b",
+          "product": "Product scope unresolved",
+          "build": "assumed-affected-synthetic-build",
+          "config_baseline": "cfg-CTX-4ab8248f3c5d88a27f447ff2110be9c4",
+          "mode": "hypothetical-operations",
+          "actor_origin": "hypothetical-assessed-origin"
+        },
+        "observed_at": "2026-11-15T00:00:00+09:00",
+        "valid_until": "2026-12-16T00:00:00+09:00",
+        "evidence_type": "synthetic_operator_record",
+        "source": "simulation://observation/CTX-4ab8248f3c5d88a27f447ff2110be9c4"
+      }
+    ],
+    "binding": {
+      "cve": "CVE-2001-1340",
+      "asset_ref": "hypothetical-a832946096f4ea8b",
+      "product": "Product scope unresolved",
+      "build": "assumed-affected-synthetic-build",
+      "config_baseline": "cfg-CTX-4ab8248f3c5d88a27f447ff2110be9c4",
+      "mode": "hypothetical-operations",
+      "actor_origin": "hypothetical-assessed-origin"
+    }
+  },
+  "live_result": {
+    "simulation_status": "affected",
+    "raw": {
+      "code": "A",
+      "simulation_status": "affected",
+      "llm_used": true,
+      "choice_logits": [
+        23.875,
+        16.375
+      ],
+      "scores_are_calibrated_probabilities": false
+    },
+    "gate": {
+      "simulation_status": "affected",
+      "condition_values": {
+        "c1": "true"
+      },
+      "expression_value": "true",
+      "is_production_VEX": false,
+      "export_allowed": false,
+      "scope": "Selected path under declared counterfactual assumptions; not global/field CVE impact"
+    },
+    "adapter_sha256": "9c399b40d18251de1c893e4ced39349a2c2ba094315e56419fcfa9ec3ccf1c36",
+    "is_production_VEX": false,
+    "export_allowed": false,
+    "source_semantics_verified": false,
+    "real_asset_impact_verified": false,
+    "identification_adapter_restored": true
+  },
+  "sealed_code": "A",
+  "source": "Actual live HTTP model inference; Gold not submitted"
+}

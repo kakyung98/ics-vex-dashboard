@@ -109,8 +109,7 @@ def _encoder():
 
 
 def embed(texts, batch=128):
-    """Masked mean-pool, L2-normalised — the pooling src/vex_infer.py already uses,
-    at the 64-token cap that suits short product names."""
+    """Masked mean-pool and L2-normalise short product names at a 64-token cap."""
     import numpy as np
     import torch
     tok, enc, dev = _encoder()

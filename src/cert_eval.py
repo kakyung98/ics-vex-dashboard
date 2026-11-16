@@ -43,7 +43,7 @@ ITEMS = {
         "name_en": "SBOM -> CVE identification precision",
         "metric": "precision = TP / (TP + FP)",
         "acceptance": 0.80,
-        "sut": "src/cpe_match_ai (L0 NVD CPE index + L3 vendor guard + trained-encoder retrieval)",
+        "sut": "src/cpe_match_ai (L0 NVD CPE index + P3 vendor guard + trained-encoder retrieval)",
         "dataset": {"gt": "data/cpe_match_eval.jsonl"},
         "record_unit": "records ((component, CVE) pairs)",
         "runtime_hint": "about 8 min (14,173 components x the full NVD CPE index)",

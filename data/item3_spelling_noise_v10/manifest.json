@@ -1,0 +1,115 @@
+{
+  "schema": "ics-vex-same-asset-spelling-noise/10",
+  "sources": {
+    "data\\item3_source_conditions_v9\\manifest.json": "5c674a9fa1bf49c96c0f899d651e1a98682599d4609066bb952dc9834814b919",
+    "data\\item3_source_conditions_v9\\dataset.sqlite3": "cfee1f4d6f77562f1a621ae87d1ea8edb521566d04c65546d9c14266bc621ff9",
+    "data\\item3_source_conditions_v9\\gold_conditions.jsonl": "b9db6b68b664914533fd7802a86a9931ca22ccd9e87babc3e25d12fe85bc01b1",
+    "data\\item3_source_conditions_v9\\conditions.jsonl": "b7f4a5b1e7231763ba88472758f8d3db76ef4138023c7e17f82fca777bbfd4ac",
+    "data\\item3_source_conditions_v9\\CVE_split.json": "3cf919c54563ae12ae2be8da176ef957945f4746d686ec617c9b1d653cff7b7a",
+    "data\\item3_source_conditions_v9\\input_contract.json": "27c61a44ae9d2fe6b108a234f9296147a009b177c6e6754c938bef81f7dace4f"
+  },
+  "code": {
+    "tools\\build_item3_spelling_noise_v10.py": "5050ec6bd28529b1fbd4647025b8293b9b154543707c61bab0e227b6ee546fb9",
+    "tools\\build_item3_source_conditions_v9.py": "10369d245628fe18a22b6dbbc283b4e688660193956d31fa11fb22c352a1aaee",
+    "tools\\build_item3_cpe_faults_v6.py": "bf17e2365ec05575a337117300486f169183c510af628c963e01365bd2bdf8b7",
+    "tools\\item3_truth_oracle.py": "a67278404682993ce543512ff53dde5a9071537d660e12691c330fb2284da698"
+  },
+  "artifacts": {
+    "conditions.jsonl": "de496578796ae0a7e5288e2c69fe5743d51f1bab6e9544d292b9eef1ae3e0759",
+    "counts.json": "1d8513b526c85c87bdec1da7a54ac0d08b13fe4afae72f40fb5d5dc4fd274b63",
+    "CVE_split.json": "3cf919c54563ae12ae2be8da176ef957945f4746d686ec617c9b1d653cff7b7a",
+    "dataset.sqlite3": "5ad52a23c6d7732757db893a0fe1755c15ada4bd8f6bd27ba242b83759c0b801",
+    "evaluation.jsonl": "1feb699876ef539ab5fe826ddf9533efce4a89ac2ae6fa258dd7b4628a44886d",
+    "examples.json": "028db2b8b7f2883c602f4eda348dacf472c5350e2f943801e3f801ab29c71734",
+    "gold_conditions.jsonl": "b9db6b68b664914533fd7802a86a9931ca22ccd9e87babc3e25d12fe85bc01b1",
+    "input_contract.json": "27c61a44ae9d2fe6b108a234f9296147a009b177c6e6754c938bef81f7dace4f",
+    "train.jsonl": "9580379cc5fb74056830bd0902d8e144ca157908626c967268dd1b5e5a302428"
+  },
+  "counts": {
+    "built": true,
+    "unit": "unique raw CPE criteria plus four version bounds; role and CVE paths retained separately",
+    "target_CVEs": 10847,
+    "raw_CPE_occurrences": 145204,
+    "raw_roles": {
+      "platform_or_nonvulnerable": 36511,
+      "vulnerable_true": 108693
+    },
+    "unique_CPE_strings": 40660,
+    "source_conditions": 50860,
+    "extra_conditions_beyond_CPE_strings": 10200,
+    "CPE_strings_with_multiple_conditions": 2064,
+    "condition_role_counts": {
+      "vulnerable_only": 39634,
+      "platform_only": 9910,
+      "both_roles": 1316
+    },
+    "control_BOMs": 50860,
+    "fault_BOMs": 50860,
+    "total_logical_BOMs": 101720,
+    "count_formula": "50860 source conditions x (1 control + 1 fault) = 101720",
+    "scenarios": {
+      "control": 50860,
+      "version_noise": 8476,
+      "component_noise": 8477,
+      "version_mask": 8477,
+      "CPE_mask": 8477,
+      "component_mask": 8477,
+      "CPE_noise": 8476
+    },
+    "total_BOMs_by_fold": {
+      "train": 83112,
+      "evaluation": 18608
+    },
+    "axis_counts_by_fold": {
+      "train": {
+        "control": 41556,
+        "L3": 13852,
+        "L2": 13852,
+        "L4": 13852
+      },
+      "evaluation": {
+        "control": 9304,
+        "L3": 3101,
+        "L2": 3102,
+        "L4": 3101
+      }
+    },
+    "CVE_split_counts": {
+      "train": 7593,
+      "evaluation": 3254
+    },
+    "CVE_and_gold_overlap": 0,
+    "split_ratio_unit": "CVE, not BOM; all positive product identities and both pair members remain in one fold",
+    "unique_semantic_inputs": 91142,
+    "unique_control_semantic_inputs": 43372,
+    "semantic_input_overlap_between_folds": 0,
+    "version_evidence_counts": {
+      "literal_CPE_version": 34725,
+      "unknown_no_source_literal_proves_range_membership": 4853,
+      "versionEndIncluding": 3134,
+      "versionStartIncluding": 8148
+    },
+    "CVEs_with_some_positive_gold": 9852,
+    "CVEs_with_only_unknown_gold": 995,
+    "source_complete_does_not_mean_every_condition_is_proven_affected": true,
+    "scoring": "All cases retain canonical same-asset mapping gold. Noise cases score normalization and CVE mapping, not cross-asset conflict detection. Unknowns remain unknown.",
+    "independent_real_asset_validation": false,
+    "noise_operators": {
+      "L3:v_prefix": 2823,
+      "L3:version_prefix": 2865,
+      "L2:space_to_underscore": 1451,
+      "L2:letter_case": 2355,
+      "L3:mask": 8477,
+      "L2:adjacent_letter_transposition": 2237,
+      "L2:outer_whitespace": 2434,
+      "L3:Version_prefix": 2788,
+      "L4:mask": 8477,
+      "L2:mask": 8477,
+      "L4:prefix_whitespace": 2835,
+      "L4:prefix_transposition": 2807,
+      "L4:prefix_case": 2834
+    },
+    "noise_policy": "Only local product-name spelling, unchanged-version notation, or CPE-prefix spelling; no donor product/version/CPE.",
+    "training_or_evaluation_run_on_v10": false
+  }
+}
