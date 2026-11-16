@@ -3,7 +3,7 @@ name: Deploy site/ to GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/pages.yml']
+    paths: ['site/**', 'tools/prepare_public_site.py', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -24,8 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Prepare public site without methodology
+        run: python tools/prepare_public_site.py --source site --output _public_site
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _public_site
       - id: deployment
         uses: actions/deploy-pages@v4
