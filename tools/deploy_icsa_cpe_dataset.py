@@ -13,6 +13,9 @@ def main():
     upload(config,archive,remote)
     names=['site/icsa-cpe-sbom.html','site/index.html','site/dataset.html','site/ics-sbom.html',
            'site/sbom-to-cve.html','src/identification_method_page.py',
+           'src/candidate_widget.py','src/asset_vulntology.html','src/asset_vulntology_ui.js',
+           'site/vex-decision.html','site/asset-vex.html','site/context-vex.html',
+           'site/question-mining.html','site/vex-method.html',
            'site/published-vex.html','site/published_vex.json','src/published_vex.py',
            'tools/icsa_cpe_dataset_web.py','tools/ncp_evaluation_metrics.py','tools/build_icsa_cpe_sbom.py',
            'tools/audit_icsa_cpe_sbom.py','tools/deploy_icsa_cpe_dataset.py']
