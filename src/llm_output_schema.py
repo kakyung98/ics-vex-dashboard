@@ -4,6 +4,9 @@ def array(item,maximum=8,minimum=0):return {'type':'array','items':item,'maxItem
 TEXT={'type':'string'}
 
 def schema_for(role,packet):
+    if role.startswith('identity-'):
+        from src.identification_agent_contracts import schema
+        return schema(role.removeprefix('identity-'),packet)
     if role=='l2-candidates':
         ids=[c['candidate_id'] for c in packet['candidates'] if not c['conflicts']]
         refs=[e['id'] for e in packet['evidence']]
@@ -55,6 +58,7 @@ def schema_for(role,packet):
             'purpose':{'type':'string','maxLength':240},'kind':{'type':'string','enum':['configuration','network_path','authentication','privileges','user_interaction','data_flow','discovery']},
             'answer_type':{'type':'string','enum':['yes_no_unknown','text']}}
         if role=='item4-questions':
+            fields['answer_type']={'type':'string','enum':['yes_no_unknown']}
             fields['scope']={'type':'string','enum':['common','specific']}
             fields['question']['maxLength']=220;fields['purpose']['maxLength']=140
             fields['evidence_ids']['maxItems']=2
@@ -80,6 +84,10 @@ def schema_for(role,packet):
 def prefix_function(runtime,role,packet):
     schema=schema_for(role,packet)
     if schema is None:return None
+    return prefix_for_schema(runtime,schema)
+
+
+def prefix_for_schema(runtime,schema):
     from lmformatenforcer import JsonSchemaParser
     # lm-format-enforcer 0.11 uses a tokenizer type's pre-Transformers-5
     # import location. Bridge that alias without changing either package.

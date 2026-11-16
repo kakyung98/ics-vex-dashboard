@@ -14,16 +14,16 @@
   }
   try{if(backend)backend=validated(backend)}catch(_){backend='';sessionStorage.removeItem(key)}
   const files={
-    '/api/summary':'cve_level.json','/api/source_available':'source_available.json',
+    '/api/summary':'cve_level.json',
     '/api/by_year':'by_year.json','/api/advisories':'advisories.json',
     '/api/advisories/list':'advisories_list.json','/api/sbom_index':'sbom_index.json',
-    '/api/published_vex':'published_vex.json','/api/verify_results':'verify_results.json',
-    '/api/verify_coverage':'verify_coverage.json',
-    '/api/item4/cwe-policy':'cwe_routing_profiles.json'
+    '/api/published_vex':'published_vex.json'
   };
   const asJson=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
   let index;
   let sboms;
+  let assetCatalogue;
+  const scenarioShards=new Map();
   async function sbomDocument(path){
     if(!sboms)sboms=net(new URL('sbom_index.json',location.href)).then(r=>r.json());
     const name=decodeURIComponent(path.split('/').pop());
@@ -38,6 +38,26 @@
   async function cves(){if(!index)index=net(new URL('cve_index.json',location.href)).then(r=>r.json());return index}
   function project(r){return {...r,vendor:(r.vendors||[]).slice(0,2).join(', ')}}
   async function snapshot(u){
+    if(u.pathname.startsWith('/api/asset-vulntology/')){
+      const prefix='/api/asset-vulntology/';
+      const endpoint=u.pathname.slice(prefix.length);
+      if(endpoint==='catalogue')return net(new URL('asset_vulntology/catalogue.json',location.href));
+      if(endpoint==='cves'){
+        if(!assetCatalogue)assetCatalogue=net(new URL('asset_vulntology/catalogue.json',location.href)).then(r=>r.json());
+        const data=await assetCatalogue,asset=u.searchParams.get('asset')||'',q=(u.searchParams.get('q')||'').toLowerCase();
+        const offset=Number(u.searchParams.get('offset')||0),limit=Number(u.searchParams.get('limit')||40);
+        if(!Number.isInteger(offset)||offset<0||!Number.isInteger(limit)||limit<1||limit>100||asset&&asset!=='unassigned'&&!data.assets.some(a=>a.asset_id===asset))return asJson({detail:'Invalid asset selection or pagination'},422);
+        const selected=data.cves.filter(r=>(!asset||(asset==='unassigned'?!r.asset_ids.length:r.asset_ids.includes(asset)))&&(!q||(r.cve+' '+r.description+' '+r.product_search).toLowerCase().includes(q)));
+        return asJson({total:selected.length,offset,rows:selected.slice(offset,offset+limit)});
+      }
+      const match=endpoint.match(/^cves\/(CVE-(\d{4})-\d{4,})$/);
+      if(match){
+        if(!scenarioShards.has(match[2]))scenarioShards.set(match[2],net(new URL('asset_vulntology/records_'+match[2]+'.json',location.href)).then(r=>r.ok?r.json():{}));
+        const record=(await scenarioShards.get(match[2]))[match[1]];
+        return record?asJson(record):asJson({detail:'CVE not in the source catalogue'},404);
+      }
+      return asJson({detail:'Connect the local backend to save, reassess or export an operator review.'},503);
+    }
     if(files[u.pathname])return net(new URL(files[u.pathname],location.href));
     if(u.pathname.startsWith('/api/advisory/')){
       const aid=decodeURIComponent(u.pathname.split('/').pop());
@@ -54,7 +74,6 @@
     if(u.pathname==='/api/cves'){
       const dim=u.searchParams.get('dim'),value=u.searchParams.get('value'),scope=u.searchParams.get('scope')||'corpus';
       const selected=(await cves()).filter(r=>{
-        if(scope==='source_available'&&!r.source_available)return false;
         if(dim==='vendor')return (r.vendors||[]).includes(value);
         if(dim==='device_type')return (r.device_types||[]).includes(value);
         return String(r[dim]??'')===value;
@@ -65,7 +84,7 @@
   }
   window.fetch=async function(input,options){
     const u=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
-    const assetPath=u.pathname.match(/\/(reverse_sbom\/[^/]+|results\/verify_evidence\/.*)$/);
+    const assetPath=u.pathname.match(/\/(reverse_sbom\/[^/]+)$/);
     if(u.origin!==location.origin||(!u.pathname.startsWith('/api/')&&!assetPath))return net(input,options);
     if(backend){
       const local=loopback(new URL(backend));

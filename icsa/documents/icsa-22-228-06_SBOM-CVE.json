@@ -1,0 +1,595 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:84ef8f1a-89b6-5c8d-b03b-01f5bf85b8cd",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-22-228-06",
+      "name": "Emerson Proficy Machine Edition",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'Proficy Machine Edition' by Emerson, reverse-built from CISA ICS-CERT advisory icsa-22-228-06.",
+      "scope": "required",
+      "publisher": "Emerson",
+      "purl": "pkg:generic/proficy-machine-edition@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:emerson:proficy-machine-edition:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Emerson"
+      },
+      "supplier": {
+        "name": "Emerson"
+      },
+      "tags": [
+        "emerson",
+        "ics",
+        "reverse-sbom",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c28b2ef611edfaecdff9b30d016c82ced7363d291ac5a35eb41a6c601b7fb944"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06",
+          "comment": "Source CISA ICS-CERT advisory icsa-22-228-06"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Emerson"
+        },
+        {
+          "name": "ics:product",
+          "value": "Proficy Machine Edition"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-22-228-06",
+      "dependsOn": [
+        "mod:icsa-22-228-06:firmware"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "firmware",
+      "bom-ref": "mod:icsa-22-228-06:firmware",
+      "name": "Emerson Proficy Machine Edition <= 9.80",
+      "version": "NOASSERTION",
+      "description": "Single product enumerated by the source CSAF product_tree; the advisory declares no model variants.",
+      "scope": "required",
+      "publisher": "Emerson",
+      "manufacturer": {
+        "name": "Emerson"
+      },
+      "supplier": {
+        "name": "Emerson"
+      },
+      "tags": [
+        "firmware",
+        "vendor-proprietary"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/emerson-proficy-machine-edition-9-80@NOASSERTION",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<= 9.80"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-22-228-06:CVE-2022-2788",
+      "id": "CVE-2022-2788",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 3.9,
+          "severity": "low",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:U/C:N/I:L/A:L"
+        }
+      ],
+      "cwes": [
+        29
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-22-228-06:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:U/C:N/I:L/A:L"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00238"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-22-228-06:CVE-2022-2789",
+      "id": "CVE-2022-2789",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 4.7,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:L/AC:H/PR:N/UI:R/S:U/C:N/I:H/A:N"
+        }
+      ],
+      "cwes": [
+        345
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-22-228-06:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:L/AC:H/PR:N/UI:R/S:U/C:N/I:H/A:N"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00122"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-22-228-06:CVE-2022-2790",
+      "id": "CVE-2022-2790",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.9,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:C/C:N/I:H/A:N"
+        }
+      ],
+      "cwes": [
+        347
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-22-228-06:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:C/C:N/I:H/A:N"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00134"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-22-228-06:CVE-2022-2791",
+      "id": "CVE-2022-2791",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.9,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:C/C:N/I:H/A:N"
+        }
+      ],
+      "cwes": [
+        434
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-22-228-06:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:C/C:N/I:H/A:N"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00185"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-22-228-06:CVE-2022-2792",
+      "id": "CVE-2022-2792",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 6.6,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:U/C:N/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        284
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-22-228-06:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:L/AC:L/PR:L/UI:R/S:U/C:N/I:H/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00403"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-22-228-06:CVE-2022-2793",
+      "id": "CVE-2022-2793",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-22-228-06"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.9,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.0/AV:P/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:H"
+        }
+      ],
+      "cwes": [
+        353
+      ],
+      "affects": [
+        {
+          "ref": "mod:icsa-22-228-06:firmware",
+          "versions": [
+            {
+              "version": "NOASSERTION",
+              "status": "affected"
+            }
+          ]
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-22-228-06"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.0/AV:P/AC:L/PR:N/UI:R/S:U/C:N/I:H/A:H"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "context"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00144"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

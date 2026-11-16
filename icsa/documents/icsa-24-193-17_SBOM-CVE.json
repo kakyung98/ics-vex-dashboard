@@ -1,0 +1,440 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:3cc0edee-e188-596e-b6b1-bba891ce51ab",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-24-193-17",
+      "name": "Siemens SIMATIC STEP 7 (TIA Portal)",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SIMATIC STEP 7 (TIA Portal)' by Siemens, reverse-built from CISA ICS-CERT advisory icsa-24-193-17.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "purl": "pkg:generic/simatic-step-7-tia-portal@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:siemens:simatic-step-7-tia-portal:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2b1d5b13ff9a440ca314b10e4661f7de5f95c3a95cc49e2d2b7a4319359a2c86"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-24-193-17",
+          "comment": "Source CISA ICS-CERT advisory icsa-24-193-17"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Siemens"
+        },
+        {
+          "name": "ics:product",
+          "value": "SIMATIC STEP 7 (TIA Portal)"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-24-193-17"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-24-193-17",
+      "dependsOn": [
+        "pkg:oss:dotnet",
+        "variant:siemens-simatic-pcs-neo-v4-0-vers-all",
+        "variant:siemens-simatic-step-7-v16-vers-all",
+        "variant:siemens-simatic-step-7-v17-vers-all",
+        "variant:siemens-simatic-step-7-v18-v18-update-2"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:dotnet",
+      "name": "Microsoft .NET Framework",
+      "version": "NOASSERTION",
+      "description": "Managed runtime used by Windows-based supervisory/engineering applications.",
+      "scope": "required",
+      "publisher": "Microsoft Corporation",
+      "manufacturer": {
+        "name": "Microsoft Corporation"
+      },
+      "supplier": {
+        "name": "Microsoft Corporation"
+      },
+      "tags": [
+        "runtime",
+        "windows"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/dotnet-framework",
+      "cpe": "cpe:2.3:a:microsoft:.net_framework:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-pcs-neo-v4-0-vers-all",
+      "name": "Siemens SIMATIC PCS neo V4.0 vers:all/*",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-simatic-pcs-neo-v4-0-vers-all@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:all/*"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-step-7-v16-vers-all",
+      "name": "Siemens SIMATIC STEP 7 V16 vers:all/*",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-simatic-step-7-v16-vers-all@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:all/*"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-step-7-v17-vers-all",
+      "name": "Siemens SIMATIC STEP 7 V17 vers:all/*",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-simatic-step-7-v17-vers-all@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:all/*"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-simatic-step-7-v18-v18-update-2",
+      "name": "Siemens SIMATIC STEP 7 V18 <V18_Update_2",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-simatic-step-7-v18-v18-update-2@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0004"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<V18_Update_2"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-24-193-17:CVE-2022-45147",
+      "id": "CVE-2022-45147",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-24-193-17"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 7.8,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H/E:P/RL:O/RC:C"
+        }
+      ],
+      "cwes": [
+        502
+      ],
+      "affects": [
+        {
+          "ref": "variant:siemens-simatic-pcs-neo-v4-0-vers-all"
+        },
+        {
+          "ref": "variant:siemens-simatic-step-7-v16-vers-all"
+        },
+        {
+          "ref": "variant:siemens-simatic-step-7-v17-vers-all"
+        },
+        {
+          "ref": "variant:siemens-simatic-step-7-v18-v18-update-2"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-24-193-17"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H/E:P/RL:O/RC:C"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.00227"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "4"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

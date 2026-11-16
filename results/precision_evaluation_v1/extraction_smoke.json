@@ -1,0 +1,105 @@
+{
+  "packet": {
+    "packet_id": "fictional-maintenance-switch-smoke",
+    "cve": "CVE-2099-99999",
+    "identity_status": "fictional_control",
+    "scopes": [
+      {
+        "id": "fictional-product",
+        "member_count": 1,
+        "product_names": [
+          "Fictional maintenance controller"
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "fictional-source",
+        "scope_id": "fictional-product",
+        "text": "Successful exploitation requires that the maintenance key switch is in the unlocked position.",
+        "text_sha256": "f9f61a76f4f8c894c1e99740e0bedcc68a4197b995c7b024fb2fee99be330dcf",
+        "url": "fixture://ics-vex/maintenance-switch",
+        "subject_ambiguous": false
+      }
+    ]
+  },
+  "result": {
+    "draft": {
+      "packet_id": "fictional-maintenance-switch-smoke",
+      "cve": "CVE-2099-99999",
+      "scenarios": [
+        {
+          "id": "path1",
+          "scope_id": "fictional-product",
+          "path_description": "Maintenance key switch unlocked path",
+          "path_evidence": {
+            "source_id": "fictional-source",
+            "quote": "Successful exploitation requires that the maintenance key switch is in the unlocked position",
+            "occurrence": 0
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "statement": "The maintenance key switch is in the unlocked position",
+              "relation": "necessary_for_described_path",
+              "operator_observable": true,
+              "question": "평가 대상 장비의 유지보수 키 스위치가 해제된 상태인가요? (Maintenance key switch is in the unlocked position?)",
+              "evidence_request": "장비 상태 확인 또는 설정 기록",
+              "evidence": {
+                "source_id": "fictional-source",
+                "quote": "Successful exploitation requires that the maintenance key switch is in the unlocked position",
+                "occurrence": 0
+              }
+            }
+          ],
+          "logic_nodes": [],
+          "logic_root": "c1",
+          "unknowns": [
+            "Other requirements and alternative paths remain unknown"
+          ]
+        }
+      ],
+      "other_facts": [],
+      "unknowns": []
+    },
+    "validation": {
+      "exact_references": [
+        {
+          "source_id": "fictional-source",
+          "quote": "Successful exploitation requires that the maintenance key switch is in the unlocked position",
+          "occurrence": 0,
+          "span": [
+            0,
+            92
+          ],
+          "source_sha256": "f9f61a76f4f8c894c1e99740e0bedcc68a4197b995c7b024fb2fee99be330dcf"
+        },
+        {
+          "source_id": "fictional-source",
+          "quote": "Successful exploitation requires that the maintenance key switch is in the unlocked position",
+          "occurrence": 0,
+          "span": [
+            0,
+            92
+          ],
+          "source_sha256": "f9f61a76f4f8c894c1e99740e0bedcc68a4197b995c7b024fb2fee99be330dcf"
+        }
+      ],
+      "mechanical_checks_passed": true,
+      "semantic_accuracy_verified": false,
+      "source_meaning_review": "pending",
+      "native_export_ready": false,
+      "vex_eligible": false
+    },
+    "raw": "{\n  \"packet_id\": \"fictional-maintenance-switch-smoke\",\n  \"cve\": \"CVE-2099-99999\",\n  \"scenarios\": [\n    {\n      \"id\": \"path1\",\n      \"scope_id\": \"fictional-product\",\n      \"path_description\": \"Maintenance key switch unlocked path\",\n      \"path_evidence\": {\n        \"source_id\": \"fictional-source\",\n        \"quote\": \"Successful exploitation requires that the maintenance key switch is in the unlocked position\",\n        \"occurrence\": 0\n      },\n      \"conditions\": [\n        {\n          \"id\": \"c1\",\n          \"statement\": \"The maintenance key switch is in the unlocked position\",\n          \"relation\": \"necessary_for_described_path\",\n          \"operator_observable\": true,\n          \"question\": \"평가 대상 장비의 유지보수 키 스위치가 해제된 상태인가요? (Maintenance key switch is in the unlocked position?)\",\n          \"evidence_request\": \"장비 상태 확인 또는 설정 기록\",\n          \"evidence\": {\n           \"source_id\": \"fictional-source\",\n           \"quote\": \"Successful exploitation requires that the maintenance key switch is in the unlocked position\",\n           \"occurrence\": 0\n          }\n        }\n      ],\n      \"logic_nodes\": [],\n      \"logic_root\": \"c1\",\n      \"unknowns\": [\"Other requirements and alternative paths remain unknown\"]\n    }\n  ],\n  \"other_facts\": [],\n  \"unknowns\": []\n}",
+    "llm_used": true,
+    "model": "Qwen2.5-Coder-14B-Instruct",
+    "fine_tuned_for_extraction": false,
+    "semantic_review": "pending",
+    "vex_eligible": false
+  },
+  "synthetic": true,
+  "real_CVE_accuracy": null,
+  "scope": "Single authored fixture; mechanical grounding and API smoke only",
+  "elapsed_seconds": 188.0486486000009
+}

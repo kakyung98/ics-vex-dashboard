@@ -15,6 +15,9 @@ def new_public_sbom_directory(root=None):
 def public_sbom_directory(root=None):
     root=Path(root or ROOT).resolve()
     index=root/'sbom_index.json'
+    if not index.is_file() and (root/'icsa/sbom_index.json').is_file():
+        current=(root/'icsa/documents').resolve()
+        if current.is_dir() and current.is_relative_to((root/'icsa').resolve()):return current
     if not index.is_file():raise FileNotFoundError('Public SBOM index is missing: '+str(index))
     relative=json.loads(index.read_text(encoding='utf-8')).get('source_directory')
     if not isinstance(relative,str) or not relative:raise ValueError('Public SBOM index has no source_directory.')

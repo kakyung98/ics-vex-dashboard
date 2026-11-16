@@ -1,0 +1,416 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:dc398c89-df25-553e-b225-ef25c07acbb7",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-26-295-10",
+      "name": "Siemens SIMATIC S7 Webserver API",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'SIMATIC S7 Webserver API' by Siemens, reverse-built from CISA ICS-CERT advisory icsa-26-295-10.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "purl": "pkg:generic/simatic-s7-webserver-api@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:siemens:simatic-s7-webserver-api:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "reverse-sbom",
+        "siemens",
+        "vendor-firmware"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3250d9ed02db11d44110aad11d09b77b01bd6aa50d57301c521207f15414aa4d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-295-10",
+          "comment": "Source CISA ICS-CERT advisory icsa-26-295-10"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Siemens"
+        },
+        {
+          "name": "ics:product",
+          "value": "SIMATIC S7 Webserver API"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "vendor-firmware"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-26-295-10"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-26-295-10",
+      "dependsOn": [
+        "pkg:oss:dotnet",
+        "variant:siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-61",
+        "variant:siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-62"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:dotnet",
+      "name": "Microsoft .NET Framework",
+      "version": "NOASSERTION",
+      "description": "Managed runtime used by Windows-based supervisory/engineering applications.",
+      "scope": "required",
+      "publisher": "Microsoft Corporation",
+      "manufacturer": {
+        "name": "Microsoft Corporation"
+      },
+      "supplier": {
+        "name": "Microsoft Corporation"
+      },
+      "tags": [
+        "runtime",
+        "windows"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/dotnet-framework",
+      "cpe": "cpe:2.3:a:microsoft:.net_framework:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "vendor-proprietary"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-61",
+      "name": "Siemens .NET Client Library for SIMATIC S7 Webserver API vers:intdot/<3.3.61",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-61@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:intdot/<3.3.61"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-62",
+      "name": "Siemens .NET Client Library for SIMATIC S7 Webserver API vers:intdot/<3.3.62",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Siemens",
+      "manufacturer": {
+        "name": "Siemens"
+      },
+      "supplier": {
+        "name": "Siemens"
+      },
+      "tags": [
+        "ics",
+        "product-variant",
+        "siemens"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-62@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "vers:intdot/<3.3.62"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-26-295-10:CVE-2026-85114",
+      "id": "CVE-2026-85114",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-295-10"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 7.5,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+        }
+      ],
+      "cwes": [
+        22
+      ],
+      "affects": [
+        {
+          "ref": "variant:siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-61"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-295-10"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-26-295-10:CVE-2026-85115",
+      "id": "CVE-2026-85115",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-26-295-10"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "CISA"
+          },
+          "score": 5.5,
+          "severity": "medium",
+          "method": "CVSSv31",
+          "vector": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
+        }
+      ],
+      "cwes": [
+        209
+      ],
+      "affects": [
+        {
+          "ref": "variant:siemens-net-client-library-for-simatic-s7-webserver-api-vers-intdot-3-3-62"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-26-295-10"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "E"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "NA"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "1"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}

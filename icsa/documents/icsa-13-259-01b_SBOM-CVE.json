@@ -1,0 +1,710 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.7",
+  "serialNumber": "urn:uuid:cbb89cef-bb18-55b3-b0a8-f5fb551393dd",
+  "version": 1,
+  "properties": [
+    {
+      "name": "SBOM_CREATION_DATE",
+      "value": "2026-11-01 11:30:13"
+    },
+    {
+      "name": "SBOM_MODIFY_DATE",
+      "value": "2026-11-01 11:30:13"
+    }
+  ],
+  "metadata": {
+    "timestamp": "2026-11-01T11:30:13Z",
+    "lifecycles": [
+      {
+        "phase": "operations"
+      }
+    ],
+    "manufacturer": {
+      "name": "ICS-VEX Reference Dataset Author",
+      "address": {
+        "country": "KR",
+        "region": "Seoul",
+        "locality": "Gangnam-gu, Teheran-ro (reference placeholder)"
+      },
+      "contact": [
+        {
+          "name": "ICS SBOM Dataset Maintainer",
+          "email": "ics-sbom-dataset@example.invalid",
+          "phone": "NOASSERTION"
+        }
+      ]
+    },
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:ics-vex-reverse-sbom-builder",
+          "name": "ICS-VEX Reverse SBOM Builder",
+          "version": "2026.04",
+          "publisher": "Chonnam SSRC — ICS-VEX",
+          "description": "Reverse-builds a CycloneDX SBOM-CVE per ICS device from the CISA ICS-CERT advisory corpus.",
+          "externalReferences": [
+            {
+              "type": "documentation",
+              "url": "https://kakyung98.github.io/ics-vex-dashboard/",
+              "comment": "ICS-VEXForge web console"
+            }
+          ]
+        }
+      ]
+    },
+    "distributionConstraints": {
+      "tlp": "CLEAR"
+    },
+    "component": {
+      "type": "device",
+      "bom-ref": "device:icsa-13-259-01b",
+      "name": "Emerson ROC800 Multiple Vulnerabilities (Update B)",
+      "version": "NOASSERTION",
+      "description": "ICS/OT asset 'ROC800 Multiple Vulnerabilities (Update B)' by Emerson, reverse-built from CISA ICS-CERT advisory icsa-13-259-01b.",
+      "scope": "required",
+      "publisher": "Emerson",
+      "purl": "pkg:generic/roc800-multiple-vulnerabilities-update-b@NOASSERTION",
+      "copyright": "NOASSERTION",
+      "cpe": "cpe:2.3:o:emerson:roc800-multiple-vulnerabilities-update-b:*:*:*:*:*:*:*:*",
+      "manufacturer": {
+        "name": "Emerson"
+      },
+      "supplier": {
+        "name": "Emerson"
+      },
+      "tags": [
+        "emerson",
+        "ics",
+        "linux",
+        "reverse-sbom"
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9bd273f2a0212dfb6bd467e15a5dae9718b10c1009f8e0328bfd8e7edc861158"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "advisory",
+          "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-13-259-01b",
+          "comment": "Source CISA ICS-CERT advisory icsa-13-259-01b"
+        }
+      ],
+      "properties": [
+        {
+          "name": "ics:vendor",
+          "value": "Emerson"
+        },
+        {
+          "name": "ics:product",
+          "value": "ROC800 Multiple Vulnerabilities (Update B)"
+        },
+        {
+          "name": "ics:base-platform",
+          "value": "linux"
+        },
+        {
+          "name": "ics:source-advisories",
+          "value": "icsa-13-259-01b"
+        },
+        {
+          "name": "dataset:provenance",
+          "value": "cisa-ics-advisory-reverse"
+        },
+        {
+          "name": "dataset:synthetic-inventory",
+          "value": "true"
+        }
+      ]
+    }
+  },
+  "dependencies": [
+    {
+      "ref": "device:icsa-13-259-01b",
+      "dependsOn": [
+        "pkg:oss:linux-kernel",
+        "variant:emerson-process-management-roc800-3-50",
+        "variant:emerson-process-management-dl8000-2-30",
+        "variant:emerson-process-management-roc800l-1-20"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:oss:linux-kernel",
+      "name": "Linux Kernel",
+      "version": "NOASSERTION",
+      "description": "Device operating-system kernel. Provides scheduling, memory management, and the device-driver layer.",
+      "scope": "required",
+      "publisher": "Linux Kernel Organization",
+      "manufacturer": {
+        "name": "Linux Kernel Organization"
+      },
+      "supplier": {
+        "name": "Linux Kernel Organization"
+      },
+      "tags": [
+        "kernel",
+        "os",
+        "oss"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/linux",
+      "cpe": "cpe:2.3:a:linux:linux_kernel:*:*:*:*:*:*:*:*",
+      "properties": [
+        {
+          "name": "component:origin",
+          "value": "third-party-open-source"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:emerson-process-management-roc800-3-50",
+      "name": "Emerson Process Management ROC800 <=3.50",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Emerson",
+      "manufacturer": {
+        "name": "Emerson"
+      },
+      "supplier": {
+        "name": "Emerson"
+      },
+      "tags": [
+        "emerson",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/emerson-process-management-roc800-3-50@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0001"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=3.50"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:emerson-process-management-dl8000-2-30",
+      "name": "Emerson Process Management DL8000 <=2.30",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Emerson",
+      "manufacturer": {
+        "name": "Emerson"
+      },
+      "supplier": {
+        "name": "Emerson"
+      },
+      "tags": [
+        "emerson",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/emerson-process-management-dl8000-2-30@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0002"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=2.30"
+        }
+      ]
+    },
+    {
+      "type": "device",
+      "bom-ref": "variant:emerson-process-management-roc800l-1-20",
+      "name": "Emerson Process Management ROC800L <=1.20",
+      "version": "NOASSERTION",
+      "description": "Product variant enumerated by the source CSAF product_tree.",
+      "scope": "required",
+      "publisher": "Emerson",
+      "manufacturer": {
+        "name": "Emerson"
+      },
+      "supplier": {
+        "name": "Emerson"
+      },
+      "tags": [
+        "emerson",
+        "ics",
+        "product-variant"
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "NOASSERTION"
+          }
+        }
+      ],
+      "copyright": "NOASSERTION",
+      "purl": "pkg:generic/emerson-process-management-roc800l-1-20@NOASSERTION",
+      "properties": [
+        {
+          "name": "variant:csaf-product-id",
+          "value": "CSAFPID-0003"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        },
+        {
+          "name": "ics:version-range",
+          "value": "<=1.20"
+        }
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "bom-ref": "vuln:icsa-13-259-01b:CVE-2013-0689",
+      "id": "CVE-2013-0689",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-13-259-01b"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 10.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C"
+        }
+      ],
+      "cwes": [
+        912
+      ],
+      "affects": [
+        {
+          "ref": "variant:emerson-process-management-roc800-3-50"
+        },
+        {
+          "ref": "variant:emerson-process-management-dl8000-2-30"
+        },
+        {
+          "ref": "variant:emerson-process-management-roc800l-1-20"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-13-259-01b"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.05036"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-13-259-01b:CVE-2013-0692",
+      "id": "CVE-2013-0692",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-13-259-01b"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 10.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C"
+        }
+      ],
+      "cwes": [
+        912
+      ],
+      "affects": [
+        {
+          "ref": "variant:emerson-process-management-roc800-3-50"
+        },
+        {
+          "ref": "variant:emerson-process-management-dl8000-2-30"
+        },
+        {
+          "ref": "variant:emerson-process-management-roc800l-1-20"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-13-259-01b"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.04859"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-13-259-01b:CVE-2013-0693",
+      "id": "CVE-2013-0693",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-13-259-01b"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 10.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C"
+        }
+      ],
+      "cwes": [
+        912
+      ],
+      "affects": [
+        {
+          "ref": "variant:emerson-process-management-roc800-3-50"
+        },
+        {
+          "ref": "variant:emerson-process-management-dl8000-2-30"
+        },
+        {
+          "ref": "variant:emerson-process-management-roc800l-1-20"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-13-259-01b"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.03263"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-13-259-01b:CVE-2013-0694",
+      "id": "CVE-2013-0694",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-13-259-01b"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 9.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:S/C:C/I:C/A:C"
+        }
+      ],
+      "cwes": [
+        798
+      ],
+      "affects": [
+        {
+          "ref": "variant:emerson-process-management-roc800-3-50"
+        },
+        {
+          "ref": "variant:emerson-process-management-dl8000-2-30"
+        },
+        {
+          "ref": "variant:emerson-process-management-roc800l-1-20"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-13-259-01b"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.02583"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    },
+    {
+      "bom-ref": "vuln:icsa-13-259-01b:CVE-2013-2810",
+      "id": "CVE-2013-2810",
+      "source": {
+        "name": "CISA ICS-CERT",
+        "url": "https://www.cisa.gov/news-events/ics-advisories/icsa-13-259-01b"
+      },
+      "ratings": [
+        {
+          "source": {
+            "name": "NVD"
+          },
+          "score": 10.0,
+          "severity": "high",
+          "method": "CVSSv31",
+          "vector": "AV:N/AC:L/Au:N/C:C/I:C/A:C"
+        }
+      ],
+      "cwes": [
+        294
+      ],
+      "affects": [
+        {
+          "ref": "variant:emerson-process-management-roc800-3-50"
+        },
+        {
+          "ref": "variant:emerson-process-management-dl8000-2-30"
+        },
+        {
+          "ref": "variant:emerson-process-management-roc800l-1-20"
+        }
+      ],
+      "properties": [
+        {
+          "name": "source:advisory",
+          "value": "icsa-13-259-01b"
+        },
+        {
+          "name": "cisa:cvss-v3-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "cisa:cvss-v4-vector",
+          "value": "NOASSERTION"
+        },
+        {
+          "name": "component:source-availability",
+          "value": "C"
+        },
+        {
+          "name": "vex:arm",
+          "value": "dynamic"
+        },
+        {
+          "name": "signal:kev",
+          "value": "false"
+        },
+        {
+          "name": "signal:epss",
+          "value": "0.05983"
+        },
+        {
+          "name": "variant:affected-count",
+          "value": "3"
+        },
+        {
+          "name": "variant:not-affected-count",
+          "value": "0"
+        },
+        {
+          "name": "variant:source",
+          "value": "cisa-csaf"
+        }
+      ],
+      "analysis": {
+        "state": "in_triage",
+        "detail": "Identified from CISA ICS advisory. VEX adjudication pending."
+      }
+    }
+  ]
+}
