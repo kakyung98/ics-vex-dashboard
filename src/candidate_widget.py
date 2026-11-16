@@ -31,7 +31,7 @@ def widget_parts():
     for name in ids:
         content=content.replace(f'id="{name}"',f'id="cm-{name}"').replace(f'for="{name}"',f'for="cm-{name}"')
     content=content.replace('<h1>SBOM에서 CVE 후보까지</h1>','<h2>Find CVE candidates</h2>')
-    content=content.replace('IDENTIFICATION WORKSPACE','ITEM #3 · IDENTIFICATION')
+    content=content.replace('IDENTIFICATION WORKSPACE','IDENTIFICATION')
     content=re.sub(r'<div class="notice"><strong>(.*?)</strong>(.*?)</div>',
         r'<div class="notice" role="note"><strong>Experimental identification — review candidates before making a VEX decision.</strong><details><summary>Model limitations</summary><p>Generalization to real SBOMs is unverified. Identification preserves source evidence; candidates require product/version and operational review. An empty result does not establish safety.</p></details></div>',content,count=1,flags=re.S)
     content=re.sub(r'(<input id="cm-file"[^>]+>)',r'<span class="file-picker"><span aria-hidden="true">Choose JSON</span>\1</span>',content,count=1)
@@ -54,8 +54,8 @@ def widget_parts():
     css+='\n#candidate-workspace textarea,#candidate-workspace pre,#candidate-workspace code{font-family:var(--mono)} '
     css+='\n#candidate-workspace button,#candidate-workspace select{min-height:42px;border-radius:8px} '
     css+='\n#candidate-workspace .identity-diagnostics{border-top:1px solid var(--line);margin:18px 0;padding-top:16px} #candidate-workspace .identity-diagnostics h3,#candidate-workspace .analysis-scope h3{font-size:19px;margin:0 0 12px} #candidate-workspace .diagnostic-stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0} #candidate-workspace .diagnostic-stage,#candidate-workspace .diagnostic-input{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0;overflow-wrap:anywhere} #candidate-workspace .diagnostic-stage h4{font-size:16px;color:var(--purple);margin:0 0 10px} #candidate-workspace .identity-diagnostics p,#candidate-workspace .analysis-scope p{font-size:15px;line-height:1.65} #candidate-workspace .diagnostic-input{margin:10px 0} #candidate-workspace .diagnostic-input code,#candidate-workspace .analysis-scope code{display:block;white-space:normal;overflow-wrap:anywhere;font-size:14px;margin:9px 0} #candidate-workspace .analysis-scope{padding:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;margin:18px 0} @media(max-width:1100px){#candidate-workspace .diagnostic-stages{grid-template-columns:1fr}} '
-    return ('<style>'+css+'</style><h1>#3 · SBOM → CVE identification</h1>'
-            '<p class="sub">Identify products and versions, inspect CVE mappings, and download the identification result. Continue to #4 to assess asset impact.</p>'
+    return ('<style>'+css+'</style><h1>SBOM → CVE identification</h1>'
+            '<p class="sub">Identify products and versions, inspect CVE mappings, and download the identification result. Continue to Operational VEX to assess asset impact.</p>'
             '<section id="candidate-workspace">'+content+'</section>'
             '<section id="candidate-vex" class="card" hidden></section>',
             '<script>(()=>{'+script+'\n})();</script>')
@@ -67,17 +67,17 @@ window.addEventListener('icsvex:candidates-reset',()=>{
 });
 window.addEventListener('icsvex:candidates',async event=>{
  const panel=document.getElementById('candidate-vex');if(!panel)return;
- panel.hidden=false;panel.textContent='Preparing #3 identification handoff...';
+ panel.hidden=false;panel.textContent='Preparing identification handoff...';
  const job=event.detail.jobId;panel.dataset.job=job;
  try{
   const response=await fetch('/api/cve-match/jobs/'+encodeURIComponent(job)+'/vex');
   const data=await response.json();if(!response.ok)throw new Error(data.detail||'Candidate handoff failed');
   if(panel.dataset.job!==job)return;
-  panel.replaceChildren();const title=document.createElement('h2');title.textContent='#3 identification completed';panel.append(title);
-  const note=document.createElement('p');note.textContent=data.cves.length+' candidate CVEs. Product/version mappings are retained when you open the separate #4 assessment.';panel.append(note);
+  panel.replaceChildren();const title=document.createElement('h2');title.textContent='Identification completed';panel.append(title);
+  const note=document.createElement('p');note.textContent=data.cves.length+' candidate CVEs. Product/version mappings are retained when you open the separate VEX assessment.';panel.append(note);
   const id=document.createElement('p');id.textContent='Identification job ID: '+job;panel.append(id);
-  if(data.cves.length){const link=document.createElement('a');link.className='primary';link.href='vex-decision.html?job='+encodeURIComponent(job);link.textContent='Continue to #4 · Assess asset impact →';panel.append(link)}
-  else{const empty=document.createElement('p');empty.textContent='No CVE candidates were returned. Review unresolved identities and lookup errors in the #3 result.';panel.append(empty)}
- }catch(error){panel.textContent='Unable to prepare #4 handoff: '+error.message}
+  if(data.cves.length){const link=document.createElement('a');link.className='primary';link.href='vex-decision.html?job='+encodeURIComponent(job);link.textContent='Continue to Operational VEX →';panel.append(link)}
+  else{const empty=document.createElement('p');empty.textContent='No CVE candidates were returned. Review unresolved identities and lookup errors in the identification result.';panel.append(empty)}
+ }catch(error){panel.textContent='Unable to prepare VEX handoff: '+error.message}
 });
 </script>'''
