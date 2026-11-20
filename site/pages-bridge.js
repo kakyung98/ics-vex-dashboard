@@ -42,6 +42,8 @@
       const prefix='/api/asset-vulntology/';
       const endpoint=u.pathname.slice(prefix.length);
       if(endpoint==='catalogue')return net(new URL('asset_vulntology/catalogue.json',location.href));
+      if(endpoint==='advisory-groups')return net(new URL('asset_vulntology/icsa_role_groups.json',location.href));
+      if(endpoint==='asset-navigation')return net(new URL('asset_vulntology/icsa_asset_navigation.json',location.href));
       if(endpoint==='cves'){
         if(!assetCatalogue)assetCatalogue=net(new URL('asset_vulntology/catalogue.json',location.href)).then(r=>r.json());
         const data=await assetCatalogue,asset=u.searchParams.get('asset')||'',q=(u.searchParams.get('q')||'').toLowerCase();
