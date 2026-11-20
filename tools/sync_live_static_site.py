@@ -9,6 +9,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import urlopen
 import hashlib
+from copy import deepcopy
 import json
 import re
 
@@ -47,6 +48,18 @@ def export(base, output):
         soup = BeautifulSoup(english_ui(raw.decode('utf-8')), 'html.parser')
         soup.html['lang'] = 'en'
         soup.html['translate'] = 'no'
+        # The running service can repair an older shell in the browser. Export
+        # that same shared chrome directly so the static page is self-contained.
+        main = soup.select_one('main.main')
+        if name != 'index.html':
+            reference = BeautifulSoup((output / 'index.html').read_text(encoding='utf-8'), 'html.parser')
+            for selector in ('.workspace-topbar', '.foot'):
+                element = reference.select_one('main.main > ' + selector)
+                if element and not main.select_one(':scope > ' + selector):
+                    if selector == '.workspace-topbar':
+                        main.insert(0, deepcopy(element))
+                    else:
+                        main.append(deepcopy(element))
         # Fetch the very scripts referenced by the active local server, rather
         # than assuming the older api_server.make_page is the current UI.
         for tag in soup.find_all(['script', 'link', 'img', 'a']):
@@ -60,7 +73,9 @@ def export(base, output):
                 relative = value.lstrip('/') or 'index.html'
                 tag[attr] = relative
                 if tag.name == 'script' and attr == 'src':
-                    write(url.path.lstrip('/'), get(url.path.lstrip('/')))
+                    data = get(url.path.lstrip('/'))
+                    write(url.path.lstrip('/'), data)
+                    tag[attr] = url.path.lstrip('/') + '?v=' + hashlib.sha256(data).hexdigest()[:12]
         # Page-to-page handoff URLs inside the active scripts must also remain
         # relative under the GitHub Pages repository prefix.
         for script in soup.find_all('script'):
@@ -74,7 +89,8 @@ def export(base, output):
                 anchor.insert_after(banner)
             else:
                 main.insert(0, banner)
-        bridge = soup.new_tag('script', src='pages-bridge.js')
+        bridge_hash = hashlib.sha256((output / 'pages-bridge.js').read_bytes()).hexdigest()[:12]
+        bridge = soup.new_tag('script', src='pages-bridge.js?v=' + bridge_hash)
         soup.head.append(bridge)
         html = '\n'.join(line.rstrip() for line in str(soup).splitlines()) + '\n'
         write(name, html.encode('utf-8'))
