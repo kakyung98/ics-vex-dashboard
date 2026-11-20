@@ -2,6 +2,20 @@
 import re
 
 COPY={
+ '각 항목에 예·아니오·모름으로 답하세요. 확인하지 않은 항목은 모름으로 남겨 주세요.':'Answer Yes, No or Unknown for each item. Leave unverified items unknown.',
+ '검토 대상 장비·인터페이스·데이터 경로의 범위를 알고 있습니까?':'Do you know the scope of the reviewed asset, interfaces and data paths?',
+ '답변이 선택한 Components의 관련 인터페이스와 데이터 경로 전체를 포함합니까?':'Do the answers cover all relevant interfaces and data paths of the selected components?',
+ '설정·방화벽·점검 결과를 뒷받침하는 기록이 있습니까?':'Do records support the configuration, firewall and inspection results?',
+ '실제 설정 또는 점검 기록과 대조해 답변했습니까?':'Did you check the answers against actual configuration or inspection records?',
+ '실제 장비 또는 기록과 대조해 확인했습니까?':'Did you verify this against the actual asset or its records?',
+ '실제 제품과 버전이 위 SBOM 정보와 일치합니까?':'Do the actual product and version match the SBOM information above?',
+ '이 Components가 검토 대상 장비에 있습니까?':'Are these components present on the reviewed asset?',
+ '이 답변을 뒷받침하는 설정 또는 점검 기록이 있습니까?':'Do configuration or inspection records support this answer?',
+ '이 제품의 배치 위치와 활성화된 서비스를 확인했습니까?':'Have you verified the product deployment location and enabled services?',
+ '제품·설치 버전을 확인할 수 있는 기록이 있습니까?':'Do records identify the product and installed version?',
+ ' Components를 실제로 확인했습니까?':' components against the actual asset?',
+ '실험 결과 · H200':'H200 experiment results',
+ "'답변'":"'Answer'", "'모름'":"'Unknown'", "'아니오'":"'No'", "'예'":"'Yes'",
  '시스템보안연구센터':'SSRC', '구성요소':'Components',
  '진입점 <b>':'Entry points: <b>',
  '상한에 걸려 일부만 처리했습니다: ':'Processing limit reached; some files were not indexed: ',
