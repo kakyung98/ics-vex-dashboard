@@ -34,7 +34,7 @@ async function synchronizeWorkspaceChrome(){
  const missingHeader=!main.querySelector(':scope > .workspace-topbar');
  const missingFooter=!main.querySelector(':scope > .foot');
  if(missingHeader||missingFooter){
-  const response=await fetch('/index.html',{cache:'no-store'});
+  const response=await fetch(new URL('index.html',location.href).href,{cache:'no-store'});
   if(!response.ok)throw Error('Unable to load the shared workspace shell.');
   const reference=new DOMParser().parseFromString(await response.text(),'text/html');
   const topbar=reference.querySelector('main.main > .workspace-topbar');
