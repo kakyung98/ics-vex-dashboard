@@ -60,11 +60,13 @@
       }
       return asJson({detail:'Connect the local backend to save, reassess or export an operator review.'},503);
     }
-    if(files[u.pathname])return net(new URL(files[u.pathname],location.href));
+    // Public snapshots change independently of the page shell. Never reuse an old
+    // response with missing advisory identifiers or product/date fields.
+    if(files[u.pathname])return net(new URL(files[u.pathname],location.href),{cache:'no-store'});
     if(u.pathname.startsWith('/api/advisory/')){
-      const aid=decodeURIComponent(u.pathname.split('/').pop());
+      const aid=decodeURIComponent(u.pathname.split('/').pop()).toLowerCase();
       if(!/^icsa?-\d{2}-\d{3}-\d{2}[a-z]?$/.test(aid))return asJson({detail:'Advisory not found'},404);
-      const response=await net(new URL('advisory_details_'+aid.split('-')[1]+'.json',location.href));
+      const response=await net(new URL('advisory_details_'+aid.split('-')[1]+'.json',location.href),{cache:'no-store'});
       if(!response.ok)return response;
       const data=await response.json();
       return data[aid]?asJson(data[aid]):asJson({detail:'Advisory not found'},404);

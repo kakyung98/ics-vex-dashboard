@@ -142,12 +142,22 @@ function drawProgress(value){
   }box.append(detail);
  }
 }
+function adapterEvaluation(adapter){
+ if(!adapter || typeof adapter!=='object')return '';
+ if(adapter.evaluation_passed===false)return adapter.experimental_use_approved
+  ? 'Extraction adapter evaluation failed. Experimental use was explicitly approved.'
+  : 'Extraction adapter evaluation failed.';
+ if(adapter.evaluation_passed===true)return 'Extraction adapter passed its recorded evaluation.';
+ return 'Extraction adapter evaluation result was not recorded.';
+}
 function drawSources(value){
  $('sources').hidden=false;const sources=$('condition-details');sources.replaceChildren();
  for(const result of value.conditions||[]){
   const detail=node('details');detail.append(node('summary',result.cve+' · '+(result.status==='extracted'?'Extracted':'Unresolved')+' · '+(result.source_kind||'')));
   if(result.reason)detail.append(node('p',result.reason));
   const draft=result.prerequisite?.draft;
+  const evaluation=adapterEvaluation(result.prerequisite?.model?.adapter);
+  if(evaluation)detail.append(node('p',evaluation));
   if(draft){
    const names=Object.fromEntries(draft.prerequisites.map(p=>[p.id,p.statement]));
    const describe=e=>e.condition?(names[e.condition]||e.condition):(e.op==='not'?'NOT ('+describe(e.args[0])+')':'('+(e.args||[]).map(describe).join(e.op==='and'?' AND ':' OR ')+')');
@@ -192,7 +202,15 @@ function makeSelect(question,value,collection){
  for(const choice of question.options||[]){const option=node('option',choice.label);option.value=choice.code;select.append(option);}
  select.value=(question.options||[]).some(o=>o.code===value)?value:'unknown';
  select.onchange=()=>{
-  if(collection===contextInputs)for(const input of answerInputs.values())input.value='unknown';
+  if(collection===contextInputs){
+   for(const input of answerInputs.values())input.value='unknown';
+   for(const item of job?.assessment_cases||[]){
+    if(['scope',item.prefix+'target',item.prefix+'deployment'].includes(question.id)){
+     const coverage=contextInputs.get(item.prefix+'inventory_coverage');
+     if(coverage)coverage.value='unknown';
+    }
+   }
+  }
   invalidateResult();
   if(collection===contextInputs)$('input-message').textContent='Assessment scope changed. Reconfirm operating values for the new scope.';
  };collection.set(question.id,select);return select;
@@ -259,7 +277,9 @@ function drawAssessment(value){
    node('p','Product VEX: '+result.product_vex_status),
    node('p','Deployment exploitability: '+result.deployment_exploitability),
    node('p','Prerequisites: '+result.prerequisite_status),node('p',result.reason));
-  const detail=node('details');detail.append(node('summary','Condition values and provenance'));
+   const evaluation=adapterEvaluation(result.extraction_adapter);
+   if(evaluation)item.append(node('p',evaluation));
+   const detail=node('details');detail.append(node('summary','Condition values and provenance'));
   for(const [id,state]of Object.entries(result.condition_values||{})){
    const q=(value.questions||[]).find(q=>q.id===id);detail.append(node('p',(q?.key||id)+': '+state));
   }

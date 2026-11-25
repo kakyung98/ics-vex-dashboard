@@ -226,7 +226,7 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
     .ew-result h4{margin-top:0}.evidence-workspace button{margin:6px 5px 6px 0}.ew-result p,.ew-result li{overflow-wrap:anywhere}
     @media(max-width:650px){.ew-grid{grid-template-columns:1fr}.evidence-workspace{padding:12px}.evidence-workspace>summary{font-size:15px}
     #candidate-vex{padding:12px}#armfork{padding:0;border:0}#cve-operating-questions{padding:0;border:0}#cve-operating-questions .operation-case{padding:12px 0;border:0}.ew-result{padding:12px}}
-    </style><script src="pages-bridge.js?v=dc4c54e7778e"></script></head><body><div class="layout">
+    </style><script src="pages-bridge.js?v=44c43bc29da3"></script></head><body><div class="layout">
 <aside class="side">
 <div class="side-brand"><a aria-label="ICS-VEXForge" href="index.html" title="Go to ICS-VEXForge"><svg class="ssrc" viewbox="0 0 120 120"><circle cx="60" cy="60" fill="none" r="55" stroke="#37b24d" stroke-width="3"></circle><circle cx="60" cy="60" fill="none" r="47" stroke="#37b24d" stroke-width="1.5"></circle><text fill="#37b24d" font-family="Arial,sans-serif" font-size="30" font-weight="800" text-anchor="middle" x="60" y="52">SSRC</text><text fill="#37b24d" font-size="9" font-weight="700" letter-spacing="1.5" text-anchor="middle" x="60" y="72">SYSTEM SECURITY</text><text fill="#69db7c" font-size="8" font-weight="600" letter-spacing="1" text-anchor="middle" x="60" y="87">★ EST. 2000 ★</text></svg></a><div class="side-brand-name">ICS-VEXForge<small>Vulnerability intelligence</small></div></div>
 <nav class="nav"><div class="navlabel">Analyzer</div><a class="navtab navtab-main" href="index.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"></path></svg><span>SBOM → CVE</span></a><a class="navtab" href="bom-vex.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"></path></svg><span>Operational VEX</span></a><div class="navlabel navlabel-sep">Dataset</div><a class="navtab" href="dataset.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"></path></svg><span>CVE Dataset</span></a><a class="navtab" href="ics-sbom.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M5 3h10l4 4v14H5z M14 3v5h5 M8 12h8 M8 16h6"></path></svg><span>Synthetic SBOM</span></a><a aria-current="page" class="navtab on" href="source.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M12 3l9 17H3z M12 9v5 M12 17v1"></path></svg><span>ICS-CERT Advisories (CISA)</span></a><a class="navtab" href="published-vex.html"><svg aria-hidden="true" viewbox="0 0 24 24"><path d="M6 3h12v18H6z M9 8h6 M9 12h6 M9 16h4"></path></svg><span>Published VEX (CISA)</span></a></nav>
@@ -239,7 +239,7 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 <a href="http://127.0.0.1:8100" id="pages-open-local" rel="noopener" target="_blank">Open local site</a></div></section>
 <h1 style="margin:0 0 18px">ICS-CERT Advisories (CISA)</h1><div class="card">
 <h3 style="margin:0 0 4px">ICS-CERT Advisories</h3>
-<p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, title, vendor, CVE, or year. <span id="adv-hint"></span></p>
+<p class="hint" style="margin:0 0 10px">Search CISA ICS-CERT advisories by ID, vendor, product, publication date, or CVE. <span id="adv-hint"></span></p>
 <input class="srch" id="adv-q" oninput="advSearch()" placeholder="e.g. Siemens · ICSA-24 · CVE-2023-… · 2024"/>
 <div id="adv-results" style="margin-top:12px"><span class="hint">Loading advisories…</span></div></div>
 <div class="card">
@@ -848,11 +848,15 @@ async function initSource(){
 }
 let _advPage=1;let _advQ=null;const ADV_PS=100;
 function advPage(d){_advPage+=d;advSearch();document.getElementById('adv-results').scrollIntoView({block:'nearest'});}
+function advisoryProductName(a){
+  const names=[...new Set((a.product_name||'').split(';').map(name=>name.trim()).filter(Boolean))];
+  return names.length?names[0]+(names.length>1?' + '+(names.length-1)+' more':''):'Not available';
+}
 function advSearch(){
   const q=(document.getElementById('adv-q').value||'').trim().toLowerCase();
   if(q!==_advQ){_advQ=q;_advPage=1;}
   let items=ADV_LIST;
-  if(q)items=ADV_LIST.filter(a=>String(a.id).toLowerCase().includes(q)||(a.title||'').toLowerCase().includes(q)||(a.vendor||'').toLowerCase().includes(q)||String(a.year).includes(q)||(a.cves||[]).some(c=>String(c).toLowerCase().includes(q)));
+  if(q)items=ADV_LIST.filter(a=>String(a.id).toLowerCase().includes(q)||(a.title||'').toLowerCase().includes(q)||(a.product_name||'').toLowerCase().includes(q)||(a.publication_date||'').includes(q)||(a.vendor||'').toLowerCase().includes(q)||String(a.year).includes(q)||(a.cves||[]).some(c=>String(c).toLowerCase().includes(q)));
   const total=items.length;const pages=Math.max(1,Math.ceil(total/ADV_PS));
   if(_advPage>pages)_advPage=pages;if(_advPage<1)_advPage=1;
   const start=(_advPage-1)*ADV_PS;items=items.slice(start,start+ADV_PS);
@@ -862,9 +866,9 @@ function advSearch(){
     +' <span class="mono">'+_advPage+' / '+pages+'</span> '
     +'<button class="treebtn" onclick="advPage(1)"'+(_advPage>=pages?' disabled':'')+'>Next &rarr;</button>';
   let h='<div class="srch-meta">'+meta+'</div>';
-  h+='<div class="srch-wrap"><table><thead><tr><th>Advisory</th><th>Title</th><th>Vendor</th><th style="text-align:center">Year</th><th style="text-align:center">CVEs</th></tr></thead><tbody>';
+  h+='<div class="srch-wrap"><table><thead><tr><th>ICSA ID</th><th>Vendor</th><th>Product Name</th><th style="text-align:center">Publication Date</th><th style="text-align:center">CVE Count</th></tr></thead><tbody>';
   for(const a of items){
-    h+='<tr class="clk" onclick="openAdvisory(\''+esc(String(a.id))+'\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.title||'')+'</td><td>'+esc(a.vendor||'')+'</td><td class="mono" style="text-align:center">'+esc(a.year||'')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
+    h+='<tr class="clk" onclick="openAdvisory(\''+esc(String(a.id))+'\')"><td class="idcell">'+esc(a.id)+'</td><td>'+esc(a.vendor||'Not available')+'</td><td title="'+esc(a.product_name||'Not available')+'">'+esc(advisoryProductName(a))+'</td><td class="mono" style="text-align:center;white-space:nowrap">'+esc(a.publication_date||'Not available')+'</td><td style="text-align:center"><span class="cvecount">'+((a.cves||[]).length)+'</span></td></tr>';}
   document.getElementById('adv-results').innerHTML=h+'</tbody></table></div>';
 }
 function cveSearchLocal(q){if(typeof CVE_INDEX==='undefined'||!CVE_INDEX.length)return [];const ql=q.toLowerCase();const rk={LIKELY_AFFECTED:3,UNDER_INVESTIGATION:2,LIKELY_NOT_AFFECTED:1,LIKELY_FIXED:0};

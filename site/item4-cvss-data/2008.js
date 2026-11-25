@@ -1,0 +1,1 @@
+window.cvssYears ??= {}; window.cvssYears['2008']={"CVE-2008-0175":{"version":null,"d":true,"e":[],"a":[]},"CVE-2008-0760":{"version":null,"d":true,"e":[],"a":[]},"CVE-2008-2639":{"version":null,"d":true,"e":[],"a":[]}};

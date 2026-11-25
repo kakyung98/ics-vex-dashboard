@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CVSS 원문 대조 · ICS-VEXForge</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#192532;font:16px/1.65 system-ui,sans-serif}main{max-width:920px;margin:auto;padding:32px 20px 72px}a{color:#135c74}h1{font-size:clamp(28px,5vw,40px);margin:24px 0 8px}h2{font-size:23px}section,details{border:1px solid #c9d4dd;background:white;border-radius:10px;padding:18px;margin:16px 0}summary{cursor:pointer;font-weight:650}label{display:block;font-weight:650}input,button{font:inherit;padding:8px 12px;border:1px solid #81929e;border-radius:5px}input{max-width:100%;width:19em}button{background:#155e75;color:white;cursor:pointer}table{width:100%;border-collapse:collapse}th,td{padding:8px;text-align:left;border-bottom:1px solid #dbe2e7}blockquote{margin:10px 0;padding:8px 14px;border-left:3px solid #63899a;background:#f4f7f8;overflow-wrap:anywhere}code{overflow-wrap:anywhere}#status{min-height:1.6em}
+</style></head><body><main>
+<a href="item4.html">← Operational VEX</a>
+<h1>CVSS와 CVE 원문 대조</h1>
+<p id="summary"></p><p>CVE별로 3.1 → 4.0 → 3.0 순서에서 처음 발견한 버전을 사용합니다. H200의 Nemotron 모델이 공개 벡터를 가린 상태에서 description을 판독했습니다. 일치와 불일치는 지표값에 대한 비교입니다. 제품·버전·경로가 같은지 확인할 근거가 부족하면 해당 연결은 미확인으로 남습니다.</p>
+<form id="search"><label for="cve">CVE ID</label><input id="cve" required placeholder="CVE-2020-16230" autocomplete="off" spellcheck="false"> <button>조회</button></form>
+<details><summary>원문 조건과 자산 질문은 어떻게 연결하나요?</summary>
+<p>12,418개 CVE를 대상으로 description과 권고문을 읽고, 조건마다 행위자·대상·상태와 원문 인용을 기록합니다. CVSS 버전에 맞춰 지표를 분류하고 제품 범위와 평가 출처를 보존합니다.</p>
+<p>추출 후 18개 자산 유형의 505개 질문에서 대응 후보를 찾습니다. 인용과 확인 대상이 요구값을 뒷받침하면 연결하고, 일부만 확인할 수 있으면 부분 연결로 표시합니다. 원문이 뒷받침하지 않는 조건이나 관계는 미확인으로 남습니다.</p>
+</details>
+<p id="status" role="status"></p><div id="detail"></div>
+<script src="item4-cvss-data/summary.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const node=(tag,text)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;return e};
+const summary=window.cvssSummary;
+if(summary) $('summary').textContent=summary;
+const labels={unknown:'판독 미확인',same_value:'값 일치',different_value:'값 불일치'};
+const pending=new Map();
+function loadYear(year){
+ if(!pending.has(year)){
+  const request=new Promise((resolve,reject)=>{
+   const script=document.createElement('script');
+   script.src='item4-cvss-data/'+year+'.js';
+   script.onload=()=>resolve(window.cvssYears[year]);
+   script.onerror=()=>reject(new Error('자료 파일을 열 수 없습니다.'));
+   document.head.append(script);
+  });
+  pending.set(year,request);
+  request.catch(()=>pending.delete(year));
+ }
+ return pending.get(year);
+}
+function show(id,r){
+ const box=$('detail');box.replaceChildren(node('h2',id));
+ const link=node('a','NVD description 열기');link.href='https://nvd.nist.gov/vuln/detail/'+id;box.append(link);
+ if(r.version)box.append(node('p','선택 버전 · CVSS '+r.version));
+ if(!r.d)box.append(node('p','저장된 description이 없습니다.'));
+ if(!r.a.length)box.append(node('p','대조 자료에 3.1·4.0·3.0 벡터가 없습니다.'));
+ r.a.forEach(a=>{
+  const el=node('details');el.open=r.a.length===1;el.append(node('summary','CVSS '+a.v+' · '+a.s));
+  el.append(node('p',a.publisher+' · '+a.ptr),node('p','평가 대상 제품 ID · '+(a.p.join(', ')||'미기재')),node('code',a.raw),node('p','원문과 평가의 제품·경로 범위 연결 · 미확인'));
+  const table=node('table'),header=node('tr');
+  ['지표','공개값','원문 판독','대조'].forEach(x=>header.append(node('th',x)));table.append(header);
+  for(const [k,v] of Object.entries(a.m)){const row=node('tr');[k,v[0],v[1],labels[v[2]]].forEach(x=>row.append(node('td',x)));table.append(row)}
+  el.append(table);box.append(el);
+ });
+ const section=node('section');section.append(node('h2','원문 판독 근거'));
+ if(!r.e.length)section.append(node('p','채택한 인용문이 없습니다.'));
+ r.e.forEach(([axis,value,start,end,quote])=>{section.append(node('strong',axis+' = '+value+' · 문자 위치 ['+start+', '+end+')'),node('blockquote',quote))});
+ box.append(section);
+}
+let sequence=0;
+$('search').onsubmit=async event=>{
+ event.preventDefault();const attempt=++sequence,id=$('cve').value.trim().toUpperCase(),match=/^CVE-(\d{4})-\d{4,}$/.exec(id);
+ $('detail').replaceChildren();
+ if(!match){$('status').textContent='CVE-연도-번호 형식으로 입력하세요.';return}
+ if(!window.cvssAvailableYears.includes(match[1])){$('status').textContent='이번 평가에 포함되지 않은 CVE입니다.';return}
+ $('status').textContent='자료를 읽는 중입니다.';
+ try{const records=await loadYear(match[1]);if(attempt!==sequence)return;
+ if(!records[id]){$('status').textContent='이번 평가에 포함되지 않은 CVE입니다.';return}
+ $('status').textContent='';show(id,records[id]);
+ }catch(error){if(attempt===sequence)$('status').textContent=error.message}
+};
+</script></main></body></html>
