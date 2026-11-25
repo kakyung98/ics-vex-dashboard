@@ -31,19 +31,16 @@ if(typeof document.querySelectorAll==='function'){
 }
 async function synchronizeWorkspaceChrome(){
  // Existing analysis processes may still serve the earlier shell. Reuse the
- // canonical SBOM header/footer without restarting an in-flight analysis.
+ // canonical SBOM footer without restarting an in-flight analysis.
  if(typeof document.querySelector!=='function')return;
  const main=document.querySelector('main.main'),workspace=$('item4-workspace');
  if(!main||!workspace)return;
- const missingHeader=!main.querySelector(':scope > .workspace-topbar');
  const missingFooter=!main.querySelector(':scope > .foot');
- if(missingHeader||missingFooter){
+ if(missingFooter){
   const response=await fetch(new URL('index.html',location.href).href,{cache:'no-store'});
   if(!response.ok)throw Error('Unable to load the shared workspace shell.');
   const reference=new DOMParser().parseFromString(await response.text(),'text/html');
-  const topbar=reference.querySelector('main.main > .workspace-topbar');
   const footer=reference.querySelector('main.main > .foot');
-  if(missingHeader&&topbar)main.insertBefore(document.importNode(topbar,true),main.firstChild);
   if(missingFooter&&footer)main.append(document.importNode(footer,true));
  }
  const heading=workspace.querySelector(':scope > h1');
