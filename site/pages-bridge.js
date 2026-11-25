@@ -86,6 +86,7 @@
     }
     return asJson({detail:'Connect your local backend to run analysis.'},503);
   }
+  window.icsvexBackendConnected=Boolean(backend);
   window.fetch=async function(input,options){
     const u=new URL(typeof input==='string'||input instanceof URL?input:input.url,location.href);
     const assetPath=u.pathname.match(/\/(reverse_sbom\/[^/]+)$/);

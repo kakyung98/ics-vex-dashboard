@@ -6,16 +6,20 @@ const assetEnglish={"A0001:ethernet_cable_connected":{"label":"Ethernet cable co
 const $=id=>document.getElementById(id),node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 let bom=null,job=null,sequence=0,startRequestId=null;
 let answerInputs=new Map(),contextInputs=new Map(),dirty=false,busy=false;
+const backendAvailable=()=>typeof window==='undefined'||window.icsvexBackendConnected!==false;
 const states={queued:'Queued',running:'Analyzing',completed:'Completed',failed:'Failed'};
 function resetStages(){
  $('branches').hidden=false;
  $('asset-state').textContent='Waiting for SBOM analysis';$('asset-result').replaceChildren();
  $('condition-state').textContent='Waiting for source analysis';
- $('progress').hidden=true;$('progress').max=1;$('progress').value=0;
+ $('progress').hidden=false;$('progress').max=1;$('progress').value=0;
+ $('asset-details').hidden=true;
+ $('workflow-status').textContent=backendAvailable()?'Choose an SBOM to begin analysis.':'Connect your local backend to run analysis.';
  $('input-state').textContent='Waiting for asset classification and source analysis';
  $('assessment-state').textContent='Waiting for operating values';
 }
 resetStages();
+if(!backendAvailable())$('start').disabled=true;
 // Refresh labels even when an existing server process still serves the old shell.
 if(typeof document.querySelectorAll==='function'){
  const badges=document.querySelectorAll('#branches .badge, .agent-grid .ov-pill');
@@ -46,7 +50,7 @@ async function synchronizeWorkspaceChrome(){
  if(heading)main.insertBefore(heading,workspace);
 }
 synchronizeWorkspaceChrome().catch(error=>console.warn('Workspace shell: '+error.message));
-function message(text,error=false){$('message').textContent=text;$('message').className=error?'workflow-input-note error':'workflow-input-note';}
+function message(text,error=false){$('workflow-status').textContent=backendAvailable()?text:'Connect your local backend to run analysis.';$('message').textContent=text;$('message').className=error?'workflow-input-note error':'workflow-input-note';}
 async function api(path,payload){
  const controller=typeof AbortController==='function'?new AbortController():null;
  const timer=controller?setTimeout(()=>controller.abort(),path.endsWith('/assess')?180000:20000):null;
@@ -87,7 +91,7 @@ function acceptBom(value,label,handoff=false){
  if(options.length>1){const blank=node('option','Select a product component');blank.value='';select.append(blank);}
  for(const option of options){const o=node('option',option.name+' · '+option.ref);o.value=option.ref;select.append(o);}
  if(value.documentDescribes?.length===1)select.value=value.documentDescribes[0];
- bom=value;select.disabled=false;$('start').disabled=!select.value;$('bom-summary').textContent=label+' · Top-level candidates: '+options.length+'';
+ bom=value;select.disabled=false;$('start').disabled=!backendAvailable()||!select.value;$('bom-summary').textContent=label+' · Top-level candidates: '+options.length+'';
  $('bom-file-name').textContent=label;
  $('bom-upload-controls').hidden=handoff;$('bom-handoff-note').hidden=!handoff;$('replace-bom').hidden=!handoff;
  $('bom-heading').textContent='Load SBOM';
@@ -114,7 +118,7 @@ dropzone.addEventListener('dragenter',event=>{event.preventDefault();dragDepth++
 dropzone.addEventListener('dragover',event=>{event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='copy';});
 dropzone.addEventListener('dragleave',event=>{event.preventDefault();if(--dragDepth<=0){dragDepth=0;dropzone.classList.remove('drag');}});
 dropzone.addEventListener('drop',event=>{event.preventDefault();dragDepth=0;dropzone.classList.remove('drag');const files=event.dataTransfer?.files;if(!files||files.length!==1){message('Drop one JSON file at a time.',true);return;}return uploadFile(files[0]);});
-$('representative').onchange=()=>{startRequestId=null;$('start').disabled=!bom||!$('representative').value;};
+$('representative').onchange=()=>{startRequestId=null;$('start').disabled=!backendAvailable()||!bom||!$('representative').value;};
 
 function drawProgress(value){
  $('branches').hidden=false;$('asset-state').textContent=states[value.asset_state]||value.asset_state;
@@ -123,6 +127,7 @@ function drawProgress(value){
  $('assessment-state').textContent=value.assessment_state==='completed'?'Assessment completed':'Waiting for operating values';
  $('input-state').textContent=value.status==='completed'?'Asset keys ready for operator input':'Waiting for source analysis';
  const asset=value.asset_classification,box=$('asset-result');box.replaceChildren();
+ $('asset-details').hidden=!asset;
  if(!asset)return;
  box.append(node('strong',asset.asset?asset.asset.name+' · '+asset.asset_type_id:'Asset type unresolved'));
  if(asset.reason)box.append(node('p',asset.reason));
@@ -323,7 +328,7 @@ async function watch(id,seq){
  for(;;){
   const value=await reconnect(()=>api('jobs/'+encodeURIComponent(id)),seq);if(seq!==sequence||!value)return;job=value;
   if(!bom&&value.input_bom)acceptBom(value.input_bom,'BOM from the saved analysis',true);
-  $('start').disabled=value.status==='queued'||value.status==='running';drawProgress(value);
+  $('start').disabled=!backendAvailable()||value.status==='queued'||value.status==='running';drawProgress(value);
   if(value.status==='failed')throw Error(value.error||'Analysis was interrupted.');
   if(value.status==='completed'){drawSources(value);drawInputs(value);drawAssessment(value);message('Source analysis completed. Enter the operating values in V3, then run V4.');return;}
   message((value.recovery_notice||'Source analysis in progress')+' · '+value.cves_done+' / '+value.cves_total+' CVEs');
@@ -340,7 +345,7 @@ $('start').onclick=async()=>{const seq=++sequence;$('start').disabled=true;$('do
  const submittedBom=bom,submittedRef=$('representative').value,requestId=startRequestId;
  const value=await reconnect(()=>api('start',{bom:submittedBom,representative_ref:submittedRef,request_id:requestId}),seq);if(seq!==sequence||!value)return;
  const url=new URL(location.href);url.searchParams.set('job',value.id);history.replaceState(null,'',url);await watch(value.id,seq);
- }catch(e){message(e.message,true);}finally{if(seq===sequence)$('start').disabled=!bom;}};
+ }catch(e){message(e.message,true);}finally{if(seq===sequence)$('start').disabled=!backendAvailable()||!bom;}};
 $('download-results').onclick=()=>{
  if(!job||job.status!=='completed')return;
  const url=URL.createObjectURL(new Blob([JSON.stringify(job,null,2)],{type:'application/json'})),a=node('a');a.href=url;a.download='item4-analysis-'+job.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
