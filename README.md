@@ -162,4 +162,6 @@ node tests/item4/test_operating_question_tree.cjs
 
 GitHub 최신화에서는 HWP/HWPX·엑셀·CSV 파일과 로컬 자격증명·세션 DB·추론 캐시를 제외합니다. 이 제외는 원본 데이터 삭제를 의미하지 않습니다. 별도로 보관하는 `benchmark/item4_evaluation/catalog/operator_asset_keys_clustered.csv`와 모델·원문 자료 등 로컬 실행 의존성은 실행 환경에 준비해야 합니다. GitHub Pages의 정적 화면과 로컬 API/모델을 사용하는 실제 분석을 구분합니다.
 
+Pages 화면은 `python tools/item4/export_questionnaire_pages.py`로 갱신합니다. 로컬 API 화면을 그대로 복사하지 않고, Pages 연결 브리지를 먼저 로드하고 프로젝트 경로에 맞는 상대 리소스 주소로 내보냅니다.
+
 2026-11-28 운영정보 요구사항 확장 검증에서는 관련 회귀 검사 **375개와 하위 사례 5개**, 운영자 입력 화면 및 분기 트리 Node 검사가 통과했습니다. 원문 조건·자료 연결·자산 범위·모름·논리 보존·변경 감지에 대한 계약 검사이며, 실제 모델의 독립 의미 정확도나 현장 악용 가능성 정확도를 측정한 결과는 아닙니다.
