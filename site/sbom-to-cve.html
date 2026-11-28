@@ -217,14 +217,14 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 <div class="method-overview">
 <div class="eyebrow">Method / System overview</div>
 <h1>Method Overview</h1>
-<p class="sub">Identify CVE mappings from an SBOM, then review asset impact using operating context.</p>
-<p class="hint">Documentation updated 2026-11-16 · Current implementation, dataset layout and fresh H200 evaluation. Identification and operational impact are separate decisions.</p>
+<p class="sub">Identify CVE mappings from an SBOM, then review asset impact using asset operational information.</p>
+<p class="hint">Documentation updated 2026-11-25 · Active advisory-derived train/test inputs; historical H200 scores remain separate. Identification and operational impact are separate decisions.</p>
 <div class="overview-steps" aria-label="System workflow">
 <article><small>01 · SBOM → CVE</small><h2>Identify the component</h2><p>Preserve the supplied name, version and identifiers. Retrieve product candidates and verify CVE mappings against source evidence.</p></article>
 <article><small>02 · OPERATIONAL VEX</small><h2>Review the deployment</h2><p>Select the asset and product-specific source scenario. Use configuration, access rules and operating records to answer observable conditions.</p></article>
 <article><small>03 · EVIDENCE &amp; EXPORT</small><h2>Keep the decision traceable</h2><p>Validate scope, evidence and scenario coverage. Retain missing or conflicting facts as unknown before exporting a supported VEX result.</p></article>
 </div>
-<nav class="overview-links" aria-label="Method sections"><a href="#identification-method">Identification</a><a href="#operational-method">Operational VEX</a><a href="#method-datasets">Datasets</a><a href="#method-evaluation">Evaluation</a></nav>
+<nav class="overview-links" aria-label="Method sections"><a href="#identification-method">Identification</a><a href="#operational-method">Operational VEX</a><a href="#method-datasets">Datasets</a><a href="#method-evaluation">Test</a></nav>
 <section id="identification-method" aria-label="Identification method">
 <style>
 .method-flow{container:methodFlow / inline-size;max-width:1120px;margin:24px 0 30px;font-family:var(--sans);color:var(--ink)}
@@ -286,17 +286,17 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
  .method-flow .mf-step{min-height:96px}.method-flow .mf-join{display:none}
 }
 @media(max-width:480px){.method-flow .mf-title{font-size:17px}.method-flow .mf-step{padding:14px}.method-flow .mf-foot{display:block}.method-flow .mf-foot a{display:inline-block;margin-top:10px}}
-</style><figure class="method-flow" id="sbom-cve-flow" aria-labelledby="sbom-cve-flow-title"><figcaption><h2 id="sbom-cve-flow-title">How your SBOM becomes a CVE shortlist</h2><p>Follow the product, version and identity checks. Open a stage below for the technical detail.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>Evidence checks</b> code-based validation</span><span><b>Your input</b> asset facts</span></div><div class="mf-entry"><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>INPUT</span><strong class="mf-title">SBOM</strong><span class="mf-sub">Original names, identifiers and versions</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>PARSING</span><strong class="mf-title">Parse SBOM</strong><span class="mf-sub">Preserve each component and its source fields</span></div><div class="mf-step" data-role="code"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"/></svg>CONDITIONAL ROUTING</span><strong class="mf-title">Orchestrator</strong><span class="mf-sub">Route missing names to C1, version issues to C2, identifier issues to C3</span></div><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>RETRIEVAL</span><strong class="mf-title">Hybrid RAG</strong><span class="mf-sub">Shared structured index, BM25 and sparse TF-IDF vector index</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-branches" aria-label="Conditional agent branches"><div class="mf-step" data-role="llm"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>CONDITIONAL C1</span><strong class="mf-title">C1 · Rank product candidates</strong><span class="mf-sub">When the name is missing, ambiguous or unsupported</span></div><div class="mf-step" data-role="llm"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>CONDITIONAL C2</span><strong class="mf-title">C2 · Classify version evidence</strong><span class="mf-sub">When version evidence is missing, noncanonical or conflicting</span></div><div class="mf-step" data-role="llm"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>CONDITIONAL C3</span><strong class="mf-title">C3 · Select the identity</strong><span class="mf-sub">When CPE/PURL is missing, unverified or inconsistent</span></div></div><p class="mf-explanation">Sufficient structured evidence → direct validation. Multiple issues → required agents in order.</p><div class="mf-down" aria-hidden="true"></div><div class="mf-gate"><span class="mf-kind">DECISION VALIDATOR · SHARED EVIDENCE GATES</span><strong class="mf-title">Require original evidence and a unique identity</strong><span class="mf-sub">Keep competing identities, version conflicts and unsupported claims unresolved.</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="code"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"/></svg>Evidence check</span><strong class="mf-title">Query NVD &amp; CISA</strong><span class="mf-sub">Verified release CPE / product candidates; explicit version conditions</span></div><div class="mf-step" data-role="code"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"/></svg>Evidence check</span><strong class="mf-title">Link CVEs to components</strong><span class="mf-sub">Retain case IDs and all stage checks</span></div><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>HANDOFF</span><strong class="mf-title">Continue to VEX review</strong><span class="mf-sub">Candidate matches are not exploitability findings</span></div></div><div class="mf-foot"><p>Conditional routing runs only the required C1, C2 and C3 agents. Multiple required agents run in order; C2 changes trigger fresh retrieval and routing. Sufficient structured evidence bypasses agents. Every path passes the decision validator before CVE matching.</p><a href="vex-decision.html#vex-review-flow">CVE → VEX workflow →</a></div></figure>
+</style><figure class="method-flow" id="sbom-cve-flow" aria-labelledby="sbom-cve-flow-title"><figcaption><h2 id="sbom-cve-flow-title">How your SBOM becomes a CVE shortlist</h2><p>Follow the product, version and identity checks. Open a stage below for the technical detail.</p></figcaption><div class="mf-key"><span><b class="mf-key-llm">LLM</b> model inference</span><span><b>Evidence checks</b> code-based validation</span><span><b>Your input</b> asset facts</span></div><div class="mf-entry"><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>INPUT</span><strong class="mf-title">SBOM</strong><span class="mf-sub">Original names, identifiers and versions</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>PARSING</span><strong class="mf-title">Parse SBOM</strong><span class="mf-sub">Preserve each component and its source fields</span></div><div class="mf-step" data-role="code"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"/></svg>CONDITIONAL ROUTING</span><strong class="mf-title">Orchestrator</strong><span class="mf-sub">Route missing names to I1, version issues to I2, identifier issues to I3</span></div><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>RETRIEVAL</span><strong class="mf-title">Hybrid RAG</strong><span class="mf-sub">Shared structured index, BM25 and sparse TF-IDF vector index</span></div></div><div class="mf-down" aria-hidden="true"></div><div class="mf-branches" aria-label="Conditional agent branches"><div class="mf-step" data-role="llm"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>CONDITIONAL I1</span><strong class="mf-title">I1 · Rank product candidates</strong><span class="mf-sub">When the name is missing, ambiguous or unsupported</span></div><div class="mf-step" data-role="llm"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>CONDITIONAL I2</span><strong class="mf-title">I2 · Classify version evidence</strong><span class="mf-sub">When version evidence is missing, noncanonical or conflicting</span></div><div class="mf-step" data-role="llm"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z"/></svg>CONDITIONAL I3</span><strong class="mf-title">I3 · Select the identity</strong><span class="mf-sub">When CPE/PURL is missing, unverified or inconsistent</span></div></div><p class="mf-explanation">Sufficient structured evidence → direct validation. Multiple issues → required agents in order.</p><div class="mf-down" aria-hidden="true"></div><div class="mf-gate"><span class="mf-kind">DECISION VALIDATOR · SHARED EVIDENCE GATES</span><strong class="mf-title">Require original evidence and a unique identity</strong><span class="mf-sub">Keep competing identities, version conflicts and unsupported claims unresolved.</span></div><div class="mf-down" aria-hidden="true"></div><div class="mf-rail"><div class="mf-step" data-role="code"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"/></svg>Evidence check</span><strong class="mf-title">Query NVD &amp; CISA</strong><span class="mf-sub">Verified release CPE / product candidates; explicit version conditions</span></div><div class="mf-step" data-role="code"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4v5c0 5-8 9-8 9S4 17 4 12V7z M8 12l3 3 5-6"/></svg>Evidence check</span><strong class="mf-title">Link CVEs to components</strong><span class="mf-sub">Retain case IDs and all stage checks</span></div><div class="mf-step" data-role="data"><span class="mf-kind"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5c0-3 16-3 16 0v14c0 3-16 3-16 0z M4 5c0 3 16 3 16 0 M4 12c0 3 16 3 16 0"/></svg>HANDOFF</span><strong class="mf-title">Continue to VEX review</strong><span class="mf-sub">Candidate matches are not exploitability findings</span></div></div><div class="mf-foot"><p>Conditional routing runs only the required I1, I2 and I3 agents. Multiple required agents run in order; I2 changes trigger fresh retrieval and routing. Sufficient structured evidence bypasses agents. Every path passes the decision validator before CVE matching.</p><a href="vex-decision.html#vex-review-flow">CVE → VEX workflow →</a></div></figure>
 <div class="method-notes">
 <h2>Hybrid RAG and conditional agents</h2>
 <p>Structured product/CPE lookup, BM25, and sparse character 3-gram TF-IDF cosine search are fused with reciprocal-rank fusion (RRF). Retrieved candidate IDs and source evidence are supplied to the agents. This vector search does not use a semantic embedding model, and similarity scores are not identity probabilities.</p>
 <div class="method-table"><table><thead><tr><th>Role</th><th>When it is selected</th><th>Evidence boundary</th></tr></thead><tbody>
-<tr><th>C1 · Product name</th><td>The name is empty, unknown, unspecified or NOASSERTION; or dictionary evidence does not support a unique identity.</td><td>Rank supplied candidate IDs. Preserve manufacturer and model identifiers. Fuzzy similarity alone cannot establish identity.</td></tr>
-<tr><th>C2 · Version</th><td>No confirmed version or declared range; source versions conflict; a version is extracted from the name; non-exact notation or normalization needs review.</td><td>Classify original observations. Preserve versions and bounds; never invent an installed release.</td></tr>
-<tr><th>C3 · Identifier</th><td>CPE/PURL is missing, unverified or inconsistent, or identity still needs review.</td><td>Check candidate eligibility, dictionary evidence, component type, vendor and identifier conflicts.</td></tr>
+<tr><th>I1 · Product name</th><td>The name is empty, unknown, unspecified or NOASSERTION; or dictionary evidence does not support a unique identity.</td><td>Rank supplied candidate IDs. Preserve manufacturer and model identifiers. Fuzzy similarity alone cannot establish identity.</td></tr>
+<tr><th>I2 · Version</th><td>No confirmed version or declared range; source versions conflict; a version is extracted from the name; non-exact notation or normalization needs review.</td><td>Classify original observations. Preserve versions and bounds; never invent an installed release.</td></tr>
+<tr><th>I3 · Identifier</th><td>CPE/PURL is missing, unverified or inconsistent, or identity still needs review.</td><td>Check candidate eligibility, dictionary evidence, component type, vendor and identifier conflicts.</td></tr>
 </tbody></table></div>
 <p>The LangGraph orchestrator rechecks remaining conditions after each selected agent. Required roles run sequentially, at most once each. Sufficient structured evidence can bypass a role; a selected role can also resolve a forced structured choice without a GPU call. Every path ends at the decision validator.</p>
-<details class="method-topic"><summary>Model and final identity checks</summary><div class="topic-body"><p>C1, C2 and C3 use the Qwen2.5-Coder-14B-Instruct family with a 4-bit NF4 base and a shared QLoRA adapter. Roles have separate prompts and response contracts; they are not three separately trained base models.</p><p>Accepted outputs must cite supported source IDs and agree with independent dictionary checks. Product identity requires unique supported evidence without conflicts. Manufacturer and supplier are different fields. An unaccepted model response remains visible and cannot silently override source evidence.</p></div></details>
+<details class="method-topic"><summary>Model and final identity checks</summary><div class="topic-body"><p>I1, I2 and I3 use the Qwen2.5-Coder-14B-Instruct family with a 4-bit NF4 base and a shared QLoRA adapter. Roles have separate prompts and response contracts; they are not three separately trained base models.</p><p>Accepted outputs must cite supported source IDs and agree with independent dictionary checks. Product identity requires unique supported evidence without conflicts. Manufacturer and supplier are different fields. An unaccepted model response remains visible and cannot silently override source evidence.</p></div></details>
 <details class="method-topic"><summary>Version handling and current limitations</summary><div class="topic-body"><p>A CPE wildcard does not establish an installed version. Explicit SBOM, PURL and usable CPE versions are retained with provenance. A shorter numeric release line in a name may coexist with a matching longer installed version.</p><p>Conflict detection currently compares normalized strings: explicit <code>1.2</code> and <code>1.2.0</code> can conflict even though numeric version ordering treats them as equal. This differs from the name release-line exception.</p><p><code>&gt;=1.0, &lt;2.0</code> is preserved as a declared range. The general configuration matcher supports contained / disjoint / partial-overlap checks, but the current identification matching path does not pass this range through. A range-only input can therefore remain unresolved for version-constrained CVEs.</p><p>Plain numeric, configured PEP 440, SemVer, Debian and RPM comparisons are supported; unsupported vendor ordering stays unknown. Escaped CPE syntax remains unsupported by the identification parser. Flattened local source atoms do not establish complete platform AND/OR applicability.</p></div></details>
 </div></section>
 <section id="operational-method" class="method-notes" aria-label="Operational VEX method">
@@ -312,18 +312,18 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
 <div class="overview-links"><a href="vex-decision.html">Open Operational VEX →</a><a href="index.html">Open SBOM → CVE →</a></div>
 </section>
 <section id="method-datasets" class="method-notes" aria-label="Dataset scope">
-<h2>Two separate datasets</h2>
-<div class="method-table"><table><thead><tr><th>Dataset</th><th>Unit and contents</th><th>Purpose</th></tr></thead><tbody>
-<tr><th>ICSA-derived synthetic BOMs</th><td>3,881 advisory JSONs: 3,108 with CPE components and 773 empty records. Includes 10,847 unique CVEs and 13,365 advisory-CVE occurrences.</td><td>The existing Synthetic SBOM menu. Follow ICSA → listed CVE → vulnerable:true source CPE; retain repeated CVEs across advisories.</td></tr>
-<tr><th>Recorded identification evaluation</th><td>12,418 input cases; 5,114 unique SBOM JSONs. Separate input, Gold and results files.</td><td>The recorded H200 evaluation. It was not replaced or rerun using the new advisory-derived BOMs.</td></tr>
-</tbody></table></div>
-<details class="method-topic"><summary>Current files and source provenance</summary><div class="topic-body"><p>Advisory BOMs: <code>benchmark/icsa-cpe-synthetic sbom/sbom/</code>. <code>index.json</code> supports the list; <code>linkage.jsonl</code> retains original CPE matches, version bounds and source paths; <code>excluded.json</code> records exclusions; <code>manifest.json</code> and <code>audit.json</code> record source fingerprints and integrity checks.</p><p>Evaluation package: <code>benchmark/item3_evaluation/input.jsonl</code>, <code>gold.jsonl</code> and <code>results.json</code>. Join input and Gold by <code>id</code>. Input and Gold were consolidated using NTFS hard links; editing their contents changes all paths linked to the same file. The results package contains scores and verification, not the full raw model trace database.</p></div></details>
-<p class="overview-scope">Advisory BOMs collect alternative affected products and releases; they do not establish a verified simultaneous installation. Wildcards are not converted to invented installed versions. CVE answer links are included in these exports, so they must not be used unchanged as blind evaluation inputs. The 3,881-document schema/integrity check is not a new Precision evaluation.</p>
-<div class="overview-links"><a href="ics-sbom.html">Browse Synthetic SBOM →</a></div>
+<h2>Datasets: train / test</h2>
+<table class="method-table"><thead><tr><th>Dataset</th><th>Size</th><th>Protocol</th></tr></thead><tbody>
+<tr><th>CPE-enriched source v3</th><td>3,881 SBOMs; 107,266 components; 12,418 declared CVEs; 10,847 CPE-scope CVEs.</td><td>Preserve 29,066 CSAF components and append 78,200 separately sourced NVD condition candidates. Original v2 is backed up.</td></tr>
+<tr><th>Active inputs v5</th><td>13,205 inputs: train 7,737 / test 5,468. Target CVEs: 7,593 / 3,254.</td><td>One control per source; three actual single-field variants per eligible source (3,108). I1/I2/I3 each 3,108; test each 1,309. No no-op variants.</td></tr>
+<tr><th>Preserved historical test</th><td>18,608 inputs in benchmark/item3_evaluation.</td><td>Historical results remain separate from the active dataset.</td></tr>
+</tbody></table>
+<p class="overview-scope">Active path: benchmark/item3_advisory_inputs_v5. Each noise axis keeps 1,554 masks and 1,554 notation changes. All 773 ineligible sources remain baseline-only, including 7 empty documents. Grouping by target CVE and all possible transformed inputs prevents cross-split CVE and identical-input overlap. Source-explicit CSAF and separate NVD component/CVE relations form gold; unlisted relations remain unknown. NVD conditions are not verified installed releases or full platform applicability. No new training or full model measurement is claimed; previous model training overlap is unverified.</p>
 </section>
-<section id="method-evaluation" class="method-notes" aria-label="Recorded H200 evaluation">
-<h2>Recorded H200 evaluation · 2026-11-16</h2>
-<p>Both evaluation items retain 12,418 target CVEs. Fresh full-population inference completed in about 54 minutes 21 seconds.</p>
+
+<section id="method-evaluation" class="method-notes" aria-label="Recorded H200 test">
+<h2>Recorded H200 test · 2026-11-16</h2>
+<p>Both test items retain 12,418 target CVEs. Fresh full-population inference completed in about 54 minutes 21 seconds.</p>
 <div class="method-table"><table><thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead><tbody>
 <tr><th>Identification · unique-input mapping</th><td>TP 683,488; FP 56; unknown emitted mappings 16; FN 2,227.</td></tr>
 <tr><th>Identification · conservative Precision</th><td><code>683488 / (683488 + 56 + 16)</code> = <strong>99.9894669%</strong>. Recall on known positives: 99.6752%.</td></tr>
@@ -331,7 +331,7 @@ details.method-details p,details.method-details li{font-size:16px;line-height:1.
 <tr><th>Operational VEX · separate test</th><td>4,012 CVEs / 6,797 cases. Raw-model Precision: 98.8462% (TP 514 / FP 6).</td></tr>
 <tr><th>Operational VEX · test with validation</th><td>Precision 100% (TP 508 / FP 0); Recall 30.4010%; abstention 92.5261%.</td></tr>
 </tbody></table></div>
-<p class="overview-scope">These are public-source-derived synthetic evaluations. Identification includes training-origin cases and is not an independent held-out generalization score. VEX scores depend on the synthetic operating assumptions. High Precision must be read with Recall and abstention. Independent real-asset Precision remains unmeasured. This documentation update does not rerun or change the recorded evaluation.</p>
+<p class="overview-scope">These are public-source-derived synthetic tests. Identification includes training-origin cases and is not an independent held-out generalization score. VEX scores depend on the synthetic operating assumptions. High Precision must be read with Recall and abstention. Independent real-asset Precision remains unmeasured. This documentation update does not rerun or change the recorded test.</p>
 </section>
 </div>
 
@@ -380,7 +380,7 @@ async function run(){
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
-    const nextcol = '<span class="hint">Review operating context</span>';
+    const nextcol = '<span class="hint">Review asset operational information</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
       +'<td>'+_compCell(f)+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
@@ -391,14 +391,14 @@ async function run(){
   o.innerHTML=_armForkHtml()+'<details class="review-disclosure"><summary>View identified CVEs and initial evidence</summary>'+h+'</details>';
 }
 
-// Operating context is collected once and shared by the CVE questionnaire.
+// Asset operational information is collected once and shared by the CVE questionnaire.
 let _ocFields=null, _armResult=null, _operationPlan=null;
 let _candidateJobId=null, _lastSbom=null;
 let _item4ReviewId=null;
 function _armForkHtml(){
  _item4ReviewId=null;_armResult=null;
  return '<div class="card" id="armfork" style="margin-top:14px">'
- +'<h3>Operating context and VEX review</h3>'
+ +'<h3>Asset operational information and VEX review</h3>'
  +'<p>Review the shared asset context, installed-version records and CVE-specific operating conditions.</p>'
  +'<button class="primary" id="start-product-review" onclick="startItem4Review()">Start operating-context review &rarr;</button>'
  +'<div id="item4routes"></div><div id="armbody" style="margin-top:14px"></div></div>';
@@ -420,19 +420,19 @@ function renderItem4Routes(){
  const box=document.getElementById('item4routes');if(!box)return;
  box.innerHTML='<details class="review-disclosure"><summary>Operating-context review ('+_armResult.total+' CVEs)</summary>'
  +'<p>Review ID: <code>'+esc(_item4ReviewId)+'</code></p>'
- +'<p>All identified CVEs use shared operating context and individual operator answers. Missing or uncertain evidence remains under investigation.</p>'
+ +'<p>All identified CVEs use shared asset operational information and individual operator answers. Missing or uncertain evidence remains under investigation.</p>'
  +'<button onclick="downloadOcReview()">Download current review JSON</button></details>';
 }
 async function renderOcForm(box){
   _operationPlan=null;
-  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Enter the shared operating context and installed-version facts first. Add CVE-specific answers where known, then submit to view the assessment.</p>'
+  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Enter the shared asset operational information and installed-version facts first. Add CVE-specific answers where known, then submit to view the assessment.</p>'
     +'<p class="hint">These answers support a review; they do not establish verified code absence.</p>'
     +'<details class="review-help"><summary>How this review works</summary><p>Common asset facts are collected once. Fixed, versioned workflow questions are selected by each CVE’s operational classification. The classification panel shows the criterion and literal source matches. No model generates these questions. Answers are assessed by scope and version checks; the final writer explains the locked status.</p></details>'
     +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Prepare operational questions</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
 async function generateOperationQuestions(){
   const box=document.getElementById('operation-questions'),button=document.getElementById('generate-operation-questions');
-  button.disabled=true;box.innerHTML='<p>Preparing shared operating facts, fixed workflow questions and classification evidence.</p>';
+  button.disabled=true;box.innerHTML='<p>Preparing shared asset operational information, fixed workflow questions and classification evidence.</p>';
   try{
     const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
     const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
@@ -442,14 +442,14 @@ async function generateOperationQuestions(){
       +renderOperationalClassification(c.operational_classification)
       +'<details class="review-disclosure"><summary>Rule and source record</summary><p class="hint">Method: '+esc(c.generation.method||'Rule templates')+' · Attempts retained: '+esc(String((c.generation.attempts||[]).length))+'</p></details>'
       +((c.generation.normalizations||[]).length?'<p class="hint">Presentation normalization was applied. Original model output and exact changes are retained below.</p>':'')
-      +(c.generation.status!=='validated'?'<p class="err">The question plan requires review. No operational facts were fabricated.</p>':'')
+      +(c.generation.status!=='validated'?'<p class="err">The question plan requires review. No asset operational information were fabricated.</p>':'')
       +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div class="operation-question"><span class="question-kind">'+esc(q.origin==='system'?'Installation record':q.scope==='common'?'Common check':'CVE-specific check')+'</span><label class="question-title" for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label>'
         +'<details class="question-evidence"><summary>Why this question'+(q.evidence?' · View source':'')+'</summary>'+renderOperationalQuestionRationale(q)+'</details>'
         +(q.answer_type==='text'?'<textarea class="op-control" maxlength="500" id="oq_'+ci+'_'+qi+'" placeholder="Describe the known facts, or leave empty when unknown"></textarea>':ynControl('oq_'+ci+'_'+qi,'답변'))
         +ynControl('oqe_'+ci+'_'+qi,'이 답변을 뒷받침하는 설정 또는 점검 기록이 있습니까?')+'</div>').join('')
       +renderEvidenceWorkspace(c,ci,_operationPlan)
       +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></details>').join('')+'</section>'
-      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Save operating facts and review VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
+      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Save asset operational information and review VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
     const saved=new Map((_armResult?.statements||[]).flatMap(s=>(s.operational_review?.questions_and_answers||[]).map(q=>[q.id,q.answer])));
     _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{const a=saved.get(q.id);if(!a||q.deprecated_version_field)return;document.getElementById('oq_'+ci+'_'+qi).value=q.answer_type==='text'?(a.value||''):['yes','no','unknown'].includes(a.value)?a.value:'unknown';document.getElementById('oqe_'+ci+'_'+qi).value=a.record_available||'unknown';}));
     (_operationPlan.assets||[]).forEach((a,i)=>{const f=_armResult?.component_facts?.[a.ref];if(!f)return;for(const [field,key] of [['present','present'],['matches','sbom_identity_matches'],['record','record_available']])document.getElementById('of_'+field+'_'+i).value=f[key]||'unknown';document.getElementById('of_attest_'+i).value=f.facts_checked||(f.attested?'yes':'unknown');});
@@ -462,7 +462,7 @@ async function generateTunedQuestions(cve){
 function renderSharedOperationalContext(plan){
  const saved=_armResult?.operational_context||{};
  const select=(id,label)=>ynControl('ctx_'+id,label,saved[id]);
- return '<section class="card" id="shared-operating-context"><h3>Shared product operating context</h3><p>각 항목에 예·아니오·모름으로 답하세요. 확인하지 않은 항목은 모름으로 남겨 주세요.</p>'
+ return '<section class="card" id="shared-operating-context"><h3>Shared product asset operational information</h3><p>각 항목에 예·아니오·모름으로 답하세요. 확인하지 않은 항목은 모름으로 남겨 주세요.</p>'
  +select('deployment_known','이 제품의 배치 위치와 활성화된 서비스를 확인했습니까?')
  +select('scope_known','검토 대상 장비·인터페이스·데이터 경로의 범위를 알고 있습니까?')
  +(plan.assets||[]).map((a,i)=>ynControl('ctx_component_'+i,esc(a.name||a.ref)+' Components를 실제로 확인했습니까?',(saved.component_refs||[]).includes(a.ref)?'yes':'unknown')).join('')
@@ -534,7 +534,7 @@ function editOperationalContext(){
  document.getElementById('ctx_deployment_known')?.focus({preventScroll:true});
 }
 function renderOperationalResults(result){
- return renderEvidenceDecisionSummary(result)+'<section class="card"><h3>Assessment results</h3><p>These are saved assessment results. Edit the input form to change an answer, then submit again.</p><button onclick="editOperationalContext()">Edit operating context</button></section>'
+ return renderEvidenceDecisionSummary(result)+'<section class="card"><h3>Assessment results</h3><p>These are saved assessment results. Edit the input form to change an answer, then submit again.</p><button onclick="editOperationalContext()">Edit asset operational information</button></section>'
  +result.statements.filter(s=>s.operational_review).map(s=>{
   const review=s.operational_review;const rows=review.questions_and_answers.filter(q=>!q.deprecated_version_field);
   const recorded=rows.filter(q=>q.answer?.value&&q.answer.value!=='unknown').length;
@@ -592,7 +592,7 @@ function _groundedPipelineHtml(result){
 }
 
 function _verdictTable(res,armLabel){
-  const C2={affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
+  const I2={affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
   // 판정률을 상태 분포와 같은 줄에 놓는다. 유보는 Precision 분모에서 빠지므로
   // 유보율을 가린 정밀도는 성취가 아니라 회피다 (docs/ICSVEX.md §8).
   let h='<div class="hint">'+esc(armLabel)+' · Total <b>'+res.total+'</b>'
@@ -600,7 +600,7 @@ function _verdictTable(res,armLabel){
     +' · Deferred <b>'+res.deferred+'</b></div>'
     +'<table style="margin-top:8px"><thead><tr><th>CVE</th><th>VEX</th><th>Justification</th><th>Evidence</th></tr></thead><tbody>';
   for(const s of res.statements){
-    const col=C2[s.status]||'var(--ink3)';
+    const col=I2[s.status]||'var(--ink3)';
     h+='<tr><td class="mono">'+esc(s.cve)+'</td>'
       +'<td><span class="badge" style="background:color-mix(in srgb,'+col+' 12%,transparent);color:'+col+'">'+esc(_statLabel(s.status))+'</span></td>'
       +'<td class="mono" style="font-size:14px">'+esc(s.justification||'—')+'</td>'
@@ -1173,7 +1173,7 @@ function renderOperationalQuestionRationale(q){
  const purposes={applicability:'Affected product or feature',access:'Actors and access',input_path:'Input origin and handling',trigger:'CVE-described trigger',scope:'Assessment coverage',configuration:'Actual configuration',privileges:'Actual execution rights',mitigation:'Operational protection or remediation',operational_impact:'Outage, dependency and recovery planning',discovery:'Missing source details'};
  let h='<p><strong>Question method:</strong> '+esc(origin)+'</p>';
  if(q.template_id)h+='<p><strong>Template:</strong> <code>'+esc(q.template_id)+'</code><br><strong>Purpose:</strong> '+esc(purposes[q.purpose_category]||q.purpose_category||'review')+'<br><strong>Selected by:</strong> '+esc(selected[q.selection_basis]||q.selection_basis||'fixed policy')+'</p>';
- h+='<p>'+esc(q.purpose||'Record observable operating facts.')+'</p>';
+ h+='<p>'+esc(q.purpose||'Record observable asset operational information.')+'</p>';
  if(q.purpose_category==='operational_impact')h+='<p><strong>Dependency and recovery answers are for outage planning. They cannot establish not_affected.</strong></p>';
  if(q.evidence)h+='<blockquote>'+esc(q.evidence)+'</blockquote>';
  if(q.source_provenance?.length)h+='<p>'+q.source_provenance.map(ocSourceLink).join(' · ')+'</p>';

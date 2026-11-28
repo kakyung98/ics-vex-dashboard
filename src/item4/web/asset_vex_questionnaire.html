@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html lang="en" translate="no"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="notranslate" name="google"/>
+<title>ICS-VEX · Operational VEX</title><link rel="stylesheet" href="/item4-operating-questions.css"/>
+<style>
+:root{color-scheme:light;--ink:#292138;--muted:#635b70;--line:#ddd5e8;--accent:#593c93}*{box-sizing:border-box}body{margin:0;background:#f6f4f9;color:var(--ink);font:16px/1.65 system-ui,sans-serif}main{max-width:1120px;margin:auto;padding:32px 22px 70px}nav{display:flex;gap:20px;flex-wrap:wrap}a{color:var(--accent)}h1{font-size:clamp(28px,4vw,40px);line-height:1.25}h2{font-size:23px}h3{font-size:18px}p{margin:10px 0}.lead{color:var(--muted);max-width:800px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;margin:22px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.grid .card{margin:0}button,select,input{font:inherit}button{padding:11px 20px;border:1px solid var(--accent);border-radius:9px;background:var(--accent);color:white;cursor:pointer}button.secondary{background:white;color:var(--accent)}button:disabled{opacity:.5;cursor:default}select{display:block;padding:12px;width:100%;margin:8px 0 18px;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink)}input[type=file]{display:block;width:100%;margin:12px 0 20px}.badge{display:inline-block;padding:3px 10px;background:#eee8f8;border-radius:20px;font-size:14px}.note{padding:14px 18px;background:#f1edf7;border-radius:10px}.muted{color:var(--muted);font-size:14px}.error{color:#9a2844}.actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}blockquote{margin:12px 0;padding:12px 16px;border-left:3px solid #b6a3d4;background:#f7f5fa;white-space:pre-wrap;overflow-wrap:anywhere}details{margin:12px 0}summary{cursor:pointer}progress{width:100%;height:12px}code{overflow-wrap:anywhere}[hidden]{display:none!important}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #b196e2;outline-offset:3px}@media(max-width:720px){.grid{grid-template-columns:1fr}.card{padding:18px}main{padding:24px 16px}}
+
+/* Shared analysis progress and compact agent cards. */
+.agent-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0;align-items:stretch;grid-auto-rows:1fr}
+.agent-grid .card{min-height:112px;height:100%;box-sizing:border-box}
+.agent-grid h2{margin:12px 0 0;line-height:1.5}
+.workflow-progress{margin:0 0 22px}
+.workflow-progress progress{display:block;width:100%;height:6px;border:0;border-radius:999px;overflow:hidden;background:#dbdbe1;appearance:none}
+.workflow-progress progress::-webkit-progress-bar{background:#dbdbe1;border-radius:999px}
+.workflow-progress progress::-webkit-progress-value{background:#a8c945;border-radius:999px}
+.workflow-progress progress::-moz-progress-bar{background:#a8c945;border-radius:999px}
+#workflow-status{margin:10px 0 0;font-size:15px;line-height:1.7;color:var(--ink2,var(--muted))}
+@media(max-width:1100px){.agent-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){.agent-grid{grid-template-columns:1fr}}
+</style></head><body><main>
+<nav><a href="/bom-vex.html">BOM and VEX review</a><a href="/nist-population-vex-method.html">Assessment method</a></nav>
+<h1>Operational VEX</h1>
+<section class="card panel workflow-panel" id="bom-loader"><h2 id="bom-heading">Load SBOM</h2>
+<p class="workflow-subtitle">Upload a CycloneDX or SPDX JSON file with identified CVEs to analyze exploitability.</p>
+<div id="bom-upload-controls"><div class="upload workflow-upload" id="bom-dropzone"><div><strong>Upload or drop a JSON file</strong><div class="hint" id="bom-file-name">CycloneDX · SPDX / Up to 4 MiB</div></div><span class="file-picker workflow-file-picker"><span aria-hidden="true">Choose JSON</span><input accept=".json,application/json" aria-label="Choose an SBOM file" id="bom-file" type="file"/></span></div></div>
+<p class="note" hidden="" id="bom-handoff-note">The BOM was received from the previous screen. No additional upload is required.</p>
+<div hidden="" id="representative-controls"><label for="representative">Product and version range to analyze</label><select disabled="" id="representative"><option value="">Select a BOM first</option></select></div>
+<p class="muted" hidden="" id="bom-summary"></p>
+<div class="actions workflow-actions"><button class="primary" id="start">Analysis Exploitability →</button><button class="secondary" disabled="" id="download-results">Download results JSON</button><button class="secondary" hidden="" id="replace-bom">Choose a different BOM</button></div>
+<p aria-live="polite" class="workflow-input-note" id="message" role="status">Choose a JSON file or drop it above, then select Analysis Exploitability.</p>
+<button class="secondary" id="retry-analysis" hidden type="button">Generate / retry missing analysis</button>
+<p class="muted" id="retry-notice" hidden>Successful source extractions are retained. Retrying rebuilds the input plan; confirm operating values again.</p></section>
+<section aria-label="Analysis stages" class="agent-grid" id="branches">
+<article class="card"><span class="badge">V1</span><h2>Asset classification</h2></article>
+<article class="card"><span class="badge">V2</span><h2>Exploitation prerequisite extraction</h2></article>
+<article class="card"><span class="badge">V3</span><h2>Asset-aware LLM questions</h2></article>
+<article class="card"><span class="badge">V4</span><h2>Exploitability and VEX</h2></article>
+</section>
+<section class="workflow-progress" aria-label="Analysis progress">
+<progress id="progress" max="1" value="0" aria-label="CVE source analysis progress"></progress>
+<p id="workflow-status" role="status" aria-live="polite">Connect your local backend to run analysis.</p>
+</section>
+<div hidden><p id="asset-state"></p><p id="condition-state"></p><p id="input-state"></p><p id="assessment-state"></p><p id="condition-summary"></p></div>
+<section class="card" id="asset-details" hidden><h2>Asset classification and source evidence</h2><div id="asset-result"></div></section>
+
+<section class="card" hidden="" id="questions-section"><h2>V3 · Asset operational information</h2>
+<p>Confirm asset setup, then answer source-bound CVE operating questions with LLM Confidence above 80/100. Leave unverified facts Unknown.</p>
+<div id="context-questions"></div><p class="muted" id="key-summary"></p><div id="asset-questions"></div>
+<div class="actions"><button class="secondary" id="save-inputs">Save values</button><button id="assess">Evaluate exploitability and generate VEX</button></div>
+<p id="input-message" role="status" aria-live="polite"></p></section>
+
+<section class="card" hidden="" id="assessment-result"><h2>V4 · Exploitability and VEX</h2>
+<div id="assessment-decisions"></div><div class="actions">
+<button class="secondary" disabled="" id="download-openvex">Download OpenVEX</button>
+<button class="secondary" disabled="" id="download-cyclonedx">Download CycloneDX VEX</button>
+<button class="secondary" disabled="" id="download-review">Download assessment details</button>
+</div></section>
+
+<section class="card" hidden="" id="sources"><h2>Exploitation prerequisites and source evidence</h2><div id="condition-details"></div></section>
+<section class="card"><details id="source-evaluation"><summary>Question and logic checks</summary>
+<p>Check source-bound question admission and three-valued logic using synthetic cases. These checks do not measure independent LLM extraction or field exploitability accuracy.</p>
+<div class="actions"><button id="source-evaluation-run" type="button">Run logic checks</button><button id="source-evaluation-download" class="secondary" type="button" disabled="">Download check report</button></div>
+<p id="source-evaluation-status" role="status" aria-live="polite"></p><div id="source-evaluation-result"></div>
+</details></section>
+</main><script defer="" src="/item4-cluster-diagnostics.js"></script><script defer="" src="/item4-question-tree.js"></script><script defer="" src="/item4-questionnaire.js"></script><script defer="" src="/item4-evaluation.js"></script></body></html>

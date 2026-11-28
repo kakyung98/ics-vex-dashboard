@@ -290,7 +290,7 @@ async function run(){
     +'affected '+(bv.LIKELY_AFFECTED||0)+' · not affected '+(bv.LIKELY_NOT_AFFECTED||0)+' · under inv '+(bv.UNDER_INVESTIGATION||0)+'</div>';
   h+='<table><thead><tr><th>CVE</th><th>VEX</th><th>Component</th><th>CVSS</th><th>KEV</th><th>AV</th><th>Reach</th><th>Source / next step</th></tr></thead><tbody>';
   for(const f of d.cves){const c=C[f.final_vex]||'var(--ink3)';
-    const nextcol = '<span class="hint">Review operating context</span>';
+    const nextcol = '<span class="hint">Review asset operational information</span>';
     h+='<tr><td class="mono">'+f.cve+'</td>'
       +'<td id="vexcell-'+f.cve+'">'+_vexCellInner(f.cve)+'</td>'
       +'<td>'+_compCell(f)+'</td><td class="mono" title="CVSS v3 base score">'+cvssFmt(f.cvss,f.severity)+'</td>'
@@ -301,14 +301,14 @@ async function run(){
   o.innerHTML=_armForkHtml()+'<details class="review-disclosure"><summary>View identified CVEs and initial evidence</summary>'+h+'</details>';
 }
 
-// Operating context is collected once and shared by the CVE questionnaire.
+// Asset operational information is collected once and shared by the CVE questionnaire.
 let _ocFields=null, _armResult=null, _operationPlan=null;
 let _candidateJobId=null, _lastSbom=null;
 let _item4ReviewId=null;
 function _armForkHtml(){
  _item4ReviewId=null;_armResult=null;
  return '<div class="card" id="armfork" style="margin-top:14px">'
- +'<h3>Operating context and VEX review</h3>'
+ +'<h3>Asset operational information and VEX review</h3>'
  +'<p>Review the shared asset context, installed-version records and CVE-specific operating conditions.</p>'
  +'<button class="primary" id="start-product-review" onclick="startItem4Review()">Start operating-context review &rarr;</button>'
  +'<div id="item4routes"></div><div id="armbody" style="margin-top:14px"></div></div>';
@@ -330,19 +330,19 @@ function renderItem4Routes(){
  const box=document.getElementById('item4routes');if(!box)return;
  box.innerHTML='<details class="review-disclosure"><summary>Operating-context review ('+_armResult.total+' CVEs)</summary>'
  +'<p>Review ID: <code>'+esc(_item4ReviewId)+'</code></p>'
- +'<p>All identified CVEs use shared operating context and individual operator answers. Missing or uncertain evidence remains under investigation.</p>'
+ +'<p>All identified CVEs use shared asset operational information and individual operator answers. Missing or uncertain evidence remains under investigation.</p>'
  +'<button onclick="downloadOcReview()">Download current review JSON</button></details>';
 }
 async function renderOcForm(box){
   _operationPlan=null;
-  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Enter the shared operating context and installed-version facts first. Add CVE-specific answers where known, then submit to view the assessment.</p>'
+  box.innerHTML='<h3>Tell us how the asset is used</h3><p>Enter the shared asset operational information and installed-version facts first. Add CVE-specific answers where known, then submit to view the assessment.</p>'
     +'<p class="hint">These answers support a review; they do not establish verified code absence.</p>'
     +'<details class="review-help"><summary>How this review works</summary><p>Common asset facts are collected once. Fixed, versioned workflow questions are selected by each CVE’s operational classification. The classification panel shows the criterion and literal source matches. No model generates these questions. Answers are assessed by scope and version checks; the final writer explains the locked status.</p></details>'
     +'<button class="primary" id="generate-operation-questions" onclick="generateOperationQuestions()">Prepare operational questions</button><div id="operation-questions"></div><div id="ocverdict"></div>';
 }
 async function generateOperationQuestions(){
   const box=document.getElementById('operation-questions'),button=document.getElementById('generate-operation-questions');
-  button.disabled=true;box.innerHTML='<p>Preparing shared operating facts, fixed workflow questions and classification evidence.</p>';
+  button.disabled=true;box.innerHTML='<p>Preparing shared asset operational information, fixed workflow questions and classification evidence.</p>';
   try{
     const cves=(_lastVex?.cves||[]).map(f=>({cve:f.cve,description:f.description||f.summary||'',vector:f.vector||f.cvss_vector||'',cwe:f.cwe}));
     const r=await fetch('/api/item4/'+encodeURIComponent(_item4ReviewId)+'/questions',{method:'POST'});
@@ -352,14 +352,14 @@ async function generateOperationQuestions(){
       +renderOperationalClassification(c.operational_classification)
       +'<details class="review-disclosure"><summary>Rule and source record</summary><p class="hint">Method: '+esc(c.generation.method||'Rule templates')+' · Attempts retained: '+esc(String((c.generation.attempts||[]).length))+'</p></details>'
       +((c.generation.normalizations||[]).length?'<p class="hint">Presentation normalization was applied. Original model output and exact changes are retained below.</p>':'')
-      +(c.generation.status!=='validated'?'<p class="err">The question plan requires review. No operational facts were fabricated.</p>':'')
+      +(c.generation.status!=='validated'?'<p class="err">The question plan requires review. No asset operational information were fabricated.</p>':'')
       +c.questions.map((q,qi)=>q.deprecated_version_field?'':'<div class="operation-question"><span class="question-kind">'+esc(q.origin==='system'?'Installation record':q.scope==='common'?'Common check':'CVE-specific check')+'</span><label class="question-title" for="oq_'+ci+'_'+qi+'">'+esc(q.question)+'</label>'
         +'<details class="question-evidence"><summary>Why this question'+(q.evidence?' · View source':'')+'</summary>'+renderOperationalQuestionRationale(q)+'</details>'
         +(q.answer_type==='text'?'<textarea class="op-control" maxlength="500" id="oq_'+ci+'_'+qi+'" placeholder="Describe the known facts, or leave empty when unknown"></textarea>':ynControl('oq_'+ci+'_'+qi,'Answer'))
         +ynControl('oqe_'+ci+'_'+qi,'Do configuration or inspection records support this answer?')+'</div>').join('')
       +renderEvidenceWorkspace(c,ci,_operationPlan)
       +'<details><summary>Generation output and checks</summary><pre style="white-space:pre-wrap">'+esc(JSON.stringify(c.generation,null,2))+'</pre></details></details>').join('')+'</section>'
-      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Save operating facts and review VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
+      +'<button class="primary" id="submit-operation-answers" onclick="judgeOc()">Save asset operational information and review VEX</button><p class="hint">The questionnaire is stored locally and expires after 24 hours; a backend restart does not delete it. Download the review JSON to retain questions, answers and evidence.</p>';
     const saved=new Map((_armResult?.statements||[]).flatMap(s=>(s.operational_review?.questions_and_answers||[]).map(q=>[q.id,q.answer])));
     _operationPlan.cases.forEach((c,ci)=>c.questions.forEach((q,qi)=>{const a=saved.get(q.id);if(!a||q.deprecated_version_field)return;document.getElementById('oq_'+ci+'_'+qi).value=q.answer_type==='text'?(a.value||''):['yes','no','unknown'].includes(a.value)?a.value:'unknown';document.getElementById('oqe_'+ci+'_'+qi).value=a.record_available||'unknown';}));
     (_operationPlan.assets||[]).forEach((a,i)=>{const f=_armResult?.component_facts?.[a.ref];if(!f)return;for(const [field,key] of [['present','present'],['matches','sbom_identity_matches'],['record','record_available']])document.getElementById('of_'+field+'_'+i).value=f[key]||'unknown';document.getElementById('of_attest_'+i).value=f.facts_checked||(f.attested?'yes':'unknown');});
@@ -372,7 +372,7 @@ async function generateTunedQuestions(cve){
 function renderSharedOperationalContext(plan){
  const saved=_armResult?.operational_context||{};
  const select=(id,label)=>ynControl('ctx_'+id,label,saved[id]);
- return '<section class="card" id="shared-operating-context"><h3>Shared product operating context</h3><p>Answer Yes, No or Unknown for each item. Leave unverified items unknown.</p>'
+ return '<section class="card" id="shared-operating-context"><h3>Shared product asset operational information</h3><p>Answer Yes, No or Unknown for each item. Leave unverified items unknown.</p>'
  +select('deployment_known','Have you verified the product deployment location and enabled services?')
  +select('scope_known','Do you know the scope of the reviewed asset, interfaces and data paths?')
  +(plan.assets||[]).map((a,i)=>ynControl('ctx_component_'+i,esc(a.name||a.ref)+' components against the actual asset?',(saved.component_refs||[]).includes(a.ref)?'yes':'unknown')).join('')
@@ -444,7 +444,7 @@ function editOperationalContext(){
  document.getElementById('ctx_deployment_known')?.focus({preventScroll:true});
 }
 function renderOperationalResults(result){
- return renderEvidenceDecisionSummary(result)+'<section class="card"><h3>Assessment results</h3><p>These are saved assessment results. Edit the input form to change an answer, then submit again.</p><button onclick="editOperationalContext()">Edit operating context</button></section>'
+ return renderEvidenceDecisionSummary(result)+'<section class="card"><h3>Assessment results</h3><p>These are saved assessment results. Edit the input form to change an answer, then submit again.</p><button onclick="editOperationalContext()">Edit asset operational information</button></section>'
  +result.statements.filter(s=>s.operational_review).map(s=>{
   const review=s.operational_review;const rows=review.questions_and_answers.filter(q=>!q.deprecated_version_field);
   const recorded=rows.filter(q=>q.answer?.value&&q.answer.value!=='unknown').length;
@@ -502,7 +502,7 @@ function _groundedPipelineHtml(result){
 }
 
 function _verdictTable(res,armLabel){
-  const C2={affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
+  const I2={affected:'var(--aff)',not_affected:'var(--safe)',under_investigation:'var(--ink3)',fixed:'var(--safe)'};
   // 판정률을 상태 분포와 같은 줄에 놓는다. 유보는 Precision 분모에서 빠지므로
   // 유보율을 가린 정밀도는 성취가 아니라 회피다 (docs/ICSVEX.md §8).
   let h='<div class="hint">'+esc(armLabel)+' · Total <b>'+res.total+'</b>'
@@ -510,7 +510,7 @@ function _verdictTable(res,armLabel){
     +' · Deferred <b>'+res.deferred+'</b></div>'
     +'<table style="margin-top:8px"><thead><tr><th>CVE</th><th>VEX</th><th>Justification</th><th>Evidence</th></tr></thead><tbody>';
   for(const s of res.statements){
-    const col=C2[s.status]||'var(--ink3)';
+    const col=I2[s.status]||'var(--ink3)';
     h+='<tr><td class="mono">'+esc(s.cve)+'</td>'
       +'<td><span class="badge" style="background:color-mix(in srgb,'+col+' 12%,transparent);color:'+col+'">'+esc(_statLabel(s.status))+'</span></td>'
       +'<td class="mono" style="font-size:14px">'+esc(s.justification||'—')+'</td>'
@@ -1084,7 +1084,7 @@ function renderOperationalQuestionRationale(q){
  const purposes={applicability:'Affected product or feature',access:'Actors and access',input_path:'Input origin and handling',trigger:'CVE-described trigger',scope:'Assessment coverage',configuration:'Actual configuration',privileges:'Actual execution rights',mitigation:'Operational protection or remediation',operational_impact:'Outage, dependency and recovery planning',discovery:'Missing source details'};
  let h='<p><strong>Question method:</strong> '+esc(origin)+'</p>';
  if(q.template_id)h+='<p><strong>Template:</strong> <code>'+esc(q.template_id)+'</code><br><strong>Purpose:</strong> '+esc(purposes[q.purpose_category]||q.purpose_category||'review')+'<br><strong>Selected by:</strong> '+esc(selected[q.selection_basis]||q.selection_basis||'fixed policy')+'</p>';
- h+='<p>'+esc(q.purpose||'Record observable operating facts.')+'</p>';
+ h+='<p>'+esc(q.purpose||'Record observable asset operational information.')+'</p>';
  if(q.purpose_category==='operational_impact')h+='<p><strong>Dependency and recovery answers are for outage planning. They cannot establish not_affected.</strong></p>';
  if(q.evidence)h+='<blockquote>'+esc(q.evidence)+'</blockquote>';
  if(q.source_provenance?.length)h+='<p>'+q.source_provenance.map(ocSourceLink).join(' · ')+'</p>';

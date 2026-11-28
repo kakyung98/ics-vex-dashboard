@@ -326,7 +326,7 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 #candidate-workspace .identity-diagnostics{border-top:1px solid var(--line);margin:18px 0;padding-top:16px} #candidate-workspace .identity-diagnostics h3,#candidate-workspace .analysis-scope h3{font-size:19px;margin:0 0 12px} #candidate-workspace .diagnostic-stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0} #candidate-workspace .diagnostic-stage,#candidate-workspace .diagnostic-input{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0;overflow-wrap:anywhere} #candidate-workspace .diagnostic-stage h4{font-size:16px;color:var(--purple);margin:0 0 10px} #candidate-workspace .identity-diagnostics p,#candidate-workspace .analysis-scope p{font-size:15px;line-height:1.65} #candidate-workspace .diagnostic-input{margin:10px 0} #candidate-workspace .diagnostic-input code,#candidate-workspace .analysis-scope code{display:block;white-space:normal;overflow-wrap:anywhere;font-size:14px;margin:9px 0} #candidate-workspace .analysis-scope{padding:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;margin:18px 0} @media(max-width:1100px){#candidate-workspace .diagnostic-stages{grid-template-columns:1fr}} </style><h1>SBOM → CVE identification</h1><section id="candidate-workspace"><span hidden="" id="cm-modelBadge"></span>
 <div class="grid"><section class="panel workflow-panel"><h2>Load SBOM</h2><p class="workflow-subtitle">Upload a CycloneDX or SPDX JSON file to identify components and CVE candidates.</p>
 <div class="upload workflow-upload" id="cm-drop"><div><strong>Upload or drop a JSON file</strong><div class="hint" id="cm-fileLabel">CycloneDX · SPDX / Up to 100 components</div></div><span class="file-picker workflow-file-picker"><span aria-hidden="true">Choose JSON</span><input accept=".json,application/json" aria-label="Choose an SBOM file" id="cm-file" type="file"/></span></div>
-<div class="actions workflow-actions"><button class="primary" id="cm-run">Identify CVE candidates →</button><button disabled="" id="cm-download">Download results JSON</button><span class="hint" id="cm-inputCount"></span></div><p class="workflow-input-note">Choose a JSON file or drop it above, then select Identify CVE candidates.</p><div hidden=""><button id="cm-sample" type="button">Load sample</button><textarea aria-label="SBOM JSON" id="cm-sbom" placeholder='{"bomFormat":"CycloneDX","components":[...]}' spellcheck="false"></textarea></div></section>
+<div class="actions workflow-actions"><button class="primary" id="cm-run">Identify CVE candidates →</button><button disabled="" id="cm-download">Download CycloneDX JSON</button><span class="hint" id="cm-inputCount"></span></div><p class="workflow-input-note">Choose a JSON file or drop it above, then select Identify CVE candidates.</p><div hidden=""><button id="cm-sample" type="button">Load sample</button><textarea aria-label="SBOM JSON" id="cm-sbom" placeholder='{"bomFormat":"CycloneDX","components":[...]}' spellcheck="false"></textarea></div></section>
 <div hidden=""><select id="cm-mode"><option selected="" value="unified"></option></select><select id="cm-lookup"><option selected="" value="local"></option><option value="live"></option><option value="none"></option></select><span id="cm-lookupHint"></span><div id="cm-models"></div><span id="cm-modelDataset"></span></div></div>
 <section aria-label="Analysis progress" class="progress"><div class="stages" aria-label="Identification agents"><div class="stage" data-stage="c1_name"><span>I1</span><strong>Name normalization</strong></div><div class="stage" data-stage="c2_version"><span>I2</span><strong>Version preservation</strong></div><div class="stage" data-stage="c3_identifier"><span>I3</span><strong>CPE dictionary verification</strong></div></div>
 <div class="track"><i id="cm-bar" style="width:0%"></i></div><p aria-live="polite" class="hint" id="cm-status" role="status">Provide an SBOM to begin identification.</p></section>
@@ -342,8 +342,88 @@ button,select,input:not([type=checkbox]):not([type=radio]){font-size:16px;min-he
 </div></div>
 <script>(()=>{
 const el=id=>document.getElementById('cm-'+id);let output=null,activeJob=null;
+// Identification mappings only; this export does not assign VEX verdicts.
+function exportIdentificationBom(input, result) {
+ const copy=value=>JSON.parse(JSON.stringify(value));
+ if(!input||!result||!Array.isArray(result.components))throw Error('The original BOM and completed identification results are required.');
+ const property=(target,name,value)=>{
+  if(target===bom&&bom.specVersion==='1.4')target=(bom.metadata??={});
+  (target.properties??=[]).push({name,value:typeof value==='string'?value:JSON.stringify(value)});
+ };
+ let bom;
+ if(input.bomFormat==='CycloneDX'){
+  bom=copy(input);
+  // Keep the input schema version: upgrading a BOM can invalidate native fields.
+  bom.components??=[];
+ }else if(/^SPDX-2\./.test(input.spdxVersion||'')){
+  bom={bomFormat:'CycloneDX',specVersion:'1.7',version:1,components:(input.packages||[]).map((item,index)=>{
+   const component={type:'library','bom-ref':item.SPDXID||String(index),name:item.name};
+   if(item.versionInfo)component.version=item.versionInfo;
+   if(item.description)component.description=item.description;
+   for(const reference of item.externalRefs||[]){
+    if(/cpe/i.test(reference.referenceType))component.cpe=reference.referenceLocator;
+    if(/purl/i.test(reference.referenceType))component.purl=reference.referenceLocator;
+   }
+   property(component,'icsvex:spdx-package',item);
+   return component;
+  })};
+  const dependencies=new Map(bom.components.map(c=>[c['bom-ref'],new Set()]));
+  for(const relation of input.relationships||[]){
+   const [from,to]=relation.relationshipType==='DEPENDS_ON'?[relation.spdxElementId,relation.relatedSpdxElement]:
+    relation.relationshipType==='DEPENDENCY_OF'?[relation.relatedSpdxElement,relation.spdxElementId]:[];
+   if(dependencies.has(from)&&dependencies.has(to))dependencies.get(from).add(to);
+  }
+  bom.dependencies=[...dependencies].map(([ref,items])=>({ref,dependsOn:[...items]}));
+ }else throw Error('The input must be a CycloneDX or SPDX 2.x BOM.');
+ property(bom,'icsvex:original-input-bom',input);
+ property(bom,'icsvex:identification-result',result);
+ property(bom,'icsvex:mapping-scope','Product/version identification only; deployment exploitability is not assessed. Unconfirmed candidates remain in icsvex:identification-result.');
+ // A modified document cannot retain an input signature as its own signature.
+ delete bom.signature;
+ const byRef=new Map();
+ function register(component,fallback){
+  component['bom-ref']??=fallback;
+  const ref=component['bom-ref'];
+  if(byRef.has(ref))throw Error('Duplicate component reference in the exported BOM: '+ref);
+  byRef.set(ref,component);
+  (component.components||[]).forEach((child,index)=>register(child,ref+'/components/'+index));
+ }
+ bom.components.forEach((component,index)=>register(component,String(index)));
+ if(bom.metadata?.component){
+  const root=bom.metadata.component,ref=root['bom-ref'];
+  // Some input inventories repeat their representative as a top-level component.
+  // Retain its additional metadata on the single exported component; the complete
+  // original document is also preserved above.
+  if(ref&&byRef.has(ref)){
+   const existing=byRef.get(ref);
+   if(existing.name!==root.name||existing.version!==root.version)throw Error('Conflicting component identities share reference '+ref);
+   for(const [key,value]of Object.entries(root))if(!(key in existing))existing[key]=copy(value);
+   // Nested components must keep their references available to CVE mappings.
+   (existing.components||[]).forEach((child,index)=>{if(!byRef.has(child['bom-ref']))register(child,ref+'/components/'+index);});
+   delete bom.metadata.component;
+  }else register(root,'metadata:component');
+ }
+ const findings=new Map((bom.vulnerabilities||[]).map(v=>[v.id,copy(v)]));
+ const rows=[...result.components,...(result.asset_analysis?[result.asset_analysis]:[])];
+ for(const row of rows){
+  const ref=String(row.component.id),component=byRef.get(ref);
+  if(!component)throw Error('Identification component is missing from the input BOM: '+ref);
+  property(component,'icsvex:identification',row);
+  for(const finding of row.cves||[]){
+   if(finding.match_status!=='match'||!/^CVE-\d{4}-\d{4,}$/i.test(finding.cve_id||''))continue;
+   const id=finding.cve_id.toUpperCase();
+   if(!findings.has(id))findings.set(id,{id,source:{name:'NVD',url:'https://nvd.nist.gov/vuln/detail/'+id},affects:[]});
+   const vulnerability=findings.get(id);vulnerability.affects??=[];
+   if(!vulnerability.affects.some(item=>item.ref===ref))vulnerability.affects.push({ref});
+  }
+ }
+ bom.vulnerabilities=[...findings.values()];
+ return bom;
+}
+
+let downloadBom=null;
 const hints={local:'Look up product CPEs and CISA advisories with matching vendor and product phrases. Unknown versions allow candidate retrieval, but applicability remains unconfirmed.',live:'Query the NVD API and the local CISA advisory snapshot. Rate limits may add several minutes. Lookup failures are not evidence.',none:'Skip evidence lookup. Model suggestions alone cannot establish product identity.'};
-const labels={conditional_routing:'Conditional routing · selecting required agents',c1_agent:'I1 agent · product candidate review',c2_agent:'I2 agent · version/model evidence review',c3_agent:'I3 agent · identity selection',component_start:'Preparing model / Processing component',orchestrator:'Checking workflow / Preparing model',c1_name:'I1 name normalization completed',c2_version:'I2 version normalization completed',c3_identifier:'I3 CPE verification completed',decision_validator:'Identity evidence checked',cve_matching:'CVE condition evaluation completed',component_complete:'Component processed',queued:'Waiting for the current task to finish'};
+const labels={conditional_routing:'Conditional routing · selecting required agents',i1_agent:'I1 agent · product candidate review',i2_agent:'I2 agent · version/model evidence review',i3_agent:'I3 agent · identity selection',component_start:'Preparing model / Processing component',orchestrator:'Checking workflow / Preparing model',c1_name:'I1 name normalization completed',c2_version:'I2 version normalization completed',c3_identifier:'I3 CPE verification completed',decision_validator:'Identity evidence checked',cve_matching:'CVE condition evaluation completed',component_complete:'Component processed',queued:'Waiting for the current task to finish'};
 function node(tag,text,cls){const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n}
 function busy(value){['run','sample','file','mode','lookup','sbom'].forEach(id=>el(id).disabled=value);el('run').textContent=value?'Analysis in progress…':'Identify CVE candidates →'}
 function count(){try{const d=JSON.parse(el('sbom').value);const a=d.components||d.packages||[];el('inputCount').textContent=`${a.length} components`}catch{el('inputCount').textContent=''}}
@@ -432,6 +512,8 @@ function renderComponent(row,index){
  }details.append(body);return details
 }
 function render(data,job){
+ downloadBom=null;
+ try{downloadBom=exportIdentificationBom(job.original_input_sbom||job.input_sbom,data);}catch(error){console.error('CycloneDX export:',error);}
  output=JSON.stringify(data,null,2);el('raw').textContent=output;el('download').disabled=false;el('results').hidden=false;const s=data.summary;el('stats').replaceChildren();
  [['Components analyzed',s.components,'Component entries; representative-asset findings are reported separately below.'],['NVD identities accepted',s.validated,'Components that passed dictionary identity checks; not a vulnerability count.'],['Components linked to CISA',s.advisory_linked||0,'Components with advisory-based candidates; not the number of advisories.'],['Unique CVE candidates',s.unique_cves||0,'Distinct CVE IDs across components; asset candidates are shown separately.'],['Component–CVE links',s.candidate_records,'Candidate associations including repeated CVEs across components.']].forEach(([name,value,meaning])=>{const box=node('div',undefined,'stat');box.append(node('strong',value.toLocaleString()),node('span',name),node('p',meaning,'hint'));el('stats').append(box)});
  el('components').replaceChildren(...data.components.map(renderComponent));
@@ -447,9 +529,9 @@ function render(data,job){
  const modes={llm_agents:'Local I1/I2/I3 agents + independent evidence checks',deterministic:'Deterministic identification · no LLM',unified:'Conditional I1/I2/I3 routing + independent evidence checks',rules:'Legacy rules',base:'Legacy Qwen base',tuned:'Legacy fine-tuned Qwen',evidence:'Evidence v3 · CPU',evidence_llm:'Evidence v3 · Qwen base review (not fine-tuned)'};el('resultMeta').textContent=`${modes[data.agent_mode]||data.agent_mode||'Identification'} · ${data.model_version||''} · ${job.finished&&job.started?Math.round(job.finished-job.started)+'s':''}`
  window.dispatchEvent(new CustomEvent('icsvex:candidates',{detail:{jobId:job.id,result:data}}));
 }
-async function poll(id){if(activeJob!==id)return;try{const j=await request('/api/cve-match/jobs/'+id);const p=j.progress;el('status').textContent=`${labels[p.stage]||p.stage} · ${p.done}/${p.total} processed${p.component?' · '+p.component:''}`;el('bar').style.width=(p.total?100*p.done/p.total:0)+'%';document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.toggle('active',n.dataset.stage===({c1_agent:'c1_name',c2_agent:'c2_version',c3_agent:'c3_identifier'}[p.stage]||p.stage)));if(j.status==='completed'||j.status==='failed'){activeJob=null;sessionStorage.removeItem('cve-job');busy(false);document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.remove('active'));if(j.status==='failed'){el('status').textContent='Analysis failed: '+j.error;return}render(j.result,j);el('bar').style.width='100%';el('bar').style.background=j.result.summary.errors?'var(--amber)':'var(--green)';el('status').textContent=j.result.summary.errors?`Finished with errors · ${j.result.summary.errors} / ${p.total} components failed`:`Processing finished · ${p.total} components · Identity/application may remain unresolved`;return}}catch(e){el('status').textContent='Could not retrieve task status: '+e.message;activeJob=null;busy(false);return}setTimeout(()=>poll(id),1400)}
+async function poll(id){if(activeJob!==id)return;try{const j=await request('/api/cve-match/jobs/'+id);const p=j.progress;el('status').textContent=`${labels[p.stage]||p.stage} · ${p.done}/${p.total} processed${p.component?' · '+p.component:''}`;el('bar').style.width=(p.total?100*p.done/p.total:0)+'%';document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.toggle('active',n.dataset.stage===({i1_agent:'c1_name',i2_agent:'c2_version',i3_agent:'c3_identifier'}[p.stage]||p.stage)));if(j.status==='completed'||j.status==='failed'){activeJob=null;sessionStorage.removeItem('cve-job');busy(false);document.querySelectorAll('#candidate-workspace [data-stage]').forEach(n=>n.classList.remove('active'));if(j.status==='failed'){el('status').textContent='Analysis failed: '+j.error;return}render(j.result,j);el('bar').style.width='100%';el('bar').style.background=j.result.summary.errors?'var(--amber)':'var(--green)';el('status').textContent=j.result.summary.errors?`Finished with errors · ${j.result.summary.errors} / ${p.total} components failed`:`Processing finished · ${p.total} components · Identity/application may remain unresolved`;return}}catch(e){el('status').textContent='Could not retrieve task status: '+e.message;activeJob=null;busy(false);return}setTimeout(()=>poll(id),1400)}
 el('run').onclick=async()=>{try{const sbom=JSON.parse(el('sbom').value.replace(/^\uFEFF/,''));if(!sbom||Array.isArray(sbom)||typeof sbom!=='object')throw Object.assign(new Error('The SBOM must be a JSON object.'),{inputError:true});busy(true);output=null;el('download').disabled=true;el('results').hidden=true;el('bar').style.width='0%';el('bar').style.background='var(--green)';el('status').textContent='Submitting identification task…';const job=await request('/api/cve-match/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sbom,agent_mode:el('mode').value,lookup_mode:el('lookup').value})});activeJob=job.id;sessionStorage.setItem('cve-job',job.id);poll(job.id)}catch(e){busy(false);el('status').textContent=identificationFailure(e)}};
-el('download').onclick=()=>{if(!output)return;const url=URL.createObjectURL(new Blob([output],{type:'application/json'}));const a=node('a');a.href=url;a.download='ics-vex-cve-candidates.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+el('download').onclick=()=>{if(!output)return;try{if(!downloadBom)throw Error('CycloneDX export is unavailable. Reopen the saved identification job with its original BOM.');const url=URL.createObjectURL(new Blob([JSON.stringify(downloadBom,null,2)],{type:'application/json'}));const a=node('a');a.href=url;a.download='ics-vex-identified.cdx.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(error){el('status').textContent=error.message}};
 el('run').addEventListener('click',()=>window.dispatchEvent(new CustomEvent('icsvex:candidates-reset')));
 loadModels();const requestedJob=new URLSearchParams(window.location.search).get('job');const saved=/^[0-9a-f]{32}$/i.test(requestedJob||'')?requestedJob:sessionStorage.getItem('cve-job');if(saved){activeJob=saved;busy(true);request('/api/cve-match/jobs/'+encodeURIComponent(saved)).then(job=>{const input=job.original_input_sbom||job.input_sbom;if(input){el('sbom').value=JSON.stringify(input,null,2);el('fileLabel').textContent='Restored SBOM from saved identification';count()}poll(saved)}).catch(error=>{activeJob=null;busy(false);el('status').textContent=error.message})}
 
@@ -462,7 +544,7 @@ window.addEventListener('icsvex:candidates',event=>{
  const p=document.getElementById('candidate-vex');if(!p)return;
  p.hidden=false;p.replaceChildren();
  const h=document.createElement('h2');h.textContent="CVE identification complete";p.append(h);
- const n=document.createElement('p');n.textContent="Review the identified components and CVEs, then continue to Operational VEX to assess impact using the asset’s operating information.";p.append(n);
+ const n=document.createElement('p');n.textContent="Review the identified components and CVEs, then continue to Operational VEX to assess impact using the asset’s asset operational information.";p.append(n);
  const next=document.createElement('a');next.href='bom-vex.html?job='+encodeURIComponent(event.detail.jobId);next.className='primary';next.textContent="Continue to Operational VEX →";p.append(next);
 });
 })();

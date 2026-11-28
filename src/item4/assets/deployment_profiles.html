@@ -1,0 +1,20 @@
+<section class="card" id="op-panel" aria-label="Asset operational information">
+<style>
+#op-panel{overflow-wrap:anywhere}#op-panel .op-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+#op-panel label{display:block;font-size:13px;margin:10px 0}#op-panel label>input,#op-panel label>select,#op-panel label>textarea{display:block;width:100%;margin-top:5px}
+#op-panel textarea{min-height:78px}#op-panel details{border-top:1px solid var(--line);padding:14px 0}#op-panel summary{cursor:pointer;font-weight:600}
+#op-panel .op-record{padding:14px;border:1px solid var(--line);border-radius:12px;margin:12px 0;background:var(--card2)}
+#op-panel .op-actions{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0}#op-panel [hidden]{display:none!important}
+#op-panel .op-status{padding:12px;background:#edf4d4;border-radius:10px}#op-panel .op-status[data-error=true]{background:#fae6e5}
+</style>
+<h2>Asset operational information · 자산 운영 정보 입력</h2>
+<p class="hint">실제 설치 자산 한 대와 운전 모드별로 작성합니다. 자산 유형은 확인할 질문만 정하며, 서비스·접근 경로·인증 설정은 운영자가 기록으로 확인합니다. 미입력은 ‘모름’으로 유지됩니다.</p>
+<label>자산 유형<select id="op-type"><option value="">자산 유형을 선택하십시오</option></select></label>
+<p id="op-type-source" class="hint"></p>
+<div id="op-editor" hidden><h3>자산·평가 범위</h3><div id="op-scope" class="op-grid"></div>
+<h3>자산 운영 정보와 확인 근거</h3><p class="hint">‘기록 있음’은 실제 구성·운영 기록을 입력할 때 선택합니다. ‘조사 범위에서 항목 없음’은 조사 범위와 근거가 필요하며, 취약 기능의 구조적 부재나 비영향 판정을 의미하지 않습니다. 계정 비밀번호나 비밀 키는 입력하지 마십시오.</p>
+<div id="op-fields"></div>
+<div class="op-actions"><button type="button" id="op-validate">입력 검증</button><button type="button" id="op-export">운영 프로파일 JSON 저장</button><button type="button" id="op-blank">빈 템플릿 JSON 저장</button><button type="button" id="op-import-button">JSON 다시 불러오기</button><input type="file" id="op-import" accept=".json,application/json" hidden></div>
+<p class="hint">편집 내용은 이 페이지의 메모리에만 있습니다. 페이지를 닫기 전에 JSON으로 저장하십시오. 이 입력은 VEX 평가에 자동으로 전달되지 않습니다. CVE·제품별 원문 필수조건과의 대응 검토가 별도로 필요합니다.</p></div>
+<p id="op-status" class="op-status" role="status" aria-live="polite">18개 유형의 입력 템플릿을 준비했습니다. 실제 자산 운영 정보 값은 아직 기록되지 않았습니다.</p>
+</section>

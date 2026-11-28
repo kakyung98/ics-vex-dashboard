@@ -1,0 +1,73 @@
+{
+  "version": "item4-cvss-common/2",
+  "presentation_revision": 3,
+  "supported_versions": [
+    "3.0",
+    "3.1",
+    "4.0"
+  ],
+  "answer_codes": [
+    "o",
+    "x",
+    "unknown",
+    "not_applicable",
+    "mixed"
+  ],
+  "default": "unknown",
+  "metrics": {
+    "AV": {
+      "N": "network",
+      "A": "adjacent",
+      "L": "local",
+      "P": "physical"
+    },
+    "PR": {
+      "N": "no prerequisite privilege question",
+      "L": "low",
+      "H": "high"
+    },
+    "UI": {
+      "N": "no user action question",
+      "R": "required (v3)",
+      "P": "passive (v4)",
+      "A": "active (v4)"
+    },
+    "AC": {
+      "L": "no additional AC gate",
+      "H": "source-specific complexity remains unknown unless explicitly mapped"
+    },
+    "AT": {
+      "N": "no additional AT gate",
+      "P": "source-specific deployment/execution requirement remains unknown unless explicitly mapped"
+    }
+  },
+  "rules": [
+    "AV:N does not mean Internet exposure.",
+    "PR:N does not mean authentication is disabled.",
+    "Do not replace attacker privileges with service-account privileges.",
+    "Do not infer exploit-specific AC/AT facts from a metric value.",
+    "Keep different CVSS assessments as alternatives with their own source and product scope.",
+    "Unknown, not applicable, mixed and missing answers never mean false.",
+    "A blocked known route does not establish product not_affected.",
+    "Network reachability records observed per-CVE access zones; it does not predict attacker location.",
+    "Unselected zones remain unknown. A selected zone requires CVE-relevant interface and access-type verification."
+  ],
+  "references": [
+    "https://www.first.org/cvss/v3.1/specification-document",
+    "https://www.first.org/cvss/v4.0/specification-document"
+  ],
+  "network_access": {
+    "answer_type": "network_reachability",
+    "zones": [
+      "same_zone",
+      "it_zone",
+      "internet",
+      "remote_maintenance"
+    ],
+    "selection": "zones:<ordered verified successful-connection zones> or allowed:<ordered rule-permitted zones>",
+    "unselected_zones": "unknown",
+    "negative": "x requires verified complete inaccessibility across all listed zones and CVE-relevant paths",
+    "attacker_location_assumed": false,
+    "allowed_rules_only": "unknown; no successful connectivity inferred"
+  }
+}

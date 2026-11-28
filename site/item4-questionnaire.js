@@ -5,10 +5,13 @@ const assetEnglish={"A0001:ethernet_cable_connected":{"label":"Ethernet cable co
 /* ASSET_ENGLISH_PRESENTATION_END */
 const $=id=>document.getElementById(id),node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
 let bom=null,job=null,sequence=0,startRequestId=null;
-let answerInputs=new Map(),contextInputs=new Map(),dirty=false,busy=false;
+let answerInputs=new Map(),contextInputs=new Map(),recordInputs=new Map(),conditionalContext=[],dirty=false,busy=false;
+let questionTreeGroups=[],askedQuestions=new Set();
 const backendAvailable=()=>typeof window==='undefined'||window.icsvexBackendConnected!==false;
 const states={queued:'Queued',running:'Analyzing',completed:'Completed',failed:'Failed'};
 function resetStages(){
+ if($('retry-analysis'))$('retry-analysis').hidden=true;
+ if($('retry-notice'))$('retry-notice').hidden=true;
  $('branches').hidden=false;
  $('asset-state').textContent='Waiting for SBOM analysis';$('asset-result').replaceChildren();
  $('condition-state').textContent='Waiting for source analysis';
@@ -16,7 +19,7 @@ function resetStages(){
  $('asset-details').hidden=true;
  $('workflow-status').textContent=backendAvailable()?'Choose an SBOM to begin analysis.':'Connect your local backend to run analysis.';
  $('input-state').textContent='Waiting for asset classification and source analysis';
- $('assessment-state').textContent='Waiting for operating values';
+ $('assessment-state').textContent='Waiting for asset operational information';
 }
 resetStages();
 if(!backendAvailable())$('start').disabled=true;
@@ -26,13 +29,18 @@ if(typeof document.querySelectorAll==='function'){
  badges.forEach((badge,index)=>{if(index<4)badge.textContent='V'+(index+1);});
  const operatingHeading=$('questions-section')?.querySelector?.('h2');
  const resultHeading=$('assessment-result')?.querySelector?.('h2');
- if(operatingHeading)operatingHeading.textContent='V3 · Operating values';
+ if(operatingHeading)operatingHeading.textContent='V3 · Asset operational information';
  if(resultHeading)resultHeading.textContent='V4 · Exploitability and VEX';
 }
 async function synchronizeWorkspaceChrome(){
  // Existing analysis processes may still serve the earlier shell. Reuse the
  // canonical SBOM footer without restarting an in-flight analysis.
  if(typeof document.querySelector!=='function')return;
+ for(const link of document.querySelectorAll('aside a.navtab')){
+  const selected=/\/(?:item4|bom-vex|vex-decision)\.html$/.test(new URL(link.href,location.href).pathname);
+  link.classList.remove('active');link.classList.toggle('on',selected);
+  if(selected)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+ }
  const main=document.querySelector('main.main'),workspace=$('item4-workspace');
  if(!main||!workspace)return;
  const missingFooter=!main.querySelector(':scope > .foot');
@@ -71,30 +79,58 @@ async function reconnect(fn,seq){
 }
 function link(parent,label,url){try{const u=new URL(url);if(!['https:','http:'].includes(u.protocol))return;const a=node('a',label);a.href=u.href;a.target='_blank';a.rel='noopener noreferrer';parent.append(a);}catch{}}
 function representatives(value){
+ const choice=(item,ref)=>({ref,name:item.name,version:item.version||item.versionInfo||'Version unknown'});
  const choices=[];if(value.bomFormat==='CycloneDX'){
-  const top=value.metadata?.component;if(top?.name&&top.type!=='data'&&!String(top['bom-ref']||'').startsWith('collection:'))choices.push({ref:top['bom-ref']||'/metadata/component',name:top.name});
+  const top=value.metadata?.component;if(top?.name&&top.type!=='data'&&!String(top['bom-ref']||'').startsWith('collection:'))choices.push(choice(top,top['bom-ref']||'/metadata/component'));
   else{
-   for(const[c,item]of (value.components||[]).entries())if(item?.name&&item.type!=='data'&&!String(item['bom-ref']||'').startsWith('collection:'))choices.push({ref:item['bom-ref']||'/components/'+c,name:item.name});
-   for(const[c,item]of (top?.components||[]).entries())if(item?.name&&item.type!=='data'&&!String(item['bom-ref']||'').startsWith('collection:'))choices.push({ref:item['bom-ref']||'/metadata/component/components/'+c,name:item.name});
+   for(const[c,item]of (value.components||[]).entries())if(item?.name&&item.type!=='data'&&!String(item['bom-ref']||'').startsWith('collection:'))choices.push(choice(item,item['bom-ref']||'/components/'+c));
+   for(const[c,item]of (top?.components||[]).entries())if(item?.name&&item.type!=='data'&&!String(item['bom-ref']||'').startsWith('collection:'))choices.push(choice(item,item['bom-ref']||'/metadata/component/components/'+c));
   }
  }else if(String(value.spdxVersion||'').startsWith('SPDX-2.')){
-  for(const item of value.packages||[])if(item?.name&&(!value.documentDescribes?.length||value.documentDescribes.includes(item.SPDXID)))choices.push({ref:item.SPDXID,name:item.name});
+  for(const item of value.packages||[])if(item?.name&&(!value.documentDescribes?.length||value.documentDescribes.includes(item.SPDXID)))choices.push(choice(item,item.SPDXID));
  }else throw Error('Choose a CycloneDX or SPDX 2.x BOM JSON file.');
  return choices;
 }
+function productChoiceLabel(option){return option.name+' · '+String(option.version).replaceAll('>=','≥').replaceAll('<=','≤').replaceAll('|',' & ');}
+function identificationBom(value){
+ if(value?.bomFormat||value?.spdxVersion)return value;
+ if(!Array.isArray(value?.components)||!value.components.length||!value.components.every(row=>row?.component?.name))return value;
+ const components=[],vulnerabilities=new Map();
+ for(const [index,row]of value.components.entries()){
+  const source=row.component,ref=source.id||'identification-component-'+index;
+  const component={'bom-ref':ref,type:source.component_type||'library',name:source.name};
+  if(source.version)component.version=source.version;
+  if(source.manufacturer)component.manufacturer={name:source.manufacturer};
+  if(source.description)component.description=source.description;
+  if(source.purl)component.purl=source.purl;
+  if(source.cpes?.length)component.cpe=source.cpes[0];
+  components.push(component);
+  for(const finding of row.cves||[]){
+   // Candidate identity is not sufficient for a confirmed product/CVE binding.
+   if(finding.match_status!=='match'||!/^CVE-\d{4}-\d{4,}$/i.test(finding.cve_id||''))continue;
+   const id=finding.cve_id.toUpperCase();
+   if(!vulnerabilities.has(id))vulnerabilities.set(id,{id,affects:[]});
+   const affects=vulnerabilities.get(id).affects;if(!affects.some(item=>item.ref===ref))affects.push({ref});
+  }
+ }
+ if(!vulnerabilities.size)throw Error('No confirmed CVE mappings were found in the identification results. Review SBOM → CVE first.');
+ return {bomFormat:'CycloneDX',specVersion:'1.6',version:1,components,vulnerabilities:[...vulnerabilities.values()],
+  properties:[{name:'icsvex:identification-result',value:JSON.stringify(value)}]};
+}
 function acceptBom(value,label,handoff=false){
+ value=identificationBom(value);
  const options=representatives(value);if(!options.length)throw Error('No named components were found.');
  const select=$('representative');select.replaceChildren();
- if(options.length>1){const blank=node('option','Select a product component');blank.value='';select.append(blank);}
- for(const option of options){const o=node('option',option.name+' · '+option.ref);o.value=option.ref;select.append(o);}
+ if(options.length>1){const blank=node('option','Select a product and version range');blank.value='';select.append(blank);}
+ for(const option of options){const o=node('option',productChoiceLabel(option));o.value=option.ref;select.append(o);}
  if(value.documentDescribes?.length===1)select.value=value.documentDescribes[0];
- bom=value;select.disabled=false;$('start').disabled=!backendAvailable()||!select.value;$('bom-summary').textContent=label+' · Top-level candidates: '+options.length+'';
+ bom=value;select.disabled=false;$('start').disabled=!backendAvailable()||!select.value;$('bom-summary').textContent=label+' · '+options.length+' product/version candidates. Only the selected product and its explicitly linked CVEs will be analyzed.';
  $('bom-file-name').textContent=label;
  $('bom-upload-controls').hidden=handoff;$('bom-handoff-note').hidden=!handoff;$('replace-bom').hidden=!handoff;
  $('bom-heading').textContent='Load SBOM';
  $('representative-controls').hidden=options.length<=1;
- $('bom-summary').hidden=!handoff;
- message(handoff?'BOM received. Confirm the component and start analysis without uploading again.':'Confirm the top-level component, then start analysis.');
+ $('bom-summary').hidden=false;
+ message(options.length===1?'BOM loaded: '+productChoiceLabel(options[0])+'. Select Analysis Exploitability to begin.':'Select the product and version range to analyze.');
 }
 $('replace-bom').onclick=()=>{$('bom-upload-controls').hidden=false;$('replace-bom').hidden=true;$('bom-file').click();};
 async function uploadFile(file){
@@ -104,7 +140,7 @@ async function uploadFile(file){
  resetStages();
  answerInputs.clear();contextInputs.clear();dirty=false;
  for(const kind of ['openvex','cyclonedx','review'])$('download-'+kind).disabled=true;
- try{if(!file)return;if(file.size>4*1024*1024)throw Error('The file must not exceed 4 MiB.');
+ try{if(!file)return;message('Reading '+file.name+'…');if(file.size>4*1024*1024)throw Error('The file must not exceed 4 MiB.');
   const value=JSON.parse((await file.text()).replace(/^\uFEFF/,''));if(seq!==sequence)return;
   acceptBom(value,file.name);
  }catch(e){message(e.message,true);}
@@ -115,20 +151,30 @@ dropzone.addEventListener('dragenter',event=>{event.preventDefault();dragDepth++
 dropzone.addEventListener('dragover',event=>{event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='copy';});
 dropzone.addEventListener('dragleave',event=>{event.preventDefault();if(--dragDepth<=0){dragDepth=0;dropzone.classList.remove('drag');}});
 dropzone.addEventListener('drop',event=>{event.preventDefault();dragDepth=0;dropzone.classList.remove('drag');const files=event.dataTransfer?.files;if(!files||files.length!==1){message('Drop one JSON file at a time.',true);return;}return uploadFile(files[0]);});
-$('representative').onchange=()=>{startRequestId=null;$('start').disabled=!backendAvailable()||!bom||!$('representative').value;};
+$('representative').onchange=()=>{startRequestId=null;$('start').disabled=!backendAvailable()||!bom||!$('representative').value;const selected=bom&&representatives(bom).find(c=>c.ref===$('representative').value);if(selected)message('Analysis target: '+productChoiceLabel(selected)+'. Only explicitly linked CVEs will be analyzed.');};
 
 function drawProgress(value){
+ const retryable=value.status==='failed'||value.special_source_refresh_required||value.question_generation_required||(value.status==='completed'&&
+  ((value.conditions||[]).some(r=>r.status!=='extracted')||value.asset_classification?.status!=='classified'));
+ if($('retry-analysis'))$('retry-analysis').hidden=!retryable;
+ if($('retry-notice'))$('retry-notice').hidden=!retryable;
  $('branches').hidden=false;$('asset-state').textContent=states[value.asset_state]||value.asset_state;
  $('condition-state').textContent=(states[value.condition_state]||value.condition_state)+' · '+value.cves_done+' / '+value.cves_total+' CVEs';
  $('progress').hidden=false;$('progress').max=value.cves_total||1;$('progress').value=value.cves_done;
- $('assessment-state').textContent=value.assessment_state==='completed'?'Assessment completed':'Waiting for operating values';
- $('input-state').textContent=value.status==='completed'?'Asset keys ready for operator input':'Waiting for source analysis';
+ $('assessment-state').textContent=value.assessment_state==='completed'?'Assessment completed':'Waiting for asset operational information';
+ $('input-state').textContent=value.question_state==='running'?'Generating asset-aware LLM questions · '+(value.questions_done||0)+' / '+(value.questions_total||value.cves_total):value.question_generation_required?'V3 incomplete · retry to generate missing questions':value.status==='completed'?((value.asset_questions||[]).length?'Source-bound questions ready · Confidence >80/100':'No accepted questions · conditions remain Unknown'):'Waiting for V1 / V2';
  const asset=value.asset_classification,box=$('asset-result');box.replaceChildren();
  $('asset-details').hidden=!asset;
  if(!asset)return;
  box.append(node('strong',asset.asset?asset.asset.name+' · '+asset.asset_type_id:'Asset type unresolved'));
  if(asset.reason)box.append(node('p',asset.reason));
- if(asset.provisional)box.append(node('p','Provisional classification from ICSA evidence'));
+ const prediction=asset.prediction;
+ if(prediction?.cluster_id)box.append(node('p','TF-IDF → SVD → K-means · '+prediction.cluster_id+' · provisional classification'));
+ if(asset.provisional)box.append(node('p','Provisional model classification. Confirm the asset type against the actual inventory.'));
+ if(value.status==='completed'&&prediction?.cluster_id&&typeof window!=='undefined'&&window.ICSClusterDiagnostics){
+  const diagnostics=node('section');diagnostics.setAttribute('aria-label','Frozen-model cluster quality and scatter plot');box.append(diagnostics);
+  window.ICSClusterDiagnostics.mount(diagnostics,value.id,prediction.cluster_id);
+ }
  const grouped=new Map();
  for(const e of asset.evidence||[]){
   const key=e.advisory_id+'|'+e.url;
@@ -154,10 +200,24 @@ function adapterEvaluation(adapter){
 }
 function drawSources(value){
  $('sources').hidden=false;const sources=$('condition-details');sources.replaceChildren();
+ if(value.analysis_scope)sources.append(node('p','Analysis target: '+productChoiceLabel({name:value.analysis_scope.product_name,version:value.analysis_scope.version_range})+' · '+value.analysis_scope.cve_ids.length+' linked CVEs'));
+ let openedEmpty=false;
  for(const result of value.conditions||[]){
-  const detail=node('details');detail.append(node('summary',result.cve+' · '+(result.status==='extracted'?'Extracted':'Unresolved')+' · '+(result.source_kind||'')));
-  if(result.reason)detail.append(node('p',result.reason));
   const draft=result.prerequisite?.draft;
+  const count=draft?.prerequisites?.length||0,sourceCount=(result.sources||[]).filter(s=>s.text).length;
+  const status=result.status!=='extracted'?'Extraction unresolved':count?count+' operating conditions extracted':'No executable conditions · review needed';
+  const detail=node('details');detail.append(node('summary',result.cve+' · '+status+' · '+sourceCount+' source descriptions'));
+  if(!count&&!openedEmpty){detail.open=true;openedEmpty=true;}
+  if(result.reason)detail.append(node('p',result.reason));
+  if(result.evidence_scope)detail.append(node('p','Evidence scope: '+result.evidence_scope));
+  if(result.source_collection){
+   const lookups=result.source_collection.attempts||[];
+   detail.append(node('p','Additional source collection: '+result.source_collection.source_count+' scoped passages · '+lookups.filter(x=>x.status==='failed').length+' failed lookups. Collection does not establish exploitability.'));
+  }
+  if(result.prerequisite?.coverage_review){
+   const review=result.prerequisite.coverage_review;
+   detail.append(node('p','Automated source-condition review: '+review.status+(review.error?' · '+review.error:'')));
+  }
   const evaluation=adapterEvaluation(result.prerequisite?.model?.adapter);
   if(evaluation)detail.append(node('p',evaluation));
   if(draft){
@@ -165,6 +225,7 @@ function drawSources(value){
    const describe=e=>e.condition?(names[e.condition]||e.condition):(e.op==='not'?'NOT ('+describe(e.args[0])+')':'('+(e.args||[]).map(describe).join(e.op==='and'?' AND ':' OR ')+')');
    for(const item of draft.prerequisites){
     detail.append(node('h3',item.statement));
+    if(item.ics_context?.length)detail.append(node('p','ICS operating condition: '+item.ics_context.map(c=>({feature_configuration:'Industrial function configuration',operating_mode:'Controller operating mode',engineering_connection:'Engineering connection'}[c.kind]||c.kind)).join(', ')));
     if(item.operational_quote)detail.append(node('blockquote',item.operational_quote));
     if(item.observation)detail.append(node('p','Accessible record: '+item.observation.record_type.replaceAll('_',' ')+' · '+item.observation.check));
    }
@@ -176,28 +237,44 @@ function drawSources(value){
     for(const fact of draft.excluded_facts)excluded.append(node('p',fact.reason.replaceAll('_',' ')),node('blockquote',fact.statement));detail.append(excluded);
    }
   }
-  const originals=node('details');originals.append(node('summary','Original source evidence'));
-  for(const source of result.sources||[]){link(originals,'ICSA / CVE source',source.url);originals.append(node('blockquote',source.text));}
+  const originals=node('details');originals.open=!count;originals.append(node('summary','Original source evidence · '+sourceCount+' available'));
+  for(const source of result.sources||[]){
+   const cveSource=String(source.id||'').startsWith('nvd:')||/^https:\/\/(?:nvd\.nist\.gov|www\.cve\.org)\//i.test(source.url||'');
+   const icsaSource=/^https:\/\/www\.cisa\.gov\/(?:news-events\/ics-advisories|uscert\/ics\/advisories)\//i.test(source.url||'');
+   const label=cveSource?'CVE source':icsaSource?'ICSA source':source.source_type==='primary_cve_reference'?'CVE-scoped primary reference':result.source_kind==='CVE description'?'CVE source':result.source_kind==='Product-scoped ICSA'?'ICSA source':'Original source';
+   link(originals,label,source.url);originals.append(node('blockquote',source.text));
+  }
+  if(!sourceCount)originals.append(node('p','No source description is available. This is missing evidence, not evidence that no prerequisites exist.'));
   detail.append(originals);sources.append(detail);
  }
  $('download-results').disabled=false;
 }
 function draftKey(){return job?'icsvex:item4:asset-values:'+job.id:null;}
 function selectedValues(inputs){return Object.fromEntries([...inputs].map(([id,input])=>[id,input.value]));}
+function selectedRecords(){return Object.fromEntries([...recordInputs].map(([id,fields])=>[id,{
+ references:fields.references.value.split('\n').map(s=>s.trim()).filter(Boolean),
+ observed_at:fields.observed_at.value.trim()||null,recorded_by:fields.recorded_by.value.trim()}]));}
 function retainDraft(){
  if(!job||typeof sessionStorage==='undefined')return;
  try{sessionStorage.setItem(draftKey(),JSON.stringify({plan_sha256:job.plan_sha256,revision:job.revision,
-  answers:selectedValues(answerInputs),context_answers:selectedValues(contextInputs)}));}catch{}
+  answers:selectedValues(answerInputs),context_answers:selectedValues(contextInputs),answer_records:selectedRecords(),asked_question_ids:[...askedQuestions]}));}catch{}
 }
 function clearDraft(){try{if(typeof sessionStorage!=='undefined'&&draftKey())sessionStorage.removeItem(draftKey());}catch{}}
 function invalidateResult(){
  dirty=true;$('assessment-result').hidden=true;$('assessment-state').textContent='Values changed · assessment required';
  for(const kind of ['openvex','cyclonedx','review'])$('download-'+kind).disabled=true;
- $('input-message').textContent='Unsaved changes. Save or evaluate to use these values.';retainDraft();
+ $('input-message').textContent='Unsaved changes. Save or evaluate to use these values.';refreshQuestionTrees();retainDraft();
 }
 function setBusy(value){
  busy=value;$('save-inputs').disabled=value;$('assess').disabled=value;
  for(const input of [...answerInputs.values(),...contextInputs.values()])input.disabled=value;
+ for(const fields of recordInputs.values())for(const input of Object.values(fields))input.disabled=value;
+}
+function refreshContext(discard=false){
+ for(const {row,question} of conditionalContext){
+  const rule=question.visible_when;row.hidden=contextInputs.get(rule.question_id)?.value!==rule.value;
+  if(discard&&row.hidden)contextInputs.get(question.id).value='unknown';
+ }
 }
 function makeSelect(question,value,collection){
  const select=node('select');select.id='input-'+question.id;select.setAttribute('aria-label',question.label||question.key);
@@ -205,73 +282,165 @@ function makeSelect(question,value,collection){
  select.value=(question.options||[]).some(o=>o.code===value)?value:'unknown';
  select.onchange=()=>{
   if(collection===contextInputs){
+   askedQuestions.clear();
+   for(const group of questionTreeGroups){group.recordingId=null;group.review=false;}
    for(const input of answerInputs.values())input.value='unknown';
-   for(const item of job?.assessment_cases||[]){
-    if(['scope',item.prefix+'target',item.prefix+'deployment'].includes(question.id)){
-     const coverage=contextInputs.get(item.prefix+'inventory_coverage');
-     if(coverage)coverage.value='unknown';
-    }
+   for(const fields of recordInputs.values())for(const input of Object.values(fields))input.value='';
+   if(question.id==='scope'||question.id.endsWith(':target')||question.id.endsWith(':deployment')){
+    const prefix=question.id.slice(0,question.id.lastIndexOf(':')+1);
+    for(const {question:q} of conditionalContext)if(question.id==='scope'||q.id.startsWith(prefix))contextInputs.get(q.id).value='unknown';
    }
+   refreshContext(true);
   }
+  if(collection===answerInputs){askedQuestions.add(question.id);for(const group of questionTreeGroups)if(group.rows.has(question.id))group.recordingId=question.id;}
   invalidateResult();
-  if(collection===contextInputs)$('input-message').textContent='Assessment scope changed. Reconfirm operating values for the new scope.';
+  if(collection===contextInputs)$('input-message').textContent='Assessment scope changed. Reconfirm asset operational information for the new scope.';
  };collection.set(question.id,select);return select;
 }
 function englishAssetQuestion(question){
  // Presentation is independent of stored answers, condition bindings and audit data.
  const key=question.asset_type_id+':'+question.key;
  const copy=assetEnglish[key];
- return copy?{...question,...copy}:question;
+ const translated=copy&&!question.cve?{...question,...copy}:question;
+ if(!question.cve)return translated;
+ return {...translated,
+  yes_criterion:'Confirmed true for this component, target and assessment scope: '+translated.label,
+  no_criterion:'Confirmed false throughout this component, target and assessment scope: '+translated.label};
+}
+function refreshQuestionTrees(){
+ if(!globalThis.Item4QuestionTree)return;
+ const answers=selectedValues(answerInputs),asked=[...askedQuestions];
+ for(const group of questionTreeGroups){
+  const state=Item4QuestionTree.snapshot(group.plan,answers,asked);
+  const view=Item4QuestionTree.draw(group.canvas,group.plan,answers,asked,group.full);
+  const focus=view.nodes.find(n=>n.onPath&&group.plan.questions[n.cid]?.id===state.next_question_id)||view.nodes[0];
+  group.canvas.scrollTop=Math.max(0,focus.y-230);group.canvas.scrollLeft=focus.depth<=1?0:Math.max(0,(focus.depth-1)*290-60);
+  const names={true:'Known source expression is true',false:'Known source expression is false',unknown:'Known source expression is unresolved'};
+  group.status.textContent=names[state.value]+'. '+(state.next_question_id?'Answer the next question below.':'No further unanswered question can resolve this expression.')+
+   (state.relationship_unresolved?' Some condition relationships remain unresolved.':'')+
+   (group.plan.unavailable_condition_ids.length?' Some source conditions have no accepted question.':'')+
+   (group.plan.source_unknowns.length?' Source evidence gaps remain.':'')+' V4 still checks product applicability, scope and evidence.';
+  group.preview.textContent=view.truncated?'Tree preview is bounded for readability. Question navigation still uses the complete source expression.':'';
+  for(const [id,row]of group.rows){row.hidden=id!==state.next_question_id&&id!==group.recordingId&&!(group.review&&askedQuestions.has(id));
+   row.dataset.treeState=id===state.next_question_id?'current':id===group.recordingId?'recording':askedQuestions.has(id)?'answered':'skipped';}
+  group.reviewButton.textContent=group.review?'Hide answered questions':'Review answered questions ('+[...group.rows.keys()].filter(id=>askedQuestions.has(id)).length+')';
+ }
+}
+function installQuestionTrees(value,groups,rows,questions){
+ questionTreeGroups=[];
+ for(const [key,container]of groups){
+  const scoped=questions.filter(q=>(q.component_ref||'unbound')+'|'+q.cve===key);
+  const first=scoped[0],plan=(value.operating_question_trees||[]).find(p=>p.case_id===first.case_id)||Item4QuestionTree.fallback(value,scoped);
+  const panel=node('section');panel.className='operating-tree';panel.setAttribute('aria-label','Adaptive operating question tree');
+  const heading=node('h4','Follow the operating condition tree'),status=node('p');status.className='tree-status';status.setAttribute('aria-live','polite');
+  const toolbar=node('div');toolbar.className='tree-toolbar';
+  const full=node('button','Show full tree'),review=node('button','Review answered questions'),reset=node('button','Reset this path');
+  for(const button of [full,review,reset])button.type='button';
+  const canvas=node('div');canvas.className='tree-canvas';canvas.setAttribute('tabindex','0');canvas.setAttribute('aria-label','Scrollable question tree');
+  const preview=node('p');preview.className='tree-preview-note';
+  const group={plan,canvas,status,preview,reviewButton:review,full:false,review:false,rows:new Map(scoped.map(q=>[q.id,rows.get(q.id)]))};
+  full.onclick=()=>{group.full=!group.full;full.textContent=group.full?'Show current path':'Show full tree';refreshQuestionTrees();};
+  review.onclick=()=>{group.review=!group.review;refreshQuestionTrees();};
+  reset.onclick=()=>{if(busy)return;for(const q of scoped){answerInputs.get(q.id).value='unknown';askedQuestions.delete(q.id);for(const f of Object.values(recordInputs.get(q.id)||{}))f.value='';}group.review=false;group.recordingId=null;invalidateResult();};
+  toolbar.append(full,review,reset);panel.append(heading,node('p','Yes means the positive source fact is true. No means false. Unknown continues without assuming either. AND / OR / NOT remain unchanged.'),toolbar,canvas,status,preview);
+  // Keep the graph before the active question without changing stored answers.
+  if(container.insertBefore)container.insertBefore(panel,group.rows.values().next().value);else container.append(panel);
+  questionTreeGroups.push(group);
+ }
 }
 function drawInputs(value){
- $('questions-section').hidden=false;answerInputs=new Map();contextInputs=new Map();
- const controls=$('context-questions');controls.replaceChildren();controls.append(node('h3','Assessment scope and running product'));
+ $('questions-section').hidden=false;answerInputs=new Map();contextInputs=new Map();recordInputs=new Map();conditionalContext=[];
+ const controls=$('context-questions');controls.replaceChildren();controls.className='question-section setup-section';
+ controls.append(node('span','ONCE PER ASSET'),node('h3','1. Asset setup'),node('p','Confirm the asset and current configuration once. Installation and version checks are shown only when relevant.'));
+ const additional=node('details');additional.className='optional-context';additional.append(node('summary','Additional operating context · optional'));
  for(const q of value.context_questions||[]){
-  const label=node('label',q.label);label.htmlFor='input-'+q.id;controls.append(label,makeSelect(q,value.context_answers?.[q.id]||'unknown',contextInputs));
-  if(q.description)controls.append(node('p',q.description));
+  const row=node('div');row.className='context-field';const label=node('label',q.label);label.htmlFor='input-'+q.id;
+  row.append(label,makeSelect(q,value.context_answers?.[q.id]||'unknown',contextInputs));
+  if(q.description)row.append(node('p',q.description));(q.optional?additional:controls).append(row);
+  if(q.visible_when)conditionalContext.push({row,question:q});
  }
- const box=$('asset-questions');box.replaceChildren();const groups=new Map();
- const names=Object.fromEntries((value.components||[]).map(c=>[c.ref,c.name]));
- for(const original of value.asset_questions||[]){
-  const q=englishAssetQuestion(original);
-  const component=q.component_ref||'Unbound component';
-  if(!groups.has(component)){
-   const section=node('details');section.open=true;section.className='asset-input-group';
-   section.append(node('summary',(names[component]||component)+' · '+component));box.append(section);groups.set(component,section);
+ if(additional.children.length>1)controls.append(additional);
+ const box=$('asset-questions');box.replaceChildren();
+ const section=node('section');section.className='question-section special-section';section.setAttribute('aria-label','CVE-specific operating questions');
+ const accepted=(value.asset_questions||[]).filter(q=>Number.isInteger(q.llm_confidence)&&q.llm_confidence>80);
+ askedQuestions=new Set((value.asked_question_ids||[]).filter(id=>accepted.some(q=>q.id===id)));
+ for(const q of accepted)if(value.answers?.[q.id]&&value.answers[q.id]!=='unknown')askedQuestions.add(q.id);
+ const questionRows=new Map();
+ const badge=node('span','SOURCE-BOUND · '+accepted.length+' ACCEPTED QUESTIONS');badge.className='question-kind';
+ section.append(badge,node('h3','2. CVE-specific operating questions'),node('p','Only extracted CVE conditions become operating questions. Asset type guides matching record checks and never adds a question. Unmatched catalogue entries are omitted; source conditions remain available even when the asset type is unknown. Missing scenario relationships remain Unknown. V2 extraction confidence must exceed 0.8 and V3 question confidence must exceed 80/100. Both scores are self-reported and are not calibrated accuracy.'));
+ box.append(section);
+ const names=Object.fromEntries((value.components||[]).map(c=>[c.ref,c.name]));const groups=new Map();
+ for(const original of accepted){
+  const q=englishAssetQuestion(original),key=(q.component_ref||'unbound')+'|'+q.cve;
+  if(!groups.has(key)){
+   const group=node('details');group.className='asset-input-group';group.open=true;
+   group.append(node('summary',q.cve+' · '+(names[q.component_ref]||q.component_ref||'Unbound component')));section.append(group);groups.set(key,group);
   }
-  const row=node('div');row.className='asset-key-row';
-  const label=node('label');label.htmlFor='input-'+q.id;label.append(node('code',q.key),node('span',q.label));
-  row.append(label,makeSelect(q,value.answers?.[q.id]||'unknown',answerInputs));
-  if(q.cve)row.append(node('p',q.cve+' · '+q.scope_kind));
-  else row.append(node('p','Inventory key · no CVE condition has been bound to this value.'));
-  const detail=node('details');detail.append(node('summary','Decision criteria and source'));
-  detail.append(node('p','o: '+q.yes_criterion),node('p','x: '+q.no_criterion));
-  if(q.evidence_guidance)detail.append(node('p','Check: '+q.evidence_guidance));
-  if(q.observation)detail.append(node('p','Check: '+q.observation.check));
+  const row=node('div');row.className='asset-key-row';const confidence=node('span','LLM Confidence '+q.llm_confidence+'/100 · self-reported');confidence.className='question-kind';
+  const label=node('label',q.label);label.htmlFor='input-'+q.id;row.append(confidence,label,makeSelect(q,value.answers?.[q.id]||'unknown',answerInputs));
+  row.append(node('p','Source condition: '+q.condition_id+' · '+(q.category||'Unclassified')+' · '+q.scope_kind+' · V2 extraction confidence: '+(q.extraction_confidence??'Unknown')));
+  if(q.condition_mapping)row.append(node('p','Mapped source scenarios: '+(q.condition_mapping.scenario_ids.join(', ')||'Relationship unresolved')+' · Asset record mapping: '+(q.condition_mapping.catalogue_keys.join(', ')||'Original source observation')));
+  if(q.ics_context?.length)row.append(node('p','ICS operating condition: '+q.ics_context.map(c=>({feature_configuration:'Industrial function configuration',operating_mode:'Controller operating mode',engineering_connection:'Engineering connection'}[c.kind]||c.kind)).join(', ')));
+  if(q.information_requirement){
+   const requirement=q.information_requirement,info=node('section');info.className='information-requirement';
+   info.append(node('h4','Information to verify: '+requirement.label),node('p',requirement.verification.instruction));
+   const guidance=node('details');guidance.append(node('summary','Suggested records and verification limits'));
+   const records=node('ul');for(const source of requirement.verification.record_sources)records.append(node('li',source.label+(source.use==='context_only'?' · context only; does not establish the operating state':'')));
+   guidance.append(records);for(const limit of requirement.verification.limitations)guidance.append(node('p',limit));
+   info.append(guidance);row.append(info);
+  }
+  const records=value.answer_provenance?.[q.id]?.operating_records||{},fields={};
+  for(const [key,text]of [['references','Operating record references (one per line)'],['observed_at','Observation time (ISO timestamp with timezone)'],['recorded_by','Recorded by']]){
+   const field=node(key==='references'?'textarea':'input');field.id='record-'+q.id+'-'+key;
+   field.value=key==='references'?(records[key]||[]).join('\n'):(records[key]||'');field.oninput=invalidateResult;
+   const fieldLabel=node('label',text);fieldLabel.htmlFor=field.id;row.append(fieldLabel,field);fields[key]=field;
+  }recordInputs.set(q.id,fields);
+  const detail=node('details');detail.append(node('summary','Locked condition, decision criteria and source'));
+  detail.append(node('p','Positive fact: '+q.positive_fact),node('p','Yes: '+q.yes_criterion),node('p','No: '+q.no_criterion),node('p','Unknown: unverified or incomplete operating records. AND / OR / NOT remain in the source-derived logic.'));
+  if(q.operating_check||q.observation?.check)detail.append(node('p','Check: '+(q.operating_check||q.observation.check)));
   if(q.operational_quote)detail.append(node('blockquote',q.operational_quote));
+  if(q.question_generator)detail.append(node('p','Question model: '+q.question_generator.model));
   if(q.catalogue_definition){const definition=englishAssetQuestion(q.catalogue_definition);detail.append(node('p',definition.label),node('p',definition.evidence_guidance));}
-  row.append(detail);groups.get(component).append(row);
+  const recordContext=q.asset_record_context;
+  if(recordContext?.mode==='source_only')detail.append(node('p','No asset-specific record match. Use the V2 source condition and its original check; unverified values remain Unknown.'));
+  const unknown=node('button','Keep Unknown and continue');unknown.type='button';unknown.className='tree-unknown';unknown.onclick=()=>{if(busy)return;answerInputs.get(q.id).value='unknown';askedQuestions.add(q.id);for(const group of questionTreeGroups)if(group.rows.has(q.id))group.recordingId=null;invalidateResult();};
+  const finish=node('button','Finish recording this answer');finish.type='button';finish.className='tree-finish';finish.onclick=()=>{if(busy)return;for(const group of questionTreeGroups)if(group.rows.has(q.id))group.recordingId=null;refreshQuestionTrees();};
+  row.append(unknown,finish,detail);groups.get(key).append(row);questionRows.set(q.id,row);
  }
- $('key-summary').textContent=(value.asset_questions||[]).length+' fields · '+(value.questions||[]).length+' source-bound conditions. Values are isolated by component and source target.';
- if(!(value.asset_questions||[]).length)box.append(node('p','Asset type or source conditions remain unresolved. No asset type or operating fact was assumed.'));
- dirty=false;$('input-message').textContent='Saved values are shown. Unconfirmed values remain unknown.';
+ if(globalThis.Item4QuestionTree)installQuestionTrees(value,groups,questionRows,accepted);
+ const rejected=value.question_confidence_rejections||[],extractionRejected=value.extraction_confidence_rejections||[];
+ $('key-summary').textContent=accepted.length+' accepted CVE-specific questions · '+rejected.length+' excluded by Confidence threshold (>80/100). No CVSS common questions are used.';
+ if(!accepted.length){const empty=node('div');empty.className='question-empty';empty.append(node('strong','No operating questions passed the source and Confidence checks'),node('p','This does not establish that no prerequisites exist. Missing, low-confidence or failed questions leave their conditions Unknown.'));section.append(empty);}
+ const gaps=node('details');gaps.className='question-gaps';gaps.append(node('summary','Unasked conditions and source review'));let count=0;
+ for(const c of value.condition_coverage||[])section.append(node('p',c.cve+' · Condition coverage: questions '+c.question_covered+'/'+c.total_conditions+', answers '+c.answer_covered+'/'+c.total_conditions+'. Source path completeness remains unverified.'));
+ for(const q of extractionRejected){gaps.append(node('p',q.cve+' · '+q.condition_id+' · V2 extraction confidence '+(q.confidence??'missing')+': not accepted. Condition remains Unknown.'));count++;}
+ for(const q of rejected){gaps.append(node('p',q.cve+' · '+q.condition_id+' · Confidence '+q.confidence+'/100: not accepted. Condition remains Unknown.'));count++;}
+ for(const gap of value.question_generation_gaps||[]){gaps.append(node('p',gap.cve+' · '+gap.reason));count++;}
+ for(const gap of value.unmapped_source_conditions||[]){gaps.append(node('p',gap.cve+' · '+gap.condition_id+' · No source scenario binds this extracted condition. Its relationship remains Unknown even when an operating answer is recorded.'));count++;}
+ for(const gap of value.question_absence_reasons||[]){gaps.append(node('p',gap.cve+' · '+gap.detail));count++;}
+ for(const result of value.conditions||[])if(!result.prerequisite?.draft?.prerequisites?.length){gaps.append(node('p',result.cve+' · No operator-verifiable prerequisite was admitted from the description. Review the original source below.'));count++;}
+ if(count){gaps.children[0].textContent='Unasked conditions and source review · '+count;section.append(gaps);}
+ dirty=false;$('input-message').textContent='Saved values are shown. Unconfirmed values remain Unknown.';
  try{
   const saved=typeof sessionStorage==='undefined'?null:JSON.parse(sessionStorage.getItem(draftKey())||'null');
   if(saved&&saved.plan_sha256===value.plan_sha256&&saved.revision===value.revision){
+   for(const id of saved.asked_question_ids||[])if(answerInputs.has(id))askedQuestions.add(id);
    for(const [id,input]of answerInputs)if(saved.answers?.[id]&&(value.asset_questions||[]).find(q=>q.id===id)?.options.some(o=>o.code===saved.answers[id]))input.value=saved.answers[id];
    for(const [id,input]of contextInputs)if(saved.context_answers?.[id]&&(value.context_questions||[]).find(q=>q.id===id)?.options.some(o=>o.code===saved.context_answers[id]))input.value=saved.context_answers[id];
-   dirty=JSON.stringify(selectedValues(answerInputs))!==JSON.stringify(Object.fromEntries([...answerInputs].map(([id])=>[id,value.answers?.[id]||'unknown'])))||
-    JSON.stringify(selectedValues(contextInputs))!==JSON.stringify(Object.fromEntries([...contextInputs].map(([id])=>[id,value.context_answers?.[id]||'unknown'])));
+   for(const [id,fields]of recordInputs)if(saved.answer_records?.[id])for(const [key,input]of Object.entries(fields))input.value=key==='references'?(saved.answer_records[id][key]||[]).join('\n'):(saved.answer_records[id][key]||'');
+   dirty=JSON.stringify(selectedValues(answerInputs))!==JSON.stringify(Object.fromEntries([...answerInputs].map(([id])=>[id,value.answers?.[id]||'unknown'])))||JSON.stringify(selectedValues(contextInputs))!==JSON.stringify(Object.fromEntries([...contextInputs].map(([id])=>[id,value.context_answers?.[id]||'unknown'])));
+   dirty=dirty||JSON.stringify(selectedRecords())!==JSON.stringify(Object.fromEntries([...recordInputs].map(([id])=>[id,{references:value.answer_provenance?.[id]?.operating_records?.references||[],observed_at:value.answer_provenance?.[id]?.operating_records?.observed_at||null,recorded_by:value.answer_provenance?.[id]?.operating_records?.recorded_by||''}])));
    if(dirty)$('input-message').textContent='Unsaved values restored from this tab. Save or evaluate to use them.';
   }else if(saved)clearDraft();
  }catch{}
- setBusy(false);
+ refreshContext();refreshQuestionTrees();if(value.migration_note)$('input-message').textContent=value.migration_note;setBusy(false);
 }
+
 function drawAssessment(value){
  const report=value.assessment;const ready=!dirty&&report&&report.input_revision===value.revision&&report.plan_sha256===value.plan_sha256;
  $('assessment-result').hidden=!ready;
  for(const kind of ['openvex','cyclonedx','review'])$('download-'+kind).disabled=!ready;
- if(!ready)return;
+ if(!ready){if(value.assessment_error)$('input-message').textContent=value.assessment_error;return;}
  const box=$('assessment-decisions');box.replaceChildren();
  for(const result of report.decisions||[]){
   const item=node('article');item.className='assessment-decision';
@@ -285,6 +454,8 @@ function drawAssessment(value){
   for(const [id,state]of Object.entries(result.condition_values||{})){
    const q=(value.questions||[]).find(q=>q.id===id);detail.append(node('p',(q?.key||id)+': '+state));
   }
+  for(const scenario of result.evidence_chain?.scenarios||[])detail.append(node('p','Scenario '+scenario.scenario_id+': '+scenario.value+' · '+JSON.stringify(scenario.expression)));
+  if(result.evidence_chain)detail.append(node('p','Evidence chain SHA-256: '+result.evidence_chain.sha256));
   detail.append(node('p',report.provenance));item.append(detail);box.append(item);
  }
  $('assessment-state').textContent='Assessment completed · '+(report.decisions||[]).length+' component/CVE decisions';
@@ -293,7 +464,7 @@ async function saveValues(){
  if(!job||job.status!=='completed')throw Error('Complete source analysis first.');
  const seq=sequence;
  const value=await api('jobs/'+encodeURIComponent(job.id)+'/answers',{
-  revision:job.revision,plan_sha256:job.plan_sha256,answers:selectedValues(answerInputs),context_answers:selectedValues(contextInputs)});
+  revision:job.revision,plan_sha256:job.plan_sha256,answers:selectedValues(answerInputs),context_answers:selectedValues(contextInputs),answer_records:selectedRecords(),asked_question_ids:[...askedQuestions]});
  if(seq!==sequence)return null;
  clearDraft();job=value;dirty=false;return value;
 }
@@ -321,17 +492,40 @@ for(const kind of ['openvex','cyclonedx','review'])$('download-'+kind).onclick=a
   a.href=url;a.download='item4-'+kind+'-'+job.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }catch(e){if(seq===sequence)$('input-message').textContent=e.message;}
 };
+function completionMessage(value){
+ if(value.source_review_retry_required)return 'Source review remains unresolved for some CVEs. Accepted questions are available; retry the unresolved source review without treating it as a confidence rejection.';
+ if(value.question_generation_required)return 'V3 is incomplete. Generate / retry missing analysis; unresolved source conditions remain unknown.';
+ if(value.special_source_refresh_required)return 'Saved source extraction uses an earlier policy; retry source analysis to refresh CVE-specific conditions.';
+ const unresolved=(value.conditions||[]).filter(r=>r.status!=='extracted').length;
+ if(unresolved)return 'Source analysis finished with '+unresolved+' unresolved CVEs. Review the source messages or retry; unresolved conditions remain Unknown.';
+ if(!(value.asset_questions||[]).length)return (value.questions||[]).length?
+  'No source-bound operating question passed the Confidence >80/100 policy. Unasked conditions remain Unknown.':
+  'Source analysis finished without an admitted operator-verifiable prerequisite. No operating questions were generated; exploitability remains Unknown.';
+ return 'Source analysis completed. Answer the accepted source-bound operating questions in V3, then run V4.';
+}
 async function watch(id,seq){
  for(;;){
   const value=await reconnect(()=>api('jobs/'+encodeURIComponent(id)),seq);if(seq!==sequence||!value)return;job=value;
   if(!bom&&value.input_bom)acceptBom(value.input_bom,'BOM from the saved analysis',true);
   $('start').disabled=!backendAvailable()||value.status==='queued'||value.status==='running';drawProgress(value);
   if(value.status==='failed')throw Error(value.error||'Analysis was interrupted.');
-  if(value.status==='completed'){drawSources(value);drawInputs(value);drawAssessment(value);message('Source analysis completed. Enter the operating values in V3, then run V4.');return;}
-  message((value.recovery_notice||'Source analysis in progress')+' · '+value.cves_done+' / '+value.cves_total+' CVEs');
+  if(value.status==='completed'){drawSources(value);drawInputs(value);drawAssessment(value);message(completionMessage(value));return;}
+  message(value.question_state==='running'?'V3: generating asset-aware operating questions · '+(value.questions_done||0)+' / '+(value.questions_total||value.cves_total):(value.recovery_notice||'Source analysis in progress')+' · '+value.cves_done+' / '+value.cves_total+' CVEs');
   await new Promise(resolve=>setTimeout(resolve,2000));
  }
 }
+if($('retry-analysis'))$('retry-analysis').onclick=async()=>{
+ if(!job||busy)return;const seq=++sequence;setBusy(true);$('retry-analysis').disabled=true;
+ try{
+  const value=await api('jobs/'+encodeURIComponent(job.id)+'/retry',{revision:job.revision,plan_sha256:job.plan_sha256});
+  if(seq!==sequence)return;
+  clearDraft();job=value;dirty=false;
+  for(const id of ['sources','questions-section','assessment-result'])$(id).hidden=true;
+  for(const kind of ['openvex','cyclonedx','review'])$('download-'+kind).disabled=true;
+  await watch(value.id,seq);
+ }catch(e){if(seq===sequence)message(e.message,true);}
+ finally{if(seq===sequence){setBusy(false);$('retry-analysis').disabled=false;}}
+};
 $('start').onclick=async()=>{const seq=++sequence;$('start').disabled=true;$('download-results').disabled=true;try{
  if(!bom||!$('representative').value)throw Error('Select a BOM and a product component.');
  for(const id of ['sources','questions-section','assessment-result'])$(id).hidden=true;

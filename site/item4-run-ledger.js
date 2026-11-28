@@ -1,3 +1,4 @@
+// Historical evaluation ledger UI; not loaded by the active CVSS Operational VEX page.
 (() => {
   'use strict';
   const el = id => document.getElementById(id);

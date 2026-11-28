@@ -1,0 +1,58 @@
+"""Build a static, reviewable research page from the sealed H200 reports."""
+from pathlib import Path
+from datetime import datetime,timezone,timedelta
+import html,json,re,hashlib
+ROOT=Path(__file__).resolve().parents[2]
+RUN='h200_full_population_20261116_130409'
+FOLDER=ROOT/'results'/RUN
+s=json.loads((FOLDER/'summary.json').read_text(encoding='utf-8'))
+gold=json.loads((FOLDER/'gold_method_audit.json').read_text(encoding='utf-8'))
+a=s['item3']['deduplicated_full_output_micro'];all4=s['item4']['all'];test=s['item4']['evaluation']
+assert a['TP']==683488 and a['FP']==56 and a['unjudged']==16
+assert abs(100*a['TP']/(a['TP']+a['FP']+a['unjudged'])-a['precision_lower_bound_percent'])<1e-10
+def pct(v):return f'{100*v:.4f}%'
+def duration(v):
+ n=round(v);return f'{n//60}분 {n%60}초'
+def row(label,m):
+ return f'<tr><th scope="row">{label}</th><td>{m["TP"]:,}</td><td>{m["FP"]:,}</td><td>{pct(m["precision"])}</td><td>{pct(m["recall"])}</td><td>{pct(m["abstention_fraction"])}</td></tr>'
+record=dict(schema='ics-vex-experiment-record/1',run_id=RUN,date='2026-11-16',hardware='NVIDIA H200',
+ status='complete',population_per_item=12418,item4_cases=24678,elapsed_seconds=s['elapsed_seconds'],
+ item3=s['item3'],item4=s['item4'],gold=gold,source='Fresh H200 predictions and separate frozen Gold labels',
+ old_predictions_or_old_cache_imported=False,real_asset_precision=None,
+ formulas=dict(precision='TP/(TP+FP)',item3_lower_bound='TP/(TP+FP+unjudged emitted positives)'),
+ source_report_sha256=hashlib.sha256((FOLDER/'summary.json').read_bytes()).hexdigest())
+wire=json.dumps(record,ensure_ascii=False,indent=2)
+(ROOT/'site/h200-experiment.json').write_text(wire,encoding='utf-8')
+(ROOT/'research_records/h200_full_population_20261116.json').write_text(wire,encoding='utf-8')
+body=f'''<header><div class="eyebrow">ICS-VEXFORGE / EXPERIMENT RECORD</div><h1>H200 전수 평가 결과</h1><p>2026-11-16 · #3과 #4에 동일한 실제 CVE <strong>12,418개</strong>를 사용했습니다.</p><nav><a href="index.html">#3 식별</a><a href="vex-decision.html">#4 자산 검토</a><a href="http://127.0.0.1:18100/precision.html">평가 워크벤치</a><a href="h200-experiment.json" download>실험 기록 JSON 저장</a></nav></header>
+<aside class="scope"><strong>공개 원문 기반 합성 Gold 평가입니다. 실제 설비 Precision은 미측정입니다.</strong><p>#3의 이번 전수 입력은 정상 control 기반입니다. #4는 원문 조건과 명시적 가정 아래 구성한 합성 자산 운영 정보입니다. 독립 전문가의 실제 자산 영향 정답으로 검증한 수치가 아닙니다.</p></aside>
+<div class="cards"><article><div class="eyebrow">#3 · SBOM–CVE 매핑</div><div class="value">{a['precision_lower_bound_percent']:.4f}%</div><p>미확정 양성까지 FP로 계산한 정밀도 하한</p><small>12,418개 입력 → 중복 제거 5,114개 SBOM 입력<br>목표 Precision &gt; 80% · 합성 평가 범위에서 충족</small></article><article><div class="eyebrow">#4 · 조건부 합성 자산 운영 정보</div><div class="value">{pct(all4['raw_model']['precision'])}</div><p>전체 원시 모델 Precision · 검증 로직 적용 후 100%</p><small>12,418개 CVE · 24,678개 사례<br>목표 Precision &gt; 85% · 합성 평가 범위에서 충족</small></article></div>
+<section><h2>Precision은 어떻게 계산했나</h2><p class="formula">Precision = TP / (TP + FP)</p><p>양성으로 출력한 결과 중 정답인 비율입니다. 출력하지 않은 정답은 FN이며 Recall에 반영합니다. 출력 0개를 Precision 100%나 통과로 처리하지 않습니다.</p>
+<h3>#3 · 출력한 모든 CVE 매핑을 채점</h3><p>정답은 제품·버전·에디션의 CPE 원자 매핑입니다. 하나의 SBOM이 여러 CVE에 매핑되므로 TP 수는 CVE 모집단 수보다 클 수 있습니다. 대상 CVE 하나만 확인하지 않고 모든 출력 매핑을 비교했습니다.</p>
+<div class="table"><table><thead><tr><th>TP</th><th>FP</th><th>미확정 출력</th><th>FN</th><th>Recall</th></tr></thead><tbody><tr><td>{a['TP']:,}</td><td>{a['FP']:,}</td><td>{a['unjudged']}</td><td>{a['FN']:,}</td><td>{a['recall_on_known_positives_percent']:.4f}%</td></tr></tbody></table></div>
+<p class="formula">일반 Precision: 683,488 / (683,488 + 56) = {a['precision_on_adjudicated_percent']:.4f}%<br>보수적 하한: 683,488 / (683,488 + 56 + 16) = {a['precision_lower_bound_percent']:.4f}%</p><p>주 지표는 보수적 하한입니다. 미확정 CVE 2,670개 전체를 FP로 더하는 것이 아니라, 실제로 출력된 미확정 매핑 16개를 FP로 계산했습니다. 학습 계열 입력을 포함한 전수 점검으로, 독립 시험 성능과 구분해야 합니다.</p>
+<h3>#4 · affected 출력을 양성으로 채점</h3><p>합성 세계에서 실제 영향이 참이면 TP, 거짓이면 FP입니다. 원시 모델과 모델+검증 로직을 따로 계산했습니다. 검증 로직은 관측 누락·충돌·만료나 근거 부족이 있으면 보류합니다.</p>
+<div class="table"><table><thead><tr><th>평가 구간·방식</th><th>TP</th><th>FP</th><th>Precision</th><th>Recall</th><th>보류율</th></tr></thead><tbody>{row('전체 · 원시 모델',all4['raw_model'])}{row('전체 · 모델+검증',all4['model_and_gate'])}{row('별도 시험 · 원시 모델',test['raw_model'])}{row('별도 시험 · 모델+검증',test['model_and_gate'])}</tbody></table></div>
+<p>전체는 12,418개 CVE·24,678개 사례이며 학습 계열을 포함합니다. 별도 시험은 <strong>4,012개 CVE·6,797개 사례</strong>입니다. 시험의 원시 모델 Precision은 514 / (514 + 6) = 98.8462%, 검증 후에는 508 / (508 + 0) = 100%입니다.</p><p class="scope">검증 후 시험 Recall은 30.4010%, 보류율은 92.5261%입니다. 높은 Precision을 높은 탐지 커버리지나 실제 설비 정확도로 해석하면 안 됩니다.</p></section>
+<section><h2>합성 SBOM과 Gold는 어떻게 만들었나</h2><h3>#3 · 정상본에 한 종류의 오류를 주입</h3><p>CPE가 있는 10,847개 CVE의 원문 항목 145,204개를 제품·버전 범위 조건 50,860개로 정리했습니다. CPE의 제조사·제품·버전·유형을 SBOM 필드로 옮기고, 버전 근거가 없으면 NOASSERTION으로 남겼습니다. 원본 CPE는 metadata.component.cpe에 보관했습니다.</p><p>각 조건에 정상본 1개와 오류본 1개를 만들어 <strong>101,720개</strong>의 원천 SBOM을 구성했습니다. 오류는 이름 누락·오탈자, 버전 누락·표기 변형, CPE 누락·접두부 표기 변형 중 한 종류입니다. 다른 제품·버전으로 교체하지 않고 같은 자산의 표기를 변형했습니다. 예: controller → ocntroller, 3.1.4 → v3.1.4, cpe: → CPE:.</p><p>한 필드만 변형했으므로 버전 필드를 지워도 CPE 안의 버전이 남을 수 있습니다. 남은 증거로 식별하는 시험입니다. 이번 H200 전수 평가는 이 오류 세트 전체와 별도로 CVE당 대표 정상 control 입력을 고정 선택했습니다.</p>
+<div class="table"><table><thead><tr><th>대상 CVE와 선택 SBOM의 관계</th><th>개수</th></tr></thead><tbody><tr><td>매핑 양성</td><td>8,439</td></tr><tr><td>매핑 음성</td><td>1,309</td></tr><tr><td>CPE는 있으나 버전 범위 소속 미확정</td><td>1,099</td></tr><tr><td>정확한 CPE 정답 근거 없음</td><td>1,571</td></tr></tbody></table></div><p>판정 가능 9,748개 = 양성 8,439 + 음성 1,309입니다. 미확정 2,670개 = 1,099 + 1,571입니다. 음성 1,309개는 선택 CPE가 vulnerable:false인 경우였습니다. 모든 CVE에 취약 제품의 양성 예제를 확보한 구성은 아닙니다. 전체 NVD 플랫폼 AND/OR 구성과 실제 환경 영향은 평가 범위에 포함하지 않았습니다.</p>
+<h3>#4 · 실제 CVE 조건에서 가상의 운영 상태 생성</h3><p>조건부 세계를 구성할 수 있는 2,452개 CVE마다 조건 참·거짓, 핵심 관측 누락 두 종류, 관측 충돌, 만료의 여섯 상태를 만들었습니다. 별도 Boolean 시뮬레이터로 정답을 계산했습니다. 원문 조건이 부족한 9,966개 CVE는 보류 사례 하나씩 유지했습니다.</p><p class="formula">2,452 × 6 + 9,966 = 24,678개 사례</p><p>입력과 라벨은 별도 파일입니다. 라벨을 모델 입력으로 보내지 않았습니다. 정답 생성기와 예측기는 별도 코드이지만 원문·조건 초안을 공유합니다. 원문 의미의 독립 검토와 실제 설비 영향 검증은 미완료입니다.</p></section>
+<section><h2>실행 기록</h2><dl><dt>실행 환경</dt><dd>NVIDIA H200 · Qwen2.5-Coder-14B-Instruct · 4비트 QLoRA</dd><dt>소요시간</dt><dd>#3 {duration(s['elapsed_seconds']['item3'])} · #4 {duration(s['elapsed_seconds']['item4'])} · 합계 {duration(s['elapsed_seconds']['total'])}</dd><dt>새 추론</dt><dd>과거 예측·과거 패킷 캐시 미사용. #3 실제 모델 요청 1,213개, #4 14,712개. 구조적으로 확정되는 분기와 이번 실행 안의 동일 패킷 재사용은 구분해 기록했습니다.</dd><dt>모델 구성</dt><dd>I1 이름·I2 버전·I3 식별자는 기본 모델과 공유 어댑터 하나를 사용하고 프롬프트를 구분합니다. #4 합성 자산 운영 정보는 별도 어댑터입니다.</dd><dt>기록 ID</dt><dd><code>{RUN}</code></dd></dl><a href="h200-experiment.json" download>수치·평가 범위·Gold 구성 JSON 다운로드</a></section>'''
+css='''*{box-sizing:border-box}body{margin:0;background:#0b1116;color:#e6edf2;font:16px/1.75 system-ui,"Malgun Gothic",sans-serif}main{max-width:1120px;margin:auto;padding:40px 24px 70px}h1{font-size:clamp(30px,5vw,46px);line-height:1.2;letter-spacing:-.04em}h2{font-size:25px}h3{margin-top:30px;font-size:19px}p,small,dd{color:#b5c3cc}a{color:#69dce6}nav{display:flex;flex-wrap:wrap;gap:12px 24px;margin:24px 0}.eyebrow{font-size:12px;letter-spacing:.14em;color:#69dce6}.scope{padding:18px 22px;border-left:3px solid #e0b24c;background:#1b1b18;border-radius:8px;margin:24px 0}.scope p{margin:8px 0}.cards{display:grid;grid-template-columns:1fr 1fr;gap:20px}article,section{background:#111a20;border:1px solid #25333c;border-radius:16px;padding:26px;margin:24px 0}article{margin:0}.value{font-size:clamp(30px,5vw,43px);font-weight:750;color:#69dce6;margin:12px 0}.table{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}th,td{padding:13px 10px;border-bottom:1px solid #30414d;white-space:nowrap}thead th{color:#8bdce3}tbody th{font-weight:500}.formula{font:14px/1.9 ui-monospace,Consolas,monospace;background:#18252e;padding:18px;border-radius:8px;overflow-wrap:anywhere}dt{font-weight:650;margin-top:15px}dd{margin:4px 0}code{overflow-wrap:anywhere}@media(max-width:680px){main{padding:24px 16px}.cards{grid-template-columns:1fr}article,section{padding:20px}}'''
+page='<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>H200 실험 결과 · ICS-VEXForge</title><style>'+css+'</style></head><body><main>'+body+'</main></body></html>'
+(ROOT/'site/experiments.html').write_text(page,encoding='utf-8')
+start='<!-- H200_EXPERIMENT_START -->';end='<!-- H200_EXPERIMENT_END -->'
+snippet=f'''{start}<section id="h200-experiment"><h2>H200 실험 결과 · 2026-11-16</h2><p>두 항목 모두 12,418개 CVE를 새로 평가했습니다. 총 {duration(s['elapsed_seconds']['total'])}.</p><p>#3 정밀도 하한 <strong>{a['precision_lower_bound_percent']:.4f}%</strong> · #4 전체 원시 모델 <strong>{pct(all4['raw_model']['precision'])}</strong> / 검증 후 <strong>100%</strong>.</p><p class="note">#3은 정상 control 기반 합성 매핑 평가입니다. #4 시험 분할의 검증 후 Recall 30.40%, 보류율 92.53%. 실제 설비 Precision은 미측정입니다.</p><a href="http://127.0.0.1:18100/experiments.html">TP·FP 계산식과 Gold 생성 과정 보기 →</a></section>{end}'''
+path=ROOT/'src/common/web/evaluation_dashboard.html';current=path.read_text(encoding='utf-8')
+if start in current:current=re.sub(re.escape(start)+r'.*?'+re.escape(end),lambda _:snippet,current,flags=re.S)
+else:current=current.replace('<section><h2>#3 · SBOM에서 CVE 식별</h2>',snippet+'\n<section><h2>#3 · SBOM에서 CVE 식별</h2>')
+path.write_text(current,encoding='utf-8')
+path=ROOT/'site/index.html';current=path.read_text(encoding='utf-8')
+if 'href="experiments.html"' not in current:current=current.replace('</nav>','<a class="navtab" href="experiments.html"><span>실험 결과 · H200</span></a></nav>',1)
+path.write_text(current,encoding='utf-8')
+path=ROOT/'README.md';current=path.read_text(encoding='utf-8')
+marker='> **H200 실험 기록 · 2026-11-16:**'
+if marker not in current:
+ current=marker+' 12,418개 CVE 전수 재평가와 Gold 생성·Precision 계산 방법을 [실험 보고서](results/'+RUN+'/README.md), [웹 실험 페이지](site/experiments.html), [구조화 기록](research_records/h200_full_population_20261116.json)에 저장했습니다. #3 하한 99.9895%, #4 전체 원시 모델 98.8731%·검증 후 100%. 실제 설비 Precision은 미측정입니다.\n\n'+current
+path.write_text(current,encoding='utf-8')
+print(json.dumps(dict(page='site/experiments.html',record='research_records/h200_full_population_20261116.json',scope='Synthetic Gold only')))

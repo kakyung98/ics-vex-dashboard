@@ -1,0 +1,66 @@
+<section class="card" id="ov-panel">
+<style>
+#ov-panel{scroll-margin-top:24px}#ov-panel *{box-sizing:border-box}
+#ov-panel p{line-height:1.65}#ov-panel .ov-muted{font-size:13px;color:#56617a}
+#ov-panel .ov-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:14px 0}
+#ov-panel .ov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+#ov-panel label{display:block;margin:10px 0;font-size:14px}
+#ov-panel input:not([type=checkbox]),#ov-panel select,#ov-panel textarea{display:block;width:100%;padding:10px;border:1px solid #ccd0df;border-radius:8px;font:inherit;color:#1b2335;background:#fff}
+#ov-panel textarea{min-height:78px;resize:vertical}#ov-panel select[multiple]{min-height:126px}
+#ov-panel button{padding:10px 14px;border:1px solid #b9addb;border-radius:9px;font:inherit;cursor:pointer;background:#eee9fa;color:#30254b}
+#ov-panel button:disabled{opacity:.5;cursor:default}#ov-panel .ov-primary{background:#604b96;color:white}
+#ov-panel details{margin:14px 0;padding:14px;border:1px solid #dddde8;border-radius:10px}
+#ov-panel summary{cursor:pointer;line-height:1.6}#ov-panel .ov-note{background:#f3f1f9;border-radius:10px;padding:14px}
+#ov-panel blockquote{padding:12px;margin:12px 0;border-left:3px solid #a896d7;background:#f7f6fb;white-space:pre-wrap;overflow-wrap:anywhere}
+#ov-panel .ov-condition{padding:14px 0;border-top:1px solid #e1e1e8}#ov-panel .ov-status{font-size:24px;font-weight:700}
+#ov-panel .ov-pill{display:inline-block;padding:3px 9px;background:#eee9fa;border-radius:15px;font-size:12px}
+#ov-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f5f9;padding:12px;border-radius:8px}
+#ov-panel .ov-check{display:flex;gap:9px;align-items:flex-start}#ov-panel .ov-check input{margin-top:5px}
+#ov-panel table{border-collapse:collapse;width:100%}#ov-panel td,#ov-panel th{padding:10px;border-bottom:1px solid #dedee7;text-align:left;vertical-align:top}
+#ov-panel .ov-scroll{overflow:auto}#ov-panel .ov-error{color:#9a2844}
+
+#ov-panel [hidden]{display:none!important}
+</style>
+<h2>CVE × Asset type × Asset operational information → VEX</h2>
+<p>Link the asset operational information above to CVE/product-specific source conditions. Operational-condition results and product VEX status are shown separately; asset types do not prefill asset operational information.</p>
+<p class="ov-muted" id="ov-coverage">Checking the target CVE coverage.</p>
+<a href="/nist-three-axis-method.html" rel="noopener" target="_blank">Decision rules and synthetic experiment ↗</a> · <a href="/nist-three-axis-experiment.json" rel="noopener" target="_blank">Full experiment metrics ↗</a>
+<h3>1. CVE and actual operating asset</h3>
+<p class="ov-note" id="ov-profile-summary"></p>
+<div class="ov-toolbar"><input aria-label="Search CVEs" id="ov-cve" placeholder="Search by CVE ID or product name" style="max-width:420px"/><button id="ov-search" type="button">Search CVEs</button><button class="ov-primary" id="ov-load" type="button">Link source and asset operational information</button></div>
+<div id="ov-search-results"></div>
+<details><summary>Reopen a saved assessment</summary><label>Assessment ID<input id="ov-review-id"/></label><button id="ov-open-review" type="button">Recheck against current evidence</button></details><div hidden="" id="ov-work">
+<label>Source product scope for the selected CVE<select id="ov-product"></select></label>
+<p class="ov-muted" id="ov-source-info"></p><section id="ov-typed-panel"><h3>2. Select CVE-specific coded proof records</h3>
+<p>Use reviewed inventory, supplier, test, or qualified analysis records for this exact asset/build and CVE source. Select records below; the engine calculates the verdict. Excerpts are retained for audit and never interpreted by an LLM. A control's presence or a blocked network path alone cannot establish non-impact.</p>
+<div class="ov-toolbar"><button id="ov-import-proofs" type="button">Import coded proof registry</button><input accept=".json,application/json" hidden="" id="ov-proof-file" type="file"/><button id="ov-proof-context" type="button">Download source-bound review template</button><a href="/nist-typed-review.schema.json" rel="noopener" target="_blank">Proof schema ↗</a><a href="/nist-three-axis-method.html" rel="noopener" target="_blank">Decision method and experiment ↗</a></div>
+<details open=""><summary>Create a coded proof from registered records</summary><p>Choose the original record's conclusion. This records a human-checked finding; selecting a desired VEX status is not evidence. Scope and source bindings are pinned automatically.</p><div id="ov-proof-builder"></div><button id="ov-add-proof" type="button">Add draft proof for review</button></details>
+<p class="ov-muted" id="ov-proof-count"></p><div id="ov-proof-list"></div></section>
+<div hidden=""><h3 hidden="">2. Verify actual product and version applicability</h3>
+<label class="ov-check" hidden=""><input id="ov-match" type="checkbox"/><span>I verified from the installation/inventory records below that the actual product and running version fall within the selected source product scope.</span></label>
+<div class="ov-grid"><label hidden="">Installation/inventory record location and version<input disabled="" id="ov-match-source"/></label><label hidden="">Record supporting the match<textarea id="ov-match-quote"></textarea></label></div>
+</div><h3>3. Link CVE conditions to asset operational information</h3>
+<p class="ov-muted">Review source paths, then select operating fields and evidence for each condition. Suggestions identify where to check; they do not supply answers. Observing every prerequisite does not by itself demonstrate successful exploitation.</p>
+<div id="ov-paths"></div>
+<div hidden=""><h3 hidden="">4. Product impact, fix, and non-impact evidence</h3>
+<p class="ov-muted">Record explicit statements from source/vendor documentation about this CVE and the actual product/version. The selection below describes evidence, not a final verdict. Status is calculated after checking the evidence and scope.</p>
+<label hidden="">Product evidence claim<select disabled="" id="ov-finding-status"><option value="">No verified product-status evidence</option><option value="affected">Evidence that this product/version is affected</option><option value="fixed">Evidence that this version fixes the CVE</option><option value="not_affected">Evidence that this product/configuration is not affected</option></select></label>
+<div hidden="" id="ov-finding-fields">
+<div class="ov-grid"><label>Vendor document or analysis record location<input id="ov-finding-source"/></label><label>Quotation/record identifying the CVE, product, and version<textarea id="ov-finding-quote"></textarea></label></div>
+<label>Action statement for an affected product<input id="ov-action"/></label>
+<label>Specific evidence explaining non-impact<textarea id="ov-impact"></textarea></label>
+<label class="ov-check"><input id="ov-finding-reviewed" type="checkbox"/><span>I reviewed this evidence's CVE, product, version, configuration scope, and claim.</span></label>
+<div hidden="" id="ov-fixed-fields"><div class="ov-grid"><label>Fixed-version installation and execution record location<input id="ov-fix-source"/></label><label>Record confirming the version is currently running<textarea id="ov-fix-quote"></textarea></label></div><label class="ov-check"><input id="ov-fix-running" type="checkbox"/><span>I verified that the fixed version is actually running.</span></label></div>
+</div>
+<details hidden=""><summary>Non-execution analysis covering all alternative paths (if applicable)</summary>
+<p class="ov-muted">Blocking access alone does not establish non-impact. Review every source path, provide CVE-specific evidence excluding each path, and establish completeness by considering alternative paths beyond the source.</p>
+<label class="ov-check"><input id="ov-route-reviewed" type="checkbox"/><span>I reviewed all relevant alternative paths for this CVE/product, and the record below supports that scope.</span></label>
+<div class="ov-grid"><label>Complete-path review record location<input id="ov-route-source"/></label><label>Record supporting review scope and completeness<textarea id="ov-route-quote"></textarea></label></div>
+</details>
+</div><div class="ov-toolbar"><button class="ov-primary" id="ov-evaluate" type="button">Assess VEX · Save locally</button><button id="ov-reload" type="button">Relink asset operational information</button></div>
+<p class="ov-muted">Assessment saves current inputs and evidence in local storage on this computer. Evidence truth and author identity are not automatically authenticated. Source versions and evidence validity are rechecked on download.</p>
+</div>
+<p aria-live="polite" id="ov-message" role="status"></p>
+<section hidden="" id="ov-result"><h3>Assessment result</h3><div id="ov-result-body"></div><div class="ov-toolbar"><button id="ov-export-review" type="button">Evidence and decision JSON</button><button id="ov-export-openvex" type="button">Download OpenVEX</button></div></section>
+<details><summary>Initial review of multiple CVEs with the same asset operational information</summary><p class="ov-muted">Enter up to 100 CVE IDs separated by lines or commas. Cases without product-match and condition-mapping evidence remain unknown and can be reviewed individually.</p><textarea aria-label="CVEs for batch review" id="ov-batch-cves"></textarea><button id="ov-batch" type="button">Initial batch assessment · Save locally</button><div class="ov-scroll" id="ov-batch-results"></div></details>
+</section>
